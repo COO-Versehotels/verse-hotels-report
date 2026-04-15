@@ -1645,7 +1645,7 @@
         <span class="nav-label">Tasklist</span>
       </button>
       <div id="nav-coo-home" style="display:none;">
-        <button class="nav-item" onclick="go('coo')">
+        <button class="nav-item" onclick="openCOOFromNav()">
           <span class="nav-icon">📊</span>
           <span class="nav-label">COO</span>
         </button>
@@ -1708,7 +1708,7 @@
         <span class="nav-icon">✅</span><span class="nav-label">Tasklist</span>
       </button>
       <div id="nav-coo-tasklist" style="display:none;">
-        <button class="nav-item" onclick="go('coo')">
+        <button class="nav-item" onclick="openCOOFromNav()">
           <span class="nav-icon">📊</span><span class="nav-label">COO</span>
         </button>
       </div>
@@ -1838,7 +1838,7 @@
   <!-- ===== COO DASHBOARD ===== -->
   <div class="screen" id="screen-coo">
     <div class="topbar" style="padding:48px 16px 12px;background:linear-gradient(135deg,var(--navy),#0e2340);">
-      <button class="topbar-back" onclick="go('home')" style="color:white;background:rgba(255,255,255,0.15);">←</button>
+      <button class="topbar-back" onclick="cooBack()" style="color:white;background:rgba(255,255,255,0.15);">←</button>
       <div class="topbar-title">
         <h2 style="color:white;">Dashboard COO</h2>
         <p style="color:rgba(255,255,255,0.5);" id="coo-date">Verse Group Hotels</p>
@@ -2031,6 +2031,25 @@
     go('home');
   }
 
+  // Track dari mana COO dibuka
+  let cooOpenedFrom = 'splash';
+
+  // Buka COO dari bottom nav (team sudah login)
+  function openCOOFromNav() {
+    cooOpenedFrom = 'home';
+    go('coo');
+  }
+
+  // COO back — kembali ke asal
+  function cooBack() {
+    if (cooOpenedFrom === 'home') {
+      go('home');
+    } else {
+      currentRole = '';
+      go('splash');
+    }
+  }
+
   function go(screen) {
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     document.getElementById('screen-' + screen).classList.add('active');
@@ -2101,6 +2120,7 @@
     if (currentRole === 'COO') {
       if (pin === COO_PIN) {
         pin = ''; updatePinDots();
+        currentRole = 'COO';
         // Tampilkan tombol COO di nav
         ['nav-coo-home','nav-coo-tasklist'].forEach(id => {
           const el = document.getElementById(id);
@@ -2161,6 +2181,7 @@
   }
 
   function doLoginCOO() {
+    cooOpenedFrom = 'splash';
     selectRole('COO');
   }
 
