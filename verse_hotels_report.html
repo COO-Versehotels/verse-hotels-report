@@ -1918,8 +1918,15 @@
   // State
   let pin = '';
   let currentRole = '';
-  const TEAM_PIN = '1234';
-  const COO_PIN = '1234';
+  const COO_PIN = '1986';
+  const ROLE_PINS = {
+    'Ops HR Manager': '0101',
+    'HR Officer': '0102',
+    'Chief Engineering Corporate': '0103',
+    'EHK Corporate': '0104',
+    'CRA Corporate': '0105',
+    'COO': '1986'
+  };
 
   // Navigation
   function go(screen) {
@@ -1978,6 +1985,7 @@
   }
 
   function autoLogin() {
+    const correctPin = ROLE_PINS[currentRole] || '1234';
     if (currentRole === 'COO') {
       if (pin === COO_PIN) {
         pin = ''; updatePinDots();
@@ -2021,7 +2029,8 @@
 
   function doLogin() {
     if (!currentRole) { showToast('Pilih jabatan dulu!'); return; }
-    if (pin !== TEAM_PIN) { showToast('PIN salah!'); pin = ''; updatePinDots(); return; }
+    const correctPin = ROLE_PINS[currentRole] || '1234';
+    if (pin !== correctPin) { showToast('PIN salah!'); pin = ''; updatePinDots(); return; }
     document.getElementById('role-display').textContent = currentRole;
     document.getElementById('profile-role-name').textContent = currentRole;
     pin = '';
@@ -2161,52 +2170,34 @@
   }
 
   function validateAndSubmit() {
-    const items = document.querySelectorAll('#tasklist-content .task-item, #followup-list .task-item');
+    const taskItems = document.querySelectorAll('#tasklist-content .task-item');
+    const fuItems = document.querySelectorAll('#followup-list .task-item');
     let errors = [];
+    let firstErrorEl = null;
 
-    items.forEach(item => {
+    // ── VALIDASI TASK UTAMA ──────────────────────────────
+    taskItems.forEach(item => {
       const id = item.id;
       const status = item.dataset.status;
-      const isFU = id.startsWith('fu');
 
-      // Follow Up: kalau ada deskripsi diisi, wajib ada upload (semua status)
-      if (isFU) {
-        const fuInput = item.querySelector('.fu-input');
-        const hasDesc = fuInput && fuInput.value.trim();
-        if (hasDesc) {
-          if (!status) {
-            // Belum pilih status tapi sudah isi deskripsi
-            showToast('⚠️ ' + id.toUpperCase() + ' belum dipilih statusnya!');
-            errors.push(id);
-            return;
-          }
-          // Wajib upload untuk semua status FU
-          const files = taskFiles[id];
-          if (!files || files.length === 0) {
-            const area = document.getElementById(id + '-upload-area');
-            if (area) {
-              area.classList.add('required-alert');
-              setTimeout(() => area.classList.remove('required-alert'), 2000);
-            }
-            errors.push(id);
-          }
-          // Jika Belum, wajib keterangan
-          if (status === 'not') {
-            const note = item.querySelector('.task-note');
-            if (note && !note.value.trim()) {
-              note.classList.add('required-alert');
-              setTimeout(() => note.classList.remove('required-alert'), 2000);
-              errors.push(id);
-            }
-          }
+      // Wajib pilih status — tidak boleh kosong
+      if (!status) {
+        // Highlight task yang belum dipilih statusnya
+        const statusRow = item.querySelector('.task-status-row');
+        if (statusRow) {
+          statusRow.style.outline = '2px solid var(--red)';
+          statusRow.style.borderRadius = '8px';
+          setTimeout(() => {
+            statusRow.style.outline = '';
+          }, 2500);
         }
-        return; // Skip validasi status untuk FU yang kosong
+        if (!firstErrorEl) firstErrorEl = item;
+        errors.push(id);
+        return;
       }
 
-      if (!status) return; // task biasa belum dipilih, skip
-
       if (status === 'done' || status === 'progress') {
-        // Cek apakah task ini wajib upload
+        // Wajib upload jika bukan no-upload task
         const uploadWrap = document.getElementById(id + '-upload');
         const isNoUpload = uploadWrap && uploadWrap.dataset.noUpload === '1';
         if (!isNoUpload) {
@@ -2215,17 +2206,65 @@
             const area = document.getElementById(id + '-upload-area');
             if (area) {
               area.classList.add('required-alert');
-              setTimeout(() => area.classList.remove('required-alert'), 2000);
+              setTimeout(() => area.classList.remove('required-alert'), 2500);
             }
+            if (!firstErrorEl) firstErrorEl = item;
             errors.push(id);
           }
         }
       } else if (status === 'not') {
-        // Wajib ada keterangan
+        // Wajib isi keterangan
         const note = item.querySelector('.task-note');
         if (note && !note.value.trim()) {
           note.classList.add('required-alert');
-          setTimeout(() => note.classList.remove('required-alert'), 2000);
+          setTimeout(() => note.classList.remove('required-alert'), 2500);
+          if (!firstErrorEl) firstErrorEl = item;
+          errors.push(id);
+        }
+      }
+    });
+
+    // ── VALIDASI FOLLOW UP ──────────────────────────────
+    fuItems.forEach(item => {
+      const id = item.id;
+      const status = item.dataset.status;
+      const fuInput = item.querySelector('.fu-input');
+      const hasDesc = fuInput && fuInput.value.trim();
+
+      if (!hasDesc) return; // FU kosong — skip
+
+      // FU diisi tapi belum pilih status
+      if (!status) {
+        const statusRow = item.querySelector('.task-status-row');
+        if (statusRow) {
+          statusRow.style.outline = '2px solid var(--red)';
+          statusRow.style.borderRadius = '8px';
+          setTimeout(() => { statusRow.style.outline = ''; }, 2500);
+        }
+        if (!firstErrorEl) firstErrorEl = item;
+        errors.push(id);
+        return;
+      }
+
+      // Wajib upload dokumentasi untuk semua status FU
+      const files = taskFiles[id];
+      if (!files || files.length === 0) {
+        const area = document.getElementById(id + '-upload-area');
+        if (area) {
+          area.classList.add('required-alert');
+          setTimeout(() => area.classList.remove('required-alert'), 2500);
+        }
+        if (!firstErrorEl) firstErrorEl = item;
+        errors.push(id);
+      }
+
+      // Jika Belum, wajib keterangan
+      if (status === 'not') {
+        const note = item.querySelector('.task-note');
+        if (note && !note.value.trim()) {
+          note.classList.add('required-alert');
+          setTimeout(() => note.classList.remove('required-alert'), 2500);
+          if (!firstErrorEl) firstErrorEl = item;
           errors.push(id);
         }
       }
@@ -2233,8 +2272,7 @@
 
     if (errors.length > 0) {
       showToast('⚠️ ' + errors.length + ' item belum lengkap!');
-      const firstErr = document.getElementById(errors[0]);
-      if (firstErr) firstErr.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      if (firstErrorEl) firstErrorEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return false;
     }
     return true;
@@ -4608,6 +4646,14 @@ const ROLE_TASKS = {
     const m = String(now.getMinutes()).padStart(2,'0');
   }
   setInterval(updateTime, 1000);
+
+  // Auto refresh COO Dashboard setiap 30 detik
+  setInterval(() => {
+    const cooScreen = document.getElementById('screen-coo');
+    if (cooScreen && cooScreen.classList.contains('active')) {
+      populateCOO();
+    }
+  }, 30000);
 </script>
 </body>
 </html>
