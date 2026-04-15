@@ -2500,7 +2500,7 @@
 
     // Hitung status task — skip note_only dari perhitungan %
     const items = document.querySelectorAll('#tasklist-content .task-item');
-    let done = 0, progress = 0, not = 0, total = 0;
+    let done = 0, progress = 0, not = 0, total = 0, incomplete = 0;
     items.forEach(item => {
       const s = item.dataset.status;
       if (s === 'note_only') return;
@@ -2508,7 +2508,29 @@
       if (s === 'done') done++;
       else if (s === 'progress') progress++;
       else if (s === 'not') not++;
+
+      // Cek kelengkapan lampiran & keterangan
+      if (s === 'done' || s === 'progress') {
+        const uploadWrap = document.getElementById(item.id + '-upload');
+        const isNoUpload = uploadWrap && uploadWrap.dataset.noUpload === '1';
+        const hasUpload = taskFiles[item.id] && taskFiles[item.id].length > 0;
+        const note = item.querySelector('.task-note');
+        const hasNote = note && note.value.trim();
+        // Jika butuh upload tapi belum ada upload DAN tidak ada keterangan → belum lengkap
+        if (!isNoUpload && !hasUpload) incomplete++;
+        else if (isNoUpload && !hasNote) incomplete++;
+      } else if (s === 'not') {
+        const note = item.querySelector('.task-note');
+        if (!note || !note.value.trim()) incomplete++;
+      } else if (!s) {
+        incomplete++; // belum dipilih status
+      }
     });
+
+    // Pct = task selesai & lengkap / total
+    const completedFull = done - Math.min(incomplete, done);
+    const pct = total > 0 ? Math.round(((done - incomplete) / total) * 100) : 0;
+    const pctSafe = Math.max(0, pct);
 
     // Hitung follow up yang diisi
     let fuCount = 0;
@@ -2521,9 +2543,8 @@
     Object.values(taskFiles).forEach(files => { totalFiles += files.length; });
 
     // Update UI
-    const pct = total > 0 ? Math.round((done / total) * 100) : 0;
-    document.getElementById('submit-pct').textContent = pct + '%';
-    document.getElementById('submit-progress-label').textContent = `${done} / ${total} task selesai`;
+    document.getElementById('submit-pct').textContent = pctSafe + '%';
+    document.getElementById('submit-progress-label').textContent = done + ' / ' + total + ' task selesai' + (incomplete > 0 ? ' (' + incomplete + ' belum lengkap)' : '');
     document.getElementById('submit-done').textContent = done + ' task';
     document.getElementById('submit-progress').textContent = progress + ' task';
     document.getElementById('submit-not').textContent = not + ' task';
@@ -2533,9 +2554,9 @@
     // Update ring
     const ring = document.getElementById('submit-ring');
     const circumference = 239;
-    const offset = circumference - (pct / 100) * circumference;
+    const offset = circumference - (pctSafe / 100) * circumference;
     ring.style.strokeDashoffset = offset;
-    ring.style.stroke = pct === 100 ? 'var(--green)' : pct >= 70 ? 'var(--navy)' : 'var(--amber)';
+    ring.style.stroke = pctSafe === 100 ? 'var(--green)' : pctSafe >= 70 ? 'var(--navy)' : 'var(--amber)';
 
     // Tampilkan poin belum selesai — merah=wajib, kuning=opsional
     const incompleteSection = document.getElementById('submit-incomplete-section');
