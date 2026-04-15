@@ -1785,8 +1785,10 @@
 
       <!-- Poin belum selesai -->
       <div id="submit-incomplete-section" style="display:none;margin:0 0 4px;">
-        <div style="padding:0 16px 6px;font-size:11px;color:var(--red);font-weight:700;text-transform:uppercase;letter-spacing:1px;">⚠️ Belum Selesai</div>
-        <div id="submit-incomplete-list" style="margin:0 16px 12px;background:#fff5f5;border:1.5px solid var(--red);border-radius:var(--radius);padding:12px 14px;font-size:12px;color:var(--red);line-height:1.8;"></div>
+        <div style="padding:0 16px 4px;font-size:11px;color:var(--red);font-weight:700;text-transform:uppercase;letter-spacing:1px;">❌ Wajib Dilengkapi</div>
+        <div id="submit-required-list" style="margin:0 16px 8px;background:#fff5f5;border:1.5px solid var(--red);border-radius:var(--radius);padding:12px 14px;font-size:12px;color:var(--red);line-height:1.9;"></div>
+        <div style="padding:0 16px 4px;font-size:11px;color:#b45309;font-weight:700;text-transform:uppercase;letter-spacing:1px;" id="submit-optional-label">⚠️ Opsional Belum Diisi</div>
+        <div id="submit-optional-list" style="margin:0 16px 12px;background:#fffbeb;border:1.5px solid #f59e0b;border-radius:var(--radius);padding:12px 14px;font-size:12px;color:#92400e;line-height:1.9;"></div>
       </div>
 
       <!-- Tombol -->
@@ -2283,7 +2285,11 @@
     if (!files.length) return;
 
     if (!taskFiles[taskId]) taskFiles[taskId] = [];
-    taskFiles[taskId].push(...files);
+    const remaining = 10 - taskFiles[taskId].length;
+    if (remaining <= 0) { showToast('Maksimal 10 file per task!'); return; }
+    const toAdd = files.slice(0, remaining);
+    if (files.length > remaining) showToast('Hanya ' + remaining + ' file lagi yang bisa ditambahkan');
+    taskFiles[taskId].push(...toAdd);
 
     renderFilePreview(taskId);
 
@@ -2492,11 +2498,13 @@
     document.getElementById('submit-hotel-name').textContent = hotel;
     document.getElementById('submit-date').textContent = dateStr;
 
-    // Hitung status task
+    // Hitung status task — skip note_only dari perhitungan %
     const items = document.querySelectorAll('#tasklist-content .task-item');
-    let done = 0, progress = 0, not = 0, total = items.length;
+    let done = 0, progress = 0, not = 0, total = 0;
     items.forEach(item => {
       const s = item.dataset.status;
+      if (s === 'note_only') return;
+      total++;
       if (s === 'done') done++;
       else if (s === 'progress') progress++;
       else if (s === 'not') not++;
@@ -2529,52 +2537,75 @@
     ring.style.strokeDashoffset = offset;
     ring.style.stroke = pct === 100 ? 'var(--green)' : pct >= 70 ? 'var(--navy)' : 'var(--amber)';
 
-    // Tampilkan poin yang belum punya status atau keterangan kosong
+    // Tampilkan poin belum selesai — merah=wajib, kuning=opsional
     const incompleteSection = document.getElementById('submit-incomplete-section');
-    const incompleteList = document.getElementById('submit-incomplete-list');
-    let incompleteItems = [];
+    const requiredList = document.getElementById('submit-required-list');
+    const optionalList = document.getElementById('submit-optional-list');
+    const optionalLabel = document.getElementById('submit-optional-label');
+    let requiredItems = [];
+    let optionalItems = [];
 
     document.querySelectorAll('#tasklist-content .task-item').forEach(item => {
       const status = item.dataset.status;
       const taskNumEl = item.querySelector('.task-number');
-      const taskNum = taskNumEl ? (taskNumEl.dataset.origNum || taskNumEl.textContent.replace(/[✓⏳✗]/g,'').trim()) : '?';
+      const taskNum = taskNumEl ? (taskNumEl.dataset.origNum || taskNumEl.textContent.replace(/[✓⏳✗↳\n]/g,'').trim()) : '?';
       const taskTextEl = item.querySelector('.task-text');
       const taskUlEl = item.querySelector('ul');
       let taskName = '';
-      if (taskTextEl) taskName = taskTextEl.textContent.trim().substring(0, 50);
+      if (taskTextEl) taskName = taskTextEl.textContent.trim().substring(0, 55);
       else if (taskUlEl) {
         const cat = item.closest('.task-category');
         const hdr = cat ? cat.querySelector('.task-cat-title') : null;
         taskName = hdr ? hdr.textContent.trim() : 'Briefing';
       }
 
-      if (!status) {
-        incompleteItems.push(`• No.${taskNum} — <b>${taskName}</b> <i>(belum dipilih status)</i>`);
-      } else {
+      // note_only — opsional
+      if (status === 'note_only') {
         const note = item.querySelector('.task-note');
         if (!note || !note.value.trim()) {
-          const statusLabel = status === 'done' ? 'Sudah' : status === 'progress' ? 'Proses' : 'Belum';
-          incompleteItems.push(`• No.${taskNum} — <b>${taskName}</b> <i>(keterangan belum diisi)</i>`);
+          optionalItems.push('• No.' + taskNum + ' — <b>' + taskName + '</b> <i>(keterangan opsional belum diisi)</i>');
         }
-        if ((status === 'done' || status === 'progress')) {
-          const uploadWrap = document.getElementById(item.id + '-upload');
-          const isNoUpload = uploadWrap && uploadWrap.dataset.noUpload === '1';
-          if (!isNoUpload) {
-            const files = taskFiles[item.id];
-            if (!files || files.length === 0) {
-              incompleteItems.push(`• No.${taskNum} — <b>${taskName}</b> <i>(lampiran belum diupload)</i>`);
-            }
-          }
-        }
+        return;
+      }
+
+      // Belum pilih status — WAJIB
+      if (!status) {
+        requiredItems.push('• No.' + taskNum + ' — <b>' + taskName + '</b> <i>(status belum dipilih)</i>');
+        return;
+      }
+
+      const uploadWrap = document.getElementById(item.id + '-upload');
+      const isNoUpload = uploadWrap && uploadWrap.dataset.noUpload === '1';
+      const hasUpload = taskFiles[item.id] && taskFiles[item.id].length > 0;
+      const note = item.querySelector('.task-note');
+      const hasNote = note && note.value.trim();
+
+      // Lampiran wajib jika Sudah/Proses dan task butuh upload
+      if ((status === 'done' || status === 'progress') && !isNoUpload && !hasUpload) {
+        requiredItems.push('• No.' + taskNum + ' — <b>' + taskName + '</b> <i>(lampiran wajib diupload)</i>');
+      }
+
+      // Keterangan wajib jika tidak ada upload
+      if (!hasNote && !hasUpload) {
+        requiredItems.push('• No.' + taskNum + ' — <b>' + taskName + '</b> <i>(keterangan atau lampiran wajib diisi)</i>');
       }
     });
 
-    if (incompleteItems.length > 0) {
+    if (requiredItems.length > 0 || optionalItems.length > 0) {
       incompleteSection.style.display = 'block';
-      incompleteList.innerHTML = incompleteItems.join('<br>');
+      requiredList.innerHTML = requiredItems.length > 0
+        ? requiredItems.join('<br>')
+        : '<span style="color:var(--green)">✅ Semua item wajib sudah lengkap!</span>';
+      if (optionalItems.length > 0) {
+        optionalLabel.style.display = 'block';
+        optionalList.style.display = 'block';
+        optionalList.innerHTML = optionalItems.join('<br>');
+      } else {
+        optionalLabel.style.display = 'none';
+        optionalList.style.display = 'none';
+      }
     } else {
       incompleteSection.style.display = 'none';
-      incompleteList.innerHTML = '';
     }
   }
 
@@ -2677,8 +2708,29 @@
     msg += `🏨 *Hotel:* ${hotel}\n`;
     msg += `📅 *Tanggal:* ${date}\n`;
     msg += `🕐 *Jam Kirim:* ${jam} WIB\n`;
-    msg += `📊 *Progress:* ${pct}\n`;
-    msg += `📎 *Lampiran:* ${files}\n`;
+    msg += '📊 *Progress:* ' + pct + '\n';
+    msg += '📎 *Lampiran:* ' + files + '\n';
+
+    // Detail kekurangan jika < 100%
+    const pctNum = parseInt(pct);
+    if (pctNum < 100) {
+      let kurangList = '';
+      document.querySelectorAll('#tasklist-content .task-item').forEach(item => {
+        const s = item.dataset.status;
+        if (!s || s === 'note_only') return;
+        if (s === 'not' || s === 'progress') {
+          const taskTextEl = item.querySelector('.task-text');
+          const cat = item.closest('.task-category');
+          const hdr = cat ? cat.querySelector('.task-cat-title') : null;
+          const name = taskTextEl ? taskTextEl.textContent.trim().substring(0,50) : (hdr ? hdr.textContent.trim() : 'Task');
+          const note = item.querySelector('.task-note');
+          const ket = note && note.value.trim() ? note.value.trim() : '-';
+          const icon = s === 'progress' ? '⏳' : '❌';
+          kurangList += '\n  ' + icon + ' ' + name + ' → ' + ket;
+        }
+      });
+      if (kurangList) msg += '\n⚠️ *BELUM / DALAM PROSES:*' + kurangList + '\n';
+    }
 
     if (doneList) {
       msg += `\n✅ *SUDAH DILAKUKAN:*${doneList}\n`;
