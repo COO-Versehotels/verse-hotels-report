@@ -923,9 +923,9 @@
   /* Upload area — muncul saat Sudah / Proses */
   .task-upload-wrap {
     margin-top: 8px;
-    display: none;
+    display: none !important;
   }
-  .task-upload-wrap.show { display: block; }
+  .task-upload-wrap.show { display: block !important; }
 
   .task-upload-area {
     border: 2px dashed var(--gray-200);
@@ -2083,38 +2083,72 @@
     btns.forEach(b => b.className = 'status-btn');
 
     const num = document.getElementById(taskId + '-num');
-    const noteWrap = document.getElementById(taskId + '-note');     // keterangan (wajib jika Belum)
-    const uploadWrap = document.getElementById(taskId + '-upload'); // upload (wajib jika Sudah/Proses)
+    const noteWrap = document.getElementById(taskId + '-note');
+    const uploadWrap = document.getElementById(taskId + '-upload');
 
     // Store status on element
     item.dataset.status = status;
 
+    // Cek apakah task ini punya upload wajib
     const isNoUpload = uploadWrap && uploadWrap.dataset.noUpload === '1';
     const isFU = taskId.startsWith('fu');
+    const needUpload = uploadWrap && !isNoUpload; // punya upload area dan bukan no-upload
+
+    // Reset highlight error jika ada
+    if (uploadWrap) {
+      const area = document.getElementById(taskId + '-upload-area');
+      if (area) area.classList.remove('required-alert');
+    }
+    if (noteWrap) {
+      const note = noteWrap.querySelector('.task-note');
+      if (note) note.classList.remove('required-alert');
+    }
+    const statusRow = item.querySelector('.task-status-row');
+    if (statusRow) statusRow.style.outline = '';
 
     if (status === 'done') {
       btns[0].classList.add('selected-green');
       num.textContent = '✓';
       num.className = 'task-number done';
+      num.style.background = '';
+      num.style.color = '';
+      // Sembunyikan keterangan
       if (noteWrap) noteWrap.classList.remove('show');
-      // FU: selalu tampilkan upload; task biasa: tampilkan jika wajib upload
-      if (uploadWrap && (isFU || !isNoUpload)) uploadWrap.classList.add('show');
+      // Tampilkan upload jika wajib
+      if (needUpload || isFU) {
+        uploadWrap.style.display = 'block';
+        uploadWrap.classList.add('show');
+      }
     } else if (status === 'progress') {
       btns[1].classList.add('selected-amber');
       num.textContent = '⏳';
       num.className = 'task-number inprogress';
+      num.style.background = '';
+      num.style.color = '';
       if (noteWrap) noteWrap.classList.remove('show');
-      if (uploadWrap && (isFU || !isNoUpload)) uploadWrap.classList.add('show');
+      if (needUpload || isFU) {
+        uploadWrap.style.display = 'block';
+        uploadWrap.classList.add('show');
+      }
     } else {
+      // Belum
       btns[2].classList.add('selected-red');
       num.textContent = '✗';
       num.className = 'task-number';
       num.style.background = 'var(--red-soft)';
       num.style.color = '#c0392b';
+      // Tampilkan keterangan
       if (noteWrap) noteWrap.classList.add('show');
-      // FU: tetap tampilkan upload saat Belum juga
-      if (isFU && uploadWrap) uploadWrap.classList.add('show');
-      else if (uploadWrap) uploadWrap.classList.remove('show');
+      // Sembunyikan upload (kecuali FU)
+      if (uploadWrap && !isFU) {
+        uploadWrap.classList.remove('show');
+        uploadWrap.style.display = 'none';
+      }
+      // FU tetap tampilkan upload
+      if (isFU && uploadWrap) {
+        uploadWrap.style.display = 'block';
+        uploadWrap.classList.add('show');
+      }
     }
   }
 
@@ -2171,101 +2205,111 @@
 
   function validateAndSubmit() {
     const taskItems = document.querySelectorAll('#tasklist-content .task-item');
-    const fuItems = document.querySelectorAll('#followup-list .task-item');
     let errors = [];
     let firstErrorEl = null;
 
-    // ── VALIDASI TASK UTAMA ──────────────────────────────
+    function markError(el) {
+      if (!firstErrorEl) firstErrorEl = el;
+      errors.push(el.id);
+    }
+
+    function shakeEl(el) {
+      if (!el) return;
+      el.style.outline = '2px solid var(--red)';
+      el.style.borderRadius = '8px';
+      el.style.animation = 'shake .3s ease';
+      setTimeout(() => {
+        el.style.outline = '';
+        el.style.animation = '';
+      }, 2500);
+    }
+
+    // ── CEK SETIAP TASK UTAMA ──────────────────
     taskItems.forEach(item => {
       const id = item.id;
       const status = item.dataset.status;
+      const uploadWrap = document.getElementById(id + '-upload');
+      const isNoUpload = uploadWrap && uploadWrap.dataset.noUpload === '1';
+      const needsUpload = uploadWrap && !isNoUpload;
 
-      // Wajib pilih status — tidak boleh kosong
+      // 1. Status wajib dipilih
       if (!status) {
-        // Highlight task yang belum dipilih statusnya
-        const statusRow = item.querySelector('.task-status-row');
-        if (statusRow) {
-          statusRow.style.outline = '2px solid var(--red)';
-          statusRow.style.borderRadius = '8px';
-          setTimeout(() => {
-            statusRow.style.outline = '';
-          }, 2500);
-        }
-        if (!firstErrorEl) firstErrorEl = item;
-        errors.push(id);
+        shakeEl(item.querySelector('.task-status-row'));
+        markError(item);
         return;
       }
 
-      if (status === 'done' || status === 'progress') {
-        // Wajib upload jika bukan no-upload task
-        const uploadWrap = document.getElementById(id + '-upload');
-        const isNoUpload = uploadWrap && uploadWrap.dataset.noUpload === '1';
-        if (!isNoUpload) {
-          const files = taskFiles[id];
-          if (!files || files.length === 0) {
-            const area = document.getElementById(id + '-upload-area');
-            if (area) {
-              area.classList.add('required-alert');
-              setTimeout(() => area.classList.remove('required-alert'), 2500);
-            }
-            if (!firstErrorEl) firstErrorEl = item;
-            errors.push(id);
+      // 2. Jika Sudah atau Proses → wajib ada lampiran
+      if ((status === 'done' || status === 'progress') && needsUpload) {
+        const files = taskFiles[id];
+        if (!files || files.length === 0) {
+          // Pastikan upload area tampil dulu
+          if (uploadWrap) {
+            uploadWrap.style.display = 'block';
+            uploadWrap.classList.add('show');
           }
+          const area = document.getElementById(id + '-upload-area');
+          if (area) {
+            area.classList.add('required-alert');
+            setTimeout(() => area.classList.remove('required-alert'), 2500);
+          }
+          markError(item);
         }
-      } else if (status === 'not') {
-        // Wajib isi keterangan
+      }
+
+      // 3. Jika Belum → wajib ada keterangan
+      if (status === 'not') {
         const note = item.querySelector('.task-note');
-        if (note && !note.value.trim()) {
-          note.classList.add('required-alert');
-          setTimeout(() => note.classList.remove('required-alert'), 2500);
-          if (!firstErrorEl) firstErrorEl = item;
-          errors.push(id);
+        if (!note || !note.value.trim()) {
+          if (note) {
+            note.classList.add('required-alert');
+            setTimeout(() => note.classList.remove('required-alert'), 2500);
+          }
+          markError(item);
         }
       }
     });
 
-    // ── VALIDASI FOLLOW UP ──────────────────────────────
-    fuItems.forEach(item => {
+    // ── CEK FOLLOW UP ──────────────────────────
+    document.querySelectorAll('#followup-list .task-item').forEach(item => {
       const id = item.id;
-      const status = item.dataset.status;
       const fuInput = item.querySelector('.fu-input');
-      const hasDesc = fuInput && fuInput.value.trim();
+      if (!fuInput || !fuInput.value.trim()) return; // kosong, skip
 
-      if (!hasDesc) return; // FU kosong — skip
+      const status = item.dataset.status;
 
-      // FU diisi tapi belum pilih status
+      // Status wajib dipilih
       if (!status) {
-        const statusRow = item.querySelector('.task-status-row');
-        if (statusRow) {
-          statusRow.style.outline = '2px solid var(--red)';
-          statusRow.style.borderRadius = '8px';
-          setTimeout(() => { statusRow.style.outline = ''; }, 2500);
-        }
-        if (!firstErrorEl) firstErrorEl = item;
-        errors.push(id);
+        shakeEl(item.querySelector('.task-status-row'));
+        markError(item);
         return;
       }
 
-      // Wajib upload dokumentasi untuk semua status FU
+      // Wajib ada lampiran untuk semua status FU
       const files = taskFiles[id];
       if (!files || files.length === 0) {
+        const uploadWrap = document.getElementById(id + '-upload');
+        if (uploadWrap) {
+          uploadWrap.style.display = 'block';
+          uploadWrap.classList.add('show');
+        }
         const area = document.getElementById(id + '-upload-area');
         if (area) {
           area.classList.add('required-alert');
           setTimeout(() => area.classList.remove('required-alert'), 2500);
         }
-        if (!firstErrorEl) firstErrorEl = item;
-        errors.push(id);
+        markError(item);
       }
 
-      // Jika Belum, wajib keterangan
+      // Jika Belum → wajib keterangan
       if (status === 'not') {
         const note = item.querySelector('.task-note');
-        if (note && !note.value.trim()) {
-          note.classList.add('required-alert');
-          setTimeout(() => note.classList.remove('required-alert'), 2500);
-          if (!firstErrorEl) firstErrorEl = item;
-          errors.push(id);
+        if (!note || !note.value.trim()) {
+          if (note) {
+            note.classList.add('required-alert');
+            setTimeout(() => note.classList.remove('required-alert'), 2500);
+          }
+          markError(item);
         }
       }
     });
