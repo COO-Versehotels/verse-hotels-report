@@ -921,6 +921,8 @@
     display: none;
   }
   .task-note-wrap.show { display: block; }
+  .task-note { cursor: text; pointer-events: auto; }
+  .task-note-wrap textarea { pointer-events: auto !important; }
 
   /* Upload area — muncul saat Sudah / Proses */
   .task-upload-wrap {
@@ -2143,6 +2145,11 @@
     document.getElementById('profile-role-name').textContent = currentRole;
     pin = '';
     updatePinDots();
+    // Reset tasklist state saat login baru
+    tasklistRendered = false;
+    lastRenderedRole = '';
+    // Reset taskFiles
+    Object.keys(taskFiles).forEach(k => delete taskFiles[k]);
     // Sembunyikan tombol COO di nav — hanya COO yang bisa akses
     ['nav-coo-home','nav-coo-tasklist'].forEach(id => {
       const el = document.getElementById(id);
@@ -2176,8 +2183,8 @@
 
   // Tasks
   function toggleTask(id) {
-    const noteWrap = document.getElementById(id + '-note');
-    if (noteWrap) noteWrap.classList.toggle('show');
+    // Tidak lakukan apapun — note wrap dikontrol oleh setStatus
+    // Fungsi ini dibiarkan kosong agar onclick tidak error
   }
 
   // Track uploaded files per task
@@ -2385,17 +2392,21 @@
         }
       }
 
-      // 3. Keterangan WAJIB untuk SEMUA status
+      // 3. Keterangan: wajib jika tidak ada upload, opsional jika sudah ada upload
       const note = item.querySelector('.task-note');
+      const hasUpload = taskFiles[id] && taskFiles[id].length > 0;
       if (!note || !note.value.trim()) {
-        if (note) {
-          note.classList.add('required-alert');
-          setTimeout(() => note.classList.remove('required-alert'), 2500);
-          // Pastikan note wrap tampil
-          const nw = document.getElementById(id + '-note');
-          if (nw) { nw.classList.add('show'); }
+        if (!hasUpload) {
+          // Tidak ada upload DAN tidak ada keterangan → error
+          if (note) {
+            note.classList.add('required-alert');
+            setTimeout(() => note.classList.remove('required-alert'), 2500);
+            const nw = document.getElementById(id + '-note');
+            if (nw) nw.classList.add('show');
+          }
+          markError(item);
         }
-        markError(item);
+        // Jika sudah ada upload, keterangan opsional → skip
       }
     });
 
@@ -2740,7 +2751,7 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_1-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_1-note">
-              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..."></textarea>
+              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
         </div>
@@ -2772,7 +2783,7 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_2-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_2-note">
-              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..."></textarea>
+              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
           <div class="task-item" id="task_3" onclick="toggleTask(\'task_3\')">
@@ -2797,7 +2808,7 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_3-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_3-note">
-              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..."></textarea>
+              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
           <div class="task-item" id="task_4" onclick="toggleTask(\'task_4\')">
@@ -2822,7 +2833,7 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_4-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_4-note">
-              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..."></textarea>
+              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
           <div class="task-item" id="task_5" onclick="toggleTask(\'task_5\')">
@@ -2847,7 +2858,7 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_5-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_5-note">
-              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..."></textarea>
+              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
           <div class="task-item" id="task_6" onclick="toggleTask(\'task_6\')">
@@ -2872,7 +2883,7 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_6-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_6-note">
-              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..."></textarea>
+              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
           <div class="task-item" id="task_7" onclick="toggleTask(\'task_7\')">
@@ -2897,7 +2908,7 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_7-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_7-note">
-              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..."></textarea>
+              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
         </div>
@@ -2929,7 +2940,7 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_8-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_8-note">
-              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..."></textarea>
+              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
         </div>
@@ -2961,7 +2972,7 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_9-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_9-note">
-              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..."></textarea>
+              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
         </div>
@@ -2993,7 +3004,7 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_10-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_10-note">
-              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..."></textarea>
+              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
         </div>
@@ -3025,7 +3036,7 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_11-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_11-note">
-              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..."></textarea>
+              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
         </div>
@@ -3046,7 +3057,7 @@ const ROLE_TASKS = {
               <button class="status-btn" onclick="setStatus(event,\'task_12\',\'not\')">✗ Belum</button>
             </div><div class="task-upload-wrap" id="task_12-upload" data-no-upload="1" style="display:none;"></div>
             <div class="task-note-wrap" id="task_12-note">
-              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..."></textarea>
+              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
           <div class="task-item" id="task_13" onclick="toggleTask(\'task_13\')">
@@ -3060,7 +3071,7 @@ const ROLE_TASKS = {
               <button class="status-btn" onclick="setStatus(event,\'task_13\',\'not\')">✗ Belum</button>
             </div><div class="task-upload-wrap" id="task_13-upload" data-no-upload="1" style="display:none;"></div>
             <div class="task-note-wrap" id="task_13-note">
-              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..."></textarea>
+              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
         </div>
@@ -3081,7 +3092,7 @@ const ROLE_TASKS = {
               <button class="status-btn" onclick="setStatus(event,\'task_14\',\'not\')">✗ Belum</button>
             </div><div class="task-upload-wrap" id="task_14-upload" data-no-upload="1" style="display:none;"></div>
             <div class="task-note-wrap" id="task_14-note">
-              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..."></textarea>
+              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
         </div>
@@ -3113,7 +3124,7 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_15-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_15-note">
-              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..."></textarea>
+              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
         </div>
@@ -3134,7 +3145,7 @@ const ROLE_TASKS = {
               <button class="status-btn" onclick="setStatus(event,\'task_16\',\'not\')">✗ Belum</button>
             </div><div class="task-upload-wrap" id="task_16-upload" data-no-upload="1" style="display:none;"></div>
             <div class="task-note-wrap" id="task_16-note">
-              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..."></textarea>
+              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
         </div>`
@@ -3170,7 +3181,7 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_1-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_1-note">
-              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..."></textarea>
+              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
         </div>
@@ -3202,7 +3213,7 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_2-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_2-note">
-              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..."></textarea>
+              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
         </div>
@@ -3234,7 +3245,7 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_3-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_3-note">
-              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..."></textarea>
+              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
         </div>
@@ -3266,7 +3277,7 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_4-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_4-note">
-              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..."></textarea>
+              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
           <div class="task-item" id="task_5" data-status="note_only">
@@ -3275,7 +3286,7 @@ const ROLE_TASKS = {
               <span class="task-text" style="color:var(--gray-600);font-size:13px;">↳ Tentukan Target penyelesaian</span>
             </div>
             <div class="task-note-wrap show" id="task_5-note">
-              <textarea class="task-note" rows="2" placeholder="Wajib diisi — jelaskan secara detail..."></textarea>
+              <textarea class="task-note" rows="2" placeholder="Wajib diisi — jelaskan secara detail..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
         </div>
@@ -3307,7 +3318,7 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_6-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_6-note">
-              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..."></textarea>
+              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
         </div>
@@ -3339,7 +3350,7 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_7-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_7-note">
-              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..."></textarea>
+              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
         </div>
@@ -3371,7 +3382,7 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_8-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_8-note">
-              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..."></textarea>
+              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
         </div>
@@ -3392,7 +3403,7 @@ const ROLE_TASKS = {
               <button class="status-btn" onclick="setStatus(event,\'task_9\',\'not\')">✗ Belum</button>
             </div><div class="task-upload-wrap" id="task_9-upload" data-no-upload="1" style="display:none;"></div>
             <div class="task-note-wrap" id="task_9-note">
-              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..."></textarea>
+              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
           <div class="task-item" id="task_10" data-status="note_only">
@@ -3401,7 +3412,7 @@ const ROLE_TASKS = {
               <span class="task-text" style="color:var(--gray-600);font-size:13px;">↳ Apa yang masih belum di Follow Up, apa yang masih tidak sesuai dengan Timeline</span>
             </div>
             <div class="task-note-wrap show" id="task_10-note">
-              <textarea class="task-note" rows="2" placeholder="Wajib diisi — jelaskan secara detail..."></textarea>
+              <textarea class="task-note" rows="2" placeholder="Wajib diisi — jelaskan secara detail..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
         </div>
@@ -3433,7 +3444,7 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_11-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_11-note">
-              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..."></textarea>
+              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
         </div>
@@ -3454,7 +3465,7 @@ const ROLE_TASKS = {
               <button class="status-btn" onclick="setStatus(event,\'task_12\',\'not\')">✗ Belum</button>
             </div><div class="task-upload-wrap" id="task_12-upload" data-no-upload="1" style="display:none;"></div>
             <div class="task-note-wrap" id="task_12-note">
-              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..."></textarea>
+              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
         </div>`
@@ -3490,7 +3501,7 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_1-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_1-note">
-              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..."></textarea>
+              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
         </div>
@@ -3522,7 +3533,7 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_2-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_2-note">
-              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..."></textarea>
+              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
           <div class="task-item" id="task_3" data-status="note_only">
@@ -3531,7 +3542,7 @@ const ROLE_TASKS = {
               <span class="task-text" style="color:var(--gray-600);font-size:13px;">↳ Mulai dari Lantai Paling Atas sampai paling bawah menggunakan tangga</span>
             </div>
             <div class="task-note-wrap show" id="task_3-note">
-              <textarea class="task-note" rows="2" placeholder="Wajib diisi — jelaskan secara detail..."></textarea>
+              <textarea class="task-note" rows="2" placeholder="Wajib diisi — jelaskan secara detail..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
         </div>
@@ -3563,7 +3574,7 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_4-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_4-note">
-              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..."></textarea>
+              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
         </div>
@@ -3595,7 +3606,7 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_5-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_5-note">
-              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..."></textarea>
+              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
         </div>
@@ -3627,7 +3638,7 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_6-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_6-note">
-              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..."></textarea>
+              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
         </div>
@@ -3659,7 +3670,7 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_7-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_7-note">
-              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..."></textarea>
+              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
         </div>
@@ -3691,7 +3702,7 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_8-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_8-note">
-              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..."></textarea>
+              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
         </div>
@@ -3712,7 +3723,7 @@ const ROLE_TASKS = {
               <button class="status-btn" onclick="setStatus(event,\'task_9\',\'not\')">✗ Belum</button>
             </div><div class="task-upload-wrap" id="task_9-upload" data-no-upload="1" style="display:none;"></div>
             <div class="task-note-wrap" id="task_9-note">
-              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..."></textarea>
+              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
           <div class="task-item" id="task_10" data-status="note_only">
@@ -3721,7 +3732,7 @@ const ROLE_TASKS = {
               <span class="task-text" style="color:var(--gray-600);font-size:13px;">↳ Apa yang masih belum di Follow Up, apa yang masih tidak sesuai dengan Timeline</span>
             </div>
             <div class="task-note-wrap show" id="task_10-note">
-              <textarea class="task-note" rows="2" placeholder="Wajib diisi — jelaskan secara detail..."></textarea>
+              <textarea class="task-note" rows="2" placeholder="Wajib diisi — jelaskan secara detail..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
         </div>
@@ -3753,7 +3764,7 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_11-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_11-note">
-              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..."></textarea>
+              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
         </div>
@@ -3774,7 +3785,7 @@ const ROLE_TASKS = {
               <button class="status-btn" onclick="setStatus(event,\'task_12\',\'not\')">✗ Belum</button>
             </div><div class="task-upload-wrap" id="task_12-upload" data-no-upload="1" style="display:none;"></div>
             <div class="task-note-wrap" id="task_12-note">
-              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..."></textarea>
+              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
         </div>`
@@ -3810,7 +3821,7 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_1-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_1-note">
-              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..."></textarea>
+              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
         </div>
@@ -3842,7 +3853,7 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_2-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_2-note">
-              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..."></textarea>
+              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
           <div class="task-item" id="task_3" onclick="toggleTask(\'task_3\')">
@@ -3867,7 +3878,7 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_3-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_3-note">
-              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..."></textarea>
+              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
         </div>
@@ -3899,7 +3910,7 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_4-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_4-note">
-              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..."></textarea>
+              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
         </div>
@@ -3931,7 +3942,7 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_5-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_5-note">
-              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..."></textarea>
+              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
         </div>
@@ -3963,7 +3974,7 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_6-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_6-note">
-              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..."></textarea>
+              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
         </div>
@@ -3995,7 +4006,7 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_7-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_7-note">
-              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..."></textarea>
+              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
           <div class="task-item" id="task_8" onclick="toggleTask(\'task_8\')">
@@ -4020,7 +4031,7 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_8-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_8-note">
-              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..."></textarea>
+              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
         </div>
@@ -4052,7 +4063,7 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_9-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_9-note">
-              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..."></textarea>
+              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
         </div>
@@ -4073,7 +4084,7 @@ const ROLE_TASKS = {
               <button class="status-btn" onclick="setStatus(event,\'task_10\',\'not\')">✗ Belum</button>
             </div><div class="task-upload-wrap" id="task_10-upload" data-no-upload="1" style="display:none;"></div>
             <div class="task-note-wrap" id="task_10-note">
-              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..."></textarea>
+              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
         </div>`
@@ -4109,7 +4120,7 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_1-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_1-note">
-              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..."></textarea>
+              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
         </div>
@@ -4141,7 +4152,7 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_2-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_2-note">
-              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..."></textarea>
+              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
           <div class="task-item" id="task_3" onclick="toggleTask(\'task_3\')">
@@ -4166,7 +4177,7 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_3-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_3-note">
-              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..."></textarea>
+              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
           <div class="task-item" id="task_4" onclick="toggleTask(\'task_4\')">
@@ -4191,7 +4202,7 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_4-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_4-note">
-              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..."></textarea>
+              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
           <div class="task-item" id="task_5" onclick="toggleTask(\'task_5\')">
@@ -4216,7 +4227,7 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_5-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_5-note">
-              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..."></textarea>
+              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
           <div class="task-item" id="task_6" onclick="toggleTask(\'task_6\')">
@@ -4241,7 +4252,7 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_6-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_6-note">
-              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..."></textarea>
+              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
           <div class="task-item" id="task_7" onclick="toggleTask(\'task_7\')">
@@ -4266,7 +4277,7 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_7-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_7-note">
-              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..."></textarea>
+              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
         </div>
@@ -4298,7 +4309,7 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_8-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_8-note">
-              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..."></textarea>
+              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
         </div>
@@ -4330,7 +4341,7 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_9-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_9-note">
-              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..."></textarea>
+              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
         </div>
@@ -4362,7 +4373,7 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_10-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_10-note">
-              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..."></textarea>
+              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
         </div>
@@ -4394,7 +4405,7 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_11-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_11-note">
-              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..."></textarea>
+              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
         </div>
@@ -4415,7 +4426,7 @@ const ROLE_TASKS = {
               <button class="status-btn" onclick="setStatus(event,\'task_12\',\'not\')">✗ Belum</button>
             </div><div class="task-upload-wrap" id="task_12-upload" data-no-upload="1" style="display:none;"></div>
             <div class="task-note-wrap" id="task_12-note">
-              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..."></textarea>
+              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
           <div class="task-item" id="task_13" onclick="toggleTask(\'task_13\')">
@@ -4429,7 +4440,7 @@ const ROLE_TASKS = {
               <button class="status-btn" onclick="setStatus(event,\'task_13\',\'not\')">✗ Belum</button>
             </div><div class="task-upload-wrap" id="task_13-upload" data-no-upload="1" style="display:none;"></div>
             <div class="task-note-wrap" id="task_13-note">
-              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..."></textarea>
+              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
         </div>
@@ -4450,7 +4461,7 @@ const ROLE_TASKS = {
               <button class="status-btn" onclick="setStatus(event,\'task_14\',\'not\')">✗ Belum</button>
             </div><div class="task-upload-wrap" id="task_14-upload" data-no-upload="1" style="display:none;"></div>
             <div class="task-note-wrap" id="task_14-note">
-              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..."></textarea>
+              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
         </div>
@@ -4482,7 +4493,7 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_15-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_15-note">
-              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..."></textarea>
+              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
         </div>
@@ -4503,7 +4514,7 @@ const ROLE_TASKS = {
               <button class="status-btn" onclick="setStatus(event,\'task_16\',\'not\')">✗ Belum</button>
             </div><div class="task-upload-wrap" id="task_16-upload" data-no-upload="1" style="display:none;"></div>
             <div class="task-note-wrap" id="task_16-note">
-              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..."></textarea>
+              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
         </div>`
@@ -4512,9 +4523,12 @@ const ROLE_TASKS = {
 
 
   // Render tasklist for current role
+  // Simpan state tasklist
+  let tasklistRendered = false;
+  let lastRenderedRole = '';
+
   function renderTasklist() {
     const role = currentRole;
-    // Map HR Officer and Ops HR Manager to same tasklist
     const keyMap = {
       'HR Officer': 'Ops HR Manager',
       'Chief Engineering Corporate': 'CE Corporate',
@@ -4522,8 +4536,16 @@ const ROLE_TASKS = {
     const key = keyMap[role] || role;
     const data = ROLE_TASKS[key] || ROLE_TASKS['Ops HR Manager'];
 
+    // Hanya render ulang jika role berubah
+    if (tasklistRendered && lastRenderedRole === role) {
+      console.log('Tasklist sudah dirender, skip render ulang');
+      return;
+    }
+
     document.getElementById('tasklist-content').innerHTML = data.html;
     document.getElementById('tasklist-progress').textContent = '0/' + data.count;
+    tasklistRendered = true;
+    lastRenderedRole = role;
 
     // Render follow up slots
     let fuHtml = '';
@@ -4551,7 +4573,7 @@ const ROLE_TASKS = {
             <div class="file-preview-list" id="fu${i}-filelist"></div>
           </div>
           <div class="task-note-wrap" id="fu${i}-note">
-            <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..."></textarea>
+            <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
           </div>
         </div>`;
     }
