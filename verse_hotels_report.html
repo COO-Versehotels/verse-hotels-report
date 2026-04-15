@@ -367,34 +367,35 @@
 
   .pin-dots {
     display: flex;
-    gap: 12px;
+    gap: 20px;
     justify-content: center;
-    margin: 12px 0 20px;
+    margin: 12px 0 32px;
   }
 
   .pin-dot {
-    width: 16px;
-    height: 16px;
+    width: 22px;
+    height: 22px;
     border-radius: 50%;
-    border: 2px solid var(--gray-200);
+    border: 2.5px solid var(--gray-200);
     background: transparent;
     transition: all .15s;
   }
-  .pin-dot.filled { background: var(--navy); border-color: var(--navy); }
+  .pin-dot.filled { background: var(--navy); border-color: var(--navy); transform: scale(1.1); }
 
   .numpad {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 7px;
-    margin-bottom: 8px;
+    gap: 12px;
+    margin-bottom: 12px;
+    width: 100%;
   }
 
   .num-btn {
-    height: 50px;
+    height: 72px;
     border: 1.5px solid var(--gray-200);
-    border-radius: 12px;
+    border-radius: 16px;
     background: var(--white);
-    font-size: 20px;
+    font-size: 26px;
     font-weight: 600;
     color: var(--gray-800);
     font-family: inherit;
@@ -405,12 +406,13 @@
     align-items: center;
     justify-content: center;
     line-height: 1;
-    -webkit-tap-highlight-color: rgba(0,0,0,0.05);
+    -webkit-tap-highlight-color: rgba(0,0,0,0.08);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
   }
-  .num-btn sub { font-size: 8px; color: var(--gray-400); font-weight: 400; letter-spacing: 1px; }
-  .num-btn:active { background: var(--gray-100); transform: scale(0.95); }
-  .num-btn.del { font-size: 18px; color: var(--gray-600); }
-  .num-btn.empty { border: none; background: transparent; cursor: default; }
+  .num-btn sub { font-size: 9px; color: var(--gray-400); font-weight: 500; letter-spacing: 1.5px; margin-top: 2px; }
+  .num-btn:active { background: var(--gray-100); transform: scale(0.94); box-shadow: none; }
+  .num-btn.del { font-size: 22px; color: var(--gray-600); }
+  .num-btn.empty { border: none; background: transparent; cursor: default; box-shadow: none; }
 
   .login-btn {
     width: 100%;
@@ -1271,6 +1273,59 @@
     transform: translateX(-50%) translateY(0);
   }
 
+  /* ===== ARSIP SCREEN ===== */
+  #screen-arsip {
+    background: var(--cream);
+    flex-direction: column;
+    height: 100%;
+  }
+  #screen-arsip.active { display: flex; }
+
+  .arsip-date-header {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--gray-400);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 12px 4px 6px;
+  }
+
+  .arsip-card {
+    background: var(--white);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    margin-bottom: 8px;
+    box-shadow: var(--shadow-card);
+  }
+
+  .arsip-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+
+  .arsip-card-role {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--navy);
+  }
+
+  .arsip-card-pct {
+    font-size: 13px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 20px;
+  }
+
+  .arsip-card-detail {
+    font-size: 12px;
+    color: var(--gray-400);
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
   /* ===== PIN SCREEN ===== */
   #screen-pin {
     background: linear-gradient(170deg, #1a3a5c 0%, #0e2340 100%);
@@ -1282,7 +1337,7 @@
   }
 
   .pin-screen-header {
-    padding: 52px 20px 20px;
+    padding: 36px 20px 16px;
     display: flex;
     align-items: center;
     gap: 14px;
@@ -1340,19 +1395,20 @@
     background: var(--white);
     border-radius: 28px 28px 0 0;
     flex: 1;
-    padding: 32px 24px 20px;
+    padding: 32px 20px 24px;
     display: flex;
     flex-direction: column;
     align-items: center;
+    width: 100%;
   }
 
   .pin-label {
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 700;
     color: var(--gray-400);
     text-transform: uppercase;
-    letter-spacing: 1.2px;
-    margin-bottom: 20px;
+    letter-spacing: 1.5px;
+    margin-bottom: 16px;
   }
 
 </style>
@@ -1399,7 +1455,7 @@
         <span class="splash-menu-arrow">›</span>
       </button>
 
-      <button class="splash-menu-btn" onclick="showToast('Fitur arsip segera hadir!')">
+      <button class="splash-menu-btn" onclick="go('arsip')">
         <div class="splash-menu-icon icon-green">📁</div>
         <div class="splash-menu-info">
           <h3>Arsip Laporan</h3>
@@ -1469,7 +1525,7 @@
         <div class="pin-dot" id="d3"></div>
         <div class="pin-dot" id="d4"></div>
       </div>
-      <div class="numpad">
+      <div class="numpad" style="width:100%;">
         <button class="num-btn" onclick="pinInput('1')">1</button>
         <button class="num-btn" onclick="pinInput('2')">2<sub>ABC</sub></button>
         <button class="num-btn" onclick="pinInput('3')">3<sub>DEF</sub></button>
@@ -1738,6 +1794,37 @@
     </div>
   </div>
 
+  <!-- ===== ARSIP LAPORAN ===== -->
+  <div class="screen" id="screen-arsip">
+    <div class="topbar" style="padding:48px 16px 12px;background:linear-gradient(135deg,#1a4a1a,#2d6a2d);">
+      <button class="topbar-back" onclick="go('splash')" style="color:white;background:rgba(255,255,255,0.15);">←</button>
+      <div class="topbar-title">
+        <h2 style="color:white;">Arsip Laporan</h2>
+        <p style="color:rgba(255,255,255,0.5);">Riwayat laporan harian</p>
+      </div>
+    </div>
+
+    <div class="scroll-area">
+      <!-- Filter tanggal -->
+      <div style="padding:16px 16px 8px;display:flex;gap:8px;align-items:center;">
+        <input type="date" id="arsip-date-filter"
+          style="flex:1;padding:10px 14px;border:1.5px solid var(--gray-200);border-radius:10px;font-family:inherit;font-size:14px;color:var(--gray-800);background:var(--white);"
+          onchange="loadArsip()">
+        <button onclick="loadArsip()"
+          style="padding:10px 16px;background:var(--navy);color:white;border:none;border-radius:10px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;">
+          Cari
+        </button>
+      </div>
+
+      <div id="arsip-content" style="padding:0 16px 20px;">
+        <div style="text-align:center;padding:40px 0;color:var(--gray-400);">
+          <div style="font-size:40px;margin-bottom:12px;">📁</div>
+          <p style="font-size:14px;font-weight:600;">Pilih tanggal untuk lihat arsip</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- ===== COO DASHBOARD ===== -->
   <div class="screen" id="screen-coo">
     <div class="topbar" style="padding:48px 16px 12px;background:linear-gradient(135deg,var(--navy),#0e2340);">
@@ -1942,6 +2029,16 @@
     // Populate COO dashboard
     if (screen === 'coo') {
       populateCOO();
+    }
+
+    // Set default date untuk arsip = hari ini
+    if (screen === 'arsip') {
+      const today = new Date().toISOString().split('T')[0];
+      const dateInput = document.getElementById('arsip-date-filter');
+      if (dateInput && !dateInput.value) {
+        dateInput.value = today;
+        loadArsip();
+      }
     }
 
     // Render tasklist when entering
@@ -4683,6 +4780,90 @@ const ROLE_TASKS = {
     submittedReports.push({ role, hotel, taskDone, taskTotal, pct, fuCount, time: `${h}:${m}` });
   }
 
+  // ===== ARSIP =====
+  async function loadArsip() {
+    const dateInput = document.getElementById('arsip-date-filter');
+    const selectedDate = dateInput.value;
+    const container = document.getElementById('arsip-content');
+
+    if (!selectedDate) {
+      container.innerHTML = '<div style="text-align:center;padding:40px 0;color:var(--gray-400);"><div style="font-size:40px;margin-bottom:12px;">📁</div><p style="font-size:14px;font-weight:600;">Pilih tanggal untuk lihat arsip</p></div>';
+      return;
+    }
+
+    container.innerHTML = '<div style="text-align:center;padding:40px 0;color:var(--gray-400);">⏳ Memuat arsip...</div>';
+
+    try {
+      // Cek di tabel arsip (data lama)
+      const { data: arsipData } = await supa.from('arsip').select('*').eq('tanggal', selectedDate).order('archived_at', { ascending: false });
+      // Cek juga di tabel laporan (hari ini)
+      const { data: laporanData } = await supa.from('laporan').select('*').eq('tanggal', selectedDate).order('submitted_at', { ascending: false });
+
+      const allData = [...(arsipData || []), ...(laporanData || [])];
+
+      if (allData.length === 0) {
+        container.innerHTML = '<div style="text-align:center;padding:40px 0;color:var(--gray-400);"><div style="font-size:40px;margin-bottom:12px;">📭</div><p style="font-size:14px;font-weight:600;">Tidak ada laporan pada tanggal ini</p></div>';
+        return;
+      }
+
+      // Format tanggal
+      const d = new Date(selectedDate + 'T00:00:00');
+      const days = ["Minggu","Senin","Selasa","Rabu","Kamis","Jumat","Sabtu"];
+      const months = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
+      const dateStr = `${days[d.getDay()]}, ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+
+      // Group by hotel
+      const byHotel = {};
+      allData.forEach(r => {
+        if (!byHotel[r.hotel]) byHotel[r.hotel] = [];
+        byHotel[r.hotel].push(r);
+      });
+
+      let html = `<p class="arsip-date-header">📅 ${dateStr} — ${allData.length} laporan</p>`;
+
+      const roleIcons = {
+        'Ops HR Manager': '👔', 'HR Officer': '🧑‍💼',
+        'Chief Engineering Corporate': '⚙️',
+        'EHK Corporate': '🛏️', 'CRA Corporate': '🌐'
+      };
+
+      Object.entries(byHotel).forEach(([hotel, reports]) => {
+        html += `<p style="font-size:11px;font-weight:700;color:var(--gray-400);text-transform:uppercase;letter-spacing:1px;margin:12px 0 6px;">🏨 ${hotel}</p>`;
+        reports.forEach(r => {
+          const pct = r.pct || 0;
+          const pctColor = pct === 100 ? 'var(--green)' : pct >= 70 ? 'var(--navy)' : 'var(--amber)';
+          const pctBg = pct === 100 ? 'var(--green-soft)' : pct >= 70 ? 'rgba(26,58,92,0.08)' : 'var(--amber-soft)';
+          const submitTime = r.submitted_at ? new Date(r.submitted_at).toLocaleTimeString('id-ID', {hour:'2-digit',minute:'2-digit'}) : '—';
+          const icon = roleIcons[r.role] || '👤';
+          html += `
+            <div class="arsip-card">
+              <div class="arsip-card-header">
+                <span class="arsip-card-role">${icon} ${r.role?.replace(' Corporate','') || '—'}</span>
+                <span class="arsip-card-pct" style="color:${pctColor};background:${pctBg};">${pct}%</span>
+              </div>
+              <div class="arsip-card-detail">
+                <span>✅ ${r.task_done || 0} task selesai</span>
+                <span>📋 ${r.task_total || 0} total task</span>
+                <span>📌 ${r.fu_count || 0} follow up</span>
+                <span>🕐 Submit ${submitTime}</span>
+              </div>
+              <div style="margin-top:8px;">
+                <div style="height:4px;background:var(--gray-100);border-radius:4px;overflow:hidden;">
+                  <div style="height:100%;width:${pct}%;background:${pctColor};border-radius:4px;transition:width .5s;"></div>
+                </div>
+              </div>
+            </div>`;
+        });
+      });
+
+      container.innerHTML = html;
+    } catch(e) {
+      console.error('Load arsip error:', e);
+      container.innerHTML = '<div style="text-align:center;padding:40px 0;color:var(--red);">❌ Gagal memuat arsip. Coba lagi.</div>';
+    }
+  }
+
+  // Set default date ke hari ini saat masuk halaman arsip
   // Date/time auto update
   function updateTime() {
     const now = new Date();
