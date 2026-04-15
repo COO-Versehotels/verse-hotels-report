@@ -1564,12 +1564,12 @@
             <circle class="ring-bg" cx="28" cy="28" r="22"/>
             <circle class="ring-fill" cx="28" cy="28" r="22" id="home-ring"/>
           </svg>
-          <div class="progress-ring-pct" id="home-pct">60%</div>
+          <div class="progress-ring-pct" id="home-pct">0%</div>
         </div>
         <div class="progress-info">
           <p>Progress Hari Ini</p>
-          <h3 id="home-progress-text">12 dari 20 task selesai</h3>
-          <span id="home-date-text">Rabu, 15 April 2026</span>
+          <h3 id="home-progress-text">Belum ada tasklist hari ini</h3>
+          <span id="home-date-text">—</span>
         </div>
         <div style="color:rgba(255,255,255,0.5);font-size:18px;">›</div>
       </div>
@@ -1578,59 +1578,20 @@
     <div class="scroll-area">
       <div class="section">
         <div class="section-title">Visit Hari Ini</div>
-        <div class="visit-card" onclick="go('tasklist')">
-          <div class="visit-card-top">
-            <span class="visit-hotel-name">Verse Lite Gajah Mada</span>
-            <span class="badge badge-green">Selesai</span>
-          </div>
-          <div class="visit-progress-row">
-            <div class="visit-progress-bar">
-              <div class="visit-progress-fill" style="width:100%"></div>
-            </div>
-            <span class="visit-progress-text">10/10</span>
-          </div>
-          <div class="visit-meta">
-            <span>🕐 08:00 – 12:45</span>
-            <span>📍 Jakarta</span>
+        <div id="home-visit-list">
+          <!-- Diisi dinamis -->
+          <div style="text-align:center;padding:24px 16px;color:var(--gray-400);">
+            <div style="font-size:32px;margin-bottom:8px;">🏨</div>
+            <p style="font-size:13px;font-weight:600;">Belum ada visit hari ini</p>
+            <p style="font-size:12px;margin-top:4px;">Pilih hotel di halaman Tasklist untuk memulai</p>
           </div>
         </div>
-        <div class="visit-card" onclick="go('tasklist')">
-          <div class="visit-card-top">
-            <span class="visit-hotel-name">Verse Luxe Wahid Hasyim</span>
-            <span class="badge badge-amber">Dalam Proses</span>
-          </div>
-          <div class="visit-progress-row">
-            <div class="visit-progress-bar">
-              <div class="visit-progress-fill" style="width:40%"></div>
-            </div>
-            <span class="visit-progress-text">4/10</span>
-          </div>
-          <div class="visit-meta">
-            <span>🕐 13:00 – sekarang</span>
-            <span>📍 Jakarta</span>
-          </div>
-        </div>
-        <button class="add-visit-btn" onclick="showHotelModal()">+ Tambah Visit Hotel Lain</button>
+        <button class="add-visit-btn" onclick="go('tasklist')">+ Mulai Visit Hotel</button>
       </div>
 
-      <div class="section">
+      <div class="section" id="home-followup-section" style="display:none;">
         <div class="section-title">Follow Up Belum Selesai</div>
-        <div class="followup-item" onclick="go('tasklist')">
-          <div style="font-size:20px;">⚠️</div>
-          <div class="followup-item-info">
-            <div class="followup-item-title">Cek AC unit kamar 205</div>
-            <div class="followup-item-sub">Verse Luxe · Dalam Proses</div>
-          </div>
-          <div style="color:var(--gray-400);font-size:18px;">›</div>
-        </div>
-        <div class="followup-item" onclick="go('tasklist')">
-          <div style="font-size:20px;">⚠️</div>
-          <div class="followup-item-info">
-            <div class="followup-item-title">Review dokumen maintenance</div>
-            <div class="followup-item-sub">Verse Lite · Belum</div>
-          </div>
-          <div style="color:var(--gray-400);font-size:18px;">›</div>
-        </div>
+        <div id="home-followup-list"></div>
       </div>
       <div style="height:16px;"></div>
     </div>
@@ -1958,6 +1919,111 @@
   const SUPA_KEY = 'sb_publishable_KeAmOu9ex8r1PDRI1MRMsQ_40uiEkbM';
   const supa = supabase.createClient(SUPA_URL, SUPA_KEY);
 
+  // ===== AUTO-SAVE DRAFT TASKLIST =====
+
+  let autoSaveTimer = null;
+
+  // Simpan satu task ke Supabase (debounced 1.5 detik)
+  function autoSaveDraft(taskId) {
+    clearTimeout(autoSaveTimer);
+    autoSaveTimer = setTimeout(() => saveDraftNow(taskId), 1500);
+  }
+
+  // Simpan semua task sekarang
+  async function saveDraftNow(taskId) {
+    if (!currentRole || !currentHotel) return;
+    const today = new Date().toISOString().split('T')[0];
+    const item = document.getElementById(taskId);
+    if (!item) return;
+
+    const status = item.dataset.status || null;
+    const noteEl = item.querySelector('.task-note');
+    const keterangan = noteEl ? noteEl.value.trim() : '';
+
+    try {
+      await supa.from('draft_tasklist').upsert({
+        tanggal: today,
+        role: currentRole,
+        hotel: currentHotel,
+        task_id: taskId,
+        status: status,
+        keterangan: keterangan,
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'tanggal,role,hotel,task_id' });
+    } catch(e) { console.error('Auto-save error:', e); }
+  }
+
+  // Load draft dari Supabase saat masuk tasklist
+  async function loadDraft(role, hotel) {
+    if (!role || !hotel) return;
+    const today = new Date().toISOString().split('T')[0];
+    try {
+      const { data, error } = await supa.from('draft_tasklist')
+        .select('*')
+        .eq('tanggal', today)
+        .eq('role', role)
+        .eq('hotel', hotel);
+
+      if (error || !data || data.length === 0) return;
+
+      // Restore setiap task
+      data.forEach(draft => {
+        const item = document.getElementById(draft.task_id);
+        if (!item) return;
+
+        // Restore status
+        if (draft.status && draft.status !== 'note_only') {
+          const btns = item.querySelectorAll('.status-btn');
+          if (btns.length > 0) {
+            // Trigger setStatus tanpa event
+            restoreStatus(item, draft.task_id, draft.status);
+          }
+        }
+
+        // Restore keterangan
+        if (draft.keterangan) {
+          const note = item.querySelector('.task-note');
+          if (note) note.value = draft.keterangan;
+        }
+      });
+
+      showToast('📂 Draft sebelumnya dimuat!');
+    } catch(e) { console.error('Load draft error:', e); }
+  }
+
+  // Restore status tanpa event click
+  function restoreStatus(item, taskId, status) {
+    const btns = item.querySelectorAll('.status-btn');
+    btns.forEach(b => b.className = 'status-btn');
+    const num = document.getElementById(taskId + '-num');
+    const noteWrap = document.getElementById(taskId + '-note');
+    const uploadWrap = document.getElementById(taskId + '-upload');
+    const isNoUpload = uploadWrap && uploadWrap.dataset.noUpload === '1';
+    const needUpload = uploadWrap && !isNoUpload;
+
+    item.dataset.status = status;
+    const origNum = num ? (num.dataset.origNum || num.textContent.trim()) : '';
+
+    if (status === 'done') {
+      if (btns[0]) btns[0].classList.add('selected-green');
+      if (num) { num.dataset.origNum = origNum; num.innerHTML = `<span style="font-size:9px;display:block;line-height:1;">${origNum}</span><span style="font-size:10px;">✓</span>`; num.className = 'task-number done'; }
+      if (noteWrap) noteWrap.classList.add('show');
+      if (needUpload || (taskId.startsWith('fu'))) { if(uploadWrap){ uploadWrap.style.display='block'; uploadWrap.classList.add('show'); } }
+    } else if (status === 'progress') {
+      if (btns[1]) btns[1].classList.add('selected-amber');
+      if (num) { num.dataset.origNum = origNum; num.innerHTML = `<span style="font-size:9px;display:block;line-height:1;">${origNum}</span><span style="font-size:10px;">⏳</span>`; num.className = 'task-number inprogress'; }
+      if (noteWrap) noteWrap.classList.add('show');
+      if (needUpload || (taskId.startsWith('fu'))) { if(uploadWrap){ uploadWrap.style.display='block'; uploadWrap.classList.add('show'); } }
+    } else if (status === 'not') {
+      if (btns[2]) btns[2].classList.add('selected-red');
+      if (num) { num.dataset.origNum = origNum; num.innerHTML = `<span style="font-size:9px;display:block;line-height:1;">${origNum}</span><span style="font-size:10px;">✗</span>`; num.className = 'task-number'; num.style.background='var(--red-soft)'; num.style.color='#c0392b'; }
+      if (noteWrap) noteWrap.classList.add('show');
+    }
+  }
+
+  // Track hotel aktif
+  let currentHotel = '';
+
   // Simpan laporan ke Supabase
   async function saveToSupabase(role, hotel, taskDone, taskTotal, taskProgress, taskNot, pct, fuCount, fileCount) {
     try {
@@ -2078,7 +2144,12 @@
     // Render tasklist when entering
     if (screen === 'tasklist') {
       renderTasklist();
-      document.getElementById('tasklist-hotel').textContent = 'Verse Lite Gajah Mada';
+      if (!currentHotel) {
+        currentHotel = 'Verse Lite Gajah Mada';
+        document.getElementById('tasklist-hotel').textContent = currentHotel;
+      }
+      // Load draft dari Supabase
+      setTimeout(() => loadDraft(currentRole, currentHotel), 400);
     }
 
     // Update greeting
@@ -2092,6 +2163,9 @@
       const months = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
       document.getElementById('home-date-text').textContent = `${days[d.getDay()]}, ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
       document.getElementById('today-date').textContent = `${d.getDate()} ${months[d.getMonth()].slice(0,3)}`;
+
+      // Update visit list & progress dari data real
+      updateHomeVisitList();
     }
   }
 
@@ -2170,6 +2244,7 @@
     // Reset tasklist state saat login baru
     tasklistRendered = false;
     lastRenderedRole = '';
+    currentHotel = '';
     // Reset taskFiles
     Object.keys(taskFiles).forEach(k => delete taskFiles[k]);
     // Sembunyikan tombol COO di nav — hanya COO yang bisa akses
@@ -2230,7 +2305,10 @@
     // Cek apakah task ini punya upload wajib
     const isNoUpload = uploadWrap && uploadWrap.dataset.noUpload === '1';
     const isFU = taskId.startsWith('fu');
-    const needUpload = uploadWrap && !isNoUpload; // punya upload area dan bukan no-upload
+    const needUpload = uploadWrap && !isNoUpload;
+
+    // Auto-save setelah status dipilih
+    setTimeout(() => autoSaveDraft(taskId), 100); // punya upload area dan bukan no-upload
 
     // Reset highlight error jika ada
     if (uploadWrap) {
@@ -4641,6 +4719,16 @@ const ROLE_TASKS = {
     tasklistRendered = true;
     lastRenderedRole = role;
 
+    // Tambah auto-save pada setiap textarea keterangan
+    setTimeout(() => {
+      document.querySelectorAll('#tasklist-content .task-note, #followup-list .task-note').forEach(textarea => {
+        textarea.addEventListener('input', function() {
+          const taskItem = this.closest('.task-item');
+          if (taskItem) autoSaveDraft(taskItem.id);
+        });
+      });
+    }, 500);
+
     // Render follow up slots
     let fuHtml = '';
     for (let i = 1; i <= 7; i++) {
@@ -4678,6 +4766,9 @@ const ROLE_TASKS = {
     document.querySelectorAll('.hotel-chip').forEach(c => c.classList.remove('active'));
     el.classList.add('active');
     document.getElementById('tasklist-hotel').textContent = hotelName;
+    currentHotel = hotelName;
+    // Load draft untuk hotel ini
+    loadDraft(currentRole, hotelName);
   }
 
   // ===== COO DASHBOARD =====
@@ -4906,6 +4997,95 @@ const ROLE_TASKS = {
   }
 
   // Set default date ke hari ini saat masuk halaman arsip
+  // Update visit list di home berdasarkan tasklist yang sudah diisi
+  function updateHomeVisitList() {
+    const visitList = document.getElementById('home-visit-list');
+    const fuSection = document.getElementById('home-followup-section');
+    const fuList = document.getElementById('home-followup-list');
+
+    // Hitung progress tasklist saat ini
+    const taskItems = document.querySelectorAll('#tasklist-content .task-item');
+    const hotel = document.getElementById('tasklist-hotel') ? document.getElementById('tasklist-hotel').textContent : '';
+
+    let done = 0, total = 0;
+    taskItems.forEach(item => {
+      const s = item.dataset.status;
+      if (s === 'note_only') return;
+      total++;
+      if (s === 'done') done++;
+    });
+
+    if (total === 0 || !hotel || hotel === 'Pilih Hotel' || hotel === '—') {
+      // Belum ada visit
+      visitList.innerHTML = `<div style="text-align:center;padding:24px 16px;color:var(--gray-400);">
+        <div style="font-size:32px;margin-bottom:8px;">🏨</div>
+        <p style="font-size:13px;font-weight:600;">Belum ada visit hari ini</p>
+        <p style="font-size:12px;margin-top:4px;">Pilih hotel di halaman Tasklist untuk memulai</p>
+      </div>`;
+      document.getElementById('home-pct').textContent = '0%';
+      document.getElementById('home-progress-text').textContent = 'Belum ada tasklist hari ini';
+      if (fuSection) fuSection.style.display = 'none';
+      return;
+    }
+
+    const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+    const statusBadge = pct === 100
+      ? '<span class="badge badge-green">Selesai</span>'
+      : '<span class="badge badge-amber">Dalam Proses</span>';
+    const barColor = pct === 100 ? 'var(--green)' : 'var(--navy)';
+
+    visitList.innerHTML = `
+      <div class="visit-card" onclick="go('tasklist')">
+        <div class="visit-card-top">
+          <span class="visit-hotel-name">${hotel}</span>
+          ${statusBadge}
+        </div>
+        <div class="visit-progress-row">
+          <div class="visit-progress-bar">
+            <div class="visit-progress-fill" style="width:${pct}%;background:${barColor};"></div>
+          </div>
+          <span class="visit-progress-text">${done}/${total}</span>
+        </div>
+      </div>`;
+
+    // Update progress card
+    document.getElementById('home-pct').textContent = pct + '%';
+    document.getElementById('home-progress-text').textContent = `${done} dari ${total} task selesai`;
+
+    // Update ring
+    const ring = document.getElementById('home-ring');
+    if (ring) {
+      const circ = 138;
+      ring.style.strokeDashoffset = circ - (pct / 100) * circ;
+      ring.style.stroke = pct === 100 ? '#2ecc71' : '#c9973a';
+    }
+
+    // Follow up yang belum selesai
+    const fuItems = [];
+    document.querySelectorAll('#followup-list .task-item').forEach(item => {
+      const inp = item.querySelector('.fu-input');
+      const s = item.dataset.status;
+      if (inp && inp.value.trim() && s && s !== 'done') {
+        fuItems.push({ text: inp.value.trim(), status: s });
+      }
+    });
+
+    if (fuItems.length > 0) {
+      fuSection.style.display = 'block';
+      fuList.innerHTML = fuItems.map(fu => `
+        <div class="followup-item" onclick="go('tasklist')">
+          <div style="font-size:20px;">⚠️</div>
+          <div class="followup-item-info">
+            <div class="followup-item-title">${fu.text.substring(0,40)}</div>
+            <div class="followup-item-sub">${hotel} · ${fu.status === 'progress' ? 'Dalam Proses' : 'Belum'}</div>
+          </div>
+          <div style="color:var(--gray-400);font-size:18px;">›</div>
+        </div>`).join('');
+    } else {
+      fuSection.style.display = 'none';
+    }
+  }
+
   // Date/time auto update
   function updateTime() {
     const now = new Date();
