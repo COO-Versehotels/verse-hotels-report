@@ -1921,6 +1921,32 @@
 
   // ===== AUTO-SAVE DRAFT TASKLIST =====
 
+  // Format jam:menit sekarang
+  function getNowTime() {
+    const now = new Date();
+    return String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+  }
+
+  // Tampilkan timestamp di bawah keterangan/upload
+  function showTimestamp(taskId, type) {
+    const time = getNowTime();
+    const tsId = taskId + '-ts-' + type;
+    let tsEl = document.getElementById(tsId);
+    if (!tsEl) {
+      tsEl = document.createElement('div');
+      tsEl.id = tsId;
+      tsEl.style.cssText = 'font-size:10px;color:var(--gray-400);margin-top:3px;font-weight:600;';
+      if (type === 'note') {
+        const noteWrap = document.getElementById(taskId + '-note');
+        if (noteWrap) noteWrap.appendChild(tsEl);
+      } else if (type === 'upload') {
+        const fileList = document.getElementById(taskId + '-filelist');
+        if (fileList) fileList.appendChild(tsEl);
+      }
+    }
+    tsEl.textContent = '🕐 Diinput pukul ' + time + ' WIB';
+  }
+
   let autoSaveTimer = null;
 
   // Simpan satu task ke Supabase (debounced 1.5 detik)
@@ -1941,6 +1967,7 @@
     const keterangan = noteEl ? noteEl.value.trim() : '';
 
     try {
+      const timeNow = getNowTime();
       await supa.from('draft_tasklist').upsert({
         tanggal: today,
         role: currentRole,
@@ -1980,10 +2007,25 @@
           }
         }
 
-        // Restore keterangan
+        // Restore keterangan + timestamp
         if (draft.keterangan) {
           const note = item.querySelector('.task-note');
           if (note) note.value = draft.keterangan;
+          // Tampilkan timestamp dari updated_at
+          if (draft.updated_at) {
+            const t = new Date(draft.updated_at);
+            const timeStr = String(t.getHours()).padStart(2,'0') + ':' + String(t.getMinutes()).padStart(2,'0');
+            const tsId = draft.task_id + '-ts-note';
+            let tsEl = document.getElementById(tsId);
+            const noteWrap = document.getElementById(draft.task_id + '-note');
+            if (!tsEl && noteWrap) {
+              tsEl = document.createElement('div');
+              tsEl.id = tsId;
+              tsEl.style.cssText = 'font-size:10px;color:var(--gray-400);margin-top:3px;font-weight:600;';
+              noteWrap.appendChild(tsEl);
+            }
+            if (tsEl) tsEl.textContent = '🕐 Diinput pukul ' + timeStr + ' WIB';
+          }
         }
       });
 
@@ -2391,6 +2433,7 @@
     taskFiles[taskId].push(...toAdd);
 
     renderFilePreview(taskId);
+    showTimestamp(taskId, 'upload');
 
     // Mark upload area as has-file
     const area = document.getElementById(taskId + '-upload-area');
@@ -2407,14 +2450,16 @@
   function renderFilePreview(taskId) {
     const list = document.getElementById(taskId + '-filelist');
     if (!list || !taskFiles[taskId]) return;
+    const time = getNowTime();
     list.innerHTML = taskFiles[taskId].map((f, i) => {
       const ext = f.name.split('.').pop().toUpperCase();
       const icon = ['JPG','JPEG','PNG','HEIC','WEBP'].includes(ext) ? '🖼️' : '📄';
-      return `<div class="file-preview-item">
-        ${icon} <span>${f.name}</span>
-        <button class="file-remove-btn" onclick="removeFile('${taskId}',${i})">✕</button>
-      </div>`;
-    }).join('');
+      return '<div class="file-preview-item">' +
+        icon + ' <span>' + f.name + '</span>' +
+        '<button class="file-remove-btn" onclick="removeFile(\'' + taskId + '\',' + i + ')">✕</button>' +
+        '</div>';
+    }).join('') +
+    '<div style="font-size:10px;color:var(--gray-400);margin-top:4px;font-weight:600;">🕐 Upload pukul ' + time + ' WIB</div>';
   }
 
   function removeFile(taskId, idx) {
@@ -4724,7 +4769,11 @@ const ROLE_TASKS = {
       document.querySelectorAll('#tasklist-content .task-note, #followup-list .task-note').forEach(textarea => {
         textarea.addEventListener('input', function() {
           const taskItem = this.closest('.task-item');
-          if (taskItem) autoSaveDraft(taskItem.id);
+          if (taskItem) {
+            autoSaveDraft(taskItem.id);
+            // Tampilkan/update timestamp saat ketik
+            showTimestamp(taskItem.id, 'note');
+          }
         });
       });
     }, 500);
