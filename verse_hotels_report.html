@@ -1685,14 +1685,15 @@
       </div>
 
       <!-- ACTIVITY PLAN SECTION — paling bawah sebelum Submit -->
-      <div class="task-category" style="margin:0 16px 8px;border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow-card);">
+      <div class="task-category" style="margin:0 16px 8px;border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow-card);" id="activity-plan-section">
         <div class="task-cat-header" style="background:linear-gradient(135deg,var(--navy),#0e2340);">
           <span style="font-size:16px;">📅</span>
           <span class="task-cat-title" style="color:white;">Activity Plan (Follow Up diluar Tasklist) For Tomorrow</span>
         </div>
         <div style="padding:14px 16px;background:white;">
           <div class="task-item" id="activity-plan" data-status="note_only" style="padding:4px 0;">
-            <div style="margin-bottom:12px;">
+            <!-- Unit Visit hanya untuk Corporate, HM tidak perlu -->
+            <div id="activity-plan-hotel-section">
               <label style="font-size:11px;font-weight:700;color:var(--gray-400);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:8px;">🏨 Unit Visit Tomorrow?</label>
               <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;" id="activity-plan-hotel-select">
                 <button onclick="event.stopPropagation();selectActivityHotel(this,'activity-plan')" data-hotel="Verse Lite Gajah Mada" class="activity-hotel-btn">Verse Lite</button>
@@ -1702,7 +1703,7 @@
               </div>
               <input type="hidden" id="activity-plan-hotel-val" value="">
             </div>
-            <div>
+            <div style="margin-top:12px;">
               <label style="font-size:11px;font-weight:700;color:var(--gray-400);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:6px;">📝 Follow Up List for Tomorrow</label>
               <div class="task-note-wrap show" id="activity-plan-note" style="margin-top:0;">
                 <textarea class="task-note" rows="4" placeholder="Wajib diisi — tuliskan pekerjaan di luar tasklist yang direncanakan esok hari..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
@@ -2493,6 +2494,12 @@
         currentHotel = 'Verse Lite Gajah Mada';
         document.getElementById('tasklist-hotel').textContent = currentHotel;
       }
+      // Sembunyikan Unit Visit untuk HM
+      const apHotelSection = document.getElementById('activity-plan-hotel-section');
+      if (apHotelSection) {
+        const isHM = currentRole && currentRole.startsWith('HM ');
+        apHotelSection.style.display = isHM ? 'none' : 'block';
+      }
       // Load draft dari Supabase
       setTimeout(() => loadDraft(currentRole, currentHotel), 400);
     }
@@ -2954,10 +2961,11 @@
     if (apItem) {
       const hotelVal = document.getElementById('activity-plan-hotel-val');
       const apNote = apItem.querySelector('.task-note');
+      const isHMRole = currentRole && currentRole.startsWith('HM ');
       let apError = false;
 
-      // Wajib pilih hotel
-      if (!hotelVal || !hotelVal.value) {
+      // Wajib pilih hotel — hanya untuk Corporate, bukan HM
+      if (!isHMRole && (!hotelVal || !hotelVal.value)) {
         const container = document.getElementById('activity-plan-hotel-select');
         if (container) {
           container.style.outline = '2px solid var(--red)';
@@ -5009,7 +5017,7 @@ const ROLE_TASKS = {
         </div>`
   },
   'HM Verse Lite': {
-    count: 20,
+    count: 19,
     html: `
         <div class="task-category">
           <div class="task-cat-header">
@@ -5440,8 +5448,7 @@ const ROLE_TASKS = {
             <span class="task-cat-title" style="color:white;">Room Inspection Check (5 Kamar)</span>
             <span class="task-cat-count" style="background:rgba(255,255,255,0.2);color:white;">0/5</span>
           </div>
-          <div style="padding:8px 0;" id="room-inspection-16">
-            
+          <div style="padding:8px 0;">
           <div class="task-item" id="room_16_1" data-status="note_only" style="margin-bottom:8px;border:1.5px solid var(--gray-200);border-radius:12px;padding:12px;">
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
               <span style="font-size:13px;font-weight:700;color:var(--navy);min-width:60px;">Kamar 1</span>
@@ -5450,9 +5457,9 @@ const ROLE_TASKS = {
                 onclick="event.stopPropagation()" oninput="autoSaveDraft(\'room_16_1\')">
             </div>
             <div style="display:flex;gap:8px;margin-bottom:8px;">
-              <button class="status-btn" onclick="event.stopPropagation();setRoomStatus(\'room_16_1\',\'done\')" id="room_16_1-btn-done"
+              <button onclick="event.stopPropagation();setRoomStatus(\'room_16_1\',\'done\')" id="room_16_1-btn-done"
                 style="flex:1;padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;background:var(--gray-50);cursor:pointer;">✓ Sudah</button>
-              <button class="status-btn" onclick="event.stopPropagation();setRoomStatus(\'room_16_1\',\'not\')" id="room_16_1-btn-not"
+              <button onclick="event.stopPropagation();setRoomStatus(\'room_16_1\',\'not\')" id="room_16_1-btn-not"
                 style="flex:1;padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;background:var(--gray-50);cursor:pointer;">✗ Tidak Dikerjakan</button>
             </div>
             <div class="task-upload-wrap show" id="room_16_1-upload" style="display:block !important;">
@@ -5478,9 +5485,9 @@ const ROLE_TASKS = {
                 onclick="event.stopPropagation()" oninput="autoSaveDraft(\'room_16_2\')">
             </div>
             <div style="display:flex;gap:8px;margin-bottom:8px;">
-              <button class="status-btn" onclick="event.stopPropagation();setRoomStatus(\'room_16_2\',\'done\')" id="room_16_2-btn-done"
+              <button onclick="event.stopPropagation();setRoomStatus(\'room_16_2\',\'done\')" id="room_16_2-btn-done"
                 style="flex:1;padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;background:var(--gray-50);cursor:pointer;">✓ Sudah</button>
-              <button class="status-btn" onclick="event.stopPropagation();setRoomStatus(\'room_16_2\',\'not\')" id="room_16_2-btn-not"
+              <button onclick="event.stopPropagation();setRoomStatus(\'room_16_2\',\'not\')" id="room_16_2-btn-not"
                 style="flex:1;padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;background:var(--gray-50);cursor:pointer;">✗ Tidak Dikerjakan</button>
             </div>
             <div class="task-upload-wrap show" id="room_16_2-upload" style="display:block !important;">
@@ -5506,9 +5513,9 @@ const ROLE_TASKS = {
                 onclick="event.stopPropagation()" oninput="autoSaveDraft(\'room_16_3\')">
             </div>
             <div style="display:flex;gap:8px;margin-bottom:8px;">
-              <button class="status-btn" onclick="event.stopPropagation();setRoomStatus(\'room_16_3\',\'done\')" id="room_16_3-btn-done"
+              <button onclick="event.stopPropagation();setRoomStatus(\'room_16_3\',\'done\')" id="room_16_3-btn-done"
                 style="flex:1;padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;background:var(--gray-50);cursor:pointer;">✓ Sudah</button>
-              <button class="status-btn" onclick="event.stopPropagation();setRoomStatus(\'room_16_3\',\'not\')" id="room_16_3-btn-not"
+              <button onclick="event.stopPropagation();setRoomStatus(\'room_16_3\',\'not\')" id="room_16_3-btn-not"
                 style="flex:1;padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;background:var(--gray-50);cursor:pointer;">✗ Tidak Dikerjakan</button>
             </div>
             <div class="task-upload-wrap show" id="room_16_3-upload" style="display:block !important;">
@@ -5534,9 +5541,9 @@ const ROLE_TASKS = {
                 onclick="event.stopPropagation()" oninput="autoSaveDraft(\'room_16_4\')">
             </div>
             <div style="display:flex;gap:8px;margin-bottom:8px;">
-              <button class="status-btn" onclick="event.stopPropagation();setRoomStatus(\'room_16_4\',\'done\')" id="room_16_4-btn-done"
+              <button onclick="event.stopPropagation();setRoomStatus(\'room_16_4\',\'done\')" id="room_16_4-btn-done"
                 style="flex:1;padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;background:var(--gray-50);cursor:pointer;">✓ Sudah</button>
-              <button class="status-btn" onclick="event.stopPropagation();setRoomStatus(\'room_16_4\',\'not\')" id="room_16_4-btn-not"
+              <button onclick="event.stopPropagation();setRoomStatus(\'room_16_4\',\'not\')" id="room_16_4-btn-not"
                 style="flex:1;padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;background:var(--gray-50);cursor:pointer;">✗ Tidak Dikerjakan</button>
             </div>
             <div class="task-upload-wrap show" id="room_16_4-upload" style="display:block !important;">
@@ -5562,9 +5569,9 @@ const ROLE_TASKS = {
                 onclick="event.stopPropagation()" oninput="autoSaveDraft(\'room_16_5\')">
             </div>
             <div style="display:flex;gap:8px;margin-bottom:8px;">
-              <button class="status-btn" onclick="event.stopPropagation();setRoomStatus(\'room_16_5\',\'done\')" id="room_16_5-btn-done"
+              <button onclick="event.stopPropagation();setRoomStatus(\'room_16_5\',\'done\')" id="room_16_5-btn-done"
                 style="flex:1;padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;background:var(--gray-50);cursor:pointer;">✓ Sudah</button>
-              <button class="status-btn" onclick="event.stopPropagation();setRoomStatus(\'room_16_5\',\'not\')" id="room_16_5-btn-not"
+              <button onclick="event.stopPropagation();setRoomStatus(\'room_16_5\',\'not\')" id="room_16_5-btn-not"
                 style="flex:1;padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;background:var(--gray-50);cursor:pointer;">✗ Tidak Dikerjakan</button>
             </div>
             <div class="task-upload-wrap show" id="room_16_5-upload" style="display:block !important;">
@@ -5674,28 +5681,12 @@ const ROLE_TASKS = {
             </div>
             <div class="task-note-wrap" id="task_19-note">
               <textarea class="task-note" rows="2" placeholder="Keterangan (opsional)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
-            </div>
-          </div>
-        </div>
-        <div class="task-category" style="margin:0 16px 8px;border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow-card);">
-          <div class="task-cat-header" style="background:linear-gradient(135deg,var(--navy),#0e2340);">
-            <span style="font-size:16px;">📅</span>
-            <span class="task-cat-title" style="color:white;">Activity Plan (Follow Up diluar Tasklist) For Tomorrow</span>
-          </div>
-          <div style="padding:14px 16px;background:white;">
-            <div class="task-item" id="task_20" data-status="note_only" style="padding:4px 0;">
-              <div>
-                <label style="font-size:11px;font-weight:700;color:var(--gray-400);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:6px;">📝 Follow Up List for Tomorrow</label>
-                <div class="task-note-wrap show" id="task_20-note" style="margin-top:0;">
-                  <textarea class="task-note" rows="4" placeholder="Wajib diisi — tuliskan rencana pekerjaan esok hari..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
-                </div>
-              </div>
             </div>
           </div>
         </div>`
   },
   'HM Verse Luxe': {
-    count: 20,
+    count: 19,
     html: `
         <div class="task-category">
           <div class="task-cat-header">
@@ -6126,8 +6117,7 @@ const ROLE_TASKS = {
             <span class="task-cat-title" style="color:white;">Room Inspection Check (5 Kamar)</span>
             <span class="task-cat-count" style="background:rgba(255,255,255,0.2);color:white;">0/5</span>
           </div>
-          <div style="padding:8px 0;" id="room-inspection-16">
-            
+          <div style="padding:8px 0;">
           <div class="task-item" id="room_16_1" data-status="note_only" style="margin-bottom:8px;border:1.5px solid var(--gray-200);border-radius:12px;padding:12px;">
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
               <span style="font-size:13px;font-weight:700;color:var(--navy);min-width:60px;">Kamar 1</span>
@@ -6136,9 +6126,9 @@ const ROLE_TASKS = {
                 onclick="event.stopPropagation()" oninput="autoSaveDraft(\'room_16_1\')">
             </div>
             <div style="display:flex;gap:8px;margin-bottom:8px;">
-              <button class="status-btn" onclick="event.stopPropagation();setRoomStatus(\'room_16_1\',\'done\')" id="room_16_1-btn-done"
+              <button onclick="event.stopPropagation();setRoomStatus(\'room_16_1\',\'done\')" id="room_16_1-btn-done"
                 style="flex:1;padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;background:var(--gray-50);cursor:pointer;">✓ Sudah</button>
-              <button class="status-btn" onclick="event.stopPropagation();setRoomStatus(\'room_16_1\',\'not\')" id="room_16_1-btn-not"
+              <button onclick="event.stopPropagation();setRoomStatus(\'room_16_1\',\'not\')" id="room_16_1-btn-not"
                 style="flex:1;padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;background:var(--gray-50);cursor:pointer;">✗ Tidak Dikerjakan</button>
             </div>
             <div class="task-upload-wrap show" id="room_16_1-upload" style="display:block !important;">
@@ -6164,9 +6154,9 @@ const ROLE_TASKS = {
                 onclick="event.stopPropagation()" oninput="autoSaveDraft(\'room_16_2\')">
             </div>
             <div style="display:flex;gap:8px;margin-bottom:8px;">
-              <button class="status-btn" onclick="event.stopPropagation();setRoomStatus(\'room_16_2\',\'done\')" id="room_16_2-btn-done"
+              <button onclick="event.stopPropagation();setRoomStatus(\'room_16_2\',\'done\')" id="room_16_2-btn-done"
                 style="flex:1;padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;background:var(--gray-50);cursor:pointer;">✓ Sudah</button>
-              <button class="status-btn" onclick="event.stopPropagation();setRoomStatus(\'room_16_2\',\'not\')" id="room_16_2-btn-not"
+              <button onclick="event.stopPropagation();setRoomStatus(\'room_16_2\',\'not\')" id="room_16_2-btn-not"
                 style="flex:1;padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;background:var(--gray-50);cursor:pointer;">✗ Tidak Dikerjakan</button>
             </div>
             <div class="task-upload-wrap show" id="room_16_2-upload" style="display:block !important;">
@@ -6192,9 +6182,9 @@ const ROLE_TASKS = {
                 onclick="event.stopPropagation()" oninput="autoSaveDraft(\'room_16_3\')">
             </div>
             <div style="display:flex;gap:8px;margin-bottom:8px;">
-              <button class="status-btn" onclick="event.stopPropagation();setRoomStatus(\'room_16_3\',\'done\')" id="room_16_3-btn-done"
+              <button onclick="event.stopPropagation();setRoomStatus(\'room_16_3\',\'done\')" id="room_16_3-btn-done"
                 style="flex:1;padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;background:var(--gray-50);cursor:pointer;">✓ Sudah</button>
-              <button class="status-btn" onclick="event.stopPropagation();setRoomStatus(\'room_16_3\',\'not\')" id="room_16_3-btn-not"
+              <button onclick="event.stopPropagation();setRoomStatus(\'room_16_3\',\'not\')" id="room_16_3-btn-not"
                 style="flex:1;padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;background:var(--gray-50);cursor:pointer;">✗ Tidak Dikerjakan</button>
             </div>
             <div class="task-upload-wrap show" id="room_16_3-upload" style="display:block !important;">
@@ -6220,9 +6210,9 @@ const ROLE_TASKS = {
                 onclick="event.stopPropagation()" oninput="autoSaveDraft(\'room_16_4\')">
             </div>
             <div style="display:flex;gap:8px;margin-bottom:8px;">
-              <button class="status-btn" onclick="event.stopPropagation();setRoomStatus(\'room_16_4\',\'done\')" id="room_16_4-btn-done"
+              <button onclick="event.stopPropagation();setRoomStatus(\'room_16_4\',\'done\')" id="room_16_4-btn-done"
                 style="flex:1;padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;background:var(--gray-50);cursor:pointer;">✓ Sudah</button>
-              <button class="status-btn" onclick="event.stopPropagation();setRoomStatus(\'room_16_4\',\'not\')" id="room_16_4-btn-not"
+              <button onclick="event.stopPropagation();setRoomStatus(\'room_16_4\',\'not\')" id="room_16_4-btn-not"
                 style="flex:1;padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;background:var(--gray-50);cursor:pointer;">✗ Tidak Dikerjakan</button>
             </div>
             <div class="task-upload-wrap show" id="room_16_4-upload" style="display:block !important;">
@@ -6248,9 +6238,9 @@ const ROLE_TASKS = {
                 onclick="event.stopPropagation()" oninput="autoSaveDraft(\'room_16_5\')">
             </div>
             <div style="display:flex;gap:8px;margin-bottom:8px;">
-              <button class="status-btn" onclick="event.stopPropagation();setRoomStatus(\'room_16_5\',\'done\')" id="room_16_5-btn-done"
+              <button onclick="event.stopPropagation();setRoomStatus(\'room_16_5\',\'done\')" id="room_16_5-btn-done"
                 style="flex:1;padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;background:var(--gray-50);cursor:pointer;">✓ Sudah</button>
-              <button class="status-btn" onclick="event.stopPropagation();setRoomStatus(\'room_16_5\',\'not\')" id="room_16_5-btn-not"
+              <button onclick="event.stopPropagation();setRoomStatus(\'room_16_5\',\'not\')" id="room_16_5-btn-not"
                 style="flex:1;padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;background:var(--gray-50);cursor:pointer;">✗ Tidak Dikerjakan</button>
             </div>
             <div class="task-upload-wrap show" id="room_16_5-upload" style="display:block !important;">
@@ -6360,28 +6350,12 @@ const ROLE_TASKS = {
             </div>
             <div class="task-note-wrap" id="task_19-note">
               <textarea class="task-note" rows="2" placeholder="Keterangan (opsional)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
-            </div>
-          </div>
-        </div>
-        <div class="task-category" style="margin:0 16px 8px;border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow-card);">
-          <div class="task-cat-header" style="background:linear-gradient(135deg,var(--navy),#0e2340);">
-            <span style="font-size:16px;">📅</span>
-            <span class="task-cat-title" style="color:white;">Activity Plan (Follow Up diluar Tasklist) For Tomorrow</span>
-          </div>
-          <div style="padding:14px 16px;background:white;">
-            <div class="task-item" id="task_20" data-status="note_only" style="padding:4px 0;">
-              <div>
-                <label style="font-size:11px;font-weight:700;color:var(--gray-400);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:6px;">📝 Follow Up List for Tomorrow</label>
-                <div class="task-note-wrap show" id="task_20-note" style="margin-top:0;">
-                  <textarea class="task-note" rows="4" placeholder="Wajib diisi — tuliskan rencana pekerjaan esok hari..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
-                </div>
-              </div>
             </div>
           </div>
         </div>`
   },
   'HM Verse Cirebon': {
-    count: 20,
+    count: 19,
     html: `
         <div class="task-category">
           <div class="task-cat-header">
@@ -6812,8 +6786,7 @@ const ROLE_TASKS = {
             <span class="task-cat-title" style="color:white;">Room Inspection Check (5 Kamar)</span>
             <span class="task-cat-count" style="background:rgba(255,255,255,0.2);color:white;">0/5</span>
           </div>
-          <div style="padding:8px 0;" id="room-inspection-16">
-            
+          <div style="padding:8px 0;">
           <div class="task-item" id="room_16_1" data-status="note_only" style="margin-bottom:8px;border:1.5px solid var(--gray-200);border-radius:12px;padding:12px;">
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
               <span style="font-size:13px;font-weight:700;color:var(--navy);min-width:60px;">Kamar 1</span>
@@ -6822,9 +6795,9 @@ const ROLE_TASKS = {
                 onclick="event.stopPropagation()" oninput="autoSaveDraft(\'room_16_1\')">
             </div>
             <div style="display:flex;gap:8px;margin-bottom:8px;">
-              <button class="status-btn" onclick="event.stopPropagation();setRoomStatus(\'room_16_1\',\'done\')" id="room_16_1-btn-done"
+              <button onclick="event.stopPropagation();setRoomStatus(\'room_16_1\',\'done\')" id="room_16_1-btn-done"
                 style="flex:1;padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;background:var(--gray-50);cursor:pointer;">✓ Sudah</button>
-              <button class="status-btn" onclick="event.stopPropagation();setRoomStatus(\'room_16_1\',\'not\')" id="room_16_1-btn-not"
+              <button onclick="event.stopPropagation();setRoomStatus(\'room_16_1\',\'not\')" id="room_16_1-btn-not"
                 style="flex:1;padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;background:var(--gray-50);cursor:pointer;">✗ Tidak Dikerjakan</button>
             </div>
             <div class="task-upload-wrap show" id="room_16_1-upload" style="display:block !important;">
@@ -6850,9 +6823,9 @@ const ROLE_TASKS = {
                 onclick="event.stopPropagation()" oninput="autoSaveDraft(\'room_16_2\')">
             </div>
             <div style="display:flex;gap:8px;margin-bottom:8px;">
-              <button class="status-btn" onclick="event.stopPropagation();setRoomStatus(\'room_16_2\',\'done\')" id="room_16_2-btn-done"
+              <button onclick="event.stopPropagation();setRoomStatus(\'room_16_2\',\'done\')" id="room_16_2-btn-done"
                 style="flex:1;padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;background:var(--gray-50);cursor:pointer;">✓ Sudah</button>
-              <button class="status-btn" onclick="event.stopPropagation();setRoomStatus(\'room_16_2\',\'not\')" id="room_16_2-btn-not"
+              <button onclick="event.stopPropagation();setRoomStatus(\'room_16_2\',\'not\')" id="room_16_2-btn-not"
                 style="flex:1;padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;background:var(--gray-50);cursor:pointer;">✗ Tidak Dikerjakan</button>
             </div>
             <div class="task-upload-wrap show" id="room_16_2-upload" style="display:block !important;">
@@ -6878,9 +6851,9 @@ const ROLE_TASKS = {
                 onclick="event.stopPropagation()" oninput="autoSaveDraft(\'room_16_3\')">
             </div>
             <div style="display:flex;gap:8px;margin-bottom:8px;">
-              <button class="status-btn" onclick="event.stopPropagation();setRoomStatus(\'room_16_3\',\'done\')" id="room_16_3-btn-done"
+              <button onclick="event.stopPropagation();setRoomStatus(\'room_16_3\',\'done\')" id="room_16_3-btn-done"
                 style="flex:1;padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;background:var(--gray-50);cursor:pointer;">✓ Sudah</button>
-              <button class="status-btn" onclick="event.stopPropagation();setRoomStatus(\'room_16_3\',\'not\')" id="room_16_3-btn-not"
+              <button onclick="event.stopPropagation();setRoomStatus(\'room_16_3\',\'not\')" id="room_16_3-btn-not"
                 style="flex:1;padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;background:var(--gray-50);cursor:pointer;">✗ Tidak Dikerjakan</button>
             </div>
             <div class="task-upload-wrap show" id="room_16_3-upload" style="display:block !important;">
@@ -6906,9 +6879,9 @@ const ROLE_TASKS = {
                 onclick="event.stopPropagation()" oninput="autoSaveDraft(\'room_16_4\')">
             </div>
             <div style="display:flex;gap:8px;margin-bottom:8px;">
-              <button class="status-btn" onclick="event.stopPropagation();setRoomStatus(\'room_16_4\',\'done\')" id="room_16_4-btn-done"
+              <button onclick="event.stopPropagation();setRoomStatus(\'room_16_4\',\'done\')" id="room_16_4-btn-done"
                 style="flex:1;padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;background:var(--gray-50);cursor:pointer;">✓ Sudah</button>
-              <button class="status-btn" onclick="event.stopPropagation();setRoomStatus(\'room_16_4\',\'not\')" id="room_16_4-btn-not"
+              <button onclick="event.stopPropagation();setRoomStatus(\'room_16_4\',\'not\')" id="room_16_4-btn-not"
                 style="flex:1;padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;background:var(--gray-50);cursor:pointer;">✗ Tidak Dikerjakan</button>
             </div>
             <div class="task-upload-wrap show" id="room_16_4-upload" style="display:block !important;">
@@ -6934,9 +6907,9 @@ const ROLE_TASKS = {
                 onclick="event.stopPropagation()" oninput="autoSaveDraft(\'room_16_5\')">
             </div>
             <div style="display:flex;gap:8px;margin-bottom:8px;">
-              <button class="status-btn" onclick="event.stopPropagation();setRoomStatus(\'room_16_5\',\'done\')" id="room_16_5-btn-done"
+              <button onclick="event.stopPropagation();setRoomStatus(\'room_16_5\',\'done\')" id="room_16_5-btn-done"
                 style="flex:1;padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;background:var(--gray-50);cursor:pointer;">✓ Sudah</button>
-              <button class="status-btn" onclick="event.stopPropagation();setRoomStatus(\'room_16_5\',\'not\')" id="room_16_5-btn-not"
+              <button onclick="event.stopPropagation();setRoomStatus(\'room_16_5\',\'not\')" id="room_16_5-btn-not"
                 style="flex:1;padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;background:var(--gray-50);cursor:pointer;">✗ Tidak Dikerjakan</button>
             </div>
             <div class="task-upload-wrap show" id="room_16_5-upload" style="display:block !important;">
@@ -7046,28 +7019,12 @@ const ROLE_TASKS = {
             </div>
             <div class="task-note-wrap" id="task_19-note">
               <textarea class="task-note" rows="2" placeholder="Keterangan (opsional)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
-            </div>
-          </div>
-        </div>
-        <div class="task-category" style="margin:0 16px 8px;border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow-card);">
-          <div class="task-cat-header" style="background:linear-gradient(135deg,var(--navy),#0e2340);">
-            <span style="font-size:16px;">📅</span>
-            <span class="task-cat-title" style="color:white;">Activity Plan (Follow Up diluar Tasklist) For Tomorrow</span>
-          </div>
-          <div style="padding:14px 16px;background:white;">
-            <div class="task-item" id="task_20" data-status="note_only" style="padding:4px 0;">
-              <div>
-                <label style="font-size:11px;font-weight:700;color:var(--gray-400);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:6px;">📝 Follow Up List for Tomorrow</label>
-                <div class="task-note-wrap show" id="task_20-note" style="margin-top:0;">
-                  <textarea class="task-note" rows="4" placeholder="Wajib diisi — tuliskan rencana pekerjaan esok hari..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
-                </div>
-              </div>
             </div>
           </div>
         </div>`
   },
   'HM Oak Tree': {
-    count: 20,
+    count: 19,
     html: `
         <div class="task-category">
           <div class="task-cat-header">
@@ -7498,8 +7455,7 @@ const ROLE_TASKS = {
             <span class="task-cat-title" style="color:white;">Room Inspection Check (5 Kamar)</span>
             <span class="task-cat-count" style="background:rgba(255,255,255,0.2);color:white;">0/5</span>
           </div>
-          <div style="padding:8px 0;" id="room-inspection-16">
-            
+          <div style="padding:8px 0;">
           <div class="task-item" id="room_16_1" data-status="note_only" style="margin-bottom:8px;border:1.5px solid var(--gray-200);border-radius:12px;padding:12px;">
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
               <span style="font-size:13px;font-weight:700;color:var(--navy);min-width:60px;">Kamar 1</span>
@@ -7508,9 +7464,9 @@ const ROLE_TASKS = {
                 onclick="event.stopPropagation()" oninput="autoSaveDraft(\'room_16_1\')">
             </div>
             <div style="display:flex;gap:8px;margin-bottom:8px;">
-              <button class="status-btn" onclick="event.stopPropagation();setRoomStatus(\'room_16_1\',\'done\')" id="room_16_1-btn-done"
+              <button onclick="event.stopPropagation();setRoomStatus(\'room_16_1\',\'done\')" id="room_16_1-btn-done"
                 style="flex:1;padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;background:var(--gray-50);cursor:pointer;">✓ Sudah</button>
-              <button class="status-btn" onclick="event.stopPropagation();setRoomStatus(\'room_16_1\',\'not\')" id="room_16_1-btn-not"
+              <button onclick="event.stopPropagation();setRoomStatus(\'room_16_1\',\'not\')" id="room_16_1-btn-not"
                 style="flex:1;padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;background:var(--gray-50);cursor:pointer;">✗ Tidak Dikerjakan</button>
             </div>
             <div class="task-upload-wrap show" id="room_16_1-upload" style="display:block !important;">
@@ -7536,9 +7492,9 @@ const ROLE_TASKS = {
                 onclick="event.stopPropagation()" oninput="autoSaveDraft(\'room_16_2\')">
             </div>
             <div style="display:flex;gap:8px;margin-bottom:8px;">
-              <button class="status-btn" onclick="event.stopPropagation();setRoomStatus(\'room_16_2\',\'done\')" id="room_16_2-btn-done"
+              <button onclick="event.stopPropagation();setRoomStatus(\'room_16_2\',\'done\')" id="room_16_2-btn-done"
                 style="flex:1;padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;background:var(--gray-50);cursor:pointer;">✓ Sudah</button>
-              <button class="status-btn" onclick="event.stopPropagation();setRoomStatus(\'room_16_2\',\'not\')" id="room_16_2-btn-not"
+              <button onclick="event.stopPropagation();setRoomStatus(\'room_16_2\',\'not\')" id="room_16_2-btn-not"
                 style="flex:1;padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;background:var(--gray-50);cursor:pointer;">✗ Tidak Dikerjakan</button>
             </div>
             <div class="task-upload-wrap show" id="room_16_2-upload" style="display:block !important;">
@@ -7564,9 +7520,9 @@ const ROLE_TASKS = {
                 onclick="event.stopPropagation()" oninput="autoSaveDraft(\'room_16_3\')">
             </div>
             <div style="display:flex;gap:8px;margin-bottom:8px;">
-              <button class="status-btn" onclick="event.stopPropagation();setRoomStatus(\'room_16_3\',\'done\')" id="room_16_3-btn-done"
+              <button onclick="event.stopPropagation();setRoomStatus(\'room_16_3\',\'done\')" id="room_16_3-btn-done"
                 style="flex:1;padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;background:var(--gray-50);cursor:pointer;">✓ Sudah</button>
-              <button class="status-btn" onclick="event.stopPropagation();setRoomStatus(\'room_16_3\',\'not\')" id="room_16_3-btn-not"
+              <button onclick="event.stopPropagation();setRoomStatus(\'room_16_3\',\'not\')" id="room_16_3-btn-not"
                 style="flex:1;padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;background:var(--gray-50);cursor:pointer;">✗ Tidak Dikerjakan</button>
             </div>
             <div class="task-upload-wrap show" id="room_16_3-upload" style="display:block !important;">
@@ -7592,9 +7548,9 @@ const ROLE_TASKS = {
                 onclick="event.stopPropagation()" oninput="autoSaveDraft(\'room_16_4\')">
             </div>
             <div style="display:flex;gap:8px;margin-bottom:8px;">
-              <button class="status-btn" onclick="event.stopPropagation();setRoomStatus(\'room_16_4\',\'done\')" id="room_16_4-btn-done"
+              <button onclick="event.stopPropagation();setRoomStatus(\'room_16_4\',\'done\')" id="room_16_4-btn-done"
                 style="flex:1;padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;background:var(--gray-50);cursor:pointer;">✓ Sudah</button>
-              <button class="status-btn" onclick="event.stopPropagation();setRoomStatus(\'room_16_4\',\'not\')" id="room_16_4-btn-not"
+              <button onclick="event.stopPropagation();setRoomStatus(\'room_16_4\',\'not\')" id="room_16_4-btn-not"
                 style="flex:1;padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;background:var(--gray-50);cursor:pointer;">✗ Tidak Dikerjakan</button>
             </div>
             <div class="task-upload-wrap show" id="room_16_4-upload" style="display:block !important;">
@@ -7620,9 +7576,9 @@ const ROLE_TASKS = {
                 onclick="event.stopPropagation()" oninput="autoSaveDraft(\'room_16_5\')">
             </div>
             <div style="display:flex;gap:8px;margin-bottom:8px;">
-              <button class="status-btn" onclick="event.stopPropagation();setRoomStatus(\'room_16_5\',\'done\')" id="room_16_5-btn-done"
+              <button onclick="event.stopPropagation();setRoomStatus(\'room_16_5\',\'done\')" id="room_16_5-btn-done"
                 style="flex:1;padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;background:var(--gray-50);cursor:pointer;">✓ Sudah</button>
-              <button class="status-btn" onclick="event.stopPropagation();setRoomStatus(\'room_16_5\',\'not\')" id="room_16_5-btn-not"
+              <button onclick="event.stopPropagation();setRoomStatus(\'room_16_5\',\'not\')" id="room_16_5-btn-not"
                 style="flex:1;padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;background:var(--gray-50);cursor:pointer;">✗ Tidak Dikerjakan</button>
             </div>
             <div class="task-upload-wrap show" id="room_16_5-upload" style="display:block !important;">
@@ -7732,22 +7688,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-note-wrap" id="task_19-note">
               <textarea class="task-note" rows="2" placeholder="Keterangan (opsional)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
-            </div>
-          </div>
-        </div>
-        <div class="task-category" style="margin:0 16px 8px;border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow-card);">
-          <div class="task-cat-header" style="background:linear-gradient(135deg,var(--navy),#0e2340);">
-            <span style="font-size:16px;">📅</span>
-            <span class="task-cat-title" style="color:white;">Activity Plan (Follow Up diluar Tasklist) For Tomorrow</span>
-          </div>
-          <div style="padding:14px 16px;background:white;">
-            <div class="task-item" id="task_20" data-status="note_only" style="padding:4px 0;">
-              <div>
-                <label style="font-size:11px;font-weight:700;color:var(--gray-400);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:6px;">📝 Follow Up List for Tomorrow</label>
-                <div class="task-note-wrap show" id="task_20-note" style="margin-top:0;">
-                  <textarea class="task-note" rows="4" placeholder="Wajib diisi — tuliskan rencana pekerjaan esok hari..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
-                </div>
-              </div>
             </div>
           </div>
         </div>`
@@ -7824,7 +7764,7 @@ const ROLE_TASKS = {
             <button class="status-btn" onclick="setStatus(event,'fu${i}','done')">✓ Sudah</button>
             <button class="status-btn" onclick="setStatus(event,'fu${i}','not')">✗ Tidak Ada</button>
           </div>
-          <div class="task-upload-wrap" id="fu${i}-upload">
+          <div class="task-upload-wrap" id="fu${i}-upload" style="display:none;">
             <div class="task-upload-area" id="fu${i}-upload-area">
               <input type="file" accept="image/*,.pdf,.doc,.docx" multiple onchange="handleFileUpload(this,'fu${i}')">
               <span class="task-upload-icon">📎</span>
