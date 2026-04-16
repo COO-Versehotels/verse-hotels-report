@@ -1988,7 +1988,18 @@
   // ===== SUPABASE SETUP =====
   const SUPA_URL = 'https://hgbqecsmhrzlavsjwlwq.supabase.co';
   const SUPA_KEY = 'sb_publishable_KeAmOu9ex8r1PDRI1MRMsQ_40uiEkbM';
-  const supa = supabase.createClient(SUPA_URL, SUPA_KEY);
+  const supa = supabase.createClient(SUPA_URL, SUPA_KEY, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+    },
+    global: {
+      headers: {
+        'apikey': SUPA_KEY,
+        'Authorization': 'Bearer ' + SUPA_KEY
+      }
+    }
+  });
 
   // ===== KOMPRESI FOTO =====
   async function compressImage(file, maxSizeKB = 300, maxWidth = 1280) {
@@ -2086,17 +2097,25 @@
     const fileUrls = taskFileUrls[taskId] ? JSON.stringify(taskFileUrls[taskId]) : null;
 
     try {
-      const timeNow = getNowTime();
-      await supa.from('draft_tasklist').upsert({
-        tanggal: today,
-        role: currentRole,
-        hotel: currentHotel,
-        task_id: taskId,
-        status: status,
-        keterangan: keterangan,
-        file_urls: fileUrls,
-        updated_at: new Date().toISOString()
-      }, { onConflict: 'tanggal,role,hotel,task_id' });
+      await fetch(SUPA_URL + '/rest/v1/draft_tasklist', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': SUPA_KEY,
+          'Authorization': 'Bearer ' + SUPA_KEY,
+          'Prefer': 'resolution=merge-duplicates'
+        },
+        body: JSON.stringify({
+          tanggal: today,
+          role: currentRole,
+          hotel: currentHotel,
+          task_id: taskId,
+          status: status,
+          keterangan: keterangan,
+          file_urls: fileUrls,
+          updated_at: new Date().toISOString()
+        })
+      });
     } catch(e) { console.error('Auto-save error:', e); }
   }
 
@@ -2105,13 +2124,13 @@
     if (!role || !hotel) return;
     const today = new Date().toISOString().split('T')[0];
     try {
-      const { data, error } = await supa.from('draft_tasklist')
-        .select('*')
-        .eq('tanggal', today)
-        .eq('role', role)
-        .eq('hotel', hotel);
+      const res = await fetch(
+        SUPA_URL + '/rest/v1/draft_tasklist?tanggal=eq.' + today + '&role=eq.' + encodeURIComponent(role) + '&hotel=eq.' + encodeURIComponent(hotel) + '&select=*',
+        { headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY } }
+      );
+      const data = res.ok ? await res.json() : [];
 
-      if (error || !data || data.length === 0) return;
+      if (!data || data.length === 0) return;
 
       // Restore setiap task
       data.forEach(draft => {
@@ -2214,23 +2233,42 @@
   // Simpan laporan ke Supabase
   async function saveToSupabase(role, hotel, taskDone, taskTotal, taskProgress, taskNot, pct, fuCount, fileCount) {
     try {
-      const { data, error } = await supa.from('laporan').upsert({
-        tanggal: new Date().toISOString().split('T')[0],
-        role, hotel, task_done: taskDone, task_total: taskTotal,
-        task_progress: taskProgress, task_not: taskNot,
-        pct, fu_count: fuCount, file_count: fileCount,
+      const today = new Date().toISOString().split('T')[0];
+      const payload = {
+        tanggal: today,
+        role, hotel,
+        task_done: taskDone,
+        task_total: taskTotal,
+        task_progress: taskProgress,
+        task_not: taskNot,
+        pct, fu_count: fuCount,
+        file_count: fileCount,
         submitted_at: new Date().toISOString()
-      }, { onConflict: 'tanggal,role,hotel' });
-      if (error) {
-        console.error('Supabase error:', error);
-        showToast('❌ Gagal simpan ke database: ' + error.message);
+      };
+
+      // Gunakan fetch langsung — lebih reliable
+      const res = await fetch(SUPA_URL + '/rest/v1/laporan', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': SUPA_KEY,
+          'Authorization': 'Bearer ' + SUPA_KEY,
+          'Prefer': 'resolution=merge-duplicates'
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) {
+        const errText = await res.text();
+        console.error('Save error:', errText);
+        showToast('❌ Gagal simpan: ' + errText.substring(0,50));
         return false;
       }
-      console.log('✅ Laporan tersimpan ke database!');
+      console.log('✅ Laporan tersimpan!');
       return true;
     } catch(e) {
-      console.error('Save error:', e);
-      showToast('❌ Error koneksi database');
+      console.error('Save exception:', e);
+      showToast('❌ Error koneksi: ' + e.message);
       return false;
     }
   }
@@ -2239,11 +2277,14 @@
   async function loadFromSupabase() {
     try {
       const today = new Date().toISOString().split('T')[0];
-      const { data, error } = await supa.from('laporan')
-        .select('*')
-        .eq('tanggal', today);
-      if (error) { console.error('Load error:', error); return []; }
-      return data || [];
+      const res = await fetch(SUPA_URL + '/rest/v1/laporan?tanggal=eq.' + today + '&select=*', {
+        headers: {
+          'apikey': SUPA_KEY,
+          'Authorization': 'Bearer ' + SUPA_KEY
+        }
+      });
+      if (!res.ok) { console.error('Load error:', res.status); return []; }
+      return await res.json();
     } catch(e) { console.error('Load error:', e); return []; }
   }
 
