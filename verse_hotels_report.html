@@ -2143,8 +2143,12 @@
 
   // Load draft dari Supabase saat masuk tasklist
   async function loadDraft(role, hotel) {
-    if (!role || !hotel) return;
+    if (!role || !hotel) {
+      console.log('loadDraft skipped - role:', role, 'hotel:', hotel);
+      return;
+    }
     const today = new Date().toISOString().split('T')[0];
+    console.log('loadDraft called for:', role, hotel, today);
     try {
       const res = await fetch(
         SUPA_URL + '/rest/v1/draft_tasklist?tanggal=eq.' + today +
@@ -2510,23 +2514,40 @@
 
     // Render tasklist when entering — always fresh
     if (screen === 'tasklist') {
-      tasklistRendered = false; // Force re-render setiap masuk tasklist
+      tasklistRendered = false;
       renderTasklist();
-      if (!currentHotel) {
+
+      // Pastikan hotel sudah diset
+      const hmHotelMap2 = {
+        'HM Verse Lite': 'Verse Lite Gajah Mada',
+        'HM Verse Luxe': 'Verse Luxe Wahid Hasyim',
+        'HM Verse Cirebon': 'Verse Hotel Cirebon',
+        'HM Oak Tree': 'Oak Tree Mahakam Blok M',
+      };
+      if (hmHotelMap2[currentRole]) {
+        currentHotel = hmHotelMap2[currentRole];
+      } else if (!currentHotel) {
         currentHotel = 'Verse Lite Gajah Mada';
-        document.getElementById('tasklist-hotel').textContent = currentHotel;
       }
+      document.getElementById('tasklist-hotel').textContent = currentHotel;
+
       // Sembunyikan Unit Visit untuk HM
       const apHotelSection = document.getElementById('activity-plan-hotel-section');
       if (apHotelSection) {
         const isHM = currentRole && currentRole.startsWith('HM ');
         apHotelSection.style.display = isHM ? 'none' : 'block';
       }
-      // Clear file cache lalu load draft fresh dari Supabase
+
+      // Clear file cache lalu load draft fresh
       Object.keys(taskFiles).forEach(k => delete taskFiles[k]);
       Object.keys(taskFileUrls).forEach(k => delete taskFileUrls[k]);
-      // Delay sedikit agar DOM sudah ready
-      setTimeout(() => loadDraft(currentRole, currentHotel), 600);
+
+      // Load draft setelah DOM ready
+      setTimeout(() => {
+        if (currentRole && currentHotel) {
+          loadDraft(currentRole, currentHotel);
+        }
+      }, 700);
     }
 
     // Update greeting
@@ -2628,7 +2649,14 @@
     // Reset tasklist state saat login baru
     tasklistRendered = false;
     lastRenderedRole = '';
-    currentHotel = '';
+    // Set hotel otomatis untuk HM
+    const hmHotels = {
+      'HM Verse Lite': 'Verse Lite Gajah Mada',
+      'HM Verse Luxe': 'Verse Luxe Wahid Hasyim',
+      'HM Verse Cirebon': 'Verse Hotel Cirebon',
+      'HM Oak Tree': 'Oak Tree Mahakam Blok M',
+    };
+    currentHotel = hmHotels[currentRole] || '';
     // Reset taskFiles & taskFileUrls
     Object.keys(taskFiles).forEach(k => delete taskFiles[k]);
     Object.keys(taskFileUrls).forEach(k => delete taskFileUrls[k]);
