@@ -8418,14 +8418,14 @@ const ROLE_TASKS = {
   }
 
   // Update visit list di home berdasarkan tasklist yang sudah diisi
-  function updateHomeVisitList() {
+  async function updateHomeVisitList() {
     const visitList = document.getElementById('home-visit-list');
     const fuSection = document.getElementById('home-followup-section');
-    const fuList = document.getElementById('home-followup-list');
 
-    // Hitung progress tasklist saat ini
+    // Hitung progress dari DOM jika sudah ada
     const taskItems = document.querySelectorAll('#tasklist-content .task-item');
-    const hotel = document.getElementById('tasklist-hotel') ? document.getElementById('tasklist-hotel').textContent : '';
+    let hotel = document.getElementById('tasklist-hotel') ? document.getElementById('tasklist-hotel').textContent : '';
+    if (!hotel || hotel === 'Pilih Hotel' || hotel === '—') hotel = currentHotel;
 
     let done = 0, total = 0;
     taskItems.forEach(item => {
@@ -8435,8 +8435,46 @@ const ROLE_TASKS = {
       if (s === 'done') done++;
     });
 
-    if (total === 0 || !hotel || hotel === 'Pilih Hotel' || hotel === '—') {
-      // Belum ada visit
+    // Jika DOM kosong, load dari Supabase draft
+    if (total === 0 && currentRole && currentHotel) {
+      try {
+        const today = new Date().toISOString().split('T')[0];
+        const yesterday = new Date(); yesterday.setDate(yesterday.getDate()-1);
+        const yDate = yesterday.toISOString().split('T')[0];
+
+        let res = await fetch(
+          SUPA_URL + '/rest/v1/draft_tasklist?tanggal=eq.' + today +
+          '&role=eq.' + encodeURIComponent(currentRole) +
+          '&hotel=eq.' + encodeURIComponent(currentHotel) + '&select=task_id,status',
+          { headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY } }
+        );
+        let drafts = res.ok ? await res.json() : [];
+
+        // Coba kemarin jika hari ini kosong
+        if (!drafts || drafts.length === 0) {
+          res = await fetch(
+            SUPA_URL + '/rest/v1/draft_tasklist?tanggal=eq.' + yDate +
+            '&role=eq.' + encodeURIComponent(currentRole) +
+            '&hotel=eq.' + encodeURIComponent(currentHotel) + '&select=task_id,status',
+            { headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY } }
+          );
+          drafts = res.ok ? await res.json() : [];
+        }
+
+        if (drafts && drafts.length > 0) {
+          drafts.forEach(d => {
+            if (d.status === 'note_only') return;
+            if (d.task_id && d.task_id.startsWith('task_')) {
+              total++;
+              if (d.status === 'done') done++;
+            }
+          });
+          hotel = currentHotel;
+        }
+      } catch(e) { console.log('Home progress load error:', e); }
+    }
+
+    if (total === 0 || !hotel) {
       visitList.innerHTML = `<div style="text-align:center;padding:24px 16px;color:var(--gray-400);">
         <div style="font-size:32px;margin-bottom:8px;">🏨</div>
         <p style="font-size:13px;font-weight:600;">Belum ada visit hari ini</p>
