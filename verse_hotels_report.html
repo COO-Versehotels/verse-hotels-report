@@ -1804,11 +1804,8 @@
 
       <!-- Tombol -->
       <div style="padding:0 16px 6px;margin-top:4px;font-size:11px;color:var(--gray-400);font-weight:700;text-transform:uppercase;letter-spacing:1px;">Kirim Laporan</div>
-      <button class="submit-big-btn primary" onclick="doSubmitReport()">
-        📤 Submit ke Dashboard COO
-      </button>
-      <button class="submit-big-btn wa" onclick="sendWA()">
-        💬 Kirim Notifikasi via WhatsApp
+      <button class="submit-big-btn wa" onclick="doSubmitAndSendWA()" style="background:linear-gradient(135deg,#1a4a1a,#2d6a2d);font-size:15px;padding:16px;">
+        📤💬 Submit & Send Summary Report To WhatsApp Group
       </button>
 
       <div style="height:20px;"></div>
@@ -1969,6 +1966,53 @@
   const SUPA_KEY = 'sb_publishable_KeAmOu9ex8r1PDRI1MRMsQ_40uiEkbM';
   const supa = supabase.createClient(SUPA_URL, SUPA_KEY);
 
+  // ===== KOMPRESI FOTO =====
+  async function compressImage(file, maxSizeKB = 300, maxWidth = 1280) {
+    // Hanya kompres file gambar
+    if (!file.type.startsWith('image/')) return file;
+
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+
+          // Resize kalau terlalu besar
+          if (width > maxWidth) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+
+          // Kompres dengan quality bertahap sampai di bawah maxSizeKB
+          let quality = 0.8;
+          const compress = () => {
+            canvas.toBlob((blob) => {
+              if (blob.size / 1024 > maxSizeKB && quality > 0.2) {
+                quality -= 0.1;
+                compress();
+              } else {
+                const compressed = new File([blob], file.name, { type: 'image/jpeg' });
+                console.log('Compressed: ' + Math.round(file.size/1024) + 'KB → ' + Math.round(compressed.size/1024) + 'KB');
+                resolve(compressed);
+              }
+            }, 'image/jpeg', quality);
+          };
+          compress();
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
   // ===== AUTO-SAVE DRAFT TASKLIST =====
 
   // Format jam:menit sekarang
@@ -2015,6 +2059,7 @@
     const status = item.dataset.status || null;
     const noteEl = item.querySelector('.task-note');
     const keterangan = noteEl ? noteEl.value.trim() : '';
+    const fileUrls = taskFileUrls[taskId] ? JSON.stringify(taskFileUrls[taskId]) : null;
 
     try {
       const timeNow = getNowTime();
@@ -2025,6 +2070,7 @@
         task_id: taskId,
         status: status,
         keterangan: keterangan,
+        file_urls: fileUrls,
         updated_at: new Date().toISOString()
       }, { onConflict: 'tanggal,role,hotel,task_id' });
     } catch(e) { console.error('Auto-save error:', e); }
@@ -2055,6 +2101,31 @@
             // Trigger setStatus tanpa event
             restoreStatus(item, draft.task_id, draft.status);
           }
+        }
+
+        // Restore file URLs
+        if (draft.file_urls) {
+          try {
+            const urls = JSON.parse(draft.file_urls);
+            if (urls && urls.length > 0) {
+              taskFileUrls[draft.task_id] = urls;
+              // Tampilkan preview file dari URL
+              const list = document.getElementById(draft.task_id + '-filelist');
+              if (list) {
+                list.innerHTML = urls.map(f => {
+                  const isImg = f.type && f.type.startsWith('image/');
+                  return '<div class="file-preview-item">' +
+                    (isImg ? '<a href="' + f.url + '" target="_blank"><img src="' + f.url + '" style="width:48px;height:48px;object-fit:cover;border-radius:6px;margin-right:6px;"></a>' : '📄') +
+                    ' <a href="' + f.url + '" target="_blank" style="font-size:12px;color:var(--navy);text-decoration:none;">' + f.name + '</a>' +
+                    '</div>';
+                }).join('');
+                const uploadWrap = document.getElementById(draft.task_id + '-upload');
+                if (uploadWrap) { uploadWrap.style.display='block'; uploadWrap.classList.add('show'); }
+                const area = document.getElementById(draft.task_id + '-upload-area');
+                if (area) area.classList.add('has-file');
+              }
+            }
+          } catch(e) { console.error('Restore URLs error:', e); }
         }
 
         // Restore keterangan + timestamp
@@ -2141,6 +2212,61 @@
       if (error) { console.error('Load error:', error); return []; }
       return data || [];
     } catch(e) { console.error('Load error:', e); return []; }
+  }
+
+  // Auto delete file storage yang lebih dari 30 hari
+  async function autoDeleteOldFiles() {
+    try {
+      const cutoff = new Date();
+      cutoff.setDate(cutoff.getDate() - 30);
+      const cutoffStr = cutoff.toISOString().split('T')[0];
+
+      // List semua folder (berdasarkan tanggal)
+      const { data: folders, error } = await supa.storage.from('laporan-files').list('', {
+        limit: 100, sortBy: { column: 'name', order: 'asc' }
+      });
+
+      if (error || !folders) return;
+
+      let deletedCount = 0;
+      for (const folder of folders) {
+        // Format folder name = tanggal (YYYY-MM-DD)
+        if (folder.name && folder.name < cutoffStr) {
+          // List semua file di folder ini secara rekursif
+          const filesToDelete = await listAllFiles('laporan-files', folder.name);
+          if (filesToDelete.length > 0) {
+            const { error: delErr } = await supa.storage.from('laporan-files').remove(filesToDelete);
+            if (!delErr) {
+              deletedCount += filesToDelete.length;
+              console.log('Auto-deleted ' + filesToDelete.length + ' files from ' + folder.name);
+            }
+          }
+        }
+      }
+      if (deletedCount > 0) console.log('Total auto-deleted: ' + deletedCount + ' files older than 30 days');
+    } catch(e) { console.error('Auto-delete error:', e); }
+  }
+
+  // List semua file dalam folder secara rekursif
+  async function listAllFiles(bucket, prefix) {
+    const allFiles = [];
+    try {
+      const { data, error } = await supa.storage.from(bucket).list(prefix, { limit: 1000 });
+      if (error || !data) return allFiles;
+
+      for (const item of data) {
+        const fullPath = prefix + '/' + item.name;
+        if (item.metadata) {
+          // Ini file
+          allFiles.push(fullPath);
+        } else {
+          // Ini folder — rekursif
+          const subFiles = await listAllFiles(bucket, fullPath);
+          allFiles.push(...subFiles);
+        }
+      }
+    } catch(e) { console.error('List files error:', e); }
+    return allFiles;
   }
 
   // Auto reset — arsip dulu lalu hapus data hari kemarin
@@ -2337,8 +2463,9 @@
     tasklistRendered = false;
     lastRenderedRole = '';
     currentHotel = '';
-    // Reset taskFiles
+    // Reset taskFiles & taskFileUrls
     Object.keys(taskFiles).forEach(k => delete taskFiles[k]);
+    Object.keys(taskFileUrls).forEach(k => delete taskFileUrls[k]);
     // Sembunyikan tombol COO di nav — hanya COO yang bisa akses
     ['nav-coo-home','nav-coo-tasklist'].forEach(id => {
       const el = document.getElementById(id);
@@ -2371,6 +2498,9 @@
   // Auto reset & arsip saat app dibuka
   checkAndReset();
 
+  // Auto delete file storage > 30 hari (jalankan di background)
+  setTimeout(() => autoDeleteOldFiles(), 5000);
+
   // Tasks
   function toggleTask(id) {
     // Tidak lakukan apapun — note wrap dikontrol oleh setStatus
@@ -2379,6 +2509,7 @@
 
   // Track uploaded files per task
   const taskFiles = {};
+  const taskFileUrls = {}; // Menyimpan URL file yang sudah diupload ke Storage
 
   function setStatus(e, taskId, status) {
     e.stopPropagation();
@@ -2471,7 +2602,7 @@
     }
   }
 
-  function handleFileUpload(input, taskId) {
+  async function handleFileUpload(input, taskId) {
     const files = Array.from(input.files);
     if (!files.length) return;
 
@@ -2480,8 +2611,43 @@
     if (remaining <= 0) { showToast('Maksimal 10 file per task!'); return; }
     const toAdd = files.slice(0, remaining);
     if (files.length > remaining) showToast('Hanya ' + remaining + ' file lagi yang bisa ditambahkan');
-    taskFiles[taskId].push(...toAdd);
 
+    showToast('⏳ Mengupload file...');
+
+    // Upload ke Supabase Storage
+    const today = new Date().toISOString().split('T')[0];
+    const uploadedUrls = [];
+
+    for (const file of toAdd) {
+      // Kompres foto sebelum upload
+      const processedFile = await compressImage(file, 300, 1280);
+      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const path = today + '/' + currentRole.replace(/ /g,'_') + '/' + currentHotel.replace(/ /g,'_') + '/' + taskId + '/' + Date.now() + '_' + safeName;
+      try {
+        const { data, error } = await supa.storage.from('laporan-files').upload(path, processedFile, { upsert: true });
+        if (error) {
+          console.error('Upload error:', error);
+          showToast('❌ Gagal upload: ' + file.name);
+        } else {
+          const { data: urlData } = supa.storage.from('laporan-files').getPublicUrl(path);
+          uploadedUrls.push({ name: file.name, url: urlData.publicUrl, type: file.type });
+          taskFiles[taskId].push(file);
+        }
+      } catch(e) {
+        console.error('Upload exception:', e);
+        taskFiles[taskId].push(file); // fallback — simpan lokal
+      }
+    }
+
+    // Simpan URL ke database
+    if (uploadedUrls.length > 0) {
+      if (!taskFileUrls[taskId]) taskFileUrls[taskId] = [];
+      taskFileUrls[taskId].push(...uploadedUrls);
+      // Simpan URL ke draft
+      await saveDraftWithFiles(taskId);
+    }
+
+    showToast('✅ ' + toAdd.length + ' file berhasil diupload!');
     renderFilePreview(taskId);
     showTimestamp(taskId, 'upload');
 
@@ -2911,6 +3077,50 @@
 
   // Legacy alias
   function submitReport() { doSubmitReport(); }
+
+  function sendWAValidated() {
+    if (!validateAndSubmit()) return;
+    sendWA();
+  }
+
+  async function doSubmitAndSendWA() {
+    // Validasi dulu
+    if (!validateAndSubmit()) return;
+
+    // Submit ke Supabase / COO Dashboard
+    const items = document.querySelectorAll('#tasklist-content .task-item');
+    let taskDone = 0, taskProgress = 0, taskNot = 0, taskTotal = 0;
+    items.forEach(item => {
+      const s = item.dataset.status;
+      if (s === 'note_only') return;
+      taskTotal++;
+      if (s === 'done') taskDone++;
+      else if (s === 'progress') taskProgress++;
+      else if (s === 'not') taskNot++;
+    });
+    let fuCount = 0;
+    document.querySelectorAll('#followup-list .fu-input').forEach(inp => {
+      if (inp.value.trim()) fuCount++;
+    });
+    let fileCount = 0;
+    Object.values(taskFiles).forEach(files => { fileCount += files.length; });
+    const hotel = document.getElementById('tasklist-hotel').textContent || '—';
+    const pct = taskTotal > 0 ? Math.max(0, Math.round(((taskDone - Math.min(0, taskDone)) / taskTotal) * 100)) : 0;
+
+    // Simpan ke local COO dashboard
+    recordSubmit(currentRole, hotel, taskDone, taskTotal, fuCount);
+
+    // Simpan ke Supabase
+    showToast('⏳ Menyimpan laporan...');
+    await saveToSupabase(currentRole, hotel, taskDone, taskTotal, taskProgress, taskNot, pct, fuCount, fileCount);
+
+    // Kirim WA
+    showToast('✅ Laporan tersimpan! Membuka WhatsApp...');
+    setTimeout(() => {
+      sendWA();
+      setTimeout(() => go('home'), 1500);
+    }, 800);
+  }
 
   function sendWA() {
     const role = document.getElementById('submit-role').textContent;
@@ -5044,6 +5254,44 @@ const ROLE_TASKS = {
   }
 
   // Set default date ke hari ini saat masuk halaman arsip
+  // Load file preview untuk laporan di COO Dashboard
+  async function getFilePreviewForReport(tanggal, role, hotel) {
+    try {
+      const { data } = await supa.from('draft_tasklist')
+        .select('task_id, file_urls, keterangan')
+        .eq('tanggal', tanggal)
+        .eq('role', role)
+        .eq('hotel', hotel)
+        .not('file_urls', 'is', null);
+
+      if (!data || data.length === 0) return '';
+
+      let html = '<div style="margin-top:10px;border-top:1px solid var(--gray-100);padding-top:10px;">';
+      html += '<p style="font-size:10px;font-weight:700;color:var(--gray-400);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">📎 Lampiran</p>';
+      html += '<div style="display:flex;flex-wrap:wrap;gap:6px;">';
+
+      data.forEach(row => {
+        if (!row.file_urls) return;
+        try {
+          const urls = JSON.parse(row.file_urls);
+          urls.forEach(f => {
+            const isImg = f.type && f.type.startsWith('image/');
+            if (isImg) {
+              html += '<a href="' + f.url + '" target="_blank">' +
+                '<img src="' + f.url + '" style="width:56px;height:56px;object-fit:cover;border-radius:8px;border:1.5px solid var(--gray-200);">' +
+                '</a>';
+            } else {
+              html += '<a href="' + f.url + '" target="_blank" style="display:flex;align-items:center;gap:4px;padding:4px 8px;background:var(--gray-50);border:1.5px solid var(--gray-200);border-radius:8px;font-size:11px;color:var(--navy);text-decoration:none;">📄 ' + f.name.substring(0,15) + '</a>';
+            }
+          });
+        } catch(e) {}
+      });
+
+      html += '</div></div>';
+      return html;
+    } catch(e) { return ''; }
+  }
+
   // Select hotel di Activity Plan
   function selectActivityHotel(btn, taskId) {
     const container = document.getElementById(taskId + '-hotel-select');
