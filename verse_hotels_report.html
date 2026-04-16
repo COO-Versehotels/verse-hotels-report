@@ -2109,7 +2109,9 @@
 
     const status = item.dataset.status || null;
     const noteEl = item.querySelector('.task-note');
-    const keterangan = noteEl ? noteEl.value.trim() : '';
+    // Untuk FU: simpan fu-input sebagai keterangan
+    const fuInput = item.querySelector('.fu-input');
+    const keterangan = fuInput ? fuInput.value.trim() : (noteEl ? noteEl.value.trim() : '');
     const fileUrls = taskFileUrls[taskId] ? JSON.stringify(taskFileUrls[taskId]) : null;
 
     try {
@@ -2153,11 +2155,33 @@
         const item = document.getElementById(draft.task_id);
         if (!item) return;
 
-        // Restore status
+        // Restore FU input dulu sebelum status
+        if (draft.task_id.startsWith('fu')) {
+          const fuInput = item.querySelector('.fu-input');
+          if (fuInput && draft.keterangan) {
+            fuInput.value = draft.keterangan;
+          }
+          // Hanya restore status FU jika ada input
+          const hasInput = fuInput && fuInput.value.trim();
+          if (hasInput && draft.status && draft.status !== 'note_only') {
+            const statusRow = document.getElementById(draft.task_id + '-status-row');
+            if (statusRow) statusRow.style.display = 'flex';
+            restoreStatus(item, draft.task_id, draft.status);
+          } else {
+            // Tidak ada input — sembunyikan upload & status row
+            const uploadWrap = document.getElementById(draft.task_id + '-upload');
+            const statusRow = document.getElementById(draft.task_id + '-status-row');
+            if (uploadWrap) { uploadWrap.style.display = 'none'; uploadWrap.classList.remove('show'); }
+            if (statusRow) statusRow.style.display = 'none';
+            item.dataset.status = '';
+          }
+          return; // Skip restore status normal untuk FU
+        }
+
+        // Restore status task biasa
         if (draft.status && draft.status !== 'note_only') {
           const btns = item.querySelectorAll('.status-btn');
           if (btns.length > 0) {
-            // Trigger setStatus tanpa event
             restoreStatus(item, draft.task_id, draft.status);
           }
         }
@@ -2212,8 +2236,8 @@
           } catch(e) { console.error('Restore URLs error:', e); }
         }
 
-        // Restore keterangan + timestamp
-        if (draft.keterangan) {
+        // Restore keterangan + timestamp (hanya untuk non-FU, FU sudah di-handle di atas)
+        if (draft.keterangan && !draft.task_id.startsWith('fu')) {
           const note = item.querySelector('.task-note');
           if (note) note.value = draft.keterangan;
           // Tampilkan timestamp dari updated_at
@@ -8189,14 +8213,14 @@ const ROLE_TASKS = {
     } else {
       // Kosong — sembunyikan semua, reset status
       if (statusRow) statusRow.style.display = 'none';
-      if (uploadWrap) { uploadWrap.classList.remove('show'); uploadWrap.style.display = 'none'; }
+      if (uploadWrap) { uploadWrap.classList.remove('show'); uploadWrap.style.display = 'none !important'; }
       if (noteWrap) noteWrap.classList.remove('show');
       if (item) item.dataset.status = '';
       const btns = item ? item.querySelectorAll('.status-btn') : [];
       btns.forEach(b => b.className = 'status-btn');
     }
-    // Auto-save
-    autoSaveDraft(fuId);
+    // Auto-save (simpan fu-input sebagai keterangan)
+    saveDraftNow(fuId);
   }
 
   // Set status untuk room inspection slot
