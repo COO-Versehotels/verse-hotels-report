@@ -8165,8 +8165,7 @@ const ROLE_TASKS = {
           </div>
           <div style="display:flex;gap:16px;font-size:12px;color:var(--gray-400);">
             <span>✅ ${laporan.task_done || 0} Sudah</span>
-            <span>⏳ ${laporan.task_progress || 0} Proses</span>
-            <span>❌ ${laporan.task_not || 0} Belum</span>
+            <span>❌ ${laporan.task_not || 0} Tidak Dikerjakan</span>
             <span>📎 ${laporan.file_count || 0} File</span>
           </div>
           <div style="margin-top:8px;font-size:11px;color:var(--gray-400);">🕐 Submit ${laporan.submitted_at ? new Date(laporan.submitted_at).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'}) : '—'} WIB</div>
@@ -8193,7 +8192,7 @@ const ROLE_TASKS = {
         </div>`;
 
         if (d.keterangan) {
-          html += `<div style="font-size:13px;color:var(--gray-700);background:var(--gray-50);padding:10px 12px;border-radius:8px;margin-bottom:8px;line-height:1.6;">${d.keterangan}</div>`;
+          html += '<div style="font-size:13px;color:var(--gray-700);background:var(--gray-50);padding:10px 12px;border-radius:8px;margin-bottom:8px;line-height:1.6;">' + d.keterangan + '</div>';
         }
 
         // Foto/dokumen
@@ -8201,20 +8200,20 @@ const ROLE_TASKS = {
           try {
             const files = JSON.parse(d.file_urls);
             if (files && files.length > 0) {
-              html += '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;">';
+              html += '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;margin-bottom:4px;">';
               files.forEach(f => {
                 const isImg = f.type && f.type.startsWith('image/');
                 if (isImg) {
-                  html += `<a href="${f.url}" target="_blank" style="display:block;">
-                    <img src="${f.url}" style="width:80px;height:80px;object-fit:cover;border-radius:8px;border:1.5px solid var(--gray-200);">
-                  </a>`;
+                  html += '<a href="' + f.url + '" target="_blank" style="display:block;">' +
+                    '<img src="' + f.url + '" style="width:90px;height:90px;object-fit:cover;border-radius:10px;border:1.5px solid var(--gray-200);">' +
+                    '</a>';
                 } else {
-                  html += `<a href="${f.url}" target="_blank" style="display:flex;align-items:center;gap:4px;padding:6px 10px;background:var(--gray-50);border:1.5px solid var(--gray-200);border-radius:8px;font-size:11px;color:var(--navy);text-decoration:none;font-weight:600;">
-                    📄 ${f.name ? f.name.substring(0,20) : 'Dokumen'}
-                  </a>`;
+                  html += '<a href="' + f.url + '" target="_blank" style="display:flex;align-items:center;gap:6px;padding:8px 12px;background:var(--gray-50);border:1.5px solid var(--gray-200);border-radius:10px;font-size:12px;color:var(--navy);text-decoration:none;font-weight:600;">' +
+                    '📄 ' + (f.name ? f.name.substring(0,25) : 'Dokumen') + '</a>';
                 }
               });
               html += '</div>';
+              html += '<div style="font-size:10px;color:var(--gray-400);margin-bottom:4px;">📎 ' + files.length + ' file — tap untuk buka</div>';
             }
           } catch(e) {}
         }
