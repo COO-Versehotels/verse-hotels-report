@@ -1787,11 +1787,7 @@
           <span class="submit-row-value" id="submit-done" style="color:var(--green);font-weight:700;">0 task</span>
         </div>
         <div class="submit-row">
-          <span class="submit-row-label">⏳ Dalam Proses</span>
-          <span class="submit-row-value" id="submit-progress" style="color:var(--amber);font-weight:700;">0 task</span>
-        </div>
-        <div class="submit-row">
-          <span class="submit-row-label">✗ Belum</span>
+          <span class="submit-row-label">✗ Tidak Dikerjakan</span>
           <span class="submit-row-value" id="submit-not" style="color:var(--red);font-weight:700;">0 task</span>
         </div>
         <div class="submit-row">
@@ -3101,7 +3097,10 @@
     document.querySelectorAll('#tasklist-content .task-item').forEach(item => {
       const status = item.dataset.status;
       const taskNumEl = item.querySelector('.task-number');
-      const taskNum = taskNumEl ? (taskNumEl.dataset.origNum || taskNumEl.textContent.replace(/[✓⏳✗↳\n]/g,'').trim()) : '?';
+      let taskNum = '?';
+      if (taskNumEl) {
+        taskNum = taskNumEl.dataset.origNum || taskNumEl.textContent.replace(/[✓✗↳⏳\n]/g,'').replace(/\s+/g,'').trim() || '?';
+      }
       const taskTextEl = item.querySelector('.task-text');
       const taskUlEl = item.querySelector('ul');
       let taskName = '';
@@ -3145,7 +3144,8 @@
     // Cek Activity Plan
     const apHotel = document.getElementById('activity-plan-hotel-val');
     const apNote = document.querySelector('#activity-plan .task-note');
-    if (!apHotel || !apHotel.value) {
+    const isHMRoleCheck = currentRole && currentRole.startsWith('HM ');
+    if (!isHMRoleCheck && (!apHotel || !apHotel.value)) {
       requiredItems.push('• <b>Activity Plan</b> — <i>Unit Visit Tomorrow belum dipilih</i>');
     }
     if (!apNote || !apNote.value.trim()) {
