@@ -8567,21 +8567,20 @@ const ROLE_TASKS = {
     document.getElementById('coo-date').textContent =
       `${days[d.getDay()]}, ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
 
-    // Load data dari Supabase
+    // Load data dari Supabase — reset dulu agar tidak duplikat
     showToast('⏳ Memuat data...');
     const dbData = await loadFromSupabase();
-    // Merge dengan data lokal sesi ini
+    // Clear dan isi ulang dari database
+    submittedReports.length = 0;
     dbData.forEach(r => {
-      const idx = submittedReports.findIndex(s => s.role===r.role && s.hotel===r.hotel);
-      if (idx < 0) {
-        submittedReports.push({
-          role: r.role, hotel: r.hotel,
-          taskDone: r.task_done, taskTotal: r.task_total,
-          pct: r.pct, fuCount: r.fu_count,
-          time: new Date(r.submitted_at).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'})
-        });
-      }
+      submittedReports.push({
+        role: r.role, hotel: r.hotel,
+        taskDone: r.task_done, taskTotal: r.task_total,
+        pct: r.pct || 0, fuCount: r.fu_count || 0,
+        time: r.submitted_at ? new Date(r.submitted_at).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'}) : '—'
+      });
     });
+    console.log('COO Dashboard loaded:', submittedReports.length, 'reports', dbData);
 
     const hotels = [
       'Verse Lite Gajah Mada',
