@@ -3279,7 +3279,9 @@
     msg += `\n_Dikirim via Verse Hotels Report App_`;
 
     // Buka group WA langsung dengan pesan terformat
-    const waUrl = 'https://chat.whatsapp.com/LWd1d8MrSpUC59Rea9lRT0';
+    const waUrl = currentRole && currentRole.startsWith('HM ')
+      ? 'https://chat.whatsapp.com/HLQzgxSMMO6Bvm40sIn9qP'
+      : 'https://chat.whatsapp.com/LWd1d8MrSpUC59Rea9lRT0';
     // Copy pesan ke clipboard dulu, lalu buka group
     if (navigator.clipboard) {
       navigator.clipboard.writeText(msg).then(() => {
