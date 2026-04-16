@@ -1582,7 +1582,7 @@
         <div>
           <p class="home-greeting" id="greeting-text">Selamat pagi</p>
           <h2 class="home-name" id="role-display">Chief Engineering</h2>
-          <span class="home-role-badge">Corporate</span>
+          <span class="home-role-badge" id="home-role-badge">CORPORATE</span>
         </div>
         <div>
           <div class="home-avatar">👤</div>
@@ -1608,7 +1608,7 @@
 
     <div class="scroll-area">
       <div class="section">
-        <div class="section-title">Visit Hari Ini</div>
+        <div class="section-title">Pekerjaan Hari Ini</div>
         <div id="home-visit-list">
           <!-- Diisi dinamis -->
           <div style="text-align:center;padding:24px 16px;color:var(--gray-400);">
@@ -1617,7 +1617,7 @@
             <p style="font-size:12px;margin-top:4px;">Pilih hotel di halaman Tasklist untuk memulai</p>
           </div>
         </div>
-        <button class="add-visit-btn" onclick="go('tasklist')">+ Mulai Visit Hotel</button>
+        <button class="add-visit-btn" onclick="go('tasklist')">+ Mulai Lakukan Pekerjaan</button>
       </div>
 
       <div class="section" id="home-followup-section" style="display:none;">
@@ -2508,6 +2508,13 @@
       const months = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
       document.getElementById('home-date-text').textContent = `${days[d.getDay()]}, ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
       document.getElementById('today-date').textContent = `${d.getDate()} ${months[d.getMonth()].slice(0,3)}`;
+
+      // Update badge sesuai role
+      const badge = document.getElementById('home-role-badge');
+      if (badge) {
+        const isHM = currentRole && currentRole.startsWith('HM ');
+        badge.textContent = isHM ? 'UNIT HEAD' : 'CORPORATE';
+      }
 
       // Update visit list & progress dari data real
       updateHomeVisitList();
