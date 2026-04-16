@@ -8236,16 +8236,30 @@ const ROLE_TASKS = {
 
     try {
       const today = new Date().toISOString().split('T')[0];
-      let url = SUPA_URL + '/rest/v1/draft_tasklist?tanggal=eq.' + today + '&role=eq.' + encodeURIComponent(roleName) + '&select=*&order=task_id.asc';
-      if (hotelName) url += '&hotel=eq.' + encodeURIComponent(hotelName);
+      const yesterday = new Date(); yesterday.setDate(yesterday.getDate()-1);
+      const yDate = yesterday.toISOString().split('T')[0];
 
-      const res = await fetch(url, {
+      // Coba hari ini dulu, lalu kemarin
+      const buildUrl = (tanggal) => {
+        let u = SUPA_URL + '/rest/v1/draft_tasklist?tanggal=eq.' + tanggal + '&role=eq.' + encodeURIComponent(roleName) + '&select=*&order=task_id.asc';
+        if (hotelName) u += '&hotel=eq.' + encodeURIComponent(hotelName);
+        return u;
+      };
+
+      let res = await fetch(buildUrl(today), {
         headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY }
       });
-      const data = res.ok ? await res.json() : [];
+      let data = res.ok ? await res.json() : [];
 
       if (!data || data.length === 0) {
-        document.getElementById('detail-content').innerHTML = '<div style="text-align:center;padding:40px 0;color:var(--gray-400);"><div style="font-size:40px;">📭</div><p style="font-size:14px;font-weight:600;margin-top:12px;">Tidak ada data draft untuk laporan ini</p></div>';
+        res = await fetch(buildUrl(yDate), {
+          headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY }
+        });
+        data = res.ok ? await res.json() : [];
+      }
+
+      if (!data || data.length === 0) {
+        document.getElementById('detail-content').innerHTML = '<div style="text-align:center;padding:40px 0;color:var(--gray-400);"><div style="font-size:40px;">📭</div><p style="font-size:14px;font-weight:600;margin-top:12px;">Tidak ada data untuk laporan ini</p></div>';
         return;
       }
 
@@ -8312,12 +8326,15 @@ const ROLE_TASKS = {
           try {
             const files = JSON.parse(d.file_urls);
             if (files && files.length > 0) {
-              html += '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;margin-bottom:4px;">';
+              html += '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;margin-bottom:4px;">';
               files.forEach(f => {
-                const isImg = f.type && f.type.startsWith('image/');
+                const isImg = f.type && (f.type.startsWith('image/') || f.url.match(/\.(jpg|jpeg|png|gif|webp|heic)$/i));
                 if (isImg) {
-                  html += '<a href="' + f.url + '" target="_blank" style="display:block;">' +
-                    '<img src="' + f.url + '" style="width:90px;height:90px;object-fit:cover;border-radius:10px;border:1.5px solid var(--gray-200);">' +
+                  html += '<a href="' + f.url + '" target="_blank" style="display:block;flex-shrink:0;">' +
+                    '<img src="' + f.url + '" ' +
+                    'style="width:90px;height:90px;object-fit:cover;border-radius:10px;border:1.5px solid var(--gray-200);display:block;" ' +
+                    'onerror="this.style.display='none'" ' +
+                    'loading="lazy">' +
                     '</a>';
                 } else {
                   html += '<a href="' + f.url + '" target="_blank" style="display:flex;align-items:center;gap:6px;padding:8px 12px;background:var(--gray-50);border:1.5px solid var(--gray-200);border-radius:10px;font-size:12px;color:var(--navy);text-decoration:none;font-weight:600;">' +
@@ -8325,7 +8342,7 @@ const ROLE_TASKS = {
                 }
               });
               html += '</div>';
-              html += '<div style="font-size:10px;color:var(--gray-400);margin-bottom:4px;">📎 ' + files.length + ' file — tap untuk buka</div>';
+              html += '<div style="font-size:10px;color:var(--green);font-weight:600;margin-bottom:4px;">📎 ' + files.length + ' file — tap foto untuk buka</div>';
             }
           } catch(e) {}
         }
@@ -8462,12 +8479,17 @@ const ROLE_TASKS = {
         }
 
         if (drafts && drafts.length > 0) {
+          // Total task sesuai role — hardcode agar tidak tergantung DOM
+          const roleTotals = {
+            'HM Verse Lite': 19, 'HM Verse Luxe': 19,
+            'HM Verse Cirebon': 19, 'HM Oak Tree': 19,
+            'Ops HR Manager': 15, 'HR Officer': 15,
+            'Chief Engineering Corporate': 11,
+            'EHK Corporate': 11, 'CRA Corporate': 9
+          };
+          total = roleTotals[currentRole] || 19;
           drafts.forEach(d => {
-            if (d.status === 'note_only') return;
-            if (d.task_id && d.task_id.startsWith('task_')) {
-              total++;
-              if (d.status === 'done') done++;
-            }
+            if (d.status === 'done' && d.task_id && d.task_id.startsWith('task_')) done++;
           });
           hotel = currentHotel;
         }
