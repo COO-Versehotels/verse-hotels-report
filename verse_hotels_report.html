@@ -891,7 +891,7 @@
 
   .task-status-row {
     display: flex;
-    gap: 6px;
+    gap: 8px;
     margin-top: 10px;
     padding-top: 10px;
     border-top: 1px solid var(--gray-100);
@@ -899,7 +899,7 @@
 
   .status-btn {
     flex: 1;
-    padding: 8px 4px;
+    padding: 11px 4px;
     border-radius: 8px;
     border: 1.5px solid var(--gray-200);
     background: transparent;
@@ -1867,6 +1867,25 @@
     </div>
   </div>
 
+  <!-- ===== DETAIL LAPORAN ===== -->
+  <div class="screen" id="screen-detail">
+    <div class="topbar" style="padding:48px 16px 12px;background:linear-gradient(135deg,var(--navy),#0e2340);">
+      <button class="topbar-back" onclick="go('coo')" style="color:white;background:rgba(255,255,255,0.15);">←</button>
+      <div class="topbar-title">
+        <h2 style="color:white;" id="detail-title">Detail Laporan</h2>
+        <p style="color:rgba(255,255,255,0.6);" id="detail-subtitle">—</p>
+      </div>
+    </div>
+    <div class="scroll-area">
+      <div id="detail-content" style="padding:16px;">
+        <div style="text-align:center;padding:40px 0;color:var(--gray-400);">
+          <div style="font-size:40px;">⏳</div>
+          <p style="font-size:14px;font-weight:600;margin-top:12px;">Memuat detail...</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- ===== COO DASHBOARD ===== -->
   <div class="screen" id="screen-coo">
     <div class="topbar" style="padding:48px 16px 12px;background:linear-gradient(135deg,var(--navy),#0e2340);">
@@ -2152,20 +2171,45 @@
             const urls = JSON.parse(draft.file_urls);
             if (urls && urls.length > 0) {
               taskFileUrls[draft.task_id] = urls;
-              // Tampilkan preview file dari URL
+
+              // Buat dummy File objects agar validasi menganggap ada file
+              if (!taskFiles[draft.task_id]) taskFiles[draft.task_id] = [];
+              urls.forEach(f => {
+                // Dummy file object dengan nama & type
+                const dummy = new File([''], f.name || 'file', { type: f.type || 'image/jpeg' });
+                dummy._isRestored = true;
+                dummy._url = f.url;
+                taskFiles[draft.task_id].push(dummy);
+              });
+
+              // Tampilkan preview dari URL
               const list = document.getElementById(draft.task_id + '-filelist');
               if (list) {
-                list.innerHTML = urls.map(f => {
+                list.innerHTML = urls.map((f, i) => {
                   const isImg = f.type && f.type.startsWith('image/');
                   return '<div class="file-preview-item">' +
-                    (isImg ? '<a href="' + f.url + '" target="_blank"><img src="' + f.url + '" style="width:48px;height:48px;object-fit:cover;border-radius:6px;margin-right:6px;"></a>' : '📄') +
-                    ' <a href="' + f.url + '" target="_blank" style="font-size:12px;color:var(--navy);text-decoration:none;">' + f.name + '</a>' +
+                    (isImg
+                      ? '<a href="' + f.url + '" target="_blank"><img src="' + f.url + '" style="width:48px;height:48px;object-fit:cover;border-radius:6px;margin-right:6px;border:1px solid var(--gray-200);"></a>'
+                      : '<span style="font-size:20px;margin-right:6px;">📄</span>') +
+                    '<a href="' + f.url + '" target="_blank" style="font-size:12px;color:var(--navy);text-decoration:none;flex:1;">' + (f.name || 'File ' + (i+1)) + '</a>' +
+                    '<button class="file-remove-btn" onclick="removeFile('' + draft.task_id + '',' + i + ')">✕</button>' +
                     '</div>';
-                }).join('');
+                }).join('') +
+                '<div style="font-size:10px;color:var(--gray-400);margin-top:4px;font-weight:600;">📂 ' + urls.length + ' file tersimpan</div>';
+
+                // Tampilkan upload wrap
                 const uploadWrap = document.getElementById(draft.task_id + '-upload');
-                if (uploadWrap) { uploadWrap.style.display='block'; uploadWrap.classList.add('show'); }
+                if (uploadWrap) {
+                  uploadWrap.style.display = 'block';
+                  uploadWrap.classList.add('show');
+                }
+                // Mark upload area sebagai sudah ada file
                 const area = document.getElementById(draft.task_id + '-upload-area');
-                if (area) area.classList.add('has-file');
+                if (area) {
+                  area.classList.add('has-file');
+                  const strong = area.querySelector('.task-upload-text strong');
+                  if (strong) strong.textContent = urls.length + ' file terlampir ✓';
+                }
               }
             }
           } catch(e) { console.error('Restore URLs error:', e); }
@@ -2213,17 +2257,12 @@
     if (status === 'done') {
       if (btns[0]) btns[0].classList.add('selected-green');
       if (num) { num.dataset.origNum = origNum; num.innerHTML = `<span style="font-size:9px;display:block;line-height:1;">${origNum}</span><span style="font-size:10px;">✓</span>`; num.className = 'task-number done'; }
-      if (noteWrap) noteWrap.classList.add('show');
-      if (needUpload || (taskId.startsWith('fu'))) { if(uploadWrap){ uploadWrap.style.display='block'; uploadWrap.classList.add('show'); } }
-    } else if (status === 'progress') {
-      if (btns[1]) btns[1].classList.add('selected-amber');
-      if (num) { num.dataset.origNum = origNum; num.innerHTML = `<span style="font-size:9px;display:block;line-height:1;">${origNum}</span><span style="font-size:10px;">⏳</span>`; num.className = 'task-number inprogress'; }
-      if (noteWrap) noteWrap.classList.add('show');
+      if (noteWrap) { noteWrap.classList.add('show'); const n = noteWrap.querySelector('.task-note'); if(n && !n.value) n.placeholder='Keterangan (opsional)...'; }
       if (needUpload || (taskId.startsWith('fu'))) { if(uploadWrap){ uploadWrap.style.display='block'; uploadWrap.classList.add('show'); } }
     } else if (status === 'not') {
-      if (btns[2]) btns[2].classList.add('selected-red');
+      if (btns[1]) btns[1].classList.add('selected-red');
       if (num) { num.dataset.origNum = origNum; num.innerHTML = `<span style="font-size:9px;display:block;line-height:1;">${origNum}</span><span style="font-size:10px;">✗</span>`; num.className = 'task-number'; num.style.background='var(--red-soft)'; num.style.color='#c0392b'; }
-      if (noteWrap) noteWrap.classList.add('show');
+      if (noteWrap) { noteWrap.classList.add('show'); const n = noteWrap.querySelector('.task-note'); if(n && !n.value) n.placeholder='Wajib diisi — jelaskan alasan belum dikerjakan...'; }
     }
   }
 
@@ -2642,46 +2681,35 @@
 
     if (status === 'done') {
       btns[0].classList.add('selected-green');
-      // Tampilkan nomor + centang kecil
       num.innerHTML = `<span style="font-size:9px;display:block;line-height:1;">${origNum}</span><span style="font-size:10px;">✓</span>`;
       num.className = 'task-number done';
       num.style.background = '';
       num.style.color = '';
-      if (noteWrap) {
-        noteWrap.classList.add('show');
-        const note = noteWrap.querySelector('.task-note');
-        if (note && !note.value) note.placeholder = 'Deskripsikan apa yang sudah dikerjakan...';
-      }
+      // Upload WAJIB — tampilkan upload area
       if (needUpload || isFU) {
         uploadWrap.style.display = 'block';
         uploadWrap.classList.add('show');
       }
-    } else if (status === 'progress') {
-      btns[1].classList.add('selected-amber');
-      num.innerHTML = `<span style="font-size:9px;display:block;line-height:1;">${origNum}</span><span style="font-size:10px;">⏳</span>`;
-      num.className = 'task-number inprogress';
-      num.style.background = '';
-      num.style.color = '';
+      // Keterangan OPSIONAL — tampilkan dengan placeholder opsional
       if (noteWrap) {
         noteWrap.classList.add('show');
         const note = noteWrap.querySelector('.task-note');
-        if (note && !note.value) note.placeholder = 'Deskripsikan progress pekerjaan saat ini...';
-      }
-      if (needUpload || isFU) {
-        uploadWrap.style.display = 'block';
-        uploadWrap.classList.add('show');
+        if (note && !note.value) note.placeholder = 'Keterangan (opsional)...';
       }
     } else {
-      btns[2].classList.add('selected-red');
+      // Belum
+      btns[1].classList.add('selected-red');
       num.innerHTML = `<span style="font-size:9px;display:block;line-height:1;">${origNum}</span><span style="font-size:10px;">✗</span>`;
       num.className = 'task-number';
       num.style.background = 'var(--red-soft)';
       num.style.color = '#c0392b';
+      // Keterangan WAJIB
       if (noteWrap) {
         noteWrap.classList.add('show');
         const note = noteWrap.querySelector('.task-note');
-        if (note && !note.value) note.placeholder = 'Jelaskan alasan belum dikerjakan...';
+        if (note && !note.value) note.placeholder = 'Wajib diisi — jelaskan alasan belum dikerjakan...';
       }
+      // Sembunyikan upload
       if (uploadWrap && !isFU) {
         uploadWrap.classList.remove('show');
         uploadWrap.style.display = 'none';
@@ -2852,8 +2880,8 @@
         return;
       }
 
-      // 2. Jika Sudah atau Proses → wajib ada lampiran (jika task butuh upload)
-      if ((status === 'done' || status === 'progress') && needsUpload) {
+      // Sudah → upload WAJIB, keterangan opsional
+      if (status === 'done' && needsUpload) {
         const files = taskFiles[id];
         if (!files || files.length === 0) {
           if (uploadWrap) {
@@ -2869,12 +2897,10 @@
         }
       }
 
-      // 3. Keterangan opsional jika sudah ada upload, wajib jika tidak ada upload & no-upload task
-      const note = item.querySelector('.task-note');
-      const hasUploadVal = taskFiles[id] && taskFiles[id].length > 0;
-      if (!note || !note.value.trim()) {
-        if (!hasUploadVal && isNoUpload) {
-          // Task no-upload dan tidak ada keterangan → error
+      // Belum → keterangan WAJIB
+      if (status === 'not') {
+        const note = item.querySelector('.task-note');
+        if (!note || !note.value.trim()) {
           if (note) {
             note.classList.add('required-alert');
             setTimeout(() => note.classList.remove('required-alert'), 2500);
@@ -2883,7 +2909,6 @@
           }
           markError(item);
         }
-        // Jika ada upload atau task butuh upload → keterangan opsional
       }
     });
 
@@ -3053,8 +3078,7 @@
     document.getElementById('submit-pct').textContent = pctSafe + '%';
     document.getElementById('submit-progress-label').textContent = done + ' / ' + total + ' task selesai' + (incomplete > 0 ? ' (' + incomplete + ' belum lengkap)' : '');
     document.getElementById('submit-done').textContent = done + ' task';
-    document.getElementById('submit-progress').textContent = progress + ' task';
-    document.getElementById('submit-not').textContent = not + ' task';
+
     document.getElementById('submit-fu').textContent = fuCount + ' item';
     document.getElementById('submit-files').textContent = totalFiles + ' file';
 
@@ -3370,7 +3394,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_1\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_1\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_1\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_1-upload">
@@ -3402,7 +3425,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_2\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_2\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_2\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_2-upload">
@@ -3427,7 +3449,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_3\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_3\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_3\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_3-upload">
@@ -3452,7 +3473,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_4\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_4\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_4\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_4-upload">
@@ -3477,7 +3497,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_5\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_5\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_5\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_5-upload">
@@ -3502,7 +3521,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_6\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_6\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_6\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_6-upload">
@@ -3527,7 +3545,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_7\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_7\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_7\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_7-upload">
@@ -3559,7 +3576,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_8\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_8\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_8\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_8-upload">
@@ -3591,7 +3607,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_9\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_9\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_9\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_9-upload">
@@ -3623,7 +3638,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_10\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_10\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_10\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_10-upload">
@@ -3655,7 +3669,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_11\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_11\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_11\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_11-upload">
@@ -3687,7 +3700,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_12\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_12\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_12\',\'not\')">✗ Belum</button>
             </div><div class="task-upload-wrap" id="task_12-upload" data-no-upload="1" style="display:none;"></div>
             <div class="task-note-wrap" id="task_12-note">
@@ -3701,7 +3713,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_13\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_13\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_13\',\'not\')">✗ Belum</button>
             </div><div class="task-upload-wrap" id="task_13-upload" data-no-upload="1" style="display:none;"></div>
             <div class="task-note-wrap" id="task_13-note">
@@ -3722,7 +3733,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_14\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_14\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_14\',\'not\')">✗ Belum</button>
             </div><div class="task-upload-wrap" id="task_14-upload" data-no-upload="1" style="display:none;"></div>
             <div class="task-note-wrap" id="task_14-note">
@@ -3743,7 +3753,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_15\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_15\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_15\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_15-upload">
@@ -3779,7 +3788,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_1\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_1\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_1\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_1-upload">
@@ -3811,7 +3819,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_2\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_2\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_2\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_2-upload">
@@ -3843,7 +3850,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_3\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_3\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_3\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_3-upload">
@@ -3875,7 +3881,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_4\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_4\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_4\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_4-upload">
@@ -3916,7 +3921,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_6\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_6\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_6\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_6-upload">
@@ -3948,7 +3952,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_7\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_7\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_7\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_7-upload">
@@ -3980,7 +3983,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_8\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_8\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_8\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_8-upload">
@@ -4012,7 +4014,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_9\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_9\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_9\',\'not\')">✗ Belum</button>
             </div><div class="task-upload-wrap" id="task_9-upload" data-no-upload="1" style="display:none;"></div>
             <div class="task-note-wrap" id="task_9-note">
@@ -4042,7 +4043,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_11\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_11\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_11\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_11-upload">
@@ -4078,7 +4078,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_1\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_1\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_1\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_1-upload">
@@ -4110,7 +4109,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_2\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_2\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_2\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_2-upload">
@@ -4151,7 +4149,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_4\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_4\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_4\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_4-upload">
@@ -4183,7 +4180,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_5\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_5\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_5\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_5-upload">
@@ -4215,7 +4211,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_6\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_6\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_6\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_6-upload">
@@ -4247,7 +4242,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_7\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_7\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_7\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_7-upload">
@@ -4279,7 +4273,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_8\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_8\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_8\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_8-upload">
@@ -4311,7 +4304,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_9\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_9\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_9\',\'not\')">✗ Belum</button>
             </div><div class="task-upload-wrap" id="task_9-upload" data-no-upload="1" style="display:none;"></div>
             <div class="task-note-wrap" id="task_9-note">
@@ -4341,7 +4333,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_11\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_11\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_11\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_11-upload">
@@ -4377,7 +4368,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_1\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_1\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_1\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_1-upload">
@@ -4409,7 +4399,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_2\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_2\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_2\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_2-upload">
@@ -4434,7 +4423,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_3\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_3\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_3\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_3-upload">
@@ -4466,7 +4454,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_4\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_4\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_4\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_4-upload">
@@ -4498,7 +4485,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_5\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_5\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_5\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_5-upload">
@@ -4530,7 +4516,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_6\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_6\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_6\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_6-upload">
@@ -4562,7 +4547,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_7\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_7\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_7\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_7-upload">
@@ -4587,7 +4571,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_8\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_8\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_8\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_8-upload">
@@ -4619,7 +4602,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_9\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_9\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_9\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_9-upload">
@@ -4655,7 +4637,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_1\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_1\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_1\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_1-upload">
@@ -4687,7 +4668,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_2\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_2\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_2\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_2-upload">
@@ -4712,7 +4692,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_3\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_3\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_3\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_3-upload">
@@ -4737,7 +4716,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_4\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_4\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_4\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_4-upload">
@@ -4762,7 +4740,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_5\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_5\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_5\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_5-upload">
@@ -4787,7 +4764,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_6\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_6\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_6\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_6-upload">
@@ -4812,7 +4788,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_7\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_7\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_7\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_7-upload">
@@ -4844,7 +4819,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_8\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_8\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_8\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_8-upload">
@@ -4876,7 +4850,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_9\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_9\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_9\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_9-upload">
@@ -4908,7 +4881,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_10\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_10\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_10\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_10-upload">
@@ -4940,7 +4912,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_11\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_11\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_11\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_11-upload">
@@ -4972,7 +4943,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_12\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_12\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_12\',\'not\')">✗ Belum</button>
             </div><div class="task-upload-wrap" id="task_12-upload" data-no-upload="1" style="display:none;"></div>
             <div class="task-note-wrap" id="task_12-note">
@@ -4986,7 +4956,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_13\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_13\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_13\',\'not\')">✗ Belum</button>
             </div><div class="task-upload-wrap" id="task_13-upload" data-no-upload="1" style="display:none;"></div>
             <div class="task-note-wrap" id="task_13-note">
@@ -5007,7 +4976,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_14\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_14\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_14\',\'not\')">✗ Belum</button>
             </div><div class="task-upload-wrap" id="task_14-upload" data-no-upload="1" style="display:none;"></div>
             <div class="task-note-wrap" id="task_14-note">
@@ -5028,7 +4996,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_15\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_15\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_15\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_15-upload">
@@ -5064,7 +5031,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_1\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_1\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_1\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_1-upload">
@@ -5096,7 +5062,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_2\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_2\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_2\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_2-upload">
@@ -5128,7 +5093,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_3\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_3\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_3\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_3-upload">
@@ -5160,7 +5124,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_4\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_4\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_4\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_4-upload">
@@ -5192,7 +5155,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_5\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_5\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_5\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_5-upload">
@@ -5224,7 +5186,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_6\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_6\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_6\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_6-upload">
@@ -5249,7 +5210,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_7\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_7\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_7\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_7-upload">
@@ -5274,7 +5234,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_8\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_8\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_8\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_8-upload">
@@ -5299,7 +5258,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_9\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_9\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_9\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_9-upload">
@@ -5331,7 +5289,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_10\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_10\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_10\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_10-upload">
@@ -5363,7 +5320,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_11\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_11\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_11\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_11-upload">
@@ -5388,7 +5344,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_12\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_12\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_12\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_12-upload">
@@ -5413,7 +5368,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_13\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_13\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_13\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_13-upload">
@@ -5438,7 +5392,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_14\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_14\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_14\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_14-upload">
@@ -5463,7 +5416,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_15\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_15\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_15\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_15-upload">
@@ -5495,7 +5447,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_16\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_16\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_16\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_16-upload">
@@ -5520,7 +5471,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_17\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_17\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_17\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_17-upload">
@@ -5545,7 +5495,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_18\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_18\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_18\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_18-upload">
@@ -5697,7 +5646,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_24\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_24\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_24\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_24-upload">
@@ -5729,7 +5677,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_25\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_25\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_25\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_25-upload">
@@ -5754,7 +5701,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_26\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_26\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_26\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_26-upload">
@@ -5779,7 +5725,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_27\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_27\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_27\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_27-upload">
@@ -5804,7 +5749,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_28\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_28\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_28\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_28-upload">
@@ -5829,7 +5773,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_29\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_29\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_29\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_29-upload">
@@ -5861,7 +5804,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_30\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_30\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_30\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_30-upload">
@@ -5926,7 +5868,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_1\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_1\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_1\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_1-upload">
@@ -5958,7 +5899,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_2\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_2\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_2\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_2-upload">
@@ -5990,7 +5930,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_3\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_3\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_3\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_3-upload">
@@ -6022,7 +5961,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_4\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_4\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_4\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_4-upload">
@@ -6054,7 +5992,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_5\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_5\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_5\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_5-upload">
@@ -6086,7 +6023,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_6\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_6\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_6\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_6-upload">
@@ -6111,7 +6047,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_7\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_7\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_7\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_7-upload">
@@ -6136,7 +6071,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_8\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_8\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_8\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_8-upload">
@@ -6161,7 +6095,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_9\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_9\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_9\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_9-upload">
@@ -6193,7 +6126,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_10\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_10\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_10\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_10-upload">
@@ -6225,7 +6157,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_11\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_11\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_11\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_11-upload">
@@ -6250,7 +6181,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_12\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_12\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_12\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_12-upload">
@@ -6275,7 +6205,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_13\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_13\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_13\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_13-upload">
@@ -6300,7 +6229,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_14\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_14\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_14\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_14-upload">
@@ -6325,7 +6253,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_15\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_15\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_15\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_15-upload">
@@ -6357,7 +6284,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_16\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_16\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_16\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_16-upload">
@@ -6382,7 +6308,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_17\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_17\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_17\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_17-upload">
@@ -6407,7 +6332,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_18\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_18\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_18\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_18-upload">
@@ -6559,7 +6483,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_24\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_24\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_24\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_24-upload">
@@ -6591,7 +6514,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_25\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_25\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_25\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_25-upload">
@@ -6616,7 +6538,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_26\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_26\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_26\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_26-upload">
@@ -6641,7 +6562,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_27\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_27\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_27\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_27-upload">
@@ -6666,7 +6586,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_28\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_28\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_28\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_28-upload">
@@ -6691,7 +6610,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_29\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_29\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_29\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_29-upload">
@@ -6723,7 +6641,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_30\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_30\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_30\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_30-upload">
@@ -6788,7 +6705,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_1\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_1\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_1\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_1-upload">
@@ -6820,7 +6736,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_2\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_2\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_2\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_2-upload">
@@ -6852,7 +6767,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_3\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_3\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_3\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_3-upload">
@@ -6884,7 +6798,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_4\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_4\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_4\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_4-upload">
@@ -6916,7 +6829,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_5\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_5\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_5\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_5-upload">
@@ -6948,7 +6860,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_6\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_6\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_6\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_6-upload">
@@ -6973,7 +6884,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_7\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_7\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_7\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_7-upload">
@@ -6998,7 +6908,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_8\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_8\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_8\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_8-upload">
@@ -7023,7 +6932,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_9\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_9\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_9\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_9-upload">
@@ -7055,7 +6963,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_10\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_10\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_10\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_10-upload">
@@ -7087,7 +6994,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_11\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_11\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_11\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_11-upload">
@@ -7112,7 +7018,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_12\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_12\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_12\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_12-upload">
@@ -7137,7 +7042,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_13\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_13\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_13\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_13-upload">
@@ -7162,7 +7066,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_14\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_14\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_14\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_14-upload">
@@ -7187,7 +7090,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_15\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_15\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_15\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_15-upload">
@@ -7219,7 +7121,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_16\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_16\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_16\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_16-upload">
@@ -7244,7 +7145,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_17\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_17\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_17\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_17-upload">
@@ -7269,7 +7169,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_18\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_18\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_18\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_18-upload">
@@ -7421,7 +7320,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_24\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_24\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_24\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_24-upload">
@@ -7453,7 +7351,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_25\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_25\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_25\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_25-upload">
@@ -7478,7 +7375,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_26\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_26\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_26\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_26-upload">
@@ -7503,7 +7399,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_27\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_27\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_27\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_27-upload">
@@ -7528,7 +7423,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_28\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_28\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_28\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_28-upload">
@@ -7553,7 +7447,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_29\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_29\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_29\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_29-upload">
@@ -7585,7 +7478,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_30\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_30\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_30\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_30-upload">
@@ -7650,7 +7542,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_1\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_1\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_1\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_1-upload">
@@ -7682,7 +7573,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_2\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_2\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_2\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_2-upload">
@@ -7714,7 +7604,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_3\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_3\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_3\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_3-upload">
@@ -7746,7 +7635,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_4\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_4\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_4\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_4-upload">
@@ -7778,7 +7666,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_5\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_5\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_5\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_5-upload">
@@ -7810,7 +7697,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_6\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_6\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_6\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_6-upload">
@@ -7835,7 +7721,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_7\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_7\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_7\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_7-upload">
@@ -7860,7 +7745,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_8\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_8\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_8\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_8-upload">
@@ -7885,7 +7769,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_9\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_9\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_9\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_9-upload">
@@ -7917,7 +7800,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_10\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_10\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_10\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_10-upload">
@@ -7949,7 +7831,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_11\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_11\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_11\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_11-upload">
@@ -7974,7 +7855,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_12\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_12\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_12\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_12-upload">
@@ -7999,7 +7879,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_13\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_13\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_13\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_13-upload">
@@ -8024,7 +7903,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_14\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_14\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_14\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_14-upload">
@@ -8049,7 +7927,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_15\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_15\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_15\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_15-upload">
@@ -8081,7 +7958,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_16\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_16\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_16\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_16-upload">
@@ -8106,7 +7982,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_17\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_17\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_17\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_17-upload">
@@ -8131,7 +8006,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_18\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_18\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_18\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_18-upload">
@@ -8283,7 +8157,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_24\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_24\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_24\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_24-upload">
@@ -8315,7 +8188,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_25\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_25\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_25\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_25-upload">
@@ -8340,7 +8212,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_26\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_26\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_26\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_26-upload">
@@ -8365,7 +8236,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_27\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_27\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_27\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_27-upload">
@@ -8390,7 +8260,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_28\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_28\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_28\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_28-upload">
@@ -8415,7 +8284,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_29\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_29\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_29\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_29-upload">
@@ -8447,7 +8315,6 @@ const ROLE_TASKS = {
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,\'task_30\',\'done\')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,\'task_30\',\'progress\')">⏳ Proses</button>
               <button class="status-btn" onclick="setStatus(event,\'task_30\',\'not\')">✗ Belum</button>
             </div>
             <div class="task-upload-wrap" id="task_30-upload">
@@ -8664,8 +8531,9 @@ const ROLE_TASKS = {
         : 0;
       const statusColor = submitted === 0 ? 'var(--red)' : submitted === hotels.length ? 'var(--green)' : 'var(--amber)';
       const statusText = submitted === 0 ? '⚠️ Belum ada' : `${submitted}/${hotels.length} hotel`;
+      const clickable = submitted > 0 ? `onclick="openDetailLaporan('${role.name}')" style="cursor:pointer;"` : '';
       roleSummaryHtml += `
-        <div class="submit-row" style="align-items:center;">
+        <div class="submit-row" style="align-items:center;" ${clickable}>
           <span style="font-size:18px;margin-right:10px;">${role.icon}</span>
           <span class="submit-row-label" style="flex:1;">${role.name.replace(' Corporate','')}</span>
           <span style="font-size:12px;font-weight:700;color:${statusColor};">${statusText}</span>
@@ -8685,7 +8553,7 @@ const ROLE_TASKS = {
         if (report) {
           const barColor = report.pct === 100 ? 'var(--green)' : report.pct >= 70 ? 'var(--navy)' : 'var(--amber)';
           roleRowsHtml += `
-            <div class="role-report-item">
+            <div class="role-report-item" onclick="openDetailLaporan('${role.name}','${hotel}')" style="cursor:pointer;">
               <div class="role-avatar">${role.icon}</div>
               <div class="role-info">
                 <h4>${role.name.replace(' Corporate','')}</h4>
@@ -8699,6 +8567,7 @@ const ROLE_TASKS = {
                   </div>
                 </div>
               </div>
+              <div style="font-size:11px;color:var(--navy);font-weight:700;margin-top:4px;">👁 Lihat Detail →</div>
             </div>`;
         } else {
           roleRowsHtml += `
@@ -8858,6 +8727,124 @@ const ROLE_TASKS = {
       html += '</div></div>';
       return html;
     } catch(e) { return ''; }
+  }
+
+  // Buka detail laporan per role/hotel
+  async function openDetailLaporan(roleName, hotelName) {
+    go('detail');
+    document.getElementById('detail-title').textContent = roleName.replace(' Corporate','');
+    document.getElementById('detail-subtitle').textContent = hotelName || 'Semua Hotel';
+    document.getElementById('detail-content').innerHTML = '<div style="text-align:center;padding:40px 0;color:var(--gray-400);"><div style="font-size:40px;">⏳</div><p style="font-size:14px;font-weight:600;margin-top:12px;">Memuat detail...</p></div>';
+
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      let url = SUPA_URL + '/rest/v1/draft_tasklist?tanggal=eq.' + today + '&role=eq.' + encodeURIComponent(roleName) + '&select=*&order=task_id.asc';
+      if (hotelName) url += '&hotel=eq.' + encodeURIComponent(hotelName);
+
+      const res = await fetch(url, {
+        headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY }
+      });
+      const data = res.ok ? await res.json() : [];
+
+      if (!data || data.length === 0) {
+        document.getElementById('detail-content').innerHTML = '<div style="text-align:center;padding:40px 0;color:var(--gray-400);"><div style="font-size:40px;">📭</div><p style="font-size:14px;font-weight:600;margin-top:12px;">Tidak ada data draft untuk laporan ini</p></div>';
+        return;
+      }
+
+      // Ambil info laporan
+      const laporanRes = await fetch(
+        SUPA_URL + '/rest/v1/laporan?tanggal=eq.' + today + '&role=eq.' + encodeURIComponent(roleName) + (hotelName ? '&hotel=eq.' + encodeURIComponent(hotelName) : '') + '&select=*',
+        { headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY } }
+      );
+      const laporanData = laporanRes.ok ? await laporanRes.json() : [];
+      const laporan = laporanData[0] || {};
+
+      const statusIcon = { done: '✅', progress: '⏳', not: '❌', note_only: '📝' };
+      const statusLabel = { done: 'Sudah', progress: 'Dalam Proses', not: 'Belum', note_only: 'Catatan' };
+      const statusColor = { done: 'var(--green)', progress: 'var(--amber)', not: 'var(--red)', note_only: 'var(--navy)' };
+
+      let html = '';
+
+      // Header ringkasan
+      if (laporan.pct !== undefined) {
+        const pct = laporan.pct || 0;
+        const pctColor = pct === 100 ? 'var(--green)' : pct >= 70 ? 'var(--navy)' : 'var(--amber)';
+        html += `<div style="background:white;border-radius:var(--radius);padding:16px;margin-bottom:12px;box-shadow:var(--shadow-card);">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+            <span style="font-size:13px;font-weight:700;color:var(--gray-400);">RINGKASAN</span>
+            <span style="font-size:20px;font-weight:800;color:${pctColor};">${pct}%</span>
+          </div>
+          <div style="height:6px;background:var(--gray-100);border-radius:4px;overflow:hidden;margin-bottom:10px;">
+            <div style="height:100%;width:${pct}%;background:${pctColor};border-radius:4px;"></div>
+          </div>
+          <div style="display:flex;gap:16px;font-size:12px;color:var(--gray-400);">
+            <span>✅ ${laporan.task_done || 0} Sudah</span>
+            <span>⏳ ${laporan.task_progress || 0} Proses</span>
+            <span>❌ ${laporan.task_not || 0} Belum</span>
+            <span>📎 ${laporan.file_count || 0} File</span>
+          </div>
+          <div style="margin-top:8px;font-size:11px;color:var(--gray-400);">🕐 Submit ${laporan.submitted_at ? new Date(laporan.submitted_at).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'}) : '—'} WIB</div>
+        </div>`;
+      }
+
+      // Detail per task
+      html += '<div style="font-size:11px;font-weight:700;color:var(--gray-400);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">DETAIL PER TUGAS</div>';
+
+      let taskNum = 0;
+      data.forEach(d => {
+        if (!d.status || d.status === 'note_only' && !d.keterangan && !d.file_urls) return;
+        taskNum++;
+
+        const sIcon = statusIcon[d.status] || '—';
+        const sLabel = statusLabel[d.status] || d.status;
+        const sColor = statusColor[d.status] || 'var(--gray-400)';
+
+        html += `<div style="background:white;border-radius:var(--radius);padding:14px;margin-bottom:8px;box-shadow:var(--shadow-card);">`;
+        html += `<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+          <span style="font-size:16px;">${sIcon}</span>
+          <span style="font-size:12px;font-weight:700;color:${sColor};">${sLabel}</span>
+          <span style="font-size:10px;color:var(--gray-400);margin-left:auto;">Task ${d.task_id}</span>
+        </div>`;
+
+        if (d.keterangan) {
+          html += `<div style="font-size:13px;color:var(--gray-700);background:var(--gray-50);padding:10px 12px;border-radius:8px;margin-bottom:8px;line-height:1.6;">${d.keterangan}</div>`;
+        }
+
+        // Foto/dokumen
+        if (d.file_urls) {
+          try {
+            const files = JSON.parse(d.file_urls);
+            if (files && files.length > 0) {
+              html += '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;">';
+              files.forEach(f => {
+                const isImg = f.type && f.type.startsWith('image/');
+                if (isImg) {
+                  html += `<a href="${f.url}" target="_blank" style="display:block;">
+                    <img src="${f.url}" style="width:80px;height:80px;object-fit:cover;border-radius:8px;border:1.5px solid var(--gray-200);">
+                  </a>`;
+                } else {
+                  html += `<a href="${f.url}" target="_blank" style="display:flex;align-items:center;gap:4px;padding:6px 10px;background:var(--gray-50);border:1.5px solid var(--gray-200);border-radius:8px;font-size:11px;color:var(--navy);text-decoration:none;font-weight:600;">
+                    📄 ${f.name ? f.name.substring(0,20) : 'Dokumen'}
+                  </a>`;
+                }
+              });
+              html += '</div>';
+            }
+          } catch(e) {}
+        }
+
+        html += '</div>';
+      });
+
+      if (taskNum === 0) {
+        html += '<div style="text-align:center;padding:24px;color:var(--gray-400);font-size:13px;">Belum ada detail tugas yang tersimpan</div>';
+      }
+
+      document.getElementById('detail-content').innerHTML = html;
+    } catch(e) {
+      console.error('Detail error:', e);
+      document.getElementById('detail-content').innerHTML = '<div style="text-align:center;padding:40px 0;color:var(--red);">❌ Gagal memuat detail laporan</div>';
+    }
   }
 
   // Select hotel di Activity Plan
