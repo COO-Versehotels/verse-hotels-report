@@ -2214,16 +2214,25 @@
   // Simpan laporan ke Supabase
   async function saveToSupabase(role, hotel, taskDone, taskTotal, taskProgress, taskNot, pct, fuCount, fileCount) {
     try {
-      const { error } = await supa.from('laporan').upsert({
+      const { data, error } = await supa.from('laporan').upsert({
         tanggal: new Date().toISOString().split('T')[0],
         role, hotel, task_done: taskDone, task_total: taskTotal,
         task_progress: taskProgress, task_not: taskNot,
         pct, fu_count: fuCount, file_count: fileCount,
         submitted_at: new Date().toISOString()
       }, { onConflict: 'tanggal,role,hotel' });
-      if (error) console.error('Supabase error:', error);
-      else console.log('Laporan tersimpan ke database!');
-    } catch(e) { console.error('Save error:', e); }
+      if (error) {
+        console.error('Supabase error:', error);
+        showToast('❌ Gagal simpan ke database: ' + error.message);
+        return false;
+      }
+      console.log('✅ Laporan tersimpan ke database!');
+      return true;
+    } catch(e) {
+      console.error('Save error:', e);
+      showToast('❌ Error koneksi database');
+      return false;
+    }
   }
 
   // Load semua laporan hari ini dari Supabase
