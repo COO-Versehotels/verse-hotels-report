@@ -2520,8 +2520,10 @@
         const isHM = currentRole && currentRole.startsWith('HM ');
         apHotelSection.style.display = isHM ? 'none' : 'block';
       }
-      // Load draft dari Supabase
-      setTimeout(() => loadDraft(currentRole, currentHotel), 400);
+      // Load draft dari Supabase — clear dulu lalu restore fresh
+      Object.keys(taskFiles).forEach(k => delete taskFiles[k]);
+      Object.keys(taskFileUrls).forEach(k => delete taskFileUrls[k]);
+      setTimeout(() => loadDraft(currentRole, currentHotel), 500);
     }
 
     // Update greeting
@@ -5486,7 +5488,7 @@ const ROLE_TASKS = {
               <button onclick="event.stopPropagation();setRoomStatus(\'room_16_1\',\'not\')" id="room_16_1-btn-not"
                 style="flex:1;padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;background:var(--gray-50);cursor:pointer;">✗ Tidak Dikerjakan</button>
             </div>
-            <div class="task-upload-wrap show" id="room_16_1-upload" style="display:block !important;">
+            <div class="task-upload-wrap" id="room_16_1-upload" style="display:none;">
               <div class="task-upload-area" id="room_16_1-upload-area">
                 <input type="file" accept="image/*,.pdf" multiple onchange="handleFileUpload(this,\'room_16_1\')">
                 <span class="task-upload-icon">📸</span>
@@ -5514,7 +5516,7 @@ const ROLE_TASKS = {
               <button onclick="event.stopPropagation();setRoomStatus(\'room_16_2\',\'not\')" id="room_16_2-btn-not"
                 style="flex:1;padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;background:var(--gray-50);cursor:pointer;">✗ Tidak Dikerjakan</button>
             </div>
-            <div class="task-upload-wrap show" id="room_16_2-upload" style="display:block !important;">
+            <div class="task-upload-wrap" id="room_16_2-upload" style="display:none;">
               <div class="task-upload-area" id="room_16_2-upload-area">
                 <input type="file" accept="image/*,.pdf" multiple onchange="handleFileUpload(this,\'room_16_2\')">
                 <span class="task-upload-icon">📸</span>
@@ -5542,7 +5544,7 @@ const ROLE_TASKS = {
               <button onclick="event.stopPropagation();setRoomStatus(\'room_16_3\',\'not\')" id="room_16_3-btn-not"
                 style="flex:1;padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;background:var(--gray-50);cursor:pointer;">✗ Tidak Dikerjakan</button>
             </div>
-            <div class="task-upload-wrap show" id="room_16_3-upload" style="display:block !important;">
+            <div class="task-upload-wrap" id="room_16_3-upload" style="display:none;">
               <div class="task-upload-area" id="room_16_3-upload-area">
                 <input type="file" accept="image/*,.pdf" multiple onchange="handleFileUpload(this,\'room_16_3\')">
                 <span class="task-upload-icon">📸</span>
@@ -5570,7 +5572,7 @@ const ROLE_TASKS = {
               <button onclick="event.stopPropagation();setRoomStatus(\'room_16_4\',\'not\')" id="room_16_4-btn-not"
                 style="flex:1;padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;background:var(--gray-50);cursor:pointer;">✗ Tidak Dikerjakan</button>
             </div>
-            <div class="task-upload-wrap show" id="room_16_4-upload" style="display:block !important;">
+            <div class="task-upload-wrap" id="room_16_4-upload" style="display:none;">
               <div class="task-upload-area" id="room_16_4-upload-area">
                 <input type="file" accept="image/*,.pdf" multiple onchange="handleFileUpload(this,\'room_16_4\')">
                 <span class="task-upload-icon">📸</span>
@@ -5598,7 +5600,7 @@ const ROLE_TASKS = {
               <button onclick="event.stopPropagation();setRoomStatus(\'room_16_5\',\'not\')" id="room_16_5-btn-not"
                 style="flex:1;padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;background:var(--gray-50);cursor:pointer;">✗ Tidak Dikerjakan</button>
             </div>
-            <div class="task-upload-wrap show" id="room_16_5-upload" style="display:block !important;">
+            <div class="task-upload-wrap" id="room_16_5-upload" style="display:none;">
               <div class="task-upload-area" id="room_16_5-upload-area">
                 <input type="file" accept="image/*,.pdf" multiple onchange="handleFileUpload(this,\'room_16_5\')">
                 <span class="task-upload-icon">📸</span>
@@ -6155,7 +6157,7 @@ const ROLE_TASKS = {
               <button onclick="event.stopPropagation();setRoomStatus(\'room_16_1\',\'not\')" id="room_16_1-btn-not"
                 style="flex:1;padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;background:var(--gray-50);cursor:pointer;">✗ Tidak Dikerjakan</button>
             </div>
-            <div class="task-upload-wrap show" id="room_16_1-upload" style="display:block !important;">
+            <div class="task-upload-wrap" id="room_16_1-upload" style="display:none;">
               <div class="task-upload-area" id="room_16_1-upload-area">
                 <input type="file" accept="image/*,.pdf" multiple onchange="handleFileUpload(this,\'room_16_1\')">
                 <span class="task-upload-icon">📸</span>
@@ -6183,7 +6185,7 @@ const ROLE_TASKS = {
               <button onclick="event.stopPropagation();setRoomStatus(\'room_16_2\',\'not\')" id="room_16_2-btn-not"
                 style="flex:1;padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;background:var(--gray-50);cursor:pointer;">✗ Tidak Dikerjakan</button>
             </div>
-            <div class="task-upload-wrap show" id="room_16_2-upload" style="display:block !important;">
+            <div class="task-upload-wrap" id="room_16_2-upload" style="display:none;">
               <div class="task-upload-area" id="room_16_2-upload-area">
                 <input type="file" accept="image/*,.pdf" multiple onchange="handleFileUpload(this,\'room_16_2\')">
                 <span class="task-upload-icon">📸</span>
@@ -6211,7 +6213,7 @@ const ROLE_TASKS = {
               <button onclick="event.stopPropagation();setRoomStatus(\'room_16_3\',\'not\')" id="room_16_3-btn-not"
                 style="flex:1;padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;background:var(--gray-50);cursor:pointer;">✗ Tidak Dikerjakan</button>
             </div>
-            <div class="task-upload-wrap show" id="room_16_3-upload" style="display:block !important;">
+            <div class="task-upload-wrap" id="room_16_3-upload" style="display:none;">
               <div class="task-upload-area" id="room_16_3-upload-area">
                 <input type="file" accept="image/*,.pdf" multiple onchange="handleFileUpload(this,\'room_16_3\')">
                 <span class="task-upload-icon">📸</span>
@@ -6239,7 +6241,7 @@ const ROLE_TASKS = {
               <button onclick="event.stopPropagation();setRoomStatus(\'room_16_4\',\'not\')" id="room_16_4-btn-not"
                 style="flex:1;padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;background:var(--gray-50);cursor:pointer;">✗ Tidak Dikerjakan</button>
             </div>
-            <div class="task-upload-wrap show" id="room_16_4-upload" style="display:block !important;">
+            <div class="task-upload-wrap" id="room_16_4-upload" style="display:none;">
               <div class="task-upload-area" id="room_16_4-upload-area">
                 <input type="file" accept="image/*,.pdf" multiple onchange="handleFileUpload(this,\'room_16_4\')">
                 <span class="task-upload-icon">📸</span>
@@ -6267,7 +6269,7 @@ const ROLE_TASKS = {
               <button onclick="event.stopPropagation();setRoomStatus(\'room_16_5\',\'not\')" id="room_16_5-btn-not"
                 style="flex:1;padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;background:var(--gray-50);cursor:pointer;">✗ Tidak Dikerjakan</button>
             </div>
-            <div class="task-upload-wrap show" id="room_16_5-upload" style="display:block !important;">
+            <div class="task-upload-wrap" id="room_16_5-upload" style="display:none;">
               <div class="task-upload-area" id="room_16_5-upload-area">
                 <input type="file" accept="image/*,.pdf" multiple onchange="handleFileUpload(this,\'room_16_5\')">
                 <span class="task-upload-icon">📸</span>
@@ -6824,7 +6826,7 @@ const ROLE_TASKS = {
               <button onclick="event.stopPropagation();setRoomStatus(\'room_16_1\',\'not\')" id="room_16_1-btn-not"
                 style="flex:1;padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;background:var(--gray-50);cursor:pointer;">✗ Tidak Dikerjakan</button>
             </div>
-            <div class="task-upload-wrap show" id="room_16_1-upload" style="display:block !important;">
+            <div class="task-upload-wrap" id="room_16_1-upload" style="display:none;">
               <div class="task-upload-area" id="room_16_1-upload-area">
                 <input type="file" accept="image/*,.pdf" multiple onchange="handleFileUpload(this,\'room_16_1\')">
                 <span class="task-upload-icon">📸</span>
@@ -6852,7 +6854,7 @@ const ROLE_TASKS = {
               <button onclick="event.stopPropagation();setRoomStatus(\'room_16_2\',\'not\')" id="room_16_2-btn-not"
                 style="flex:1;padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;background:var(--gray-50);cursor:pointer;">✗ Tidak Dikerjakan</button>
             </div>
-            <div class="task-upload-wrap show" id="room_16_2-upload" style="display:block !important;">
+            <div class="task-upload-wrap" id="room_16_2-upload" style="display:none;">
               <div class="task-upload-area" id="room_16_2-upload-area">
                 <input type="file" accept="image/*,.pdf" multiple onchange="handleFileUpload(this,\'room_16_2\')">
                 <span class="task-upload-icon">📸</span>
@@ -6880,7 +6882,7 @@ const ROLE_TASKS = {
               <button onclick="event.stopPropagation();setRoomStatus(\'room_16_3\',\'not\')" id="room_16_3-btn-not"
                 style="flex:1;padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;background:var(--gray-50);cursor:pointer;">✗ Tidak Dikerjakan</button>
             </div>
-            <div class="task-upload-wrap show" id="room_16_3-upload" style="display:block !important;">
+            <div class="task-upload-wrap" id="room_16_3-upload" style="display:none;">
               <div class="task-upload-area" id="room_16_3-upload-area">
                 <input type="file" accept="image/*,.pdf" multiple onchange="handleFileUpload(this,\'room_16_3\')">
                 <span class="task-upload-icon">📸</span>
@@ -6908,7 +6910,7 @@ const ROLE_TASKS = {
               <button onclick="event.stopPropagation();setRoomStatus(\'room_16_4\',\'not\')" id="room_16_4-btn-not"
                 style="flex:1;padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;background:var(--gray-50);cursor:pointer;">✗ Tidak Dikerjakan</button>
             </div>
-            <div class="task-upload-wrap show" id="room_16_4-upload" style="display:block !important;">
+            <div class="task-upload-wrap" id="room_16_4-upload" style="display:none;">
               <div class="task-upload-area" id="room_16_4-upload-area">
                 <input type="file" accept="image/*,.pdf" multiple onchange="handleFileUpload(this,\'room_16_4\')">
                 <span class="task-upload-icon">📸</span>
@@ -6936,7 +6938,7 @@ const ROLE_TASKS = {
               <button onclick="event.stopPropagation();setRoomStatus(\'room_16_5\',\'not\')" id="room_16_5-btn-not"
                 style="flex:1;padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;background:var(--gray-50);cursor:pointer;">✗ Tidak Dikerjakan</button>
             </div>
-            <div class="task-upload-wrap show" id="room_16_5-upload" style="display:block !important;">
+            <div class="task-upload-wrap" id="room_16_5-upload" style="display:none;">
               <div class="task-upload-area" id="room_16_5-upload-area">
                 <input type="file" accept="image/*,.pdf" multiple onchange="handleFileUpload(this,\'room_16_5\')">
                 <span class="task-upload-icon">📸</span>
@@ -7493,7 +7495,7 @@ const ROLE_TASKS = {
               <button onclick="event.stopPropagation();setRoomStatus(\'room_16_1\',\'not\')" id="room_16_1-btn-not"
                 style="flex:1;padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;background:var(--gray-50);cursor:pointer;">✗ Tidak Dikerjakan</button>
             </div>
-            <div class="task-upload-wrap show" id="room_16_1-upload" style="display:block !important;">
+            <div class="task-upload-wrap" id="room_16_1-upload" style="display:none;">
               <div class="task-upload-area" id="room_16_1-upload-area">
                 <input type="file" accept="image/*,.pdf" multiple onchange="handleFileUpload(this,\'room_16_1\')">
                 <span class="task-upload-icon">📸</span>
@@ -7521,7 +7523,7 @@ const ROLE_TASKS = {
               <button onclick="event.stopPropagation();setRoomStatus(\'room_16_2\',\'not\')" id="room_16_2-btn-not"
                 style="flex:1;padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;background:var(--gray-50);cursor:pointer;">✗ Tidak Dikerjakan</button>
             </div>
-            <div class="task-upload-wrap show" id="room_16_2-upload" style="display:block !important;">
+            <div class="task-upload-wrap" id="room_16_2-upload" style="display:none;">
               <div class="task-upload-area" id="room_16_2-upload-area">
                 <input type="file" accept="image/*,.pdf" multiple onchange="handleFileUpload(this,\'room_16_2\')">
                 <span class="task-upload-icon">📸</span>
@@ -7549,7 +7551,7 @@ const ROLE_TASKS = {
               <button onclick="event.stopPropagation();setRoomStatus(\'room_16_3\',\'not\')" id="room_16_3-btn-not"
                 style="flex:1;padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;background:var(--gray-50);cursor:pointer;">✗ Tidak Dikerjakan</button>
             </div>
-            <div class="task-upload-wrap show" id="room_16_3-upload" style="display:block !important;">
+            <div class="task-upload-wrap" id="room_16_3-upload" style="display:none;">
               <div class="task-upload-area" id="room_16_3-upload-area">
                 <input type="file" accept="image/*,.pdf" multiple onchange="handleFileUpload(this,\'room_16_3\')">
                 <span class="task-upload-icon">📸</span>
@@ -7577,7 +7579,7 @@ const ROLE_TASKS = {
               <button onclick="event.stopPropagation();setRoomStatus(\'room_16_4\',\'not\')" id="room_16_4-btn-not"
                 style="flex:1;padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;background:var(--gray-50);cursor:pointer;">✗ Tidak Dikerjakan</button>
             </div>
-            <div class="task-upload-wrap show" id="room_16_4-upload" style="display:block !important;">
+            <div class="task-upload-wrap" id="room_16_4-upload" style="display:none;">
               <div class="task-upload-area" id="room_16_4-upload-area">
                 <input type="file" accept="image/*,.pdf" multiple onchange="handleFileUpload(this,\'room_16_4\')">
                 <span class="task-upload-icon">📸</span>
@@ -7605,7 +7607,7 @@ const ROLE_TASKS = {
               <button onclick="event.stopPropagation();setRoomStatus(\'room_16_5\',\'not\')" id="room_16_5-btn-not"
                 style="flex:1;padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;background:var(--gray-50);cursor:pointer;">✗ Tidak Dikerjakan</button>
             </div>
-            <div class="task-upload-wrap show" id="room_16_5-upload" style="display:block !important;">
+            <div class="task-upload-wrap" id="room_16_5-upload" style="display:none;">
               <div class="task-upload-area" id="room_16_5-upload-area">
                 <input type="file" accept="image/*,.pdf" multiple onchange="handleFileUpload(this,\'room_16_5\')">
                 <span class="task-upload-icon">📸</span>
@@ -8231,23 +8233,33 @@ const ROLE_TASKS = {
     const noteWrap = document.getElementById(slotId + '-note');
     const item = document.getElementById(slotId);
 
-    if (btnDone) btnDone.style.background = '';
-    if (btnNot) btnNot.style.background = '';
+    // Reset semua button style dulu
+    [btnDone, btnNot].forEach(b => {
+      if (b) { b.style.background = ''; b.style.borderColor = ''; b.style.color = ''; }
+    });
 
     if (status === 'done') {
+      // Sudah — tampilkan upload, sembunyikan keterangan wajib
       if (btnDone) { btnDone.style.background = 'var(--green-soft)'; btnDone.style.borderColor = '#2ecc71'; btnDone.style.color = '#1a9c4f'; }
-      if (btnNot) { btnNot.style.background = ''; btnNot.style.borderColor = ''; btnNot.style.color = ''; }
-      if (uploadWrap) { uploadWrap.style.display = 'block'; }
-      if (noteWrap) { const n = noteWrap.querySelector('.task-note'); if(n && !n.value) n.placeholder = 'Keterangan kondisi kamar (opsional)...'; }
+      if (uploadWrap) { uploadWrap.style.display = 'block'; uploadWrap.style.removeProperty('display'); uploadWrap.style.display = 'block'; }
+      if (noteWrap) {
+        noteWrap.style.display = 'block';
+        const n = noteWrap.querySelector('.task-note');
+        if (n && !n.value) n.placeholder = 'Keterangan kondisi kamar (opsional)...';
+      }
     } else {
+      // Tidak Dikerjakan — SEMBUNYIKAN upload, tampilkan keterangan wajib
       if (btnNot) { btnNot.style.background = 'var(--red-soft)'; btnNot.style.borderColor = 'var(--red)'; btnNot.style.color = '#c0392b'; }
-      if (btnDone) { btnDone.style.background = ''; btnDone.style.borderColor = ''; btnDone.style.color = ''; }
-      if (uploadWrap) { uploadWrap.style.display = 'none'; }
-      if (noteWrap) { const n = noteWrap.querySelector('.task-note'); if(n && !n.value) n.placeholder = 'Wajib diisi — jelaskan alasan tidak dikerjakan...'; }
+      if (uploadWrap) { uploadWrap.style.display = 'none !important'; uploadWrap.style.cssText = 'display:none !important;'; }
+      if (noteWrap) {
+        noteWrap.style.display = 'block';
+        const n = noteWrap.querySelector('.task-note');
+        if (n && !n.value) n.placeholder = 'Wajib diisi — jelaskan alasan tidak dikerjakan...';
+      }
     }
     if (item) {
       item.dataset.status = status;
-      autoSaveDraft(slotId);
+      saveDraftNow(slotId);
     }
   }
 
