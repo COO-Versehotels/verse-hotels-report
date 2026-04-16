@@ -2279,11 +2279,12 @@
       if (btns[0]) btns[0].classList.add('selected-green');
       if (num) { num.dataset.origNum = origNum; num.innerHTML = `<span style="font-size:9px;display:block;line-height:1;">${origNum}</span><span style="font-size:10px;">✓</span>`; num.className = 'task-number done'; }
       if (noteWrap) { noteWrap.classList.add('show'); const n = noteWrap.querySelector('.task-note'); if(n && !n.value) n.placeholder='Keterangan (opsional)...'; }
-      if (needUpload || (taskId.startsWith('fu'))) { if(uploadWrap){ uploadWrap.style.display='block'; uploadWrap.classList.add('show'); } }
+      if (needUpload || (taskId.startsWith('fu'))) { if(uploadWrap){ uploadWrap.classList.add('show'); } }
     } else if (status === 'not') {
       if (btns[1]) btns[1].classList.add('selected-red');
       if (num) { num.dataset.origNum = origNum; num.innerHTML = `<span style="font-size:9px;display:block;line-height:1;">${origNum}</span><span style="font-size:10px;">✗</span>`; num.className = 'task-number'; num.style.background='var(--red-soft)'; num.style.color='#c0392b'; }
       if (noteWrap) { noteWrap.classList.add('show'); const n = noteWrap.querySelector('.task-note'); if(n && !n.value) n.placeholder='Wajib diisi — jelaskan alasan tidak dikerjakan...'; }
+      if (uploadWrap) { uploadWrap.classList.remove('show'); }
     }
   }
 
@@ -2723,7 +2724,6 @@
       num.style.color = '';
       // Upload WAJIB — tampilkan upload area
       if (needUpload || isFU) {
-        uploadWrap.style.display = 'block';
         uploadWrap.classList.add('show');
       }
       // Keterangan OPSIONAL — tampilkan dengan placeholder opsional
@@ -2969,7 +2969,7 @@
         const files = taskFiles[id];
         if (!files || files.length === 0) {
           const uploadWrap = document.getElementById(id + '-upload');
-          if (uploadWrap) { uploadWrap.style.display = 'block'; uploadWrap.classList.add('show'); }
+          if (uploadWrap) { uploadWrap.classList.add('show'); }
           const area = document.getElementById(id + '-upload-area');
           if (area) { area.classList.add('required-alert'); setTimeout(() => area.classList.remove('required-alert'), 2500); }
           markError(item);
@@ -5499,7 +5499,7 @@ const ROLE_TASKS = {
               </div>
               <div class="file-preview-list" id="room_16_1-filelist"></div>
             </div>
-            <div class="task-note-wrap show" id="room_16_1-note" style="margin-top:8px;">
+            <div class="task-note-wrap" id="room_16_1-note" style="margin-top:8px;">
               <textarea class="task-note" rows="2" placeholder="Keterangan kondisi kamar (wajib diisi)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
@@ -5527,7 +5527,7 @@ const ROLE_TASKS = {
               </div>
               <div class="file-preview-list" id="room_16_2-filelist"></div>
             </div>
-            <div class="task-note-wrap show" id="room_16_2-note" style="margin-top:8px;">
+            <div class="task-note-wrap" id="room_16_2-note" style="margin-top:8px;">
               <textarea class="task-note" rows="2" placeholder="Keterangan kondisi kamar (wajib diisi)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
@@ -5555,7 +5555,7 @@ const ROLE_TASKS = {
               </div>
               <div class="file-preview-list" id="room_16_3-filelist"></div>
             </div>
-            <div class="task-note-wrap show" id="room_16_3-note" style="margin-top:8px;">
+            <div class="task-note-wrap" id="room_16_3-note" style="margin-top:8px;">
               <textarea class="task-note" rows="2" placeholder="Keterangan kondisi kamar (wajib diisi)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
@@ -5583,7 +5583,7 @@ const ROLE_TASKS = {
               </div>
               <div class="file-preview-list" id="room_16_4-filelist"></div>
             </div>
-            <div class="task-note-wrap show" id="room_16_4-note" style="margin-top:8px;">
+            <div class="task-note-wrap" id="room_16_4-note" style="margin-top:8px;">
               <textarea class="task-note" rows="2" placeholder="Keterangan kondisi kamar (wajib diisi)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
@@ -5611,7 +5611,7 @@ const ROLE_TASKS = {
               </div>
               <div class="file-preview-list" id="room_16_5-filelist"></div>
             </div>
-            <div class="task-note-wrap show" id="room_16_5-note" style="margin-top:8px;">
+            <div class="task-note-wrap" id="room_16_5-note" style="margin-top:8px;">
               <textarea class="task-note" rows="2" placeholder="Keterangan kondisi kamar (wajib diisi)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
@@ -6168,7 +6168,7 @@ const ROLE_TASKS = {
               </div>
               <div class="file-preview-list" id="room_16_1-filelist"></div>
             </div>
-            <div class="task-note-wrap show" id="room_16_1-note" style="margin-top:8px;">
+            <div class="task-note-wrap" id="room_16_1-note" style="margin-top:8px;">
               <textarea class="task-note" rows="2" placeholder="Keterangan kondisi kamar (wajib diisi)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
@@ -6196,7 +6196,7 @@ const ROLE_TASKS = {
               </div>
               <div class="file-preview-list" id="room_16_2-filelist"></div>
             </div>
-            <div class="task-note-wrap show" id="room_16_2-note" style="margin-top:8px;">
+            <div class="task-note-wrap" id="room_16_2-note" style="margin-top:8px;">
               <textarea class="task-note" rows="2" placeholder="Keterangan kondisi kamar (wajib diisi)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
@@ -6224,7 +6224,7 @@ const ROLE_TASKS = {
               </div>
               <div class="file-preview-list" id="room_16_3-filelist"></div>
             </div>
-            <div class="task-note-wrap show" id="room_16_3-note" style="margin-top:8px;">
+            <div class="task-note-wrap" id="room_16_3-note" style="margin-top:8px;">
               <textarea class="task-note" rows="2" placeholder="Keterangan kondisi kamar (wajib diisi)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
@@ -6252,7 +6252,7 @@ const ROLE_TASKS = {
               </div>
               <div class="file-preview-list" id="room_16_4-filelist"></div>
             </div>
-            <div class="task-note-wrap show" id="room_16_4-note" style="margin-top:8px;">
+            <div class="task-note-wrap" id="room_16_4-note" style="margin-top:8px;">
               <textarea class="task-note" rows="2" placeholder="Keterangan kondisi kamar (wajib diisi)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
@@ -6280,7 +6280,7 @@ const ROLE_TASKS = {
               </div>
               <div class="file-preview-list" id="room_16_5-filelist"></div>
             </div>
-            <div class="task-note-wrap show" id="room_16_5-note" style="margin-top:8px;">
+            <div class="task-note-wrap" id="room_16_5-note" style="margin-top:8px;">
               <textarea class="task-note" rows="2" placeholder="Keterangan kondisi kamar (wajib diisi)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
@@ -6837,7 +6837,7 @@ const ROLE_TASKS = {
               </div>
               <div class="file-preview-list" id="room_16_1-filelist"></div>
             </div>
-            <div class="task-note-wrap show" id="room_16_1-note" style="margin-top:8px;">
+            <div class="task-note-wrap" id="room_16_1-note" style="margin-top:8px;">
               <textarea class="task-note" rows="2" placeholder="Keterangan kondisi kamar (wajib diisi)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
@@ -6865,7 +6865,7 @@ const ROLE_TASKS = {
               </div>
               <div class="file-preview-list" id="room_16_2-filelist"></div>
             </div>
-            <div class="task-note-wrap show" id="room_16_2-note" style="margin-top:8px;">
+            <div class="task-note-wrap" id="room_16_2-note" style="margin-top:8px;">
               <textarea class="task-note" rows="2" placeholder="Keterangan kondisi kamar (wajib diisi)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
@@ -6893,7 +6893,7 @@ const ROLE_TASKS = {
               </div>
               <div class="file-preview-list" id="room_16_3-filelist"></div>
             </div>
-            <div class="task-note-wrap show" id="room_16_3-note" style="margin-top:8px;">
+            <div class="task-note-wrap" id="room_16_3-note" style="margin-top:8px;">
               <textarea class="task-note" rows="2" placeholder="Keterangan kondisi kamar (wajib diisi)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
@@ -6921,7 +6921,7 @@ const ROLE_TASKS = {
               </div>
               <div class="file-preview-list" id="room_16_4-filelist"></div>
             </div>
-            <div class="task-note-wrap show" id="room_16_4-note" style="margin-top:8px;">
+            <div class="task-note-wrap" id="room_16_4-note" style="margin-top:8px;">
               <textarea class="task-note" rows="2" placeholder="Keterangan kondisi kamar (wajib diisi)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
@@ -6949,7 +6949,7 @@ const ROLE_TASKS = {
               </div>
               <div class="file-preview-list" id="room_16_5-filelist"></div>
             </div>
-            <div class="task-note-wrap show" id="room_16_5-note" style="margin-top:8px;">
+            <div class="task-note-wrap" id="room_16_5-note" style="margin-top:8px;">
               <textarea class="task-note" rows="2" placeholder="Keterangan kondisi kamar (wajib diisi)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
@@ -7506,7 +7506,7 @@ const ROLE_TASKS = {
               </div>
               <div class="file-preview-list" id="room_16_1-filelist"></div>
             </div>
-            <div class="task-note-wrap show" id="room_16_1-note" style="margin-top:8px;">
+            <div class="task-note-wrap" id="room_16_1-note" style="margin-top:8px;">
               <textarea class="task-note" rows="2" placeholder="Keterangan kondisi kamar (wajib diisi)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
@@ -7534,7 +7534,7 @@ const ROLE_TASKS = {
               </div>
               <div class="file-preview-list" id="room_16_2-filelist"></div>
             </div>
-            <div class="task-note-wrap show" id="room_16_2-note" style="margin-top:8px;">
+            <div class="task-note-wrap" id="room_16_2-note" style="margin-top:8px;">
               <textarea class="task-note" rows="2" placeholder="Keterangan kondisi kamar (wajib diisi)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
@@ -7562,7 +7562,7 @@ const ROLE_TASKS = {
               </div>
               <div class="file-preview-list" id="room_16_3-filelist"></div>
             </div>
-            <div class="task-note-wrap show" id="room_16_3-note" style="margin-top:8px;">
+            <div class="task-note-wrap" id="room_16_3-note" style="margin-top:8px;">
               <textarea class="task-note" rows="2" placeholder="Keterangan kondisi kamar (wajib diisi)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
@@ -7590,7 +7590,7 @@ const ROLE_TASKS = {
               </div>
               <div class="file-preview-list" id="room_16_4-filelist"></div>
             </div>
-            <div class="task-note-wrap show" id="room_16_4-note" style="margin-top:8px;">
+            <div class="task-note-wrap" id="room_16_4-note" style="margin-top:8px;">
               <textarea class="task-note" rows="2" placeholder="Keterangan kondisi kamar (wajib diisi)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
@@ -7618,7 +7618,7 @@ const ROLE_TASKS = {
               </div>
               <div class="file-preview-list" id="room_16_5-filelist"></div>
             </div>
-            <div class="task-note-wrap show" id="room_16_5-note" style="margin-top:8px;">
+            <div class="task-note-wrap" id="room_16_5-note" style="margin-top:8px;">
               <textarea class="task-note" rows="2" placeholder="Keterangan kondisi kamar (wajib diisi)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
@@ -8233,26 +8233,25 @@ const ROLE_TASKS = {
     const noteWrap = document.getElementById(slotId + '-note');
     const item = document.getElementById(slotId);
 
-    // Reset semua button style dulu
     [btnDone, btnNot].forEach(b => {
       if (b) { b.style.background = ''; b.style.borderColor = ''; b.style.color = ''; }
     });
 
     if (status === 'done') {
-      // Sudah — tampilkan upload, sembunyikan keterangan wajib
       if (btnDone) { btnDone.style.background = 'var(--green-soft)'; btnDone.style.borderColor = '#2ecc71'; btnDone.style.color = '#1a9c4f'; }
-      if (uploadWrap) { uploadWrap.style.display = 'block'; uploadWrap.style.removeProperty('display'); uploadWrap.style.display = 'block'; }
+      // Pakai classList.add('show') agar override !important di CSS
+      if (uploadWrap) { uploadWrap.classList.add('show'); }
       if (noteWrap) {
-        noteWrap.style.display = 'block';
+        noteWrap.classList.add('show');
         const n = noteWrap.querySelector('.task-note');
         if (n && !n.value) n.placeholder = 'Keterangan kondisi kamar (opsional)...';
       }
     } else {
-      // Tidak Dikerjakan — SEMBUNYIKAN upload, tampilkan keterangan wajib
       if (btnNot) { btnNot.style.background = 'var(--red-soft)'; btnNot.style.borderColor = 'var(--red)'; btnNot.style.color = '#c0392b'; }
-      if (uploadWrap) { uploadWrap.style.display = 'none !important'; uploadWrap.style.cssText = 'display:none !important;'; }
+      // Pakai classList.remove('show') agar upload benar-benar hilang
+      if (uploadWrap) { uploadWrap.classList.remove('show'); }
       if (noteWrap) {
-        noteWrap.style.display = 'block';
+        noteWrap.classList.add('show');
         const n = noteWrap.querySelector('.task-note');
         if (n && !n.value) n.placeholder = 'Wajib diisi — jelaskan alasan tidak dikerjakan...';
       }
