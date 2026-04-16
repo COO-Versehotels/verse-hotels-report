@@ -2117,28 +2117,63 @@
     console.log('saveDraftNow:', taskId, 'status:', status, 'files:', currentUrls ? currentUrls.length : 0);
 
     try {
-      const saveRes = await fetch(SUPA_URL + '/rest/v1/draft_tasklist', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': SUPA_KEY,
-          'Authorization': 'Bearer ' + SUPA_KEY,
-          'Prefer': 'resolution=merge-duplicates'
-        },
-        body: JSON.stringify({
-          tanggal: today,
-          role: currentRole,
-          hotel: currentHotel,
-          task_id: taskId,
-          status: status,
-          keterangan: keterangan,
-          file_urls: fileUrls,
-          updated_at: new Date().toISOString()
-        })
-      });
+      // Cek apakah sudah ada row untuk task ini
+      const checkRes = await fetch(
+        SUPA_URL + '/rest/v1/draft_tasklist?tanggal=eq.' + today +
+        '&role=eq.' + encodeURIComponent(currentRole) +
+        '&hotel=eq.' + encodeURIComponent(currentHotel) +
+        '&task_id=eq.' + encodeURIComponent(taskId) +
+        '&select=id',
+        { headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY } }
+      );
+      const existing = checkRes.ok ? await checkRes.json() : [];
+      const payload = {
+        tanggal: today,
+        role: currentRole,
+        hotel: currentHotel,
+        task_id: taskId,
+        status: status,
+        keterangan: keterangan,
+        file_urls: fileUrls,
+        updated_at: new Date().toISOString()
+      };
+
+      let saveRes;
+      if (existing && existing.length > 0) {
+        // UPDATE
+        saveRes = await fetch(
+          SUPA_URL + '/rest/v1/draft_tasklist?tanggal=eq.' + today +
+          '&role=eq.' + encodeURIComponent(currentRole) +
+          '&hotel=eq.' + encodeURIComponent(currentHotel) +
+          '&task_id=eq.' + encodeURIComponent(taskId),
+          {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json',
+              'apikey': SUPA_KEY,
+              'Authorization': 'Bearer ' + SUPA_KEY
+            },
+            body: JSON.stringify({ status, keterangan, file_urls: fileUrls, updated_at: new Date().toISOString() })
+          }
+        );
+      } else {
+        // INSERT
+        saveRes = await fetch(SUPA_URL + '/rest/v1/draft_tasklist', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': SUPA_KEY,
+            'Authorization': 'Bearer ' + SUPA_KEY
+          },
+          body: JSON.stringify(payload)
+        });
+      }
+
       if (!saveRes.ok) {
         const err = await saveRes.text();
-        console.error('Draft save error:', err);
+        console.error('Draft save error:', saveRes.status, err);
+      } else {
+        console.log('Draft saved OK:', taskId, 'status:', status, 'fileUrls:', fileUrls ? 'yes' : 'null');
       }
     } catch(e) { console.error('Auto-save error:', e); }
   }
