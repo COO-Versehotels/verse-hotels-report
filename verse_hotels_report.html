@@ -2109,10 +2109,12 @@
 
     const status = item.dataset.status || null;
     const noteEl = item.querySelector('.task-note');
-    // Untuk FU: simpan fu-input sebagai keterangan
     const fuInput = item.querySelector('.fu-input');
     const keterangan = fuInput ? fuInput.value.trim() : (noteEl ? noteEl.value.trim() : '');
-    const fileUrls = taskFileUrls[taskId] ? JSON.stringify(taskFileUrls[taskId]) : null;
+    // Selalu ambil file_urls terbaru dari taskFileUrls
+    const currentUrls = taskFileUrls[taskId];
+    const fileUrls = currentUrls && currentUrls.length > 0 ? JSON.stringify(currentUrls) : null;
+    console.log('saveDraftNow:', taskId, 'status:', status, 'files:', currentUrls ? currentUrls.length : 0);
 
     try {
       const saveRes = await fetch(SUPA_URL + '/rest/v1/draft_tasklist', {
@@ -2148,15 +2150,34 @@
       return;
     }
     const today = new Date().toISOString().split('T')[0];
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yDate = yesterday.toISOString().split('T')[0];
     console.log('loadDraft called for:', role, hotel, today);
     try {
-      const res = await fetch(
+      // Coba ambil data hari ini dulu
+      let res = await fetch(
         SUPA_URL + '/rest/v1/draft_tasklist?tanggal=eq.' + today +
         '&role=eq.' + encodeURIComponent(role) +
         '&hotel=eq.' + encodeURIComponent(hotel) + '&select=*',
         { headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY } }
       );
-      const data = res.ok ? await res.json() : [];
+      let data = res.ok ? await res.json() : [];
+
+      // Jika tidak ada data hari ini, cek kemarin (belum submit)
+      if (!data || data.length === 0) {
+        res = await fetch(
+          SUPA_URL + '/rest/v1/draft_tasklist?tanggal=eq.' + yDate +
+          '&role=eq.' + encodeURIComponent(role) +
+          '&hotel=eq.' + encodeURIComponent(hotel) + '&select=*',
+          { headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY } }
+        );
+        data = res.ok ? await res.json() : [];
+        if (data && data.length > 0) {
+          showToast('📂 Melanjutkan draft kemarin...');
+        }
+      }
+
       if (!data || data.length === 0) return;
 
       let restoredCount = 0;
@@ -2411,28 +2432,38 @@
   // Auto reset — arsip dulu lalu hapus data hari kemarin
   async function checkAndReset() {
     try {
-      const today = new Date().toISOString().split('T')[0];
-      // Cek apakah ada data dari kemarin yang belum diarsip
       const yesterday = new Date();
       yesterday.setDate(yesterday.getDate() - 1);
       const yDate = yesterday.toISOString().split('T')[0];
 
-      const { data: oldData } = await supa.from('laporan')
-        .select('*').eq('tanggal', yDate);
+      // Cek laporan kemarin yang sudah submit
+      const res = await fetch(
+        SUPA_URL + '/rest/v1/laporan?tanggal=eq.' + yDate + '&select=*',
+        { headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY } }
+      );
+      const oldData = res.ok ? await res.json() : [];
 
       if (oldData && oldData.length > 0) {
-        // Arsip dulu
+        // Arsip laporan yang sudah submit
         const arsipData = oldData.map(r => ({
           tanggal: r.tanggal, role: r.role, hotel: r.hotel,
           task_done: r.task_done, task_total: r.task_total,
           pct: r.pct, fu_count: r.fu_count, submitted_at: r.submitted_at
         }));
-        await supa.from('arsip').insert(arsipData);
-        // Hapus data kemarin
-        await supa.from('laporan').delete().eq('tanggal', yDate);
-        console.log('Auto reset & arsip selesai untuk', yDate);
+        await fetch(SUPA_URL + '/rest/v1/arsip', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY, 'Prefer': 'resolution=merge-duplicates' },
+          body: JSON.stringify(arsipData)
+        });
+        // Hapus laporan kemarin (bukan draft!)
+        await fetch(SUPA_URL + '/rest/v1/laporan?tanggal=eq.' + yDate, {
+          method: 'DELETE',
+          headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY }
+        });
+        console.log('Auto arsip selesai untuk', yDate);
+        // CATATAN: draft_tasklist TIDAK dihapus agar team bisa lanjut esok hari
       }
-    } catch(e) { console.error('Reset error:', e); }
+    } catch(e) { /* Reset non-critical */ }
   }
 
   // State
@@ -2538,16 +2569,15 @@
         apHotelSection.style.display = isHM ? 'none' : 'block';
       }
 
-      // Clear file cache lalu load draft fresh
+      // Load draft setelah DOM ready
+      // Clear dulu agar restore berjalan bersih
       Object.keys(taskFiles).forEach(k => delete taskFiles[k]);
       Object.keys(taskFileUrls).forEach(k => delete taskFileUrls[k]);
-
-      // Load draft setelah DOM ready
       setTimeout(() => {
         if (currentRole && currentHotel) {
           loadDraft(currentRole, currentHotel);
         }
-      }, 700);
+      }, 800);
     }
 
     // Update greeting
@@ -2689,8 +2719,24 @@
   updateSplashClock();
   setInterval(updateSplashClock, 10000);
 
-  // Auto reset & arsip saat app dibuka
-  checkAndReset();
+  // Test koneksi Supabase saat startup
+  setTimeout(async () => {
+    try {
+      const test = await fetch(SUPA_URL + '/rest/v1/draft_tasklist?limit=1&select=id', {
+        headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY }
+      });
+      if (test.ok) {
+        console.log('✅ Supabase connected');
+      } else {
+        console.warn('⚠️ Supabase response:', test.status, await test.text());
+      }
+    } catch(e) {
+      console.warn('⚠️ Supabase connection test failed:', e.message);
+    }
+  }, 2000);
+
+  // Auto reset & arsip saat app dibuka (delay 5 detik agar koneksi stabil)
+  setTimeout(() => checkAndReset(), 5000);
 
   // Auto delete file storage > 30 hari (jalankan di background)
   setTimeout(() => autoDeleteOldFiles(), 5000);
@@ -2724,11 +2770,8 @@
     const isFU = taskId.startsWith('fu');
     const needUpload = uploadWrap && !isNoUpload;
 
-    // Auto-save setelah status dipilih
-    setTimeout(() => {
-      autoSaveDraft(taskId);
-      saveDraftNow(taskId); // Langsung simpan tanpa debounce
-    }, 200); // punya upload area dan bukan no-upload
+    // Auto-save status segera ke database
+    saveDraftNow(taskId); // punya upload area dan bukan no-upload
 
     // Reset highlight error jika ada
     if (uploadWrap) {
@@ -2841,15 +2884,17 @@
     if (uploadedUrls.length > 0) {
       if (!taskFileUrls[taskId]) taskFileUrls[taskId] = [];
       taskFileUrls[taskId].push(...uploadedUrls);
-      // Update taskFiles juga
+      if (!taskFiles[taskId]) taskFiles[taskId] = [];
       uploadedUrls.forEach(u => {
         try {
           const f = new File(['x'], u.name, { type: u.type || 'image/jpeg' });
           taskFiles[taskId].push(f);
         } catch(e) {}
       });
-      // Simpan ke draft database
+      // Simpan ke draft database dengan file_urls terbaru
+      console.log('Saving draft after upload, fileUrls:', taskFileUrls[taskId].length);
       await saveDraftNow(taskId);
+      console.log('Draft saved after upload');
     }
 
     showToast('✅ ' + uploadedUrls.length + ' file berhasil diupload!');
