@@ -2624,18 +2624,31 @@
       const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
       const path = today + '/' + currentRole.replace(/ /g,'_') + '/' + currentHotel.replace(/ /g,'_') + '/' + taskId + '/' + Date.now() + '_' + safeName;
       try {
-        const { data, error } = await supa.storage.from('laporan-files').upload(path, processedFile, { upsert: true });
-        if (error) {
-          console.error('Upload error:', error);
-          showToast('❌ Gagal upload: ' + file.name);
-        } else {
-          const { data: urlData } = supa.storage.from('laporan-files').getPublicUrl(path);
-          uploadedUrls.push({ name: file.name, url: urlData.publicUrl, type: file.type });
+        // Upload langsung via fetch API
+        const uploadUrl = SUPA_URL + '/storage/v1/object/' + 'laporan-files/' + path;
+        const arrayBuffer = await processedFile.arrayBuffer();
+        const response = await fetch(uploadUrl, {
+          method: 'POST',
+          headers: {
+            'Authorization': 'Bearer ' + SUPA_KEY,
+            'Content-Type': processedFile.type || 'application/octet-stream',
+            'x-upsert': 'true'
+          },
+          body: arrayBuffer
+        });
+        if (response.ok) {
+          const publicUrl = SUPA_URL + '/storage/v1/object/public/laporan-files/' + path;
+          uploadedUrls.push({ name: file.name, url: publicUrl, type: file.type });
           taskFiles[taskId].push(file);
+        } else {
+          const errText = await response.text();
+          console.error('Upload failed:', errText);
+          showToast('❌ Gagal upload: ' + file.name);
+          taskFiles[taskId].push(file); // fallback lokal
         }
       } catch(e) {
         console.error('Upload exception:', e);
-        taskFiles[taskId].push(file); // fallback — simpan lokal
+        taskFiles[taskId].push(file); // fallback lokal
       }
     }
 
