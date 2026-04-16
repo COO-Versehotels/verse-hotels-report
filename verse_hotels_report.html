@@ -2073,8 +2073,8 @@
   }
 
   // Tampilkan timestamp di bawah keterangan/upload
-  function showTimestamp(taskId, type) {
-    const time = getNowTime();
+  function showTimestamp(taskId, type, existingTime) {
+    const time = existingTime || getNowTime();
     const tsId = taskId + '-ts-' + type;
     let tsEl = document.getElementById(tsId);
     if (!tsEl) {
@@ -2115,7 +2115,7 @@
     const fileUrls = taskFileUrls[taskId] ? JSON.stringify(taskFileUrls[taskId]) : null;
 
     try {
-      await fetch(SUPA_URL + '/rest/v1/draft_tasklist', {
+      const saveRes = await fetch(SUPA_URL + '/rest/v1/draft_tasklist', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -2134,6 +2134,10 @@
           updated_at: new Date().toISOString()
         })
       });
+      if (!saveRes.ok) {
+        const err = await saveRes.text();
+        console.error('Draft save error:', err);
+      }
     } catch(e) { console.error('Auto-save error:', e); }
   }
 
@@ -2143,123 +2147,119 @@
     const today = new Date().toISOString().split('T')[0];
     try {
       const res = await fetch(
-        SUPA_URL + '/rest/v1/draft_tasklist?tanggal=eq.' + today + '&role=eq.' + encodeURIComponent(role) + '&hotel=eq.' + encodeURIComponent(hotel) + '&select=*',
+        SUPA_URL + '/rest/v1/draft_tasklist?tanggal=eq.' + today +
+        '&role=eq.' + encodeURIComponent(role) +
+        '&hotel=eq.' + encodeURIComponent(hotel) + '&select=*',
         { headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY } }
       );
       const data = res.ok ? await res.json() : [];
-
       if (!data || data.length === 0) return;
 
-      // Restore setiap task
+      let restoredCount = 0;
+
       data.forEach(draft => {
         const item = document.getElementById(draft.task_id);
         if (!item) return;
+        restoredCount++;
 
-        // Restore FU input dulu sebelum status
-        if (draft.task_id.startsWith('fu')) {
+        const isFU = draft.task_id.startsWith('fu');
+
+        // ── RESTORE FOLLOW UP ────────────────────────────────
+        if (isFU) {
           const fuInput = item.querySelector('.fu-input');
+          const statusRow = document.getElementById(draft.task_id + '-status-row');
           if (fuInput && draft.keterangan) {
             fuInput.value = draft.keterangan;
-          }
-          // Hanya restore status FU jika ada input
-          const hasInput = fuInput && fuInput.value.trim();
-          if (hasInput && draft.status && draft.status !== 'note_only') {
-            const statusRow = document.getElementById(draft.task_id + '-status-row');
             if (statusRow) statusRow.style.display = 'flex';
-            restoreStatus(item, draft.task_id, draft.status);
-          } else {
-            // Tidak ada input — sembunyikan upload & status row
-            const uploadWrap = document.getElementById(draft.task_id + '-upload');
-            const statusRow = document.getElementById(draft.task_id + '-status-row');
-            if (uploadWrap) { uploadWrap.style.display = 'none'; uploadWrap.classList.remove('show'); }
-            if (statusRow) statusRow.style.display = 'none';
-            item.dataset.status = '';
+            if (draft.status) restoreStatus(item, draft.task_id, draft.status);
           }
-          return; // Skip restore status normal untuk FU
+          // Restore file FU jika ada
+          if (draft.file_urls && draft.keterangan) {
+            restoreFileUrls(draft.task_id, draft.file_urls);
+          }
+          return;
         }
 
-        // Restore status task biasa
+        // ── RESTORE STATUS ───────────────────────────────────
         if (draft.status && draft.status !== 'note_only') {
-          const btns = item.querySelectorAll('.status-btn');
-          if (btns.length > 0) {
-            restoreStatus(item, draft.task_id, draft.status);
-          }
+          restoreStatus(item, draft.task_id, draft.status);
         }
 
-        // Restore file URLs
-        if (draft.file_urls) {
-          try {
-            const urls = JSON.parse(draft.file_urls);
-            if (urls && urls.length > 0) {
-              taskFileUrls[draft.task_id] = urls;
-
-              // Buat dummy File objects agar validasi menganggap ada file
-              if (!taskFiles[draft.task_id]) taskFiles[draft.task_id] = [];
-              urls.forEach(f => {
-                // Dummy file object dengan nama & type
-                const dummy = new File([''], f.name || 'file', { type: f.type || 'image/jpeg' });
-                dummy._isRestored = true;
-                dummy._url = f.url;
-                taskFiles[draft.task_id].push(dummy);
-              });
-
-              // Tampilkan preview dari URL
-              const list = document.getElementById(draft.task_id + '-filelist');
-              if (list) {
-                list.innerHTML = urls.map((f, i) => {
-                  const isImg = f.type && f.type.startsWith('image/');
-                  return '<div class="file-preview-item">' +
-                    (isImg
-                      ? '<a href="' + f.url + '" target="_blank"><img src="' + f.url + '" style="width:48px;height:48px;object-fit:cover;border-radius:6px;margin-right:6px;border:1px solid var(--gray-200);"></a>'
-                      : '<span style="font-size:20px;margin-right:6px;">📄</span>') +
-                    '<a href="' + f.url + '" target="_blank" style="font-size:12px;color:var(--navy);text-decoration:none;flex:1;">' + (f.name || 'File ' + (i+1)) + '</a>' +
-                    '<button class="file-remove-btn" onclick="removeFile(\'' + draft.task_id + '\',' + i + ')">✕</button>' +
-                    '</div>';
-                }).join('') +
-                '<div style="font-size:10px;color:var(--gray-400);margin-top:4px;font-weight:600;">📂 ' + urls.length + ' file tersimpan</div>';
-
-                // Tampilkan upload wrap
-                const uploadWrap = document.getElementById(draft.task_id + '-upload');
-                if (uploadWrap) {
-                  uploadWrap.style.display = 'block';
-                  uploadWrap.classList.add('show');
-                }
-                // Mark upload area sebagai sudah ada file
-                const area = document.getElementById(draft.task_id + '-upload-area');
-                if (area) {
-                  area.classList.add('has-file');
-                  const strong = area.querySelector('.task-upload-text strong');
-                  if (strong) strong.textContent = urls.length + ' file terlampir ✓';
-                }
-              }
-            }
-          } catch(e) { console.error('Restore URLs error:', e); }
-        }
-
-        // Restore keterangan + timestamp (hanya untuk non-FU, FU sudah di-handle di atas)
-        if (draft.keterangan && !draft.task_id.startsWith('fu')) {
+        // ── RESTORE KETERANGAN ───────────────────────────────
+        if (draft.keterangan) {
           const note = item.querySelector('.task-note');
-          if (note) note.value = draft.keterangan;
-          // Tampilkan timestamp dari updated_at
-          if (draft.updated_at) {
-            const t = new Date(draft.updated_at);
-            const timeStr = String(t.getHours()).padStart(2,'0') + ':' + String(t.getMinutes()).padStart(2,'0');
-            const tsId = draft.task_id + '-ts-note';
-            let tsEl = document.getElementById(tsId);
-            const noteWrap = document.getElementById(draft.task_id + '-note');
-            if (!tsEl && noteWrap) {
-              tsEl = document.createElement('div');
-              tsEl.id = tsId;
-              tsEl.style.cssText = 'font-size:10px;color:var(--gray-400);margin-top:3px;font-weight:600;';
-              noteWrap.appendChild(tsEl);
+          if (note) {
+            note.value = draft.keterangan;
+            // Timestamp
+            if (draft.updated_at) {
+              const t = new Date(draft.updated_at);
+              const ts = String(t.getHours()).padStart(2,'0') + ':' + String(t.getMinutes()).padStart(2,'0');
+              showTimestamp(draft.task_id, 'note', ts);
             }
-            if (tsEl) tsEl.textContent = '🕐 Diinput pukul ' + timeStr + ' WIB';
           }
+        }
+
+        // ── RESTORE FILE URLS ─────────────────────────────────
+        if (draft.file_urls) {
+          restoreFileUrls(draft.task_id, draft.file_urls);
         }
       });
 
-      showToast('📂 Draft sebelumnya dimuat!');
-    } catch(e) { console.error('Load draft error:', e); }
+      if (restoredCount > 0) showToast('📂 Draft dimuat (' + restoredCount + ' task)');
+    } catch(e) {
+      console.error('Load draft error:', e);
+    }
+  }
+
+  // Restore file URLs untuk satu task
+  function restoreFileUrls(taskId, fileUrlsJson) {
+    try {
+      const urls = JSON.parse(fileUrlsJson);
+      if (!urls || urls.length === 0) return;
+
+      // Simpan ke taskFileUrls untuk validasi
+      taskFileUrls[taskId] = urls;
+
+      // Buat dummy File untuk validasi submit
+      if (!taskFiles[taskId]) taskFiles[taskId] = [];
+      else taskFiles[taskId] = []; // Clear dulu
+      urls.forEach(f => {
+        try {
+          const dummy = new File(['x'], f.name || 'file', { type: f.type || 'image/jpeg' });
+          taskFiles[taskId].push(dummy);
+        } catch(e) {}
+      });
+
+      // Tampilkan preview
+      const list = document.getElementById(taskId + '-filelist');
+      const uploadWrap = document.getElementById(taskId + '-upload');
+      const area = document.getElementById(taskId + '-upload-area');
+
+      if (list) {
+        list.innerHTML = urls.map((f, i) => {
+          const isImg = f.type && f.type.startsWith('image/');
+          return '<div class="file-preview-item" style="display:flex;align-items:center;gap:6px;padding:4px 0;">' +
+            (isImg
+              ? '<a href="' + f.url + '" target="_blank" style="flex-shrink:0;"><img src="' + f.url + '" style="width:44px;height:44px;object-fit:cover;border-radius:6px;border:1px solid var(--gray-200);display:block;"></a>'
+              : '<span style="font-size:20px;">📄</span>') +
+            '<a href="' + f.url + '" target="_blank" style="font-size:12px;color:var(--navy);text-decoration:none;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + (f.name || 'File ' + (i+1)) + '</a>' +
+            '<button class="file-remove-btn" onclick="removeFile(\'' + taskId + '\',' + i + ')">✕</button>' +
+            '</div>';
+        }).join('') + '<div style="font-size:10px;color:var(--green);margin-top:2px;font-weight:600;">✅ ' + urls.length + ' file tersimpan</div>';
+      }
+
+      // Tampilkan upload wrap
+      if (uploadWrap) uploadWrap.classList.add('show');
+      if (area) {
+        area.classList.add('has-file');
+        const strong = area.querySelector('.task-upload-text strong');
+        const span = area.querySelector('.task-upload-text span');
+        if (strong) strong.textContent = urls.length + ' file terlampir ✓';
+        if (span) span.textContent = urls.map(f => f.name).join(', ').substring(0, 40);
+      }
+    } catch(e) {
+      console.error('restoreFileUrls error:', e);
+    }
   }
 
   // Restore status tanpa event click
@@ -2508,8 +2508,9 @@
       }
     }
 
-    // Render tasklist when entering
+    // Render tasklist when entering — always fresh
     if (screen === 'tasklist') {
+      tasklistRendered = false; // Force re-render setiap masuk tasklist
       renderTasklist();
       if (!currentHotel) {
         currentHotel = 'Verse Lite Gajah Mada';
@@ -2521,10 +2522,11 @@
         const isHM = currentRole && currentRole.startsWith('HM ');
         apHotelSection.style.display = isHM ? 'none' : 'block';
       }
-      // Load draft dari Supabase — clear dulu lalu restore fresh
+      // Clear file cache lalu load draft fresh dari Supabase
       Object.keys(taskFiles).forEach(k => delete taskFiles[k]);
       Object.keys(taskFileUrls).forEach(k => delete taskFileUrls[k]);
-      setTimeout(() => loadDraft(currentRole, currentHotel), 500);
+      // Delay sedikit agar DOM sudah ready
+      setTimeout(() => loadDraft(currentRole, currentHotel), 600);
     }
 
     // Update greeting
@@ -2807,15 +2809,22 @@
       }
     }
 
-    // Simpan URL ke database
+    // Simpan URL ke storage dan draft
     if (uploadedUrls.length > 0) {
       if (!taskFileUrls[taskId]) taskFileUrls[taskId] = [];
       taskFileUrls[taskId].push(...uploadedUrls);
-      // Simpan URL ke draft
-      await saveDraftWithFiles(taskId);
+      // Update taskFiles juga
+      uploadedUrls.forEach(u => {
+        try {
+          const f = new File(['x'], u.name, { type: u.type || 'image/jpeg' });
+          taskFiles[taskId].push(f);
+        } catch(e) {}
+      });
+      // Simpan ke draft database
+      await saveDraftNow(taskId);
     }
 
-    showToast('✅ ' + toAdd.length + ' file berhasil diupload!');
+    showToast('✅ ' + uploadedUrls.length + ' file berhasil diupload!');
     renderFilePreview(taskId);
     showTimestamp(taskId, 'upload');
 
@@ -2833,17 +2842,45 @@
 
   function renderFilePreview(taskId) {
     const list = document.getElementById(taskId + '-filelist');
-    if (!list || !taskFiles[taskId]) return;
+    if (!list) return;
     const time = getNowTime();
-    list.innerHTML = taskFiles[taskId].map((f, i) => {
-      const ext = f.name.split('.').pop().toUpperCase();
-      const icon = ['JPG','JPEG','PNG','HEIC','WEBP'].includes(ext) ? '🖼️' : '📄';
-      return '<div class="file-preview-item">' +
-        icon + ' <span>' + f.name + '</span>' +
-        '<button class="file-remove-btn" onclick="removeFile(\'' + taskId + '\',' + i + ')">✕</button>' +
-        '</div>';
-    }).join('') +
-    '<div style="font-size:10px;color:var(--gray-400);margin-top:4px;font-weight:600;">🕐 Upload pukul ' + time + ' WIB</div>';
+
+    // Prioritas: pakai taskFileUrls (ada URL storage) jika ada
+    const urls = taskFileUrls[taskId];
+    const files = taskFiles[taskId];
+
+    if (urls && urls.length > 0) {
+      list.innerHTML = urls.map((f, i) => {
+        const isImg = f.type && f.type.startsWith('image/');
+        return '<div class="file-preview-item" style="display:flex;align-items:center;gap:6px;padding:4px 0;">' +
+          (isImg
+            ? '<a href="' + f.url + '" target="_blank" style="flex-shrink:0;"><img src="' + f.url + '" style="width:44px;height:44px;object-fit:cover;border-radius:6px;border:1px solid var(--gray-200);display:block;"></a>'
+            : '<span style="font-size:20px;">📄</span>') +
+          '<a href="' + f.url + '" target="_blank" style="font-size:12px;color:var(--navy);text-decoration:none;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + (f.name || 'File ' + (i+1)) + '</a>' +
+          '<button class="file-remove-btn" onclick="removeFile(\'' + taskId + '\',' + i + ')">✕</button>' +
+          '</div>';
+      }).join('') + '<div style="font-size:10px;color:var(--gray-400);margin-top:4px;font-weight:600;">🕐 Upload pukul ' + time + ' WIB</div>';
+    } else if (files && files.length > 0) {
+      list.innerHTML = files.map((f, i) => {
+        const ext = (f.name || '').split('.').pop().toUpperCase();
+        const icon = ['JPG','JPEG','PNG','HEIC','WEBP'].includes(ext) ? '🖼️' : '📄';
+        return '<div class="file-preview-item">' +
+          icon + ' <span>' + f.name + '</span>' +
+          '<button class="file-remove-btn" onclick="removeFile(\'' + taskId + '\',' + i + ')">✕</button>' +
+          '</div>';
+      }).join('') + '<div style="font-size:10px;color:var(--gray-400);margin-top:4px;font-weight:600;">🕐 Upload pukul ' + time + ' WIB</div>';
+    }
+
+    // Update upload area
+    const area = document.getElementById(taskId + '-upload-area');
+    const wrap = document.getElementById(taskId + '-upload');
+    const totalFiles = (urls || files || []).length;
+    if (area && totalFiles > 0) {
+      area.classList.add('has-file');
+      const strong = area.querySelector('.task-upload-text strong');
+      if (strong) strong.textContent = totalFiles + ' file terlampir ✓';
+    }
+    if (wrap && totalFiles > 0) wrap.classList.add('show');
   }
 
   function removeFile(taskId, idx) {
@@ -7753,18 +7790,13 @@ const ROLE_TASKS = {
     const key = keyMap[role] || role;
     const data = ROLE_TASKS[key] || ROLE_TASKS['Ops HR Manager'];
 
-    // Hanya render ulang jika role berubah
-    if (tasklistRendered && lastRenderedRole === role) {
-      console.log('Tasklist sudah dirender, skip render ulang');
-      return;
-    }
-
+    // Selalu render ulang agar restore draft berjalan bersih
     document.getElementById('tasklist-content').innerHTML = data.html;
     document.getElementById('tasklist-progress').textContent = '0/' + data.count;
     tasklistRendered = true;
     lastRenderedRole = role;
 
-    // Tambah auto-save pada SEMUA textarea di halaman tasklist
+    // Auto-save pada semua textarea
     setTimeout(() => {
       document.querySelectorAll('#tasklist-content .task-note, #followup-list .task-note, #tasklist-scroll .task-note').forEach(textarea => {
         textarea.addEventListener('input', function() {
@@ -7775,7 +7807,7 @@ const ROLE_TASKS = {
           }
         });
       });
-    }, 600);
+    }, 300);
 
     // Render follow up slots
     let fuHtml = '';
