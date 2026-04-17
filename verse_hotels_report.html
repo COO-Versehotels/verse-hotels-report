@@ -3639,6 +3639,161 @@
     setTimeout(() => t.classList.remove('show'), 2500);
   }
 
+const TASK_LABEL_MAP = {
+  "Ops HR Manager": {
+    "task_1": "Morning Briefing — 07.45 WIB — Cek Grooming Team sesuai standar (rambut, seragam, kebe",
+    "task_2": "Check Guest & Employee Area",
+    "task_3": "Check Guest & Employee Area",
+    "task_4": "Check Guest & Employee Area",
+    "task_5": "Check Guest & Employee Area",
+    "task_6": "Check Guest & Employee Area",
+    "task_7": "Check Guest & Employee Area",
+    "task_8": "Check Area Absen",
+    "task_9": "Check Grooming All Employee",
+    "task_10": "Check Talenta",
+    "task_11": "Afternoon Briefing — 14.45 WIB — Cek Grooming Team sesuai standar (rambut, seragam, kebe",
+    "task_12": "Finding Operational Issue & Conduct Training",
+    "task_13": "Finding Operational Issue & Conduct Training",
+    "task_14": "Test Product Knowledge / SOP To Employee — Cek Grooming Team sesuai standar (rambut, seragam, kebe",
+    "task_15": "Closing Briefing — 17.30 WIB — Cek Grooming Team sesuai standar (rambut, seragam, kebe",
+  },
+  "CE Corporate": {
+    "task_1": "Morning Briefing — 07.45 WIB — Cek Grooming Team sesuai standar (rambut, seragam, kebe",
+    "task_2": "Check Workshop & Equipment Engineering",
+    "task_3": "Check Utility Condition (Genset, Pump, Water Heater)",
+    "task_4": "Check Room OO & Master Defect List",
+    "task_5": "Check Room OO & Master Defect List",
+    "task_6": "Check Daily & Project Activity",
+    "task_7": "Afternoon Briefing — 14.45 WIB — Cek Grooming Team sesuai standar (rambut, seragam, kebe",
+    "task_8": "Update Room Project Checklist",
+    "task_9": "Finding Operational Issue & Conduct Training",
+    "task_10": "Finding Operational Issue & Conduct Training — Cek Grooming Team sesuai standar (rambut, seragam, kebe",
+    "task_11": "Closing Briefing — 17.30 WIB — Cek Grooming Team sesuai standar (rambut, seragam, kebe",
+  },
+  "EHK Corporate": {
+    "task_1": "Morning Briefing — 07.45 WIB — Cek Grooming Team sesuai standar (rambut, seragam, kebe",
+    "task_2": "Check Cleanliness Public Area",
+    "task_3": "Check Cleanliness Public Area",
+    "task_4": "Check All HK Equipment",
+    "task_5": "Check 10 Room (With Checklist)",
+    "task_6": "Afternoon Briefing — 14.45 WIB — Cek Grooming Team sesuai standar (rambut, seragam, kebe",
+    "task_7": "Check Daily & Project Activity",
+    "task_8": "Update Room Project Checklist HK",
+    "task_9": "Finding Operational Issue & Conduct Training",
+    "task_10": "Finding Operational Issue & Conduct Training — Cek Grooming Team sesuai standar (rambut, seragam, kebe",
+    "task_11": "Closing Briefing — 17.30 WIB — Cek Grooming Team sesuai standar (rambut, seragam, kebe",
+  },
+  "CRA Corporate": {
+    "task_1": "Morning Briefing — 07.45 WIB — Cek Grooming Team sesuai standar (rambut, seragam, kebe",
+    "task_2": "Extranet Check & Inbox Extranet Check — Pagi",
+    "task_3": "Extranet Check & Inbox Extranet Check — Pagi",
+    "task_4": "WhatsApp Hotel Check",
+    "task_5": "Review Check",
+    "task_6": "Afternoon Briefing — 14.45 WIB — Cek Grooming Team sesuai standar (rambut, seragam, kebe",
+    "task_7": "Extranet Check & Inbox Extranet Check — Sore",
+    "task_8": "Extranet Check & Inbox Extranet Check — Sore",
+    "task_9": "Closing Briefing — 17.30 WIB — Cek Grooming Team sesuai standar (rambut, seragam, kebe",
+  },
+  "HR Officer": {
+    "task_1": "Morning Briefing — 07.45 WIB — Cek Grooming Team sesuai standar (rambut, seragam, kebe",
+    "task_2": "Check Guest & Employee Area",
+    "task_3": "Check Guest & Employee Area",
+    "task_4": "Check Guest & Employee Area",
+    "task_5": "Check Guest & Employee Area",
+    "task_6": "Check Guest & Employee Area",
+    "task_7": "Check Guest & Employee Area",
+    "task_8": "Check Area Absen",
+    "task_9": "Check Grooming All Employee",
+    "task_10": "Check Talenta",
+    "task_11": "Afternoon Briefing — 14.45 WIB — Cek Grooming Team sesuai standar (rambut, seragam, kebe",
+    "task_12": "Finding Operational Issue & Conduct Training",
+    "task_13": "Finding Operational Issue & Conduct Training",
+    "task_14": "Test Product Knowledge / SOP To Employee — Cek Grooming Team sesuai standar (rambut, seragam, kebe",
+    "task_15": "Closing Briefing — 17.30 WIB — Cek Grooming Team sesuai standar (rambut, seragam, kebe",
+  },
+  "HM Verse Lite": {
+    "task_1": "Check Area Parkir, Tempat Pembuangan Sampah & Pos Security — Cek kebersihan & keamanan area parkir",
+    "task_2": "Check Breakfast Menu, Taste & Setup — Cek kelengkapan & variasi menu breakfast",
+    "task_3": "Check Night Audit Report — VHP Transaction Check",
+    "task_4": "Morning Briefing — 07.45 WIB — Cek Grooming Team sesuai standar (rambut, seragam, kebe",
+    "task_5": "Menyetor Transaksi ke Bank",
+    "task_6": "Talenta Checking",
+    "task_7": "Standby Review Collection — 11.00–13.00 WIB",
+    "task_8": "Department Visit",
+    "task_9": "Department Visit",
+    "task_10": "Department Visit",
+    "task_11": "Department Visit",
+    "task_12": "Department Visit",
+    "task_13": "Utility Check",
+    "task_14": "Utility Check",
+    "task_15": "Utility Check",
+    "task_17": "Afternoon Briefing — 14.45 WIB — Cek Grooming Team sesuai standar (rambut, seragam, kebe",
+    "task_18": "Guest Review Check & Reply",
+    "task_19": "Closing Briefing — 17.30 WIB — Check MJA VS Actual Morning Shift",
+  },
+  "HM Verse Luxe": {
+    "task_1": "Check Area Parkir, Tempat Pembuangan Sampah & Pos Security — Cek kebersihan & keamanan area parkir",
+    "task_2": "Check Breakfast Menu, Taste & Setup — Cek kelengkapan & variasi menu breakfast",
+    "task_3": "Check Night Audit Report — VHP Transaction Check",
+    "task_4": "Morning Briefing — 07.45 WIB — Cek Grooming Team sesuai standar (rambut, seragam, kebe",
+    "task_5": "Menyetor Transaksi ke Bank",
+    "task_6": "Talenta Checking",
+    "task_7": "Standby Review Collection — 11.00–13.00 WIB",
+    "task_8": "Department Visit",
+    "task_9": "Department Visit",
+    "task_10": "Department Visit",
+    "task_11": "Department Visit",
+    "task_12": "Department Visit",
+    "task_13": "Utility Check",
+    "task_14": "Utility Check",
+    "task_15": "Utility Check",
+    "task_17": "Afternoon Briefing — 14.45 WIB — Cek Grooming Team sesuai standar (rambut, seragam, kebe",
+    "task_18": "Guest Review Check & Reply",
+    "task_19": "Closing Briefing — 17.30 WIB — Check MJA VS Actual Morning Shift",
+  },
+  "HM Verse Cirebon": {
+    "task_1": "Check Area Parkir, Tempat Pembuangan Sampah & Pos Security — Cek kebersihan & keamanan area parkir",
+    "task_2": "Check Breakfast Menu, Taste & Setup — Cek kelengkapan & variasi menu breakfast",
+    "task_3": "Check Night Audit Report — VHP Transaction Check",
+    "task_4": "Morning Briefing — 07.45 WIB — Cek Grooming Team sesuai standar (rambut, seragam, kebe",
+    "task_5": "Menyetor Transaksi ke Bank",
+    "task_6": "Talenta Checking",
+    "task_7": "Standby Review Collection — 11.00–13.00 WIB",
+    "task_8": "Department Visit",
+    "task_9": "Department Visit",
+    "task_10": "Department Visit",
+    "task_11": "Department Visit",
+    "task_12": "Department Visit",
+    "task_13": "Utility Check",
+    "task_14": "Utility Check",
+    "task_15": "Utility Check",
+    "task_17": "Afternoon Briefing — 14.45 WIB — Cek Grooming Team sesuai standar (rambut, seragam, kebe",
+    "task_18": "Guest Review Check & Reply",
+    "task_19": "Closing Briefing — 17.30 WIB — Check MJA VS Actual Morning Shift",
+  },
+  "HM Oak Tree": {
+    "task_1": "Check Area Parkir, Tempat Pembuangan Sampah & Pos Security — Cek kebersihan & keamanan area parkir",
+    "task_2": "Check Breakfast Menu, Taste & Setup — Cek kelengkapan & variasi menu breakfast",
+    "task_3": "Check Night Audit Report — VHP Transaction Check",
+    "task_4": "Morning Briefing — 07.45 WIB — Cek Grooming Team sesuai standar (rambut, seragam, kebe",
+    "task_5": "Menyetor Transaksi ke Bank",
+    "task_6": "Talenta Checking",
+    "task_7": "Standby Review Collection — 11.00–13.00 WIB",
+    "task_8": "Department Visit",
+    "task_9": "Department Visit",
+    "task_10": "Department Visit",
+    "task_11": "Department Visit",
+    "task_12": "Department Visit",
+    "task_13": "Utility Check",
+    "task_14": "Utility Check",
+    "task_15": "Utility Check",
+    "task_17": "Afternoon Briefing — 14.45 WIB — Cek Grooming Team sesuai standar (rambut, seragam, kebe",
+    "task_18": "Guest Review Check & Reply",
+    "task_19": "Closing Briefing — 17.30 WIB — Check MJA VS Actual Morning Shift",
+  },
+};
+
+
 const ROLE_TASKS = {
   "Ops HR Manager": {
     count: 15,
@@ -8480,16 +8635,12 @@ const ROLE_TASKS = {
               <div style="flex:1;">
                 <div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:4px;">
                   ${(() => {
-                    const el = document.getElementById(row.task_id);
-                    if (!el) return 'Task #' + row.task_id;
-                    const cat = el.closest('.task-category');
-                    const catTitle = cat ? cat.querySelector('.task-cat-title')?.textContent?.trim() : '';
-                    const bullets = el.querySelectorAll('li');
-                    const firstBullet = bullets.length > 0 ? bullets[0].textContent.trim() : '';
-                    const fuInput = el.querySelector('.fu-input');
-                    if (fuInput) return '📋 Follow Up: ' + (fuInput.value.trim() || row.task_id);
-                    if (firstBullet) return (catTitle ? catTitle + ' — ' : '') + firstBullet.substring(0, 60) + (firstBullet.length > 60 ? '...' : '');
-                    return catTitle || ('Task #' + row.task_id);
+                    const taskKey = roleTaskKey[roleName] || roleName;
+                    const labelMap = TASK_LABEL_MAP[taskKey] || {};
+                    const label = labelMap[row.task_id];
+                    if (label) return label;
+                    if (String(row.task_id).startsWith('fu')) return '📋 Follow Up';
+                    return 'Task #' + row.task_id;
                   })()}
                 </div>
                 ${row.keterangan ? `<div style="font-size:12px;color:var(--gray-600);background:var(--gray-50);border-radius:8px;padding:8px 10px;margin-bottom:6px;">💬 ${row.keterangan}</div>` : '<div style="font-size:11px;color:var(--gray-300);font-style:italic;margin-bottom:6px;">— Belum ada keterangan —</div>'}
