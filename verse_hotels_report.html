@@ -2991,12 +2991,15 @@
 
     if (urls && urls.length > 0) {
       list.innerHTML = urls.map((f, i) => {
-        const isImg = f.type && f.type.startsWith('image/');
+        // f bisa berupa string URL atau object {url, name, type}
+        const fileUrl = typeof f === 'string' ? f : (f.url || '');
+        const fileName = typeof f === 'string' ? f.split('/').pop().substring(0,30) : (f.name || 'File ' + (i+1));
+        const isImg = /\.(jpg|jpeg|png|gif|webp|heic)$/i.test(fileUrl) || (f.type && f.type.startsWith('image/'));
         return '<div class="file-preview-item" style="display:flex;align-items:center;gap:6px;padding:4px 0;">' +
           (isImg
-            ? '<a href="' + f.url + '" target="_blank" style="flex-shrink:0;"><img src="' + f.url + '" style="width:44px;height:44px;object-fit:cover;border-radius:6px;border:1px solid var(--gray-200);display:block;"></a>'
+            ? '<a href="' + fileUrl + '" target="_blank" style="flex-shrink:0;"><img src="' + fileUrl + '" style="width:44px;height:44px;object-fit:cover;border-radius:6px;border:1px solid var(--gray-200);display:block;"></a>'
             : '<span style="font-size:20px;">📄</span>') +
-          '<a href="' + f.url + '" target="_blank" style="font-size:12px;color:var(--navy);text-decoration:none;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + (f.name || 'File ' + (i+1)) + '</a>' +
+          '<a href="' + fileUrl + '" target="_blank" style="font-size:12px;color:var(--navy);text-decoration:none;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + fileName + '</a>' +
           '<button class="file-remove-btn" onclick="removeFile(\'' + taskId + '\',' + i + ')">✕</button>' +
           '</div>';
       }).join('') + '<div style="font-size:10px;color:var(--gray-400);margin-top:4px;font-weight:600;">🕐 Upload pukul ' + time + ' WIB</div>';
@@ -3024,20 +3027,38 @@
   }
 
   function removeFile(taskId, idx) {
-    if (taskFiles[taskId]) {
+    // Hapus dari taskFileUrls (URL storage — ini yang disimpan ke DB)
+    if (taskFileUrls[taskId] && taskFileUrls[taskId].length > idx) {
+      taskFileUrls[taskId].splice(idx, 1);
+    }
+    // Hapus dari taskFiles (object lokal untuk preview)
+    if (taskFiles[taskId] && taskFiles[taskId].length > idx) {
       taskFiles[taskId].splice(idx, 1);
-      renderFilePreview(taskId);
-      if (taskFiles[taskId].length === 0) {
-        const area = document.getElementById(taskId + '-upload-area');
-        if (area) {
-          area.classList.remove('has-file');
-          const strong = area.querySelector('.task-upload-text strong');
-          const span = area.querySelector('.task-upload-text span');
-          if (strong) strong.textContent = 'Upload Foto / Dokumen';
-          if (span) span.textContent = 'Wajib jika status Sudah atau Proses';
-        }
+    }
+    // Sync taskFiles dari taskFileUrls agar konsisten
+    if (taskFileUrls[taskId] && taskFileUrls[taskId].length > 0) {
+      taskFiles[taskId] = taskFileUrls[taskId].map(u => ({ name: u.split('/').pop().substring(0,30), url: u }));
+    } else {
+      taskFiles[taskId] = [];
+      taskFileUrls[taskId] = [];
+    }
+
+    renderFilePreview(taskId);
+
+    // Update tampilan upload area jika tidak ada file lagi
+    if (!taskFiles[taskId] || taskFiles[taskId].length === 0) {
+      const area = document.getElementById(taskId + '-upload-area');
+      if (area) {
+        area.classList.remove('has-file');
+        const strong = area.querySelector('.task-upload-text strong');
+        const span = area.querySelector('.task-upload-text span');
+        if (strong) strong.textContent = 'Upload Foto / Dokumen';
+        if (span) span.textContent = 'Wajib jika status Sudah atau Proses';
       }
     }
+
+    // Simpan draft segera agar perubahan tersimpan ke DB
+    saveDraftNow(taskId);
   }
 
   function validateAndSubmit() {
@@ -8267,29 +8288,16 @@ const ROLE_TASKS = {
       const rows = await res.json();
 
       const allRoles = [
-        {name:'Ops HR Manager', icon:'👔', hotel:'Corporate'},
-        {name:'HR Officer', icon:'🧑‍💼', hotel:'Corporate'},
-        {name:'Chief Engineering Corporate', icon:'⚙️', hotel:'Corporate'},
-        {name:'EHK Corporate', icon:'🛏️', hotel:'Corporate'},
-        {name:'CRA Corporate', icon:'🌐', hotel:'Corporate'},
-        {name:'HM Verse Lite', icon:'🏨', hotel:'Verse Lite Gajah Mada'},
-        {name:'HM Verse Luxe', icon:'🏨', hotel:'Verse Luxe Wahid Hasyim'},
-        {name:'HM Verse Cirebon', icon:'🏨', hotel:'Verse Hotel Cirebon'},
-        {name:'HM Oak Tree', icon:'🏨', hotel:'Oak Tree Mahakam Blok M'},
+        {name:'Ops HR Manager', icon:'👔', hotel:'Corporate', taskKey:'Ops HR Manager'},
+        {name:'HR Officer', icon:'🧑‍💼', hotel:'Corporate', taskKey:'Ops HR Manager'},
+        {name:'Chief Engineering Corporate', icon:'⚙️', hotel:'Corporate', taskKey:'CE Corporate'},
+        {name:'EHK Corporate', icon:'🛏️', hotel:'Corporate', taskKey:'EHK Corporate'},
+        {name:'CRA Corporate', icon:'🌐', hotel:'Corporate', taskKey:'CRA Corporate'},
+        {name:'HM Verse Lite', icon:'🏨', hotel:'Verse Lite Gajah Mada', taskKey:'HM Verse Lite'},
+        {name:'HM Verse Luxe', icon:'🏨', hotel:'Verse Luxe Wahid Hasyim', taskKey:'HM Verse Luxe'},
+        {name:'HM Verse Cirebon', icon:'🏨', hotel:'Verse Hotel Cirebon', taskKey:'HM Verse Cirebon'},
+        {name:'HM Oak Tree', icon:'🏨', hotel:'Oak Tree Mahakam Blok M', taskKey:'HM Oak Tree'},
       ];
-
-      // Ambil expected total tasks per role dari ROLE_TASKS
-      const roleTaskKey = {
-        'Ops HR Manager': 'Ops HR Manager',
-        'HR Officer': 'Ops HR Manager',
-        'Chief Engineering Corporate': 'CE Corporate',
-        'EHK Corporate': 'EHK Corporate',
-        'CRA Corporate': 'CRA Corporate',
-        'HM Verse Lite': 'HM Verse Lite',
-        'HM Verse Luxe': 'HM Verse Luxe',
-        'HM Verse Cirebon': 'HM Verse Cirebon',
-        'HM Oak Tree': 'HM Oak Tree',
-      };
 
       let html = '';
       let anyActive = false;
@@ -8306,13 +8314,14 @@ const ROLE_TASKS = {
         anyActive = true;
         const done = roleRows.filter(r => r.status === 'done').length;
         const inProgress = roleRows.filter(r => r.status === 'in_progress').length;
-        const total = roleRows.length;
+        // Gunakan total dari ROLE_TASKS (angka sesungguhnya), bukan jumlah rows di DB
+        const total = (ROLE_TASKS[role.taskKey] && ROLE_TASKS[role.taskKey].count) || roleRows.length;
         const pct = total > 0 ? Math.round((done / total) * 100) : 0;
         const barColor = pct >= 80 ? 'var(--green)' : pct >= 50 ? 'var(--navy)' : 'var(--amber)';
         const hotelLabel = role.hotel === 'Corporate' ? 'Tim Corporate' : role.hotel.replace('Verse ','').replace(' Gajah Mada','').replace(' Wahid Hasyim','');
 
         html += `
-          <div class="role-report-item" style="border-left:3px solid ${barColor};">
+          <div class="role-report-item" style="border-left:3px solid ${barColor};cursor:pointer;" onclick="openLiveDetail('${role.name}','${role.hotel}')">
             <div class="role-avatar">${role.icon}</div>
             <div class="role-info" style="flex:1;">
               <h4>${role.name.replace(' Corporate','')} <span style="font-size:10px;font-weight:500;color:var(--gray-400);">${hotelLabel}</span></h4>
@@ -8325,7 +8334,10 @@ const ROLE_TASKS = {
                 <div style="height:100%;width:${pct}%;background:${barColor};border-radius:99px;transition:width 0.4s;"></div>
               </div>
             </div>
-            <div style="font-size:16px;font-weight:800;color:${barColor};margin-left:10px;">${pct}%</div>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;margin-left:10px;">
+              <div style="font-size:16px;font-weight:800;color:${barColor};">${pct}%</div>
+              <div style="font-size:10px;color:var(--navy);font-weight:700;">👁 Detail →</div>
+            </div>
           </div>`;
       });
 
@@ -8367,6 +8379,101 @@ const ROLE_TASKS = {
       loadLiveProgress();
       secondsLeft = LIVE_REFRESH_SECONDS;
     }, LIVE_REFRESH_SECONDS * 1000);
+  }
+
+  // Buka detail dari section "Sedang Dikerjakan" — sama seperti openDetailLaporan
+  // tapi dengan badge "Live" dan label yang berbeda
+  async function openLiveDetail(roleName, hotelName) {
+    go('detail');
+    document.getElementById('detail-title').textContent = roleName.replace(' Corporate','');
+    document.getElementById('detail-subtitle').textContent = (hotelName === 'Corporate' ? 'Tim Corporate' : hotelName) + ' · 🔴 Live';
+    document.getElementById('detail-content').innerHTML = '<div style="text-align:center;padding:40px 0;color:var(--gray-400);"><div style="font-size:40px;">⏳</div><p style="font-size:14px;font-weight:600;margin-top:12px;">Memuat progress live...</p></div>';
+
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      let url = SUPA_URL + '/rest/v1/draft_tasklist?tanggal=eq.' + today +
+        '&role=eq.' + encodeURIComponent(roleName) +
+        '&hotel=eq.' + encodeURIComponent(hotelName) +
+        '&select=*&order=task_id.asc';
+
+      const res = await fetch(url, {
+        headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY }
+      });
+      const data = res.ok ? await res.json() : [];
+
+      if (!data || data.length === 0) {
+        document.getElementById('detail-content').innerHTML = '<div style="text-align:center;padding:40px 0;color:var(--gray-400);"><div style="font-size:40px;">📭</div><p style="font-size:14px;font-weight:600;margin-top:12px;">Belum ada task yang dikerjakan</p></div>';
+        return;
+      }
+
+      // Ambil total task dari ROLE_TASKS
+      const roleTaskKey = {
+        'Ops HR Manager': 'Ops HR Manager', 'HR Officer': 'Ops HR Manager',
+        'Chief Engineering Corporate': 'CE Corporate',
+        'EHK Corporate': 'EHK Corporate', 'CRA Corporate': 'CRA Corporate',
+        'HM Verse Lite': 'HM Verse Lite', 'HM Verse Luxe': 'HM Verse Luxe',
+        'HM Verse Cirebon': 'HM Verse Cirebon', 'HM Oak Tree': 'HM Oak Tree',
+      };
+      const taskKey = roleTaskKey[roleName] || roleName;
+      const totalExpected = (ROLE_TASKS[taskKey] && ROLE_TASKS[taskKey].count) || data.length;
+      const done = data.filter(r => r.status === 'done').length;
+      const inProgress = data.filter(r => r.status === 'in_progress').length;
+      const pct = Math.round((done / totalExpected) * 100);
+      const barColor = pct >= 80 ? 'var(--green)' : pct >= 50 ? 'var(--navy)' : 'var(--amber)';
+
+      let html = `
+        <div style="background:var(--gray-50);border-radius:14px;padding:14px 16px;margin-bottom:16px;border:1.5px solid var(--gray-200);">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+            <div>
+              <div style="font-size:13px;font-weight:700;color:var(--navy);">${roleName.replace(' Corporate','')}</div>
+              <div style="font-size:11px;color:var(--gray-400);">🔴 Live · Belum submit · ${done}/${totalExpected} task selesai</div>
+            </div>
+            <div style="font-size:22px;font-weight:800;color:${barColor};">${pct}%</div>
+          </div>
+          <div style="background:var(--gray-200);border-radius:99px;height:8px;overflow:hidden;">
+            <div style="height:100%;width:${pct}%;background:${barColor};border-radius:99px;"></div>
+          </div>
+          ${inProgress > 0 ? `<div style="margin-top:6px;font-size:11px;color:var(--amber);font-weight:600;">⏳ ${inProgress} task sedang dikerjakan</div>` : ''}
+        </div>
+        <div style="font-size:11px;font-weight:700;color:var(--gray-400);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">Detail Per Task</div>`;
+
+      data.forEach(row => {
+        const statusIcon = row.status === 'done' ? '✅' : row.status === 'in_progress' ? '⏳' : '⬜';
+        const statusColor = row.status === 'done' ? 'var(--green)' : row.status === 'in_progress' ? 'var(--amber)' : 'var(--gray-300)';
+        const files = row.file_urls ? (Array.isArray(row.file_urls) ? row.file_urls : JSON.parse(row.file_urls || '[]')) : [];
+
+        html += `
+          <div style="background:white;border-radius:12px;padding:14px;margin-bottom:10px;border:1.5px solid ${row.status === 'done' ? 'var(--green)' : row.status === 'in_progress' ? 'var(--amber)' : 'var(--gray-200)'};">
+            <div style="display:flex;align-items:flex-start;gap:10px;">
+              <div style="font-size:18px;line-height:1;">${statusIcon}</div>
+              <div style="flex:1;">
+                <div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:4px;">Task #${row.task_id}</div>
+                ${row.keterangan ? `<div style="font-size:12px;color:var(--gray-600);background:var(--gray-50);border-radius:8px;padding:8px 10px;margin-bottom:6px;">💬 ${row.keterangan}</div>` : '<div style="font-size:11px;color:var(--gray-300);font-style:italic;margin-bottom:6px;">— Belum ada keterangan —</div>'}
+                ${files.length > 0 ? `
+                  <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;">
+                    ${files.map((f, i) => {
+                      const isImg = /\.(jpg|jpeg|png|gif|webp)$/i.test(f);
+                      return isImg
+                        ? `<a href="${f}" target="_blank" style="display:block;"><img src="${f}" style="width:64px;height:64px;object-fit:cover;border-radius:8px;border:1px solid var(--gray-200);" onerror="this.style.display='none'"/></a>`
+                        : `<a href="${f}" target="_blank" style="font-size:11px;color:var(--navy);background:var(--gray-100);border-radius:6px;padding:4px 8px;font-weight:600;text-decoration:none;">📎 Dokumen ${i+1}</a>`;
+                    }).join('')}
+                  </div>` : ''}
+              </div>
+            </div>
+          </div>`;
+      });
+
+      // Task yang belum disentuh sama sekali
+      const touchedIds = data.map(r => String(r.task_id));
+      const remaining = totalExpected - data.length;
+      if (remaining > 0) {
+        html += `<div style="background:var(--gray-50);border-radius:12px;padding:12px 14px;border:1.5px dashed var(--gray-200);text-align:center;color:var(--gray-400);font-size:12px;">⬜ ${remaining} task lainnya belum dimulai</div>`;
+      }
+
+      document.getElementById('detail-content').innerHTML = html;
+    } catch(e) {
+      document.getElementById('detail-content').innerHTML = '<div style="text-align:center;padding:40px 0;color:var(--red);">❌ Gagal memuat detail live</div>';
+    }
   }
 
   function stopLiveRefresh() {
