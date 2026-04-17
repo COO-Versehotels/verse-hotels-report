@@ -1513,7 +1513,10 @@
 
   <!-- ===== LOGIN: PILIH JABATAN ===== -->
   <div class="screen" id="screen-login">
-    <div class="login-top">
+    <div style="display:flex;align-items:center;padding:12px 16px 0;">
+      <button onclick="go('splash')" style="background:rgba(255,255,255,0.15);border:none;border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;color:white;flex-shrink:0;">←</button>
+    </div>
+    <div class="login-top" style="padding-top:8px;">
       <h2>Pilih Jabatan</h2>
       <p>Verse Group Hotels · Corporate Team</p>
     </div>
@@ -2763,6 +2766,8 @@
       if (el) el.style.display = 'none';
     });
     go('home');
+    // Ambil & simpan lokasi team saat login
+    setTimeout(saveTeamLocation, 500);
   }
 
   function doLoginCOO() {
@@ -3712,6 +3717,11 @@ const TASK_LABEL_MAP = {
     "task_15": "Closing Briefing — 17.30 WIB — Cek Grooming Team sesuai standar (rambut, seragam, kebe",
   },
   "HM Verse Lite": {
+    "room_16_1": "Room Inspection Check — Kamar 1",
+    "room_16_2": "Room Inspection Check — Kamar 2",
+    "room_16_3": "Room Inspection Check — Kamar 3",
+    "room_16_4": "Room Inspection Check — Kamar 4",
+    "room_16_5": "Room Inspection Check — Kamar 5",
     "task_1": "Check Area Parkir, Tempat Pembuangan Sampah & Pos Security — Cek kebersihan & keamanan area parkir",
     "task_2": "Check Breakfast Menu, Taste & Setup — Cek kelengkapan & variasi menu breakfast",
     "task_3": "Check Night Audit Report — VHP Transaction Check",
@@ -3732,6 +3742,11 @@ const TASK_LABEL_MAP = {
     "task_19": "Closing Briefing — 17.30 WIB — Check MJA VS Actual Morning Shift",
   },
   "HM Verse Luxe": {
+    "room_16_1": "Room Inspection Check — Kamar 1",
+    "room_16_2": "Room Inspection Check — Kamar 2",
+    "room_16_3": "Room Inspection Check — Kamar 3",
+    "room_16_4": "Room Inspection Check — Kamar 4",
+    "room_16_5": "Room Inspection Check — Kamar 5",
     "task_1": "Check Area Parkir, Tempat Pembuangan Sampah & Pos Security — Cek kebersihan & keamanan area parkir",
     "task_2": "Check Breakfast Menu, Taste & Setup — Cek kelengkapan & variasi menu breakfast",
     "task_3": "Check Night Audit Report — VHP Transaction Check",
@@ -3752,6 +3767,11 @@ const TASK_LABEL_MAP = {
     "task_19": "Closing Briefing — 17.30 WIB — Check MJA VS Actual Morning Shift",
   },
   "HM Verse Cirebon": {
+    "room_16_1": "Room Inspection Check — Kamar 1",
+    "room_16_2": "Room Inspection Check — Kamar 2",
+    "room_16_3": "Room Inspection Check — Kamar 3",
+    "room_16_4": "Room Inspection Check — Kamar 4",
+    "room_16_5": "Room Inspection Check — Kamar 5",
     "task_1": "Check Area Parkir, Tempat Pembuangan Sampah & Pos Security — Cek kebersihan & keamanan area parkir",
     "task_2": "Check Breakfast Menu, Taste & Setup — Cek kelengkapan & variasi menu breakfast",
     "task_3": "Check Night Audit Report — VHP Transaction Check",
@@ -3772,6 +3792,11 @@ const TASK_LABEL_MAP = {
     "task_19": "Closing Briefing — 17.30 WIB — Check MJA VS Actual Morning Shift",
   },
   "HM Oak Tree": {
+    "room_16_1": "Room Inspection Check — Kamar 1",
+    "room_16_2": "Room Inspection Check — Kamar 2",
+    "room_16_3": "Room Inspection Check — Kamar 3",
+    "room_16_4": "Room Inspection Check — Kamar 4",
+    "room_16_5": "Room Inspection Check — Kamar 5",
     "task_1": "Check Area Parkir, Tempat Pembuangan Sampah & Pos Security — Cek kebersihan & keamanan area parkir",
     "task_2": "Check Breakfast Menu, Taste & Setup — Cek kelengkapan & variasi menu breakfast",
     "task_3": "Check Night Audit Report — VHP Transaction Check",
@@ -8453,6 +8478,102 @@ const ROLE_TASKS = {
     document.getElementById('coo-hotel-detail').innerHTML = hotelDetailHtml + corpSectionHtml;
   }
 
+
+  // ===== TEAM LOCATION TRACKING =====
+  async function saveTeamLocation() {
+    if (!currentRole || currentRole === 'COO') return; // COO tidak perlu simpan lokasi
+    if (!navigator.geolocation) return;
+
+    navigator.geolocation.getCurrentPosition(async (pos) => {
+      const lat = pos.coords.latitude;
+      const lng = pos.coords.longitude;
+      const today = new Date().toISOString().split('T')[0];
+      const now = new Date().toISOString();
+
+      // Reverse geocode pakai Nominatim (gratis, no API key)
+      let address = '';
+      try {
+        const geoRes = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=id`,
+          { headers: { 'User-Agent': 'VerseHotelsApp/1.0' } }
+        );
+        const geoData = await geoRes.json();
+        // Ambil bagian alamat yang relevan
+        const a = geoData.address || {};
+        const parts = [
+          a.road || a.pedestrian || a.footway || '',
+          a.suburb || a.neighbourhood || a.village || '',
+          a.city || a.town || a.county || '',
+        ].filter(Boolean);
+        address = parts.join(', ') || geoData.display_name?.split(',').slice(0,3).join(',') || '';
+      } catch(e) {
+        address = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+      }
+
+      // Simpan ke Supabase — tabel team_location
+      try {
+        // Upsert by role+tanggal
+        const existing = await fetch(
+          SUPA_URL + '/rest/v1/team_location?tanggal=eq.' + today +
+          '&role=eq.' + encodeURIComponent(currentRole) +
+          '&hotel=eq.' + encodeURIComponent(currentHotel) +
+          '&select=id',
+          { headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY } }
+        );
+        const rows = existing.ok ? await existing.json() : [];
+
+        const payload = {
+          tanggal: today,
+          role: currentRole,
+          hotel: currentHotel,
+          lat: lat,
+          lng: lng,
+          address: address,
+          updated_at: now
+        };
+
+        if (rows && rows.length > 0) {
+          // UPDATE
+          await fetch(
+            SUPA_URL + '/rest/v1/team_location?tanggal=eq.' + today +
+            '&role=eq.' + encodeURIComponent(currentRole) +
+            '&hotel=eq.' + encodeURIComponent(currentHotel),
+            {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json', 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY },
+              body: JSON.stringify(payload)
+            }
+          );
+        } else {
+          // INSERT
+          await fetch(SUPA_URL + '/rest/v1/team_location', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY, 'Prefer': 'return=minimal' },
+            body: JSON.stringify(payload)
+          });
+        }
+        console.log('Location saved:', address);
+      } catch(e) {
+        console.warn('Location save failed:', e);
+      }
+    }, (err) => {
+      console.warn('Geolocation denied:', err.message);
+      // Tampilkan notifikasi halus di beranda
+      const showLocWarning = () => {
+        const existing = document.getElementById('loc-warning-banner');
+        if (existing) return;
+        const banner = document.createElement('div');
+        banner.id = 'loc-warning-banner';
+        banner.style.cssText = 'margin:12px 16px 0;background:#fff8e1;border:1.5px solid #f59e0b;border-radius:10px;padding:10px 14px;font-size:12px;color:#92400e;font-weight:600;line-height:1.5;display:flex;align-items:flex-start;gap:8px;';
+        banner.innerHTML = '<span style="font-size:16px;flex-shrink:0;">📍</span><span>Lokasi tidak aktif — System tidak dapat melihat posisi Anda. Aktifkan izin lokasi di pengaturan browser.</span>';
+        const homeContent = document.querySelector('#screen-home .scroll-area');
+        if (homeContent) homeContent.insertBefore(banner, homeContent.firstChild);
+      };
+      // Delay sedikit agar home screen sudah render
+      setTimeout(showLocWarning, 800);
+    }, { timeout: 8000, maximumAge: 60000 });
+  }
+
   // ===== LIVE PROGRESS MONITORING =====
   let liveRefreshInterval = null;
   let liveCountdownInterval = null;
@@ -8581,10 +8702,19 @@ const ROLE_TASKS = {
         '&role=eq.' + encodeURIComponent(roleName) +
         '&select=*&order=task_id.asc';
 
-      const res = await fetch(url, {
-        headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY }
-      });
+      const [res, locRes] = await Promise.all([
+        fetch(url, { headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY } }),
+        fetch(
+          SUPA_URL + '/rest/v1/team_location?tanggal=eq.' + today +
+          '&role=eq.' + encodeURIComponent(roleName) +
+          '&select=address,lat,lng,updated_at&limit=1',
+          { headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY } }
+        )
+      ]);
       let data = res.ok ? await res.json() : [];
+      const locData = locRes.ok ? await locRes.json() : [];
+      const teamLoc = locData && locData.length > 0 ? locData[0] : null;
+
       // Filter hotel — prefer exact match, fallback ke semua
       const exactMatch = data.filter(r => r.hotel === hotelName);
       if (exactMatch.length > 0) data = exactMatch;
@@ -8622,6 +8752,15 @@ const ROLE_TASKS = {
             <div style="height:100%;width:${pct}%;background:${barColor};border-radius:99px;"></div>
           </div>
           ${inProgress > 0 ? `<div style="margin-top:6px;font-size:11px;color:var(--amber);font-weight:600;">⏳ ${inProgress} task sedang dikerjakan</div>` : ''}
+          ${teamLoc ? `
+          <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--gray-200);">
+            <div style="font-size:11px;color:var(--gray-400);font-weight:600;margin-bottom:4px;">📍 LOKASI SAAT LOGIN</div>
+            <div style="font-size:12px;color:var(--navy);font-weight:600;line-height:1.5;">${teamLoc.address || 'Alamat tidak tersedia'}</div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-top:6px;">
+              <div style="font-size:10px;color:var(--gray-400);">🕐 ${teamLoc.updated_at ? new Date(teamLoc.updated_at).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'}) + ' WIB' : '—'}</div>
+              ${teamLoc.lat && teamLoc.lng ? `<a href="https://www.google.com/maps?q=${teamLoc.lat},${teamLoc.lng}" target="_blank" style="font-size:11px;color:white;background:var(--navy);border-radius:6px;padding:4px 10px;text-decoration:none;font-weight:600;">🗺️ Buka Maps</a>` : ''}
+            </div>
+          </div>` : '<div style="margin-top:8px;font-size:11px;color:var(--gray-300);font-style:italic;">📍 Lokasi tidak tersedia</div>'}
         </div>
         <div style="font-size:11px;font-weight:700;color:var(--gray-400);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">Detail Per Task</div>`;
 
