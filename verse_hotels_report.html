@@ -1608,7 +1608,7 @@
 
     <div class="scroll-area">
       <div class="section">
-        <div class="section-title">Pekerjaan Hari Ini</div>
+        <div class="section-title">PEKERJAAN HARI INI</div>
         <div id="home-visit-list">
           <!-- Diisi dinamis -->
           <div style="text-align:center;padding:24px 16px;color:var(--gray-400);">
@@ -3287,7 +3287,10 @@
       const taskNumEl = item.querySelector('.task-number');
       let taskNum = '?';
       if (taskNumEl) {
-        taskNum = taskNumEl.dataset.origNum || taskNumEl.textContent.replace(/[✓✗↳⏳\n]/g,'').replace(/\s+/g,'').trim() || '?';
+        // Prioritas: data-orig-num > id task > textContent
+        taskNum = taskNumEl.dataset.origNum ||
+                  (item.id ? item.id.replace('task_','') : '') ||
+                  taskNumEl.textContent.replace(/[^0-9]/g,'').trim() || '?';
       }
       const taskTextEl = item.querySelector('.task-text');
       const taskUlEl = item.querySelector('ul');
