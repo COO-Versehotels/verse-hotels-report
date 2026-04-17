@@ -2906,16 +2906,16 @@
           const publicUrl = SUPA_URL + '/storage/v1/object/public/laporan-files/' + path;
           console.log('Upload success, URL:', publicUrl);
           uploadedUrls.push({ name: file.name, url: publicUrl, type: file.type });
-          taskFiles[taskId].push(file);
+          // taskFiles di-sync dari taskFileUrls setelah loop
         } else {
           const errText = await response.text();
           console.error('Upload failed:', response.status, errText);
           showToast('❌ Gagal upload ' + response.status + ': ' + errText.substring(0,50));
-          taskFiles[taskId].push(file); // fallback lokal
+          // file push skipped - sync from taskFileUrls
         }
       } catch(e) {
         console.error('Upload exception:', e);
-        taskFiles[taskId].push(file); // fallback lokal
+        // file push skipped - sync from taskFileUrls
       }
     }
 
@@ -2923,6 +2923,10 @@
     if (uploadedUrls.length > 0) {
       if (!taskFileUrls[taskId]) taskFileUrls[taskId] = [];
       taskFileUrls[taskId].push(...uploadedUrls);
+      // Sync taskFiles dari taskFileUrls agar tidak duplikat
+      taskFiles[taskId] = taskFileUrls[taskId].map(u => {
+        try { return new File(['x'], u.name, { type: u.type || 'image/jpeg' }); } catch(e) { return null; }
+      }).filter(Boolean);
       if (!taskFiles[taskId]) taskFiles[taskId] = [];
       uploadedUrls.forEach(u => {
         try {
@@ -3204,17 +3208,16 @@
 
     // Hitung status task — skip note_only dari perhitungan %
     const items = document.querySelectorAll('#tasklist-content .task-item');
-    let done = 0, progress = 0, not = 0, total = 0, incomplete = 0;
+    let done = 0, not = 0, total = 0, incomplete = 0;
     items.forEach(item => {
       const s = item.dataset.status;
       if (s === 'note_only') return;
       total++;
       if (s === 'done') done++;
-      else if (s === 'progress') progress++;
       else if (s === 'not') not++;
 
       // Cek kelengkapan lampiran & keterangan
-      if (s === 'done' || s === 'progress') {
+      if (s === 'done') {
         const uploadWrap = document.getElementById(item.id + '-upload');
         const isNoUpload = uploadWrap && uploadWrap.dataset.noUpload === '1';
         const hasUpload = taskFiles[item.id] && taskFiles[item.id].length > 0;
@@ -3250,6 +3253,7 @@
     document.getElementById('submit-pct').textContent = pctSafe + '%';
     document.getElementById('submit-progress-label').textContent = done + ' / ' + total + ' task selesai' + (incomplete > 0 ? ' (' + incomplete + ' belum lengkap)' : '');
     document.getElementById('submit-done').textContent = done + ' task';
+    document.getElementById('submit-not').textContent = not + ' task';
 
     document.getElementById('submit-fu').textContent = fuCount + ' item';
     document.getElementById('submit-files').textContent = totalFiles + ' file';
