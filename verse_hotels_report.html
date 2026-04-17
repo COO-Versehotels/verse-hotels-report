@@ -2724,30 +2724,78 @@
     // Go to PIN screen
     go('pin');
 
-    // Jika COO sudah daftarkan fingerprint & ini bukan role COO,
-    // tawarkan biometric shortcut untuk Pak Ian
-    if (role !== 'COO') {
-      const credId = localStorage.getItem('coo_cred_id');
-      if (credId && window.PublicKeyCredential) {
-        setTimeout(() => showBiometricShortcut(role), 400);
-      }
+    // Tawarkan biometric shortcut untuk semua role non-COO
+    // jika browser support WebAuthn
+    if (role !== 'COO' && window.PublicKeyCredential) {
+      PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()
+        .then(available => {
+          if (available) setTimeout(() => showBiometricShortcut(role), 400);
+        }).catch(() => {});
     }
   }
 
   function showBiometricShortcut(role) {
-    // Tampilkan tombol fingerprint di bawah numpad PIN
     const existing = document.getElementById('bio-shortcut');
     if (existing) existing.remove();
 
+    const credId = localStorage.getItem('coo_cred_id');
     const btn = document.createElement('button');
     btn.id = 'bio-shortcut';
-    btn.innerHTML = '👆 Login dengan Fingerprint';
-    btn.style.cssText = 'width:calc(100% - 48px);margin:12px 24px 0;padding:14px;background:#1a2744;color:white;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;';
-    btn.onclick = () => biometricAuthForRole(role);
 
-    // Insert after numpad
+    if (credId) {
+      // Sudah terdaftar — langsung authenticate
+      btn.innerHTML = '👆 Login dengan Fingerprint';
+      btn.style.cssText = 'width:calc(100% - 48px);margin:16px 24px 0;padding:16px;background:#1a2744;color:white;border:none;border-radius:14px;font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 4px 12px rgba(26,39,68,0.3);';
+      btn.onclick = () => biometricAuthForRole(role);
+    } else {
+      // Belum terdaftar — tawarkan daftar
+      btn.innerHTML = '👆 Aktifkan Fingerprint untuk Login Cepat';
+      btn.style.cssText = 'width:calc(100% - 48px);margin:16px 24px 0;padding:16px;background:linear-gradient(135deg,#1a2744,#2d4a8a);color:white;border:none;border-radius:14px;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 4px 12px rgba(26,39,68,0.3);';
+      btn.onclick = () => {
+        // Daftarkan fingerprint via alur COO
+        biometricRegisterFromRole(role);
+      };
+    }
+
     const pinBody = document.querySelector('.pin-body');
     if (pinBody) pinBody.appendChild(btn);
+  }
+
+  async function biometricRegisterFromRole(role) {
+    try {
+      const challenge = new Uint8Array(32);
+      crypto.getRandomValues(challenge);
+      const userId = new Uint8Array(16);
+      crypto.getRandomValues(userId);
+
+      const credential = await navigator.credentials.create({
+        publicKey: {
+          challenge,
+          rp: { name: 'Verse Hotels COO', id: location.hostname },
+          user: { id: userId, name: 'coo@versehotels.com', displayName: 'COO Verse Hotels' },
+          pubKeyCredParams: [{ alg: -7, type: 'public-key' }, { alg: -257, type: 'public-key' }],
+          authenticatorSelection: { authenticatorAttachment: 'platform', userVerification: 'required' },
+          timeout: 30000,
+        }
+      });
+
+      const credId = btoa(String.fromCharCode(...new Uint8Array(credential.rawId)));
+      localStorage.setItem('coo_cred_id', credId);
+      showToast('✅ Fingerprint terdaftar! Login langsung...');
+      setTimeout(() => {
+        // Update tombol
+        showBiometricShortcut(role);
+        // Langsung login
+        biometricAuthForRole(role);
+      }, 500);
+    } catch(e) {
+      if (e.name === 'NotAllowedError') {
+        showToast('❌ Dibatalkan — masukkan PIN');
+      } else {
+        showToast('⚠️ Gagal daftar fingerprint');
+        console.warn(e);
+      }
+    }
   }
 
   async function biometricAuthForRole(role) {
