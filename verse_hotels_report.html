@@ -1009,13 +1009,23 @@
     white-space: nowrap;
   }
   .file-remove-btn {
-    background: none;
-    border: none;
-    color: var(--gray-400);
+    background: #fff0f0;
+    border: 1px solid #ffd0d0;
+    border-radius: 8px;
+    color: #e03131;
     cursor: pointer;
-    font-size: 12px;
-    padding: 0;
+    font-size: 16px;
+    padding: 6px 10px;
     flex-shrink: 0;
+    line-height: 1;
+    min-width: 36px;
+    min-height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .file-remove-btn:active {
+    background: #ffe0e0;
   }
 
   .task-note {
@@ -2319,7 +2329,7 @@
               ? '<a href="' + f.url + '" target="_blank" style="flex-shrink:0;"><img src="' + f.url + '" style="width:44px;height:44px;object-fit:cover;border-radius:6px;border:1px solid var(--gray-200);display:block;"></a>'
               : '<span style="font-size:20px;">📄</span>') +
             '<a href="' + f.url + '" target="_blank" style="font-size:12px;color:var(--navy);text-decoration:none;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + (f.name || 'File ' + (i+1)) + '</a>' +
-            '<button class="file-remove-btn" onclick="removeFile(\'' + taskId + '\',' + i + ')">✕</button>' +
+            '<button class="file-remove-btn" onclick="removeFile(\'' + taskId + '\',' + i + ')">🗑️</button>' +
             '</div>';
         }).join('') + '<div style="font-size:10px;color:var(--green);margin-top:2px;font-weight:600;">✅ ' + urls.length + ' file tersimpan</div>';
       }
@@ -2998,7 +3008,7 @@
             ? '<a href="' + fileUrl + '" target="_blank" style="flex-shrink:0;"><img src="' + fileUrl + '" style="width:44px;height:44px;object-fit:cover;border-radius:6px;border:1px solid var(--gray-200);display:block;"></a>'
             : '<span style="font-size:20px;">📄</span>') +
           '<a href="' + fileUrl + '" target="_blank" style="font-size:12px;color:var(--navy);text-decoration:none;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + fileName + '</a>' +
-          '<button class="file-remove-btn" onclick="removeFile(\'' + taskId + '\',' + i + ')">✕</button>' +
+          '<button class="file-remove-btn" onclick="removeFile(\'' + taskId + '\',' + i + ')">🗑️</button>' +
           '</div>';
       }).join('') + '<div style="font-size:10px;color:var(--gray-400);margin-top:4px;font-weight:600;">🕐 Upload pukul ' + time + ' WIB</div>';
     } else if (files && files.length > 0) {
@@ -3007,7 +3017,7 @@
         const icon = ['JPG','JPEG','PNG','HEIC','WEBP'].includes(ext) ? '🖼️' : '📄';
         return '<div class="file-preview-item">' +
           icon + ' <span>' + f.name + '</span>' +
-          '<button class="file-remove-btn" onclick="removeFile(\'' + taskId + '\',' + i + ')">✕</button>' +
+          '<button class="file-remove-btn" onclick="removeFile(\'' + taskId + '\',' + i + ')">🗑️</button>' +
           '</div>';
       }).join('') + '<div style="font-size:10px;color:var(--gray-400);margin-top:4px;font-weight:600;">🕐 Upload pukul ' + time + ' WIB</div>';
     }
@@ -8452,22 +8462,44 @@ const ROLE_TASKS = {
       data.forEach(row => {
         const statusIcon = row.status === 'done' ? '✅' : row.status === 'in_progress' ? '⏳' : '⬜';
         const statusColor = row.status === 'done' ? 'var(--green)' : row.status === 'in_progress' ? 'var(--amber)' : 'var(--gray-300)';
-        const files = row.file_urls ? (Array.isArray(row.file_urls) ? row.file_urls : JSON.parse(row.file_urls || '[]')) : [];
+        // Parse file_urls — bisa string JSON, array of strings, atau array of objects
+        let files = [];
+        try {
+          const raw = row.file_urls;
+          if (!raw) { files = []; }
+          else if (Array.isArray(raw)) { files = raw; }
+          else if (typeof raw === 'string') { files = JSON.parse(raw); }
+        } catch(e) { files = []; }
+        // Normalize: extract URL string dari tiap entry
+        const fileUrls = files.map(f => typeof f === 'string' ? f : (f.url || f.name || '')).filter(u => u && u.startsWith('http'));
 
         html += `
           <div style="background:white;border-radius:12px;padding:14px;margin-bottom:10px;border:1.5px solid ${row.status === 'done' ? 'var(--green)' : row.status === 'in_progress' ? 'var(--amber)' : 'var(--gray-200)'};">
             <div style="display:flex;align-items:flex-start;gap:10px;">
               <div style="font-size:18px;line-height:1;">${statusIcon}</div>
               <div style="flex:1;">
-                <div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:4px;">Task #${row.task_id}</div>
+                <div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:4px;">
+                  ${(() => {
+                    const el = document.getElementById(row.task_id);
+                    if (!el) return 'Task #' + row.task_id;
+                    const cat = el.closest('.task-category');
+                    const catTitle = cat ? cat.querySelector('.task-cat-title')?.textContent?.trim() : '';
+                    const bullets = el.querySelectorAll('li');
+                    const firstBullet = bullets.length > 0 ? bullets[0].textContent.trim() : '';
+                    const fuInput = el.querySelector('.fu-input');
+                    if (fuInput) return '📋 Follow Up: ' + (fuInput.value.trim() || row.task_id);
+                    if (firstBullet) return (catTitle ? catTitle + ' — ' : '') + firstBullet.substring(0, 60) + (firstBullet.length > 60 ? '...' : '');
+                    return catTitle || ('Task #' + row.task_id);
+                  })()}
+                </div>
                 ${row.keterangan ? `<div style="font-size:12px;color:var(--gray-600);background:var(--gray-50);border-radius:8px;padding:8px 10px;margin-bottom:6px;">💬 ${row.keterangan}</div>` : '<div style="font-size:11px;color:var(--gray-300);font-style:italic;margin-bottom:6px;">— Belum ada keterangan —</div>'}
-                ${files.length > 0 ? `
+                ${fileUrls.length > 0 ? `
                   <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;">
-                    ${files.map((f, i) => {
-                      const isImg = /\.(jpg|jpeg|png|gif|webp)$/i.test(f);
+                    ${fileUrls.map((url, i) => {
+                      const isImg = /\.(jpg|jpeg|png|gif|webp|heic)$/i.test(url);
                       return isImg
-                        ? `<a href="${f}" target="_blank" style="display:block;"><img src="${f}" style="width:64px;height:64px;object-fit:cover;border-radius:8px;border:1px solid var(--gray-200);" onerror="this.style.display='none'"/></a>`
-                        : `<a href="${f}" target="_blank" style="font-size:11px;color:var(--navy);background:var(--gray-100);border-radius:6px;padding:4px 8px;font-weight:600;text-decoration:none;">📎 Dokumen ${i+1}</a>`;
+                        ? `<a href="${url}" target="_blank" style="display:block;"><img src="${url}" style="width:72px;height:72px;object-fit:cover;border-radius:8px;border:1px solid var(--gray-200);" onerror="this.parentElement.innerHTML='<span style=\'font-size:11px;color:var(--red);\'>⚠️ Gambar tidak dapat ditampilkan</span>'"/></a>`
+                        : `<a href="${url}" target="_blank" style="font-size:11px;color:var(--navy);background:var(--gray-100);border-radius:6px;padding:6px 10px;font-weight:600;text-decoration:none;display:flex;align-items:center;gap:4px;">📎 File ${i+1}</a>`;
                     }).join('')}
                   </div>` : ''}
               </div>
@@ -8721,23 +8753,30 @@ const ROLE_TASKS = {
           html += '<div style="font-size:13px;color:var(--gray-700);background:var(--gray-50);padding:10px 12px;border-radius:8px;margin-bottom:8px;line-height:1.6;">' + d.keterangan + '</div>';
         }
 
-        // Foto/dokumen
+        // Foto/dokumen — parse robust (string URL atau object {url,name,type})
         if (d.file_urls) {
           try {
-            const files = JSON.parse(d.file_urls);
-            if (files && files.length > 0) {
+            let rawFiles = d.file_urls;
+            if (!Array.isArray(rawFiles)) rawFiles = JSON.parse(rawFiles);
+            // Normalize ke {url, name, isImg}
+            const normFiles = rawFiles.map(f => {
+              const url = typeof f === 'string' ? f : (f.url || '');
+              const name = typeof f === 'string' ? f.split('/').pop().substring(0,25) : (f.name || 'File');
+              const isImg = /\.(jpg|jpeg|png|gif|webp|heic)$/i.test(url) || (f.type && f.type.startsWith('image/'));
+              return { url, name, isImg };
+            }).filter(f => f.url && f.url.startsWith('http'));
+            if (normFiles.length > 0) {
               html += '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;margin-bottom:4px;">';
-              files.forEach(f => {
-                const isImg = f.type && (f.type.startsWith('image/') || f.url.match(/\.(jpg|jpeg|png|gif|webp|heic)$/i));
-                if (isImg) {
+              normFiles.forEach(f => {
+                if (f.isImg) {
                   html += '<a href="' + f.url + '" target="_blank" style="display:block;flex-shrink:0;">' +
                     '<img src="' + f.url + '" ' +
                     'style="width:90px;height:90px;object-fit:cover;border-radius:10px;border:1.5px solid var(--gray-200);display:block;" ' +
-                    'loading="lazy">' +
+                    'loading="lazy" onerror="this.parentElement.innerHTML=\'<span style=fontsize:11px;color:red>⚠️ File tidak tersedia</span>\'">' +
                     '</a>';
                 } else {
                   html += '<a href="' + f.url + '" target="_blank" style="display:flex;align-items:center;gap:6px;padding:8px 12px;background:var(--gray-50);border:1.5px solid var(--gray-200);border-radius:10px;font-size:12px;color:var(--navy);text-decoration:none;font-weight:600;">' +
-                    '📄 ' + (f.name ? f.name.substring(0,25) : 'Dokumen') + '</a>';
+                    '📄 ' + f.name + '</a>';
                 }
               });
               html += '</div>';
