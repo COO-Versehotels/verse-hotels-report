@@ -1930,16 +1930,8 @@
         </div>
       </div>
 
-      <!-- Summary per Role -->
-      <div style="padding:16px 16px 6px;font-size:11px;color:var(--gray-400);font-weight:700;text-transform:uppercase;letter-spacing:1px;">Rekap per Role</div>
-      <div style="margin:0 16px 16px;background:var(--white);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow-card);">
-        <div id="coo-role-summary">
-          <!-- Diisi JS -->
-        </div>
-      </div>
-
-      <!-- Live Progress Section -->
-      <div style="padding:0 16px 6px;font-size:11px;color:var(--gray-400);font-weight:700;text-transform:uppercase;letter-spacing:1px;display:flex;align-items:center;justify-content:space-between;">
+      <!-- Live Progress Section — PALING ATAS -->
+      <div style="padding:16px 16px 6px;font-size:11px;color:var(--gray-400);font-weight:700;text-transform:uppercase;letter-spacing:1px;display:flex;align-items:center;justify-content:space-between;">
         <span>🔴 Sedang Dikerjakan</span>
         <span id="coo-live-timer" style="font-size:10px;font-weight:500;color:var(--gray-400);">Refresh dalam 5:00</span>
       </div>
@@ -1947,8 +1939,16 @@
         <!-- Diisi JS -->
       </div>
 
+      <!-- Summary per Role -->
+      <div style="padding:12px 16px 6px;font-size:11px;color:var(--gray-400);font-weight:700;text-transform:uppercase;letter-spacing:1px;">Rekap per Role</div>
+      <div style="margin:0 16px 16px;background:var(--white);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow-card);">
+        <div id="coo-role-summary">
+          <!-- Diisi JS -->
+        </div>
+      </div>
+
       <!-- Detail per Hotel -->
-      <div style="padding:12px 16px 6px;font-size:11px;color:var(--gray-400);font-weight:700;text-transform:uppercase;letter-spacing:1px;">Detail per Hotel</div>
+      <div style="padding:0 16px 6px;font-size:11px;color:var(--gray-400);font-weight:700;text-transform:uppercase;letter-spacing:1px;">Detail per Hotel</div>
       <div id="coo-hotel-detail">
         <!-- Diisi JS -->
       </div>
@@ -8292,21 +8292,32 @@ const ROLE_TASKS = {
     ];
 
     // Hitung statistik dari laporan yang masuk
-    const masuk = submittedReports.length;
-    // Corporate: 5 roles x 1 slot, HM: 4 roles x 1 hotel, total = 9
-    const corpRoles = roles.filter(r => !r.name.startsWith('HM')).length;
-    const hmRoles = roles.filter(r => r.name.startsWith('HM')).length;
-    const totalSlot = corpRoles + hmRoles;
-    const belum = totalSlot - masuk;
+    // Deduplicate — ambil laporan terbaru per role+hotel jika ada duplikat
+    const seenRoleHotel = new Set();
+    const uniqueReports = [];
+    // Sort by time desc agar yang terbaru diambil
+    const sortedReports = [...submittedReports].sort((a,b) => (b.time||'').localeCompare(a.time||''));
+    sortedReports.forEach(r => {
+      const key = r.role + '|' + r.hotel;
+      if (!seenRoleHotel.has(key)) {
+        seenRoleHotel.add(key);
+        uniqueReports.push(r);
+      }
+    });
+
+    const masuk = uniqueReports.length;
+    // Total slot = 9 (5 corporate + 4 HM unit)
+    const totalSlot = roles.length; // = 9
+    const belum = Math.max(0, totalSlot - masuk);
     let totalPct = 0;
     let totalFU = 0;
-    submittedReports.forEach(r => {
+    uniqueReports.forEach(r => {
       totalPct += r.pct || 0;
       totalFU += r.fuCount || 0;
     });
     const avgPct = masuk > 0 ? Math.round(totalPct / masuk) : 0;
 
-    document.getElementById('coo-stat-masuk').textContent = masuk;
+    document.getElementById('coo-stat-masuk').textContent = masuk + '/' + totalSlot;
     document.getElementById('coo-stat-belum').textContent = belum;
     document.getElementById('coo-stat-avg').textContent = avgPct + '%';
     document.getElementById('coo-stat-fu').textContent = totalFU;
