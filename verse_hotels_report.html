@@ -8092,10 +8092,10 @@ const ROLE_TASKS = {
 
     // Hitung statistik dari laporan yang masuk
     const masuk = submittedReports.length;
-    // Corporate: 5 roles x 4 hotels = 20, HM: 4 roles x 1 hotel = 4, total = 24
+    // Corporate: 5 roles x 1 slot, HM: 4 roles x 1 hotel, total = 9
     const corpRoles = roles.filter(r => !r.name.startsWith('HM')).length;
     const hmRoles = roles.filter(r => r.name.startsWith('HM')).length;
-    const totalSlot = (corpRoles * hotels.length) + hmRoles;
+    const totalSlot = corpRoles + hmRoles;
     const belum = totalSlot - masuk;
     let totalPct = 0;
     let totalFU = 0;
@@ -8119,9 +8119,9 @@ const ROLE_TASKS = {
         ? Math.round(roleReports.reduce((a,r) => a + r.pct, 0) / submitted)
         : 0;
       const isHM = role.name.startsWith('HM ');
-      const maxHotel = isHM ? 1 : hotels.length;
-      const statusColor = submitted === 0 ? 'var(--red)' : submitted >= maxHotel ? 'var(--green)' : 'var(--amber)';
-      const statusText = submitted === 0 ? '⚠️ Belum ada' : isHM ? (submitted >= 1 ? `✅ Submit ${roleReports[0]?.pct||0}%` : '⚠️ Belum ada') : `${submitted}/${hotels.length} hotel`;
+      const maxSlot = 1; // semua role (HM maupun Corporate) = 1 slot
+      const statusColor = submitted === 0 ? 'var(--red)' : submitted >= maxSlot ? 'var(--green)' : 'var(--amber)';
+      const statusText = submitted === 0 ? '⚠️ Belum ada' : `✅ Submit ${roleReports[0]?.pct||0}%`;
       const clickable = submitted > 0 ? `onclick="openDetailLaporan('${role.name}')" style="cursor:pointer;"` : '';
       roleSummaryHtml += `
         <div class="submit-row" style="align-items:center;" ${clickable}>
@@ -8148,6 +8148,8 @@ const ROLE_TASKS = {
       const hotelShort = hotel.replace('Verse ','').replace(' Gajah Mada','').replace(' Wahid Hasyim','');
       let roleRowsHtml = '';
       roles.forEach(role => {
+        // Corporate roles tidak tampil di section hotel unit — mereka punya section sendiri
+        if (!role.name.startsWith('HM ')) return;
         // HM hanya tampil di hotelnya sendiri
         if (role.name.startsWith('HM ') && hmHotelMap[role.name] !== hotel) return;
         const report = submittedReports.find(r => r.hotel === hotel && r.role === role.name);
@@ -8188,12 +8190,55 @@ const ROLE_TASKS = {
         <div class="hotel-report-card">
           <div class="hotel-report-header">
             <h3>🏨 ${hotel}</h3>
-            <span>${submittedReports.filter(r=>r.hotel===hotel).length}/${roles.length} submit</span>
+            <span>${submittedReports.filter(r=>r.hotel===hotel && r.role.startsWith('HM ')).length}/1 submit</span>
           </div>
           ${roleRowsHtml}
         </div>`;
     });
-    document.getElementById('coo-hotel-detail').innerHTML = hotelDetailHtml;
+    // Tambah section Corporate di bawah section hotel
+    const corpRoleList = roles.filter(r => !r.name.startsWith('HM '));
+    let corpSectionHtml = `<div class="hotel-report-card" style="margin-top:12px;">
+      <div class="hotel-report-header">
+        <h3>🏢 Tim Corporate</h3>
+        <span>${submittedReports.filter(r=>r.hotel==='Corporate').length}/${corpRoleList.length} submit</span>
+      </div>`;
+    corpRoleList.forEach(role => {
+      const report = submittedReports.find(r => r.hotel === 'Corporate' && r.role === role.name);
+      if (report) {
+        const barColor = report.pct === 100 ? 'var(--green)' : report.pct >= 70 ? 'var(--navy)' : 'var(--amber)';
+        corpSectionHtml += `
+          <div class="role-report-item" onclick="openDetailLaporan('${role.name}','Corporate')" style="cursor:pointer;">
+            <div class="role-avatar">${role.icon}</div>
+            <div class="role-info">
+              <h4>${role.name.replace(' Corporate','')}</h4>
+              <p>Submit ${report.time} · ${report.taskDone}/${report.taskTotal} task</p>
+            </div>
+            <div class="role-progress">
+              <div class="role-progress-pct" style="color:${barColor};">${report.pct}%</div>
+              <div class="role-progress-bar-wrap">
+                <div class="visit-progress-bar">
+                  <div class="visit-progress-fill" style="width:${report.pct}%;background:${barColor};"></div>
+                </div>
+              </div>
+            </div>
+            <div style="font-size:11px;color:var(--navy);font-weight:700;margin-top:4px;">👁 Lihat Detail →</div>
+          </div>`;
+      } else {
+        corpSectionHtml += `
+          <div class="role-report-item">
+            <div class="role-avatar" style="opacity:0.4;">${role.icon}</div>
+            <div class="role-info">
+              <h4 style="color:var(--gray-400);">${role.name.replace(' Corporate','')}</h4>
+              <p style="color:var(--red);">⚠️ Belum submit</p>
+            </div>
+            <div class="role-progress">
+              <div class="role-progress-pct" style="color:var(--gray-200);">—</div>
+            </div>
+          </div>`;
+      }
+    });
+    corpSectionHtml += '</div>';
+    document.getElementById('coo-hotel-detail').innerHTML = hotelDetailHtml + corpSectionHtml;
   }
 
   // Dipanggil saat team submit laporan
