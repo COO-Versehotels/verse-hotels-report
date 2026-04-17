@@ -1591,6 +1591,10 @@
   <!-- ===== HOME ===== -->
   <div class="screen" id="screen-home">
     <div class="home-header">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+        <button onclick="logoutToSplash()" style="background:rgba(255,255,255,0.15);border:none;border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;color:white;flex-shrink:0;" title="Keluar">←</button>
+        <div style="font-size:11px;color:rgba(255,255,255,0.5);" id="today-date">15 Apr</div>
+      </div>
       <div class="home-header-row">
         <div>
           <p class="home-greeting" id="greeting-text">Selamat pagi</p>
@@ -1599,7 +1603,6 @@
         </div>
         <div>
           <div class="home-avatar">👤</div>
-          <div style="font-size:11px;color:rgba(255,255,255,0.5);text-align:center;margin-top:4px;" id="today-date">15 Apr</div>
         </div>
       </div>
       <div class="progress-card" onclick="go('tasklist')">
@@ -2987,6 +2990,21 @@
         currentRole='COO';pin='';updatePinDots();document.getElementById('pin-role-name').textContent='COO';document.getElementById('pin-role-icon').textContent='🔒';go('pin');
       }
     }
+  }
+
+  function logoutToSplash() {
+    // Reset state
+    currentRole = '';
+    currentHotel = '';
+    pin = ''; updatePinDots();
+    Object.keys(taskFiles).forEach(k => delete taskFiles[k]);
+    Object.keys(taskFileUrls).forEach(k => delete taskFileUrls[k]);
+    tasklistRendered = false;
+    lastRenderedRole = '';
+    stopLiveRefresh();
+    // Hapus banner lokasi jika ada
+    document.getElementById('loc-warning-banner')?.remove();
+    go('splash');
   }
 
   function loginAsRole(role) {
