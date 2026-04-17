@@ -2895,8 +2895,12 @@
       }
     }
 
-    // Fallback: PIN biasa
-    selectRole('COO');
+    // Fallback: PIN biasa (langsung ke screen PIN, bypass selectRole agar tidak loop)
+    currentRole = 'COO';
+    pin = ''; updatePinDots();
+    document.getElementById('pin-role-name').textContent = 'COO';
+    document.getElementById('pin-role-icon').textContent = '🔒';
+    go('pin');
   }
 
   function showBiometricPrompt() {
@@ -2909,7 +2913,7 @@
         <h3 style="font-size:17px;font-weight:800;color:#1a2744;margin-bottom:8px;">Aktifkan Fingerprint</h3>
         <p style="font-size:13px;color:#6b7280;line-height:1.6;margin-bottom:20px;">Gunakan fingerprint untuk login lebih cepat. Hanya perlu didaftarkan sekali.</p>
         <button onclick="biometricRegister()" style="width:100%;padding:14px;background:#1a2744;color:white;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:10px;">👆 Daftarkan Fingerprint</button>
-        <button onclick="document.getElementById('bio-modal').remove();selectRole('COO');" style="width:100%;padding:12px;background:#f3f4f6;color:#374151;border:none;border-radius:12px;font-size:13px;font-weight:600;cursor:pointer;">Gunakan PIN saja</button>
+        <button onclick="document.getElementById('bio-modal').remove();currentRole='COO';pin='';updatePinDots();document.getElementById('pin-role-name').textContent='COO';document.getElementById('pin-role-icon').textContent='🔒';go('pin');" style="width:100%;padding:12px;background:#f3f4f6;color:#374151;border:none;border-radius:12px;font-size:13px;font-weight:600;cursor:pointer;">Gunakan PIN saja</button>
       </div>`;
     document.body.appendChild(modal);
   }
