@@ -2299,13 +2299,11 @@
       taskFileUrls[taskId] = urls;
 
       // Buat dummy File untuk validasi submit
-      if (!taskFiles[taskId]) taskFiles[taskId] = [];
-      else taskFiles[taskId] = []; // Clear dulu
-      urls.forEach(f => {
-        try {
-          const dummy = new File(['x'], f.name || 'file', { type: f.type || 'image/jpeg' });
-          taskFiles[taskId].push(dummy);
-        } catch(e) {}
+      // Sync taskFiles dari taskFileUrls agar removeFile(idx) selalu valid
+      taskFiles[taskId] = urls.map(f => {
+        const name = typeof f === 'string' ? f.split('/').pop() : (f.name || 'file');
+        const type = typeof f === 'string' ? 'image/jpeg' : (f.type || 'image/jpeg');
+        try { return new File(['x'], name, { type }); } catch(e) { return { name, type }; }
       });
 
       // Tampilkan preview
@@ -3027,26 +3025,31 @@
   }
 
   function removeFile(taskId, idx) {
-    // Hapus dari taskFileUrls (URL storage — ini yang disimpan ke DB)
+    // Hapus dari taskFileUrls (ini yang disimpan ke DB — bisa berupa array of objects atau strings)
     if (taskFileUrls[taskId] && taskFileUrls[taskId].length > idx) {
       taskFileUrls[taskId].splice(idx, 1);
+    } else {
+      return; // idx tidak valid, hentikan
     }
-    // Hapus dari taskFiles (object lokal untuk preview)
-    if (taskFiles[taskId] && taskFiles[taskId].length > idx) {
-      taskFiles[taskId].splice(idx, 1);
-    }
+
     // Sync taskFiles dari taskFileUrls agar konsisten
     if (taskFileUrls[taskId] && taskFileUrls[taskId].length > 0) {
-      taskFiles[taskId] = taskFileUrls[taskId].map(u => ({ name: u.split('/').pop().substring(0,30), url: u }));
+      // Buat dummy File untuk setiap entry yang tersisa
+      taskFiles[taskId] = taskFileUrls[taskId].map(f => {
+        const name = typeof f === 'string' ? f.split('/').pop() : (f.name || 'file');
+        const type = typeof f === 'string' ? 'image/jpeg' : (f.type || 'image/jpeg');
+        try { return new File(['x'], name, { type }); } catch(e) { return { name, type }; }
+      });
     } else {
       taskFiles[taskId] = [];
       taskFileUrls[taskId] = [];
     }
 
+    // Re-render preview dengan data terbaru
     renderFilePreview(taskId);
 
-    // Update tampilan upload area jika tidak ada file lagi
-    if (!taskFiles[taskId] || taskFiles[taskId].length === 0) {
+    // Update upload area jika kosong
+    if (!taskFileUrls[taskId] || taskFileUrls[taskId].length === 0) {
       const area = document.getElementById(taskId + '-upload-area');
       if (area) {
         area.classList.remove('has-file');
@@ -3057,8 +3060,9 @@
       }
     }
 
-    // Simpan draft segera agar perubahan tersimpan ke DB
+    // Simpan langsung ke DB
     saveDraftNow(taskId);
+    showToast('🗑️ File dihapus');
   }
 
   function validateAndSubmit() {
@@ -8289,7 +8293,7 @@ const ROLE_TASKS = {
 
       const allRoles = [
         {name:'Ops HR Manager', icon:'👔', hotel:'Corporate', taskKey:'Ops HR Manager'},
-        {name:'HR Officer', icon:'🧑‍💼', hotel:'Corporate', taskKey:'Ops HR Manager'},
+        {name:'HR Officer', icon:'🧑‍💼', hotel:'Corporate', taskKey:'HR Officer'},
         {name:'Chief Engineering Corporate', icon:'⚙️', hotel:'Corporate', taskKey:'CE Corporate'},
         {name:'EHK Corporate', icon:'🛏️', hotel:'Corporate', taskKey:'EHK Corporate'},
         {name:'CRA Corporate', icon:'🌐', hotel:'Corporate', taskKey:'CRA Corporate'},
@@ -8308,7 +8312,12 @@ const ROLE_TASKS = {
         if (alreadySubmitted) return; // skip — sudah submit, tampil di section atas
 
         // Ambil rows draft untuk role ini
-        const roleRows = rows.filter(r => r.role === role.name && r.hotel === role.hotel);
+        // Coba exact match hotel dulu, fallback ke match role saja (untuk data lama / edge case)
+        let roleRows = rows.filter(r => r.role === role.name && r.hotel === role.hotel);
+        if (roleRows.length === 0) {
+          // Fallback: cari berdasarkan role saja (handle data yang mungkin hotel-nya belum bersih)
+          roleRows = rows.filter(r => r.role === role.name);
+        }
         if (roleRows.length === 0) return; // belum mulai sama sekali
 
         anyActive = true;
@@ -8391,15 +8400,18 @@ const ROLE_TASKS = {
 
     try {
       const today = new Date().toISOString().split('T')[0];
+      // Fetch by role saja (hotel filter di JS) agar tidak miss data karena hotel mismatch
       let url = SUPA_URL + '/rest/v1/draft_tasklist?tanggal=eq.' + today +
         '&role=eq.' + encodeURIComponent(roleName) +
-        '&hotel=eq.' + encodeURIComponent(hotelName) +
         '&select=*&order=task_id.asc';
 
       const res = await fetch(url, {
         headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY }
       });
-      const data = res.ok ? await res.json() : [];
+      let data = res.ok ? await res.json() : [];
+      // Filter hotel — prefer exact match, fallback ke semua
+      const exactMatch = data.filter(r => r.hotel === hotelName);
+      if (exactMatch.length > 0) data = exactMatch;
 
       if (!data || data.length === 0) {
         document.getElementById('detail-content').innerHTML = '<div style="text-align:center;padding:40px 0;color:var(--gray-400);"><div style="font-size:40px;">📭</div><p style="font-size:14px;font-weight:600;margin-top:12px;">Belum ada task yang dikerjakan</p></div>';
