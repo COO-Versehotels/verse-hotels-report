@@ -2771,6 +2771,28 @@
       return;
     }
 
+    // Cek session harian — jika role ini sudah login hari ini, skip PIN
+    const session = loadSessionToday();
+    if (session && session.role === role) {
+      // Langsung masuk tanpa PIN
+      currentRole = session.role;
+      currentHotel = session.hotel;
+      document.getElementById('role-display').textContent = currentRole;
+      document.getElementById('profile-role-name').textContent = currentRole;
+      tasklistRendered = false;
+      lastRenderedRole = '';
+      Object.keys(taskFiles).forEach(k => delete taskFiles[k]);
+      Object.keys(taskFileUrls).forEach(k => delete taskFileUrls[k]);
+      ['nav-coo-home','nav-coo-tasklist'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = 'none';
+      });
+      go('home');
+      showToast('👋 Selamat datang kembali!');
+      setTimeout(saveTeamLocation, 500);
+      return;
+    }
+
     currentRole = role;
     pin = '';
     updatePinDots();
@@ -3110,8 +3132,8 @@
   updateSplashClock();
   setInterval(updateSplashClock, 10000);
 
-  // Auto-login harian — jika sudah PIN hari ini, langsung masuk
-  setTimeout(() => { tryAutoLogin(); }, 400);
+  // Session harian aktif — PIN sekali sehari, auto-login dimatikan
+  // User tetap pilih role dari splash, tapi tidak perlu PIN lagi hari ini
 
   // Test koneksi Supabase saat startup
   setTimeout(async () => {
