@@ -1543,7 +1543,7 @@
           <div class="role-card-icon">🌐</div>
           <div class="role-card-name">CRA Corporate</div>
         </button>
-        <button class="role-card" onclick="selectRole('COO')" style="border-color:var(--gold);background:rgba(201,151,58,0.05);">
+        <button class="role-card" onclick="doLoginCOO()" style="border-color:var(--gold);background:rgba(201,151,58,0.05);">
           <div class="role-card-icon" style="background:linear-gradient(135deg,#c9973a,#e8b86d);">🔒</div>
           <div class="role-card-name" style="color:var(--gold);font-weight:800;">COO</div>
         </button>
@@ -2949,7 +2949,7 @@
         showToast('❌ Fingerprint dibatalkan');
       } else {
         showToast('⚠️ Gagal daftar, gunakan PIN');
-        selectRole('COO');
+        currentRole='COO';pin='';updatePinDots();document.getElementById('pin-role-name').textContent='COO';document.getElementById('pin-role-icon').textContent='🔒';go('pin');
       }
     }
   }
@@ -2980,11 +2980,11 @@
         showToast('❌ Dibatalkan — coba lagi atau gunakan PIN');
         // Tawarkan fallback PIN
         setTimeout(() => {
-          if (confirm('Gunakan PIN sebagai gantinya?')) selectRole('COO');
+          if (confirm('Gunakan PIN sebagai gantinya?')) { currentRole='COO';pin='';updatePinDots();document.getElementById('pin-role-name').textContent='COO';document.getElementById('pin-role-icon').textContent='🔒';go('pin'); }
         }, 500);
       } else {
         showToast('⚠️ Fingerprint gagal, gunakan PIN');
-        selectRole('COO');
+        currentRole='COO';pin='';updatePinDots();document.getElementById('pin-role-name').textContent='COO';document.getElementById('pin-role-icon').textContent='🔒';go('pin');
       }
     }
   }
@@ -3023,11 +3023,6 @@
       if (el) el.style.display = 'block';
     });
     go('coo');
-  }
-
-  function doLoginCOO() {
-    cooOpenedFrom = 'splash';
-    selectRole('COO');
   }
 
   // Splash clock
