@@ -5778,7 +5778,7 @@ const ROLE_TASKS = {
         </div>`
   },
   'HM Verse Lite': {
-    count: 19,
+    count: 23,
     html: `
         <div class="task-category">
           <div class="task-cat-header">
@@ -6358,14 +6358,45 @@ const ROLE_TASKS = {
             <span class="task-cat-title">Afternoon Briefing — 14.45 WIB</span>
             <span class="task-cat-count">0/1</span>
           </div>
-          <div class="task-item" id="task_17" onclick="toggleTask('task_17')">
+          <div class="task-item" id="task_16" onclick="toggleTask('task_16')">
             <div class="task-item-top">
-              <div class="task-number" id="task_17-num" data-orig-num="17">17</div>
+              <div class="task-number" id="task_16-num" data-orig-num="16">17</div>
               <div style="flex:1;"><ul style="margin:0;padding-left:16px;font-size:13px;color:var(--gray-600);line-height:1.8;"><li>Cek Grooming Team sesuai standar (rambut, seragam, kebersihan)</li><li>Pastikan informasi management tersampaikan dengan baik</li><li>Review & solusi guest complaint dari shift hari sebelumnya</li><li>GRPS Data Check</li></ul></div>
             </div>
             <div class="task-status-row">
+              <button class="status-btn" onclick="setStatus(event,'task_16','done')">✓ Sudah</button>
+              <button class="status-btn" onclick="setStatus(event,'task_16','not')">✗ Tidak Dikerjakan</button>
+            </div>
+            <div class="task-upload-wrap" id="task_16-upload">
+              <div class="task-upload-area" id="task_16-upload-area">
+                <input type="file" accept="image/*,.pdf,.doc,.docx" multiple onchange="handleFileUpload(this,'task_16')">
+                <span class="task-upload-icon">📎</span>
+                <div class="task-upload-text">
+                  <strong>Upload Foto / Dokumen</strong>
+                  <span>Wajib diupload</span>
+                </div>
+              </div>
+              <div class="file-preview-list" id="task_16-filelist"></div>
+            </div>
+            <div class="task-note-wrap" id="task_16-note">
+              <textarea class="task-note" rows="2" placeholder="Keterangan (opsional)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="task-category">
+          <div class="task-cat-header">
+            <span style="font-size:16px;">⭐</span>
+            <span class="task-cat-title">Guest Review Check & Reply</span>
+            <span class="task-cat-count">0/1</span>
+          </div>
+          <div class="task-item" id="task_17" onclick="toggleTask('task_17')">
+            <div class="task-item-top">
+              <div class="task-number" id="task_17-num" data-orig-num="16">18</div>
+              <span class="task-text">Cek & balas semua review dari semua platform (Google, TripAdvisor, Agoda, Traveloka, Booking.com, Tiket.com, Ctrip) dengan bahasa sopan & profesional. Review buruk: analisa & jelaskan secara rinci.</span>
+            </div>
+            <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,'task_17','done')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,'task_17','not')">✗ Tidak Dikerjakan</button>
+              <button class="status-btn" onclick="setStatus(event,'task_16','not')">✗ Tidak Dikerjakan</button>
             </div>
             <div class="task-upload-wrap" id="task_17-upload">
               <div class="task-upload-area" id="task_17-upload-area">
@@ -6385,18 +6416,18 @@ const ROLE_TASKS = {
         </div>
         <div class="task-category">
           <div class="task-cat-header">
-            <span style="font-size:16px;">⭐</span>
-            <span class="task-cat-title">Guest Review Check & Reply</span>
+            <span style="font-size:16px;">🌆</span>
+            <span class="task-cat-title">Closing Briefing — 17.30 WIB</span>
             <span class="task-cat-count">0/1</span>
           </div>
           <div class="task-item" id="task_18" onclick="toggleTask('task_18')">
             <div class="task-item-top">
-              <div class="task-number" id="task_18-num" data-orig-num="18">18</div>
-              <span class="task-text">Cek & balas semua review dari semua platform (Google, TripAdvisor, Agoda, Traveloka, Booking.com, Tiket.com, Ctrip) dengan bahasa sopan & profesional. Review buruk: analisa & jelaskan secara rinci.</span>
+              <div class="task-number" id="task_18-num" data-orig-num="16">19</div>
+              <div style="flex:1;"><ul style="margin:0;padding-left:16px;font-size:13px;color:var(--gray-600);line-height:1.8;"><li>Check MJA VS Actual Morning Shift</li><li>Man Power Planning for tomorrow (siapa yang masuk, siapa yang libur)</li><li>Draft MJA Tomorrow</li></ul></div>
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,'task_18','done')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,'task_18','not')">✗ Tidak Dikerjakan</button>
+              <button class="status-btn" onclick="setStatus(event,'task_16','not')">✗ Tidak Dikerjakan</button>
             </div>
             <div class="task-upload-wrap" id="task_18-upload">
               <div class="task-upload-area" id="task_18-upload-area">
@@ -6410,44 +6441,13 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_18-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_18-note">
-              <textarea class="task-note" rows="2" placeholder="Keterangan (opsional)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
-            </div>
-          </div>
-        </div>
-        <div class="task-category">
-          <div class="task-cat-header">
-            <span style="font-size:16px;">🌆</span>
-            <span class="task-cat-title">Closing Briefing — 17.30 WIB</span>
-            <span class="task-cat-count">0/1</span>
-          </div>
-          <div class="task-item" id="task_19" onclick="toggleTask('task_19')">
-            <div class="task-item-top">
-              <div class="task-number" id="task_19-num" data-orig-num="19">19</div>
-              <div style="flex:1;"><ul style="margin:0;padding-left:16px;font-size:13px;color:var(--gray-600);line-height:1.8;"><li>Check MJA VS Actual Morning Shift</li><li>Man Power Planning for tomorrow (siapa yang masuk, siapa yang libur)</li><li>Draft MJA Tomorrow</li></ul></div>
-            </div>
-            <div class="task-status-row">
-              <button class="status-btn" onclick="setStatus(event,'task_19','done')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,'task_19','not')">✗ Tidak Dikerjakan</button>
-            </div>
-            <div class="task-upload-wrap" id="task_19-upload">
-              <div class="task-upload-area" id="task_19-upload-area">
-                <input type="file" accept="image/*,.pdf,.doc,.docx" multiple onchange="handleFileUpload(this,'task_19')">
-                <span class="task-upload-icon">📎</span>
-                <div class="task-upload-text">
-                  <strong>Upload Foto / Dokumen</strong>
-                  <span>Wajib diupload</span>
-                </div>
-              </div>
-              <div class="file-preview-list" id="task_19-filelist"></div>
-            </div>
-            <div class="task-note-wrap" id="task_19-note">
               <textarea class="task-note" rows="2" placeholder="Keterangan (opsional)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
         </div>`
   },
   'HM Verse Luxe': {
-    count: 19,
+    count: 23,
     html: `
         <div class="task-category">
           <div class="task-cat-header">
@@ -7027,14 +7027,45 @@ const ROLE_TASKS = {
             <span class="task-cat-title">Afternoon Briefing — 14.45 WIB</span>
             <span class="task-cat-count">0/1</span>
           </div>
-          <div class="task-item" id="task_17" onclick="toggleTask('task_17')">
+          <div class="task-item" id="task_16" onclick="toggleTask('task_16')">
             <div class="task-item-top">
-              <div class="task-number" id="task_17-num" data-orig-num="17">17</div>
+              <div class="task-number" id="task_16-num" data-orig-num="16">17</div>
               <div style="flex:1;"><ul style="margin:0;padding-left:16px;font-size:13px;color:var(--gray-600);line-height:1.8;"><li>Cek Grooming Team sesuai standar (rambut, seragam, kebersihan)</li><li>Pastikan informasi management tersampaikan dengan baik</li><li>Review & solusi guest complaint dari shift hari sebelumnya</li><li>GRPS Data Check</li></ul></div>
             </div>
             <div class="task-status-row">
+              <button class="status-btn" onclick="setStatus(event,'task_16','done')">✓ Sudah</button>
+              <button class="status-btn" onclick="setStatus(event,'task_16','not')">✗ Tidak Dikerjakan</button>
+            </div>
+            <div class="task-upload-wrap" id="task_16-upload">
+              <div class="task-upload-area" id="task_16-upload-area">
+                <input type="file" accept="image/*,.pdf,.doc,.docx" multiple onchange="handleFileUpload(this,'task_16')">
+                <span class="task-upload-icon">📎</span>
+                <div class="task-upload-text">
+                  <strong>Upload Foto / Dokumen</strong>
+                  <span>Wajib diupload</span>
+                </div>
+              </div>
+              <div class="file-preview-list" id="task_16-filelist"></div>
+            </div>
+            <div class="task-note-wrap" id="task_16-note">
+              <textarea class="task-note" rows="2" placeholder="Keterangan (opsional)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="task-category">
+          <div class="task-cat-header">
+            <span style="font-size:16px;">⭐</span>
+            <span class="task-cat-title">Guest Review Check & Reply</span>
+            <span class="task-cat-count">0/1</span>
+          </div>
+          <div class="task-item" id="task_17" onclick="toggleTask('task_17')">
+            <div class="task-item-top">
+              <div class="task-number" id="task_17-num" data-orig-num="16">18</div>
+              <span class="task-text">Cek & balas semua review dari semua platform (Google, TripAdvisor, Agoda, Traveloka, Booking.com, Tiket.com, Ctrip) dengan bahasa sopan & profesional. Review buruk: analisa & jelaskan secara rinci.</span>
+            </div>
+            <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,'task_17','done')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,'task_17','not')">✗ Tidak Dikerjakan</button>
+              <button class="status-btn" onclick="setStatus(event,'task_16','not')">✗ Tidak Dikerjakan</button>
             </div>
             <div class="task-upload-wrap" id="task_17-upload">
               <div class="task-upload-area" id="task_17-upload-area">
@@ -7054,18 +7085,18 @@ const ROLE_TASKS = {
         </div>
         <div class="task-category">
           <div class="task-cat-header">
-            <span style="font-size:16px;">⭐</span>
-            <span class="task-cat-title">Guest Review Check & Reply</span>
+            <span style="font-size:16px;">🌆</span>
+            <span class="task-cat-title">Closing Briefing — 17.30 WIB</span>
             <span class="task-cat-count">0/1</span>
           </div>
           <div class="task-item" id="task_18" onclick="toggleTask('task_18')">
             <div class="task-item-top">
-              <div class="task-number" id="task_18-num" data-orig-num="18">18</div>
-              <span class="task-text">Cek & balas semua review dari semua platform (Google, TripAdvisor, Agoda, Traveloka, Booking.com, Tiket.com, Ctrip) dengan bahasa sopan & profesional. Review buruk: analisa & jelaskan secara rinci.</span>
+              <div class="task-number" id="task_18-num" data-orig-num="16">19</div>
+              <div style="flex:1;"><ul style="margin:0;padding-left:16px;font-size:13px;color:var(--gray-600);line-height:1.8;"><li>Check MJA VS Actual Morning Shift</li><li>Man Power Planning for tomorrow (siapa yang masuk, siapa yang libur)</li><li>Draft MJA Tomorrow</li></ul></div>
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,'task_18','done')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,'task_18','not')">✗ Tidak Dikerjakan</button>
+              <button class="status-btn" onclick="setStatus(event,'task_16','not')">✗ Tidak Dikerjakan</button>
             </div>
             <div class="task-upload-wrap" id="task_18-upload">
               <div class="task-upload-area" id="task_18-upload-area">
@@ -7079,44 +7110,13 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_18-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_18-note">
-              <textarea class="task-note" rows="2" placeholder="Keterangan (opsional)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
-            </div>
-          </div>
-        </div>
-        <div class="task-category">
-          <div class="task-cat-header">
-            <span style="font-size:16px;">🌆</span>
-            <span class="task-cat-title">Closing Briefing — 17.30 WIB</span>
-            <span class="task-cat-count">0/1</span>
-          </div>
-          <div class="task-item" id="task_19" onclick="toggleTask('task_19')">
-            <div class="task-item-top">
-              <div class="task-number" id="task_19-num" data-orig-num="19">19</div>
-              <div style="flex:1;"><ul style="margin:0;padding-left:16px;font-size:13px;color:var(--gray-600);line-height:1.8;"><li>Check MJA VS Actual Morning Shift</li><li>Man Power Planning for tomorrow (siapa yang masuk, siapa yang libur)</li><li>Draft MJA Tomorrow</li></ul></div>
-            </div>
-            <div class="task-status-row">
-              <button class="status-btn" onclick="setStatus(event,'task_19','done')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,'task_19','not')">✗ Tidak Dikerjakan</button>
-            </div>
-            <div class="task-upload-wrap" id="task_19-upload">
-              <div class="task-upload-area" id="task_19-upload-area">
-                <input type="file" accept="image/*,.pdf,.doc,.docx" multiple onchange="handleFileUpload(this,'task_19')">
-                <span class="task-upload-icon">📎</span>
-                <div class="task-upload-text">
-                  <strong>Upload Foto / Dokumen</strong>
-                  <span>Wajib diupload</span>
-                </div>
-              </div>
-              <div class="file-preview-list" id="task_19-filelist"></div>
-            </div>
-            <div class="task-note-wrap" id="task_19-note">
               <textarea class="task-note" rows="2" placeholder="Keterangan (opsional)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
         </div>`
   },
   'HM Verse Cirebon': {
-    count: 19,
+    count: 23,
     html: `
         <div class="task-category">
           <div class="task-cat-header">
@@ -7696,14 +7696,45 @@ const ROLE_TASKS = {
             <span class="task-cat-title">Afternoon Briefing — 14.45 WIB</span>
             <span class="task-cat-count">0/1</span>
           </div>
-          <div class="task-item" id="task_17" onclick="toggleTask('task_17')">
+          <div class="task-item" id="task_16" onclick="toggleTask('task_16')">
             <div class="task-item-top">
-              <div class="task-number" id="task_17-num" data-orig-num="17">17</div>
+              <div class="task-number" id="task_16-num" data-orig-num="16">17</div>
               <div style="flex:1;"><ul style="margin:0;padding-left:16px;font-size:13px;color:var(--gray-600);line-height:1.8;"><li>Cek Grooming Team sesuai standar (rambut, seragam, kebersihan)</li><li>Pastikan informasi management tersampaikan dengan baik</li><li>Review & solusi guest complaint dari shift hari sebelumnya</li><li>GRPS Data Check</li></ul></div>
             </div>
             <div class="task-status-row">
+              <button class="status-btn" onclick="setStatus(event,'task_16','done')">✓ Sudah</button>
+              <button class="status-btn" onclick="setStatus(event,'task_16','not')">✗ Tidak Dikerjakan</button>
+            </div>
+            <div class="task-upload-wrap" id="task_16-upload">
+              <div class="task-upload-area" id="task_16-upload-area">
+                <input type="file" accept="image/*,.pdf,.doc,.docx" multiple onchange="handleFileUpload(this,'task_16')">
+                <span class="task-upload-icon">📎</span>
+                <div class="task-upload-text">
+                  <strong>Upload Foto / Dokumen</strong>
+                  <span>Wajib diupload</span>
+                </div>
+              </div>
+              <div class="file-preview-list" id="task_16-filelist"></div>
+            </div>
+            <div class="task-note-wrap" id="task_16-note">
+              <textarea class="task-note" rows="2" placeholder="Keterangan (opsional)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="task-category">
+          <div class="task-cat-header">
+            <span style="font-size:16px;">⭐</span>
+            <span class="task-cat-title">Guest Review Check & Reply</span>
+            <span class="task-cat-count">0/1</span>
+          </div>
+          <div class="task-item" id="task_17" onclick="toggleTask('task_17')">
+            <div class="task-item-top">
+              <div class="task-number" id="task_17-num" data-orig-num="16">18</div>
+              <span class="task-text">Cek & balas semua review dari semua platform (Google, TripAdvisor, Agoda, Traveloka, Booking.com, Tiket.com, Ctrip) dengan bahasa sopan & profesional. Review buruk: analisa & jelaskan secara rinci.</span>
+            </div>
+            <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,'task_17','done')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,'task_17','not')">✗ Tidak Dikerjakan</button>
+              <button class="status-btn" onclick="setStatus(event,'task_16','not')">✗ Tidak Dikerjakan</button>
             </div>
             <div class="task-upload-wrap" id="task_17-upload">
               <div class="task-upload-area" id="task_17-upload-area">
@@ -7723,18 +7754,18 @@ const ROLE_TASKS = {
         </div>
         <div class="task-category">
           <div class="task-cat-header">
-            <span style="font-size:16px;">⭐</span>
-            <span class="task-cat-title">Guest Review Check & Reply</span>
+            <span style="font-size:16px;">🌆</span>
+            <span class="task-cat-title">Closing Briefing — 17.30 WIB</span>
             <span class="task-cat-count">0/1</span>
           </div>
           <div class="task-item" id="task_18" onclick="toggleTask('task_18')">
             <div class="task-item-top">
-              <div class="task-number" id="task_18-num" data-orig-num="18">18</div>
-              <span class="task-text">Cek & balas semua review dari semua platform (Google, TripAdvisor, Agoda, Traveloka, Booking.com, Tiket.com, Ctrip) dengan bahasa sopan & profesional. Review buruk: analisa & jelaskan secara rinci.</span>
+              <div class="task-number" id="task_18-num" data-orig-num="16">19</div>
+              <div style="flex:1;"><ul style="margin:0;padding-left:16px;font-size:13px;color:var(--gray-600);line-height:1.8;"><li>Check MJA VS Actual Morning Shift</li><li>Man Power Planning for tomorrow (siapa yang masuk, siapa yang libur)</li><li>Draft MJA Tomorrow</li></ul></div>
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,'task_18','done')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,'task_18','not')">✗ Tidak Dikerjakan</button>
+              <button class="status-btn" onclick="setStatus(event,'task_16','not')">✗ Tidak Dikerjakan</button>
             </div>
             <div class="task-upload-wrap" id="task_18-upload">
               <div class="task-upload-area" id="task_18-upload-area">
@@ -7748,44 +7779,13 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_18-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_18-note">
-              <textarea class="task-note" rows="2" placeholder="Keterangan (opsional)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
-            </div>
-          </div>
-        </div>
-        <div class="task-category">
-          <div class="task-cat-header">
-            <span style="font-size:16px;">🌆</span>
-            <span class="task-cat-title">Closing Briefing — 17.30 WIB</span>
-            <span class="task-cat-count">0/1</span>
-          </div>
-          <div class="task-item" id="task_19" onclick="toggleTask('task_19')">
-            <div class="task-item-top">
-              <div class="task-number" id="task_19-num" data-orig-num="19">19</div>
-              <div style="flex:1;"><ul style="margin:0;padding-left:16px;font-size:13px;color:var(--gray-600);line-height:1.8;"><li>Check MJA VS Actual Morning Shift</li><li>Man Power Planning for tomorrow (siapa yang masuk, siapa yang libur)</li><li>Draft MJA Tomorrow</li></ul></div>
-            </div>
-            <div class="task-status-row">
-              <button class="status-btn" onclick="setStatus(event,'task_19','done')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,'task_19','not')">✗ Tidak Dikerjakan</button>
-            </div>
-            <div class="task-upload-wrap" id="task_19-upload">
-              <div class="task-upload-area" id="task_19-upload-area">
-                <input type="file" accept="image/*,.pdf,.doc,.docx" multiple onchange="handleFileUpload(this,'task_19')">
-                <span class="task-upload-icon">📎</span>
-                <div class="task-upload-text">
-                  <strong>Upload Foto / Dokumen</strong>
-                  <span>Wajib diupload</span>
-                </div>
-              </div>
-              <div class="file-preview-list" id="task_19-filelist"></div>
-            </div>
-            <div class="task-note-wrap" id="task_19-note">
               <textarea class="task-note" rows="2" placeholder="Keterangan (opsional)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
         </div>`
   },
   'HM Oak Tree': {
-    count: 19,
+    count: 23,
     html: `
         <div class="task-category">
           <div class="task-cat-header">
@@ -8365,14 +8365,45 @@ const ROLE_TASKS = {
             <span class="task-cat-title">Afternoon Briefing — 14.45 WIB</span>
             <span class="task-cat-count">0/1</span>
           </div>
-          <div class="task-item" id="task_17" onclick="toggleTask('task_17')">
+          <div class="task-item" id="task_16" onclick="toggleTask('task_16')">
             <div class="task-item-top">
-              <div class="task-number" id="task_17-num" data-orig-num="17">17</div>
+              <div class="task-number" id="task_16-num" data-orig-num="16">17</div>
               <div style="flex:1;"><ul style="margin:0;padding-left:16px;font-size:13px;color:var(--gray-600);line-height:1.8;"><li>Cek Grooming Team sesuai standar (rambut, seragam, kebersihan)</li><li>Pastikan informasi management tersampaikan dengan baik</li><li>Review & solusi guest complaint dari shift hari sebelumnya</li><li>GRPS Data Check</li></ul></div>
             </div>
             <div class="task-status-row">
+              <button class="status-btn" onclick="setStatus(event,'task_16','done')">✓ Sudah</button>
+              <button class="status-btn" onclick="setStatus(event,'task_16','not')">✗ Tidak Dikerjakan</button>
+            </div>
+            <div class="task-upload-wrap" id="task_16-upload">
+              <div class="task-upload-area" id="task_16-upload-area">
+                <input type="file" accept="image/*,.pdf,.doc,.docx" multiple onchange="handleFileUpload(this,'task_16')">
+                <span class="task-upload-icon">📎</span>
+                <div class="task-upload-text">
+                  <strong>Upload Foto / Dokumen</strong>
+                  <span>Wajib diupload</span>
+                </div>
+              </div>
+              <div class="file-preview-list" id="task_16-filelist"></div>
+            </div>
+            <div class="task-note-wrap" id="task_16-note">
+              <textarea class="task-note" rows="2" placeholder="Keterangan (opsional)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="task-category">
+          <div class="task-cat-header">
+            <span style="font-size:16px;">⭐</span>
+            <span class="task-cat-title">Guest Review Check & Reply</span>
+            <span class="task-cat-count">0/1</span>
+          </div>
+          <div class="task-item" id="task_17" onclick="toggleTask('task_17')">
+            <div class="task-item-top">
+              <div class="task-number" id="task_17-num" data-orig-num="16">18</div>
+              <span class="task-text">Cek & balas semua review dari semua platform (Google, TripAdvisor, Agoda, Traveloka, Booking.com, Tiket.com, Ctrip) dengan bahasa sopan & profesional. Review buruk: analisa & jelaskan secara rinci.</span>
+            </div>
+            <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,'task_17','done')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,'task_17','not')">✗ Tidak Dikerjakan</button>
+              <button class="status-btn" onclick="setStatus(event,'task_16','not')">✗ Tidak Dikerjakan</button>
             </div>
             <div class="task-upload-wrap" id="task_17-upload">
               <div class="task-upload-area" id="task_17-upload-area">
@@ -8392,18 +8423,18 @@ const ROLE_TASKS = {
         </div>
         <div class="task-category">
           <div class="task-cat-header">
-            <span style="font-size:16px;">⭐</span>
-            <span class="task-cat-title">Guest Review Check & Reply</span>
+            <span style="font-size:16px;">🌆</span>
+            <span class="task-cat-title">Closing Briefing — 17.30 WIB</span>
             <span class="task-cat-count">0/1</span>
           </div>
           <div class="task-item" id="task_18" onclick="toggleTask('task_18')">
             <div class="task-item-top">
-              <div class="task-number" id="task_18-num" data-orig-num="18">18</div>
-              <span class="task-text">Cek & balas semua review dari semua platform (Google, TripAdvisor, Agoda, Traveloka, Booking.com, Tiket.com, Ctrip) dengan bahasa sopan & profesional. Review buruk: analisa & jelaskan secara rinci.</span>
+              <div class="task-number" id="task_18-num" data-orig-num="16">19</div>
+              <div style="flex:1;"><ul style="margin:0;padding-left:16px;font-size:13px;color:var(--gray-600);line-height:1.8;"><li>Check MJA VS Actual Morning Shift</li><li>Man Power Planning for tomorrow (siapa yang masuk, siapa yang libur)</li><li>Draft MJA Tomorrow</li></ul></div>
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,'task_18','done')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,'task_18','not')">✗ Tidak Dikerjakan</button>
+              <button class="status-btn" onclick="setStatus(event,'task_16','not')">✗ Tidak Dikerjakan</button>
             </div>
             <div class="task-upload-wrap" id="task_18-upload">
               <div class="task-upload-area" id="task_18-upload-area">
@@ -8417,37 +8448,6 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_18-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_18-note">
-              <textarea class="task-note" rows="2" placeholder="Keterangan (opsional)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
-            </div>
-          </div>
-        </div>
-        <div class="task-category">
-          <div class="task-cat-header">
-            <span style="font-size:16px;">🌆</span>
-            <span class="task-cat-title">Closing Briefing — 17.30 WIB</span>
-            <span class="task-cat-count">0/1</span>
-          </div>
-          <div class="task-item" id="task_19" onclick="toggleTask('task_19')">
-            <div class="task-item-top">
-              <div class="task-number" id="task_19-num" data-orig-num="19">19</div>
-              <div style="flex:1;"><ul style="margin:0;padding-left:16px;font-size:13px;color:var(--gray-600);line-height:1.8;"><li>Check MJA VS Actual Morning Shift</li><li>Man Power Planning for tomorrow (siapa yang masuk, siapa yang libur)</li><li>Draft MJA Tomorrow</li></ul></div>
-            </div>
-            <div class="task-status-row">
-              <button class="status-btn" onclick="setStatus(event,'task_19','done')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,'task_19','not')">✗ Tidak Dikerjakan</button>
-            </div>
-            <div class="task-upload-wrap" id="task_19-upload">
-              <div class="task-upload-area" id="task_19-upload-area">
-                <input type="file" accept="image/*,.pdf,.doc,.docx" multiple onchange="handleFileUpload(this,'task_19')">
-                <span class="task-upload-icon">📎</span>
-                <div class="task-upload-text">
-                  <strong>Upload Foto / Dokumen</strong>
-                  <span>Wajib diupload</span>
-                </div>
-              </div>
-              <div class="file-preview-list" id="task_19-filelist"></div>
-            </div>
-            <div class="task-note-wrap" id="task_19-note">
               <textarea class="task-note" rows="2" placeholder="Keterangan (opsional)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
@@ -9540,8 +9540,8 @@ const ROLE_TASKS = {
         if (drafts && drafts.length > 0) {
           // Total task sesuai role — hardcode agar tidak tergantung DOM
           const roleTotals = {
-            'HM Verse Lite': 19, 'HM Verse Luxe': 19,
-            'HM Verse Cirebon': 19, 'HM Oak Tree': 19,
+            'HM Verse Lite': 23, 'HM Verse Luxe': 23,
+            'HM Verse Cirebon': 23, 'HM Oak Tree': 23,
             'Ops HR Manager': 15, 'HR Officer': 15,
             'Chief Engineering Corporate': 9,
             'EHK Corporate': 9, 'CRA Corporate': 9
