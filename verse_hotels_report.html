@@ -2715,6 +2715,13 @@
   };
 
   function selectRole(role) {
+    // Untuk COO — langsung pakai alur biometrik/PIN COO
+    if (role === 'COO') {
+      cooOpenedFrom = 'login';
+      doLoginCOO();
+      return;
+    }
+
     currentRole = role;
     pin = '';
     updatePinDots();
@@ -2724,9 +2731,8 @@
     // Go to PIN screen
     go('pin');
 
-    // Tawarkan biometric shortcut untuk semua role non-COO
-    // jika browser support WebAuthn
-    if (role !== 'COO' && window.PublicKeyCredential) {
+    // Tawarkan biometric shortcut jika browser support WebAuthn
+    if (window.PublicKeyCredential) {
       PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()
         .then(available => {
           if (available) setTimeout(() => showBiometricShortcut(role), 400);
@@ -2782,12 +2788,7 @@
       const credId = btoa(String.fromCharCode(...new Uint8Array(credential.rawId)));
       localStorage.setItem('coo_cred_id', credId);
       showToast('✅ Fingerprint terdaftar! Login langsung...');
-      setTimeout(() => {
-        // Update tombol
-        showBiometricShortcut(role);
-        // Langsung login
-        biometricAuthForRole(role);
-      }, 500);
+      setTimeout(() => loginAsRole(role), 800);
     } catch(e) {
       if (e.name === 'NotAllowedError') {
         showToast('❌ Dibatalkan — masukkan PIN');
@@ -2816,10 +2817,10 @@
         }
       });
 
-      // Fingerprint berhasil — login langsung tanpa PIN
+      // Fingerprint berhasil — login langsung tanpa PIN check
       document.getElementById('bio-shortcut')?.remove();
       showToast('✅ Fingerprint berhasil!');
-      setTimeout(() => doLogin(), 300);
+      setTimeout(() => loginAsRole(role), 300);
     } catch(e) {
       if (e.name === 'NotAllowedError') {
         showToast('❌ Dibatalkan — masukkan PIN');
@@ -2982,6 +2983,32 @@
         selectRole('COO');
       }
     }
+  }
+
+  function loginAsRole(role) {
+    // Login langsung tanpa cek PIN (dipanggil setelah biometric berhasil)
+    currentRole = role;
+    pin = ''; updatePinDots();
+    document.getElementById('role-display').textContent = role;
+    document.getElementById('profile-role-name').textContent = role;
+    tasklistRendered = false;
+    lastRenderedRole = '';
+    const hmHotels = {
+      'HM Verse Lite': 'Verse Lite Gajah Mada',
+      'HM Verse Luxe': 'Verse Luxe Wahid Hasyim',
+      'HM Verse Cirebon': 'Verse Hotel Cirebon',
+      'HM Oak Tree': 'Oak Tree Mahakam Blok M',
+    };
+    const CORPORATE_ROLES = ['Ops HR Manager','HR Officer','Chief Engineering Corporate','EHK Corporate','CRA Corporate','COO'];
+    currentHotel = hmHotels[role] || (CORPORATE_ROLES.includes(role) ? 'Corporate' : '');
+    Object.keys(taskFiles).forEach(k => delete taskFiles[k]);
+    Object.keys(taskFileUrls).forEach(k => delete taskFileUrls[k]);
+    ['nav-coo-home','nav-coo-tasklist'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.style.display = 'none';
+    });
+    go('home');
+    setTimeout(saveTeamLocation, 500);
   }
 
   function loginAsCOO() {
