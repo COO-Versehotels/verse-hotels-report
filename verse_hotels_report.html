@@ -2043,8 +2043,7 @@
       const today = new Date().toISOString().split('T')[0];
       if (session.date !== today) {
         // Session hari kemarin — hapus
-        localStorage.removeItem('team_session');
-        return null;
+            return null;
       }
       return session;
     } catch(e) { return null; }
@@ -2914,7 +2913,7 @@
       if (el) el.style.display = 'none';
     });
     go('home');
-    // Simpan session hari ini ke localStorage
+    // Simpan session hari ini (PIN sekali sehari)
     saveSessionToday(currentRole, currentHotel);
     // Ambil & simpan lokasi team saat login
     setTimeout(saveTeamLocation, 500);
@@ -3111,29 +3110,8 @@
   updateSplashClock();
   setInterval(updateSplashClock, 10000);
 
-  // Auto-login jika ada session hari ini — tampilkan banner konfirmasi
-  setTimeout(() => {
-    const session = loadSessionToday();
-    if (!session) return;
-    
-    // Tampilkan banner di splash agar user bisa pilih: lanjutkan atau ganti role
-    const banner = document.createElement('div');
-    banner.id = 'session-banner';
-    banner.style.cssText = 'position:fixed;bottom:80px;left:16px;right:16px;background:#1a2744;color:white;border-radius:14px;padding:14px 16px;z-index:9999;display:flex;align-items:center;justify-content:space-between;gap:10px;box-shadow:0 4px 20px rgba(0,0,0,0.3);';
-    banner.innerHTML = `
-      <div>
-        <div style="font-size:12px;opacity:0.7;margin-bottom:2px;">Session aktif hari ini</div>
-        <div style="font-size:14px;font-weight:700;">${session.role.replace(' Corporate','')}</div>
-      </div>
-      <div style="display:flex;gap:8px;">
-        <button onclick="document.getElementById('session-banner').remove();" style="padding:8px 12px;background:rgba(255,255,255,0.15);border:none;border-radius:8px;color:white;font-size:12px;cursor:pointer;">Ganti Role</button>
-        <button onclick="document.getElementById('session-banner').remove();tryAutoLogin();" style="padding:8px 14px;background:white;border:none;border-radius:8px;color:#1a2744;font-size:12px;font-weight:700;cursor:pointer;">Lanjutkan →</button>
-      </div>`;
-    document.body.appendChild(banner);
-    
-    // Auto-dismiss setelah 8 detik jika tidak ada aksi
-    setTimeout(() => banner?.remove(), 8000);
-  }, 500);
+  // Auto-login harian — jika sudah PIN hari ini, langsung masuk
+  setTimeout(() => { tryAutoLogin(); }, 400);
 
   // Test koneksi Supabase saat startup
   setTimeout(async () => {
