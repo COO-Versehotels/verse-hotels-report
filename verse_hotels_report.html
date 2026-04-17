@@ -2250,13 +2250,22 @@
           const note = item.querySelector('.task-note');
           if (note) {
             note.value = draft.keterangan;
-            // Timestamp
+            // Tampilkan note-wrap hanya jika ada status
+            if (draft.status && draft.status !== 'note_only') {
+              const noteWrap = document.getElementById(draft.task_id + '-note');
+              if (noteWrap) noteWrap.classList.add('show');
+            }
             if (draft.updated_at) {
               const t = new Date(draft.updated_at);
               const ts = String(t.getHours()).padStart(2,'0') + ':' + String(t.getMinutes()).padStart(2,'0');
               showTimestamp(draft.task_id, 'note', ts);
             }
           }
+        }
+
+        // ── RESTORE ROOM INSPECTION ───────────────────────────
+        if (draft.task_id.startsWith('room_') && draft.status) {
+          setRoomStatus(draft.task_id, draft.status);
         }
 
         // ── RESTORE FILE URLS ─────────────────────────────────
