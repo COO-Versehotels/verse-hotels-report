@@ -7994,8 +7994,45 @@ const ROLE_TASKS = {
     el.classList.add('active');
     document.getElementById('tasklist-hotel').textContent = hotelName;
     currentHotel = hotelName;
-    // Load draft untuk hotel ini
-    loadDraft(currentRole, hotelName);
+
+    // Reset tasklist DOM dulu — hapus semua status sebelum load draft baru
+    document.querySelectorAll('#tasklist-content .task-item').forEach(item => {
+      // Reset status
+      item.dataset.status = '';
+      // Reset tombol
+      item.querySelectorAll('.status-btn').forEach(b => {
+        b.className = 'status-btn';
+        b.style.background = '';
+        b.style.borderColor = '';
+        b.style.color = '';
+      });
+      // Reset nomor task
+      const num = item.querySelector('.task-number');
+      if (num && num.dataset.origNum) {
+        num.innerHTML = num.dataset.origNum;
+        num.className = 'task-number';
+        num.style.background = '';
+        num.style.color = '';
+      }
+      // Sembunyikan upload & note
+      const upload = document.getElementById(item.id + '-upload');
+      const note = document.getElementById(item.id + '-note');
+      if (upload) upload.classList.remove('show');
+      if (note) { note.classList.remove('show'); const ta = note.querySelector('textarea'); if(ta) ta.value = ''; }
+      // Reset filelist
+      const filelist = document.getElementById(item.id + '-filelist');
+      if (filelist) filelist.innerHTML = '';
+    });
+
+    // Clear file cache untuk hotel lama
+    Object.keys(taskFiles).forEach(k => delete taskFiles[k]);
+    Object.keys(taskFileUrls).forEach(k => delete taskFileUrls[k]);
+
+    // Reset status bar
+    document.getElementById('tasklist-progress').textContent = '0/' + (document.querySelectorAll('#tasklist-content .task-item:not([data-status="note_only"])').length);
+
+    // Load draft hotel baru
+    setTimeout(() => loadDraft(currentRole, hotelName), 300);
   }
 
   // ===== COO DASHBOARD =====
