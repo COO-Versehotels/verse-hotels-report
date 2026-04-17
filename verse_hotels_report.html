@@ -4665,7 +4665,7 @@ const ROLE_TASKS = {
               <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
-          <div class="task-item" id="task_5" data-status="note_only">
+          <div class="task-item" id="task_5" data-status="note_only" onclick="toggleTask('task_5')">
             <div class="task-item-top">
               <div class="task-number" id="task_5-num" style="background:var(--gray-100);color:var(--gray-400);font-size:11px;">5</div>
               <span class="task-text" style="color:var(--gray-600);font-size:13px;">↳ Tentukan Target penyelesaian</span>
@@ -4787,7 +4787,7 @@ const ROLE_TASKS = {
               <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
-          <div class="task-item" id="task_10" data-status="note_only">
+          <div class="task-item" id="task_10" data-status="note_only" onclick="toggleTask('task_10')">
             <div class="task-item-top">
               <div class="task-number" id="task_10-num" style="background:var(--gray-100);color:var(--gray-400);font-size:11px;">10</div>
               <span class="task-text" style="color:var(--gray-600);font-size:13px;">↳ Apa yang masih belum di Follow Up, apa yang masih tidak sesuai dengan Timeline</span>
@@ -4893,7 +4893,7 @@ const ROLE_TASKS = {
               <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
-          <div class="task-item" id="task_3" data-status="note_only">
+          <div class="task-item" id="task_3" data-status="note_only" onclick="toggleTask('task_3')">
             <div class="task-item-top">
               <div class="task-number" id="task_3-num" style="background:var(--gray-100);color:var(--gray-400);font-size:11px;">3</div>
               <span class="task-text" style="color:var(--gray-600);font-size:13px;">↳ Mulai dari Lantai Paling Atas sampai paling bawah menggunakan tangga</span>
@@ -5077,7 +5077,7 @@ const ROLE_TASKS = {
               <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
-          <div class="task-item" id="task_10" data-status="note_only">
+          <div class="task-item" id="task_10" data-status="note_only" onclick="toggleTask('task_10')">
             <div class="task-item-top">
               <div class="task-number" id="task_10-num" style="background:var(--gray-100);color:var(--gray-400);font-size:11px;">10</div>
               <span class="task-text" style="color:var(--gray-600);font-size:13px;">↳ Apa yang masih belum di Follow Up, apa yang masih tidak sesuai dengan Timeline</span>
@@ -6215,7 +6215,7 @@ const ROLE_TASKS = {
             <span class="task-cat-count" style="background:rgba(255,255,255,0.2);color:white;">0/5</span>
           </div>
           <div style="padding:8px 0;">
-          <div class="task-item" id="room_16_1" data-status="note_only" style="margin-bottom:8px;border:1.5px solid var(--gray-200);border-radius:12px;padding:12px;">
+          <div class="task-item" id="room_16_1" data-status="note_only" style="margin-bottom:8px;border:1.5px solid var(--gray-200);border-radius:12px;padding:12px;" onclick="toggleTask('room_16_1')">
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
               <span style="font-size:13px;font-weight:700;color:var(--navy);min-width:60px;">Kamar 1</span>
               <input type="text" id="room_16_1-room-num" placeholder="No. Kamar (wajib)"
@@ -6243,7 +6243,7 @@ const ROLE_TASKS = {
               <textarea class="task-note" rows="2" placeholder="Keterangan kondisi kamar (wajib diisi)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
-          <div class="task-item" id="room_16_2" data-status="note_only" style="margin-bottom:8px;border:1.5px solid var(--gray-200);border-radius:12px;padding:12px;">
+          <div class="task-item" id="room_16_2" data-status="note_only" style="margin-bottom:8px;border:1.5px solid var(--gray-200);border-radius:12px;padding:12px;" onclick="toggleTask('room_16_2')">
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
               <span style="font-size:13px;font-weight:700;color:var(--navy);min-width:60px;">Kamar 2</span>
               <input type="text" id="room_16_2-room-num" placeholder="No. Kamar (wajib)"
@@ -6271,7 +6271,7 @@ const ROLE_TASKS = {
               <textarea class="task-note" rows="2" placeholder="Keterangan kondisi kamar (wajib diisi)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
-          <div class="task-item" id="room_16_3" data-status="note_only" style="margin-bottom:8px;border:1.5px solid var(--gray-200);border-radius:12px;padding:12px;">
+          <div class="task-item" id="room_16_3" data-status="note_only" style="margin-bottom:8px;border:1.5px solid var(--gray-200);border-radius:12px;padding:12px;" onclick="toggleTask('room_16_3')">
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
               <span style="font-size:13px;font-weight:700;color:var(--navy);min-width:60px;">Kamar 3</span>
               <input type="text" id="room_16_3-room-num" placeholder="No. Kamar (wajib)"
@@ -6299,7 +6299,7 @@ const ROLE_TASKS = {
               <textarea class="task-note" rows="2" placeholder="Keterangan kondisi kamar (wajib diisi)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
-          <div class="task-item" id="room_16_4" data-status="note_only" style="margin-bottom:8px;border:1.5px solid var(--gray-200);border-radius:12px;padding:12px;">
+          <div class="task-item" id="room_16_4" data-status="note_only" style="margin-bottom:8px;border:1.5px solid var(--gray-200);border-radius:12px;padding:12px;" onclick="toggleTask('room_16_4')">
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
               <span style="font-size:13px;font-weight:700;color:var(--navy);min-width:60px;">Kamar 4</span>
               <input type="text" id="room_16_4-room-num" placeholder="No. Kamar (wajib)"
@@ -6327,7 +6327,7 @@ const ROLE_TASKS = {
               <textarea class="task-note" rows="2" placeholder="Keterangan kondisi kamar (wajib diisi)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
-          <div class="task-item" id="room_16_5" data-status="note_only" style="margin-bottom:8px;border:1.5px solid var(--gray-200);border-radius:12px;padding:12px;">
+          <div class="task-item" id="room_16_5" data-status="note_only" style="margin-bottom:8px;border:1.5px solid var(--gray-200);border-radius:12px;padding:12px;" onclick="toggleTask('room_16_5')">
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
               <span style="font-size:13px;font-weight:700;color:var(--navy);min-width:60px;">Kamar 5</span>
               <input type="text" id="room_16_5-room-num" placeholder="No. Kamar (wajib)"
@@ -6884,7 +6884,7 @@ const ROLE_TASKS = {
             <span class="task-cat-count" style="background:rgba(255,255,255,0.2);color:white;">0/5</span>
           </div>
           <div style="padding:8px 0;">
-          <div class="task-item" id="room_16_1" data-status="note_only" style="margin-bottom:8px;border:1.5px solid var(--gray-200);border-radius:12px;padding:12px;">
+          <div class="task-item" id="room_16_1" data-status="note_only" style="margin-bottom:8px;border:1.5px solid var(--gray-200);border-radius:12px;padding:12px;" onclick="toggleTask('room_16_1')">
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
               <span style="font-size:13px;font-weight:700;color:var(--navy);min-width:60px;">Kamar 1</span>
               <input type="text" id="room_16_1-room-num" placeholder="No. Kamar (wajib)"
@@ -6912,7 +6912,7 @@ const ROLE_TASKS = {
               <textarea class="task-note" rows="2" placeholder="Keterangan kondisi kamar (wajib diisi)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
-          <div class="task-item" id="room_16_2" data-status="note_only" style="margin-bottom:8px;border:1.5px solid var(--gray-200);border-radius:12px;padding:12px;">
+          <div class="task-item" id="room_16_2" data-status="note_only" style="margin-bottom:8px;border:1.5px solid var(--gray-200);border-radius:12px;padding:12px;" onclick="toggleTask('room_16_2')">
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
               <span style="font-size:13px;font-weight:700;color:var(--navy);min-width:60px;">Kamar 2</span>
               <input type="text" id="room_16_2-room-num" placeholder="No. Kamar (wajib)"
@@ -6940,7 +6940,7 @@ const ROLE_TASKS = {
               <textarea class="task-note" rows="2" placeholder="Keterangan kondisi kamar (wajib diisi)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
-          <div class="task-item" id="room_16_3" data-status="note_only" style="margin-bottom:8px;border:1.5px solid var(--gray-200);border-radius:12px;padding:12px;">
+          <div class="task-item" id="room_16_3" data-status="note_only" style="margin-bottom:8px;border:1.5px solid var(--gray-200);border-radius:12px;padding:12px;" onclick="toggleTask('room_16_3')">
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
               <span style="font-size:13px;font-weight:700;color:var(--navy);min-width:60px;">Kamar 3</span>
               <input type="text" id="room_16_3-room-num" placeholder="No. Kamar (wajib)"
@@ -6968,7 +6968,7 @@ const ROLE_TASKS = {
               <textarea class="task-note" rows="2" placeholder="Keterangan kondisi kamar (wajib diisi)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
-          <div class="task-item" id="room_16_4" data-status="note_only" style="margin-bottom:8px;border:1.5px solid var(--gray-200);border-radius:12px;padding:12px;">
+          <div class="task-item" id="room_16_4" data-status="note_only" style="margin-bottom:8px;border:1.5px solid var(--gray-200);border-radius:12px;padding:12px;" onclick="toggleTask('room_16_4')">
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
               <span style="font-size:13px;font-weight:700;color:var(--navy);min-width:60px;">Kamar 4</span>
               <input type="text" id="room_16_4-room-num" placeholder="No. Kamar (wajib)"
@@ -6996,7 +6996,7 @@ const ROLE_TASKS = {
               <textarea class="task-note" rows="2" placeholder="Keterangan kondisi kamar (wajib diisi)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
-          <div class="task-item" id="room_16_5" data-status="note_only" style="margin-bottom:8px;border:1.5px solid var(--gray-200);border-radius:12px;padding:12px;">
+          <div class="task-item" id="room_16_5" data-status="note_only" style="margin-bottom:8px;border:1.5px solid var(--gray-200);border-radius:12px;padding:12px;" onclick="toggleTask('room_16_5')">
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
               <span style="font-size:13px;font-weight:700;color:var(--navy);min-width:60px;">Kamar 5</span>
               <input type="text" id="room_16_5-room-num" placeholder="No. Kamar (wajib)"
@@ -7553,7 +7553,7 @@ const ROLE_TASKS = {
             <span class="task-cat-count" style="background:rgba(255,255,255,0.2);color:white;">0/5</span>
           </div>
           <div style="padding:8px 0;">
-          <div class="task-item" id="room_16_1" data-status="note_only" style="margin-bottom:8px;border:1.5px solid var(--gray-200);border-radius:12px;padding:12px;">
+          <div class="task-item" id="room_16_1" data-status="note_only" style="margin-bottom:8px;border:1.5px solid var(--gray-200);border-radius:12px;padding:12px;" onclick="toggleTask('room_16_1')">
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
               <span style="font-size:13px;font-weight:700;color:var(--navy);min-width:60px;">Kamar 1</span>
               <input type="text" id="room_16_1-room-num" placeholder="No. Kamar (wajib)"
@@ -7581,7 +7581,7 @@ const ROLE_TASKS = {
               <textarea class="task-note" rows="2" placeholder="Keterangan kondisi kamar (wajib diisi)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
-          <div class="task-item" id="room_16_2" data-status="note_only" style="margin-bottom:8px;border:1.5px solid var(--gray-200);border-radius:12px;padding:12px;">
+          <div class="task-item" id="room_16_2" data-status="note_only" style="margin-bottom:8px;border:1.5px solid var(--gray-200);border-radius:12px;padding:12px;" onclick="toggleTask('room_16_2')">
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
               <span style="font-size:13px;font-weight:700;color:var(--navy);min-width:60px;">Kamar 2</span>
               <input type="text" id="room_16_2-room-num" placeholder="No. Kamar (wajib)"
@@ -7609,7 +7609,7 @@ const ROLE_TASKS = {
               <textarea class="task-note" rows="2" placeholder="Keterangan kondisi kamar (wajib diisi)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
-          <div class="task-item" id="room_16_3" data-status="note_only" style="margin-bottom:8px;border:1.5px solid var(--gray-200);border-radius:12px;padding:12px;">
+          <div class="task-item" id="room_16_3" data-status="note_only" style="margin-bottom:8px;border:1.5px solid var(--gray-200);border-radius:12px;padding:12px;" onclick="toggleTask('room_16_3')">
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
               <span style="font-size:13px;font-weight:700;color:var(--navy);min-width:60px;">Kamar 3</span>
               <input type="text" id="room_16_3-room-num" placeholder="No. Kamar (wajib)"
@@ -7637,7 +7637,7 @@ const ROLE_TASKS = {
               <textarea class="task-note" rows="2" placeholder="Keterangan kondisi kamar (wajib diisi)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
-          <div class="task-item" id="room_16_4" data-status="note_only" style="margin-bottom:8px;border:1.5px solid var(--gray-200);border-radius:12px;padding:12px;">
+          <div class="task-item" id="room_16_4" data-status="note_only" style="margin-bottom:8px;border:1.5px solid var(--gray-200);border-radius:12px;padding:12px;" onclick="toggleTask('room_16_4')">
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
               <span style="font-size:13px;font-weight:700;color:var(--navy);min-width:60px;">Kamar 4</span>
               <input type="text" id="room_16_4-room-num" placeholder="No. Kamar (wajib)"
@@ -7665,7 +7665,7 @@ const ROLE_TASKS = {
               <textarea class="task-note" rows="2" placeholder="Keterangan kondisi kamar (wajib diisi)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
-          <div class="task-item" id="room_16_5" data-status="note_only" style="margin-bottom:8px;border:1.5px solid var(--gray-200);border-radius:12px;padding:12px;">
+          <div class="task-item" id="room_16_5" data-status="note_only" style="margin-bottom:8px;border:1.5px solid var(--gray-200);border-radius:12px;padding:12px;" onclick="toggleTask('room_16_5')">
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
               <span style="font-size:13px;font-weight:700;color:var(--navy);min-width:60px;">Kamar 5</span>
               <input type="text" id="room_16_5-room-num" placeholder="No. Kamar (wajib)"
@@ -8222,7 +8222,7 @@ const ROLE_TASKS = {
             <span class="task-cat-count" style="background:rgba(255,255,255,0.2);color:white;">0/5</span>
           </div>
           <div style="padding:8px 0;">
-          <div class="task-item" id="room_16_1" data-status="note_only" style="margin-bottom:8px;border:1.5px solid var(--gray-200);border-radius:12px;padding:12px;">
+          <div class="task-item" id="room_16_1" data-status="note_only" style="margin-bottom:8px;border:1.5px solid var(--gray-200);border-radius:12px;padding:12px;" onclick="toggleTask('room_16_1')">
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
               <span style="font-size:13px;font-weight:700;color:var(--navy);min-width:60px;">Kamar 1</span>
               <input type="text" id="room_16_1-room-num" placeholder="No. Kamar (wajib)"
@@ -8250,7 +8250,7 @@ const ROLE_TASKS = {
               <textarea class="task-note" rows="2" placeholder="Keterangan kondisi kamar (wajib diisi)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
-          <div class="task-item" id="room_16_2" data-status="note_only" style="margin-bottom:8px;border:1.5px solid var(--gray-200);border-radius:12px;padding:12px;">
+          <div class="task-item" id="room_16_2" data-status="note_only" style="margin-bottom:8px;border:1.5px solid var(--gray-200);border-radius:12px;padding:12px;" onclick="toggleTask('room_16_2')">
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
               <span style="font-size:13px;font-weight:700;color:var(--navy);min-width:60px;">Kamar 2</span>
               <input type="text" id="room_16_2-room-num" placeholder="No. Kamar (wajib)"
@@ -8278,7 +8278,7 @@ const ROLE_TASKS = {
               <textarea class="task-note" rows="2" placeholder="Keterangan kondisi kamar (wajib diisi)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
-          <div class="task-item" id="room_16_3" data-status="note_only" style="margin-bottom:8px;border:1.5px solid var(--gray-200);border-radius:12px;padding:12px;">
+          <div class="task-item" id="room_16_3" data-status="note_only" style="margin-bottom:8px;border:1.5px solid var(--gray-200);border-radius:12px;padding:12px;" onclick="toggleTask('room_16_3')">
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
               <span style="font-size:13px;font-weight:700;color:var(--navy);min-width:60px;">Kamar 3</span>
               <input type="text" id="room_16_3-room-num" placeholder="No. Kamar (wajib)"
@@ -8306,7 +8306,7 @@ const ROLE_TASKS = {
               <textarea class="task-note" rows="2" placeholder="Keterangan kondisi kamar (wajib diisi)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
-          <div class="task-item" id="room_16_4" data-status="note_only" style="margin-bottom:8px;border:1.5px solid var(--gray-200);border-radius:12px;padding:12px;">
+          <div class="task-item" id="room_16_4" data-status="note_only" style="margin-bottom:8px;border:1.5px solid var(--gray-200);border-radius:12px;padding:12px;" onclick="toggleTask('room_16_4')">
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
               <span style="font-size:13px;font-weight:700;color:var(--navy);min-width:60px;">Kamar 4</span>
               <input type="text" id="room_16_4-room-num" placeholder="No. Kamar (wajib)"
@@ -8334,7 +8334,7 @@ const ROLE_TASKS = {
               <textarea class="task-note" rows="2" placeholder="Keterangan kondisi kamar (wajib diisi)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
           </div>
-          <div class="task-item" id="room_16_5" data-status="note_only" style="margin-bottom:8px;border:1.5px solid var(--gray-200);border-radius:12px;padding:12px;">
+          <div class="task-item" id="room_16_5" data-status="note_only" style="margin-bottom:8px;border:1.5px solid var(--gray-200);border-radius:12px;padding:12px;" onclick="toggleTask('room_16_5')">
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
               <span style="font-size:13px;font-weight:700;color:var(--navy);min-width:60px;">Kamar 5</span>
               <input type="text" id="room_16_5-room-num" placeholder="No. Kamar (wajib)"
