@@ -1928,8 +1928,17 @@
         </div>
       </div>
 
+      <!-- Live Progress Section -->
+      <div style="padding:0 16px 6px;font-size:11px;color:var(--gray-400);font-weight:700;text-transform:uppercase;letter-spacing:1px;display:flex;align-items:center;justify-content:space-between;">
+        <span>🔴 Sedang Dikerjakan</span>
+        <span id="coo-live-timer" style="font-size:10px;font-weight:500;color:var(--gray-400);">Refresh dalam 5:00</span>
+      </div>
+      <div id="coo-live-progress">
+        <!-- Diisi JS -->
+      </div>
+
       <!-- Detail per Hotel -->
-      <div style="padding:0 16px 6px;font-size:11px;color:var(--gray-400);font-weight:700;text-transform:uppercase;letter-spacing:1px;">Detail per Hotel</div>
+      <div style="padding:12px 16px 6px;font-size:11px;color:var(--gray-400);font-weight:700;text-transform:uppercase;letter-spacing:1px;">Detail per Hotel</div>
       <div id="coo-hotel-detail">
         <!-- Diisi JS -->
       </div>
@@ -2554,6 +2563,7 @@
 
   // COO back — kembali ke asal
   function cooBack() {
+    stopLiveRefresh();
     if (cooOpenedFrom === 'home') {
       go('home');
     } else {
@@ -2575,6 +2585,7 @@
     // Populate COO dashboard
     if (screen === 'coo') {
       populateCOO();
+      startLiveRefresh();
     }
 
     // Set default date untuk arsip = hari ini
@@ -8239,6 +8250,128 @@ const ROLE_TASKS = {
     });
     corpSectionHtml += '</div>';
     document.getElementById('coo-hotel-detail').innerHTML = hotelDetailHtml + corpSectionHtml;
+  }
+
+  // ===== LIVE PROGRESS MONITORING =====
+  let liveRefreshInterval = null;
+  let liveCountdownInterval = null;
+  const LIVE_REFRESH_SECONDS = 300; // 5 menit
+
+  async function loadLiveProgress() {
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const res = await fetch(SUPA_URL + '/rest/v1/draft_tasklist?tanggal=eq.' + today + '&select=role,hotel,status&order=role.asc', {
+        headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY }
+      });
+      if (!res.ok) return;
+      const rows = await res.json();
+
+      const allRoles = [
+        {name:'Ops HR Manager', icon:'👔', hotel:'Corporate'},
+        {name:'HR Officer', icon:'🧑‍💼', hotel:'Corporate'},
+        {name:'Chief Engineering Corporate', icon:'⚙️', hotel:'Corporate'},
+        {name:'EHK Corporate', icon:'🛏️', hotel:'Corporate'},
+        {name:'CRA Corporate', icon:'🌐', hotel:'Corporate'},
+        {name:'HM Verse Lite', icon:'🏨', hotel:'Verse Lite Gajah Mada'},
+        {name:'HM Verse Luxe', icon:'🏨', hotel:'Verse Luxe Wahid Hasyim'},
+        {name:'HM Verse Cirebon', icon:'🏨', hotel:'Verse Hotel Cirebon'},
+        {name:'HM Oak Tree', icon:'🏨', hotel:'Oak Tree Mahakam Blok M'},
+      ];
+
+      // Ambil expected total tasks per role dari ROLE_TASKS
+      const roleTaskKey = {
+        'Ops HR Manager': 'Ops HR Manager',
+        'HR Officer': 'Ops HR Manager',
+        'Chief Engineering Corporate': 'CE Corporate',
+        'EHK Corporate': 'EHK Corporate',
+        'CRA Corporate': 'CRA Corporate',
+        'HM Verse Lite': 'HM Verse Lite',
+        'HM Verse Luxe': 'HM Verse Luxe',
+        'HM Verse Cirebon': 'HM Verse Cirebon',
+        'HM Oak Tree': 'HM Oak Tree',
+      };
+
+      let html = '';
+      let anyActive = false;
+
+      allRoles.forEach(role => {
+        // Cek apakah role ini sudah submit (ada di submittedReports)
+        const alreadySubmitted = submittedReports.some(r => r.role === role.name);
+        if (alreadySubmitted) return; // skip — sudah submit, tampil di section atas
+
+        // Ambil rows draft untuk role ini
+        const roleRows = rows.filter(r => r.role === role.name && r.hotel === role.hotel);
+        if (roleRows.length === 0) return; // belum mulai sama sekali
+
+        anyActive = true;
+        const done = roleRows.filter(r => r.status === 'done').length;
+        const inProgress = roleRows.filter(r => r.status === 'in_progress').length;
+        const total = roleRows.length;
+        const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+        const barColor = pct >= 80 ? 'var(--green)' : pct >= 50 ? 'var(--navy)' : 'var(--amber)';
+        const hotelLabel = role.hotel === 'Corporate' ? 'Tim Corporate' : role.hotel.replace('Verse ','').replace(' Gajah Mada','').replace(' Wahid Hasyim','');
+
+        html += `
+          <div class="role-report-item" style="border-left:3px solid ${barColor};">
+            <div class="role-avatar">${role.icon}</div>
+            <div class="role-info" style="flex:1;">
+              <h4>${role.name.replace(' Corporate','')} <span style="font-size:10px;font-weight:500;color:var(--gray-400);">${hotelLabel}</span></h4>
+              <p style="color:var(--gray-400);">
+                ✅ ${done} selesai · 
+                ${inProgress > 0 ? `⏳ ${inProgress} sedang dikerjakan · ` : ''}
+                📋 ${total} total task
+              </p>
+              <div style="margin-top:6px;background:var(--gray-100);border-radius:99px;height:6px;overflow:hidden;">
+                <div style="height:100%;width:${pct}%;background:${barColor};border-radius:99px;transition:width 0.4s;"></div>
+              </div>
+            </div>
+            <div style="font-size:16px;font-weight:800;color:${barColor};margin-left:10px;">${pct}%</div>
+          </div>`;
+      });
+
+      const container = document.getElementById('coo-live-progress');
+      if (container) {
+        container.innerHTML = anyActive
+          ? `<div style="padding:0 0 4px;">${html}</div>`
+          : `<div style="padding:12px 16px;text-align:center;color:var(--gray-400);font-size:13px;background:var(--gray-50);border-radius:12px;margin:0 0 8px;">Semua team belum mulai atau sudah submit 👍</div>`;
+      }
+    } catch(e) {
+      console.error('loadLiveProgress error:', e);
+    }
+  }
+
+  function startLiveRefresh() {
+    // Clear interval lama kalau ada
+    if (liveRefreshInterval) clearInterval(liveRefreshInterval);
+    if (liveCountdownInterval) clearInterval(liveCountdownInterval);
+
+    // Load pertama kali langsung
+    loadLiveProgress();
+
+    // Countdown timer display
+    let secondsLeft = LIVE_REFRESH_SECONDS;
+    const timerEl = document.getElementById('coo-live-timer');
+    function updateTimer() {
+      if (!timerEl) return;
+      const m = Math.floor(secondsLeft / 60);
+      const s = secondsLeft % 60;
+      timerEl.textContent = 'Refresh dalam ' + m + ':' + String(s).padStart(2,'0');
+      secondsLeft--;
+      if (secondsLeft < 0) secondsLeft = LIVE_REFRESH_SECONDS;
+    }
+    updateTimer();
+    liveCountdownInterval = setInterval(updateTimer, 1000);
+
+    // Auto refresh setiap 5 menit
+    liveRefreshInterval = setInterval(() => {
+      loadLiveProgress();
+      secondsLeft = LIVE_REFRESH_SECONDS;
+    }, LIVE_REFRESH_SECONDS * 1000);
+  }
+
+  function stopLiveRefresh() {
+    if (liveRefreshInterval) { clearInterval(liveRefreshInterval); liveRefreshInterval = null; }
+    if (liveCountdownInterval) { clearInterval(liveCountdownInterval); liveCountdownInterval = null; }
   }
 
   // Dipanggil saat team submit laporan
