@@ -2026,6 +2026,53 @@
 <div class="toast" id="toast"></div>
 
 <script>
+
+  // ===== SESSION MANAGEMENT — sekali sehari =====
+  function saveSessionToday(role, hotel) {
+    if (!role || role === 'COO') return; // COO tidak perlu session (pakai biometrik)
+    const today = new Date().toISOString().split('T')[0];
+    const session = { role, hotel, date: today };
+    localStorage.setItem('team_session', JSON.stringify(session));
+  }
+
+  function loadSessionToday() {
+    try {
+      const raw = localStorage.getItem('team_session');
+      if (!raw) return null;
+      const session = JSON.parse(raw);
+      const today = new Date().toISOString().split('T')[0];
+      if (session.date !== today) {
+        // Session hari kemarin — hapus
+        localStorage.removeItem('team_session');
+        return null;
+      }
+      return session;
+    } catch(e) { return null; }
+  }
+
+  function tryAutoLogin() {
+    const session = loadSessionToday();
+    if (!session) return false;
+
+    // Restore session tanpa PIN
+    currentRole = session.role;
+    currentHotel = session.hotel;
+    document.getElementById('role-display').textContent = currentRole;
+    document.getElementById('profile-role-name').textContent = currentRole;
+    tasklistRendered = false;
+    lastRenderedRole = '';
+    Object.keys(taskFiles).forEach(k => delete taskFiles[k]);
+    Object.keys(taskFileUrls).forEach(k => delete taskFileUrls[k]);
+    ['nav-coo-home','nav-coo-tasklist'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.style.display = 'none';
+    });
+    go('home');
+    showToast('👋 Selamat datang kembali, ' + currentRole.replace(' Corporate','') + '!');
+    setTimeout(saveTeamLocation, 800);
+    return true;
+  }
+
   // ===== SUPABASE SETUP =====
   const SUPA_URL = 'https://hgbqecsmhrzlavsjwlwq.supabase.co';
   const SUPA_KEY = 'sb_publishable_KeAmOu9ex8r1PDRI1MRMsQ_40uiEkbM';
@@ -2867,6 +2914,8 @@
       if (el) el.style.display = 'none';
     });
     go('home');
+    // Simpan session hari ini ke localStorage
+    saveSessionToday(currentRole, currentHotel);
     // Ambil & simpan lokasi team saat login
     setTimeout(saveTeamLocation, 500);
   }
@@ -2993,6 +3042,8 @@
   }
 
   function logoutToSplash() {
+    // Hapus session tersimpan
+    localStorage.removeItem('team_session');
     // Reset state
     currentRole = '';
     currentHotel = '';
@@ -3030,6 +3081,7 @@
       if (el) el.style.display = 'none';
     });
     go('home');
+    saveSessionToday(role, currentHotel);
     setTimeout(saveTeamLocation, 500);
   }
 
@@ -3058,6 +3110,11 @@
   }
   updateSplashClock();
   setInterval(updateSplashClock, 10000);
+
+  // Auto-login jika ada session hari ini
+  setTimeout(() => {
+    if (tryAutoLogin()) return; // langsung masuk jika ada session
+  }, 300);
 
   // Test koneksi Supabase saat startup
   setTimeout(async () => {
