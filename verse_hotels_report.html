@@ -2599,8 +2599,11 @@
         'HM Verse Cirebon': 'Verse Hotel Cirebon',
         'HM Oak Tree': 'Oak Tree Mahakam Blok M',
       };
+      const CORP_ROLES2 = ['Ops HR Manager','HR Officer','Chief Engineering Corporate','EHK Corporate','CRA Corporate','COO'];
       if (hmHotelMap2[currentRole]) {
         currentHotel = hmHotelMap2[currentRole];
+      } else if (CORP_ROLES2.includes(currentRole)) {
+        currentHotel = 'Corporate';
       } else if (!currentHotel) {
         currentHotel = 'Verse Lite Gajah Mada';
       }
@@ -2730,7 +2733,8 @@
       'HM Verse Cirebon': 'Verse Hotel Cirebon',
       'HM Oak Tree': 'Oak Tree Mahakam Blok M',
     };
-    currentHotel = hmHotels[currentRole] || '';
+    const CORPORATE_ROLES = ['Ops HR Manager','HR Officer','Chief Engineering Corporate','EHK Corporate','CRA Corporate','COO'];
+    currentHotel = hmHotels[currentRole] || (CORPORATE_ROLES.includes(currentRole) ? 'Corporate' : '');
     // Reset taskFiles & taskFileUrls
     Object.keys(taskFiles).forEach(k => delete taskFiles[k]);
     Object.keys(taskFileUrls).forEach(k => delete taskFileUrls[k]);
@@ -7932,6 +7936,13 @@ const ROLE_TASKS = {
       const chipRow = document.querySelector('.hotel-chips-row');
       if (chipRow) chipRow.style.display = 'none';
     } else {
+      // Corporate roles — set hotel ke 'Corporate', sembunyikan chip
+      const CORP_ROLES3 = ['Ops HR Manager','HR Officer','Chief Engineering Corporate','EHK Corporate','CRA Corporate','COO'];
+      if (CORP_ROLES3.includes(role)) {
+        currentHotel = 'Corporate';
+        const hotelEl = document.getElementById('tasklist-hotel');
+        if (hotelEl) hotelEl.textContent = 'Corporate';
+      }
       const chipRow = document.querySelector('.hotel-chips-row');
       if (chipRow) chipRow.style.display = '';
     }
