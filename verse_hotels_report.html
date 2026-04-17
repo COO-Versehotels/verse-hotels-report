@@ -2181,7 +2181,14 @@
     const status = item.dataset.status || null;
     const noteEl = item.querySelector('.task-note');
     const fuInput = item.querySelector('.fu-input');
-    const keterangan = fuInput ? fuInput.value.trim() : (noteEl ? noteEl.value.trim() : '');
+    // Untuk room tasks — gabungkan nomor kamar ke keterangan
+    const roomNumEl = document.getElementById(taskId + '-room-num');
+    let keterangan = fuInput ? fuInput.value.trim() : (noteEl ? noteEl.value.trim() : '');
+    if (roomNumEl && roomNumEl.value.trim()) {
+      const roomNum = roomNumEl.value.trim();
+      const noteText = noteEl ? noteEl.value.trim() : '';
+      keterangan = noteText ? 'Kamar ' + roomNum + ' — ' + noteText : 'Kamar ' + roomNum;
+    }
     // Selalu ambil file_urls terbaru dari taskFileUrls
     const currentUrls = taskFileUrls[taskId];
     const fileUrls = currentUrls && currentUrls.length > 0 ? JSON.stringify(currentUrls) : null;
@@ -2337,6 +2344,23 @@
         // ── RESTORE ROOM INSPECTION ───────────────────────────
         if (draft.task_id.startsWith('room_') && draft.status) {
           setRoomStatus(draft.task_id, draft.status);
+          // Restore nomor kamar dari keterangan
+          if (draft.keterangan) {
+            const roomNumEl = document.getElementById(draft.task_id + '-room-num');
+            if (roomNumEl) {
+              // Format: "Kamar 101 — keterangan" atau "Kamar 101"
+              const kamarMatch = draft.keterangan.match(/^Kamar ([^—\s]+)/);
+              if (kamarMatch) {
+                roomNumEl.value = kamarMatch[1];
+              }
+            }
+            // Restore keterangan ke textarea (tanpa prefix "Kamar X — ")
+            const noteEl = item ? item.querySelector('.task-note') : null;
+            if (noteEl) {
+              const noteText = draft.keterangan.replace(/^Kamar [^—]+—\s*/, '').trim();
+              if (noteText) noteEl.value = noteText;
+            }
+          }
         }
 
         // ── RESTORE FILE URLS ─────────────────────────────────
@@ -2779,6 +2803,9 @@
       currentHotel = session.hotel;
       document.getElementById('role-display').textContent = currentRole;
       document.getElementById('profile-role-name').textContent = currentRole;
+      // Update badge
+      const badge = document.getElementById('home-role-badge');
+      if (badge) badge.textContent = currentRole.startsWith('HM ') ? 'UNIT HEAD' : 'CORPORATE';
       tasklistRendered = false;
       lastRenderedRole = '';
       Object.keys(taskFiles).forEach(k => delete taskFiles[k]);
@@ -3564,7 +3591,7 @@
       const isHMRole = currentRole && currentRole.startsWith('HM ');
       let apError = false;
 
-      // Wajib pilih hotel — hanya untuk Corporate, bukan HM
+      // Wajib pilih hotel — untuk Corporate (HM sudah terikat di unitnya)
       if (!isHMRole && (!hotelVal || !hotelVal.value)) {
         const container = document.getElementById('activity-plan-hotel-select');
         if (container) {
@@ -3754,6 +3781,8 @@
     const apHotel = document.getElementById('activity-plan-hotel-val');
     const apNote = document.querySelector('#activity-plan .task-note');
     const isHMRoleCheck = currentRole && currentRole.startsWith('HM ');
+    const isCorporateRole = !isHMRoleCheck; // semua non-HM adalah Corporate
+    // Unit Visit Tomorrow wajib untuk Corporate, HM sudah terikat di unitnya
     if (!isHMRoleCheck && (!apHotel || !apHotel.value)) {
       requiredItems.push('• <b>Activity Plan</b> — <i>Unit Visit Tomorrow belum dipilih</i>');
     }
