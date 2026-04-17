@@ -1554,7 +1554,7 @@
   <!-- ===== LOGIN: PIN ===== -->
   <div class="screen" id="screen-pin">
     <div class="pin-screen-header">
-      <button class="pin-back-btn" onclick="go('login')">←</button>
+      <button class="pin-back-btn" onclick="document.getElementById('bio-shortcut')?.remove();go('login');">←</button>
       <div class="pin-role-badge" id="pin-role-badge">
         <div class="pin-role-icon" id="pin-role-icon">👔</div>
         <div>
@@ -2697,14 +2697,7 @@
     const correctPin = ROLE_PINS[currentRole] || '1234';
     if (currentRole === 'COO') {
       if (pin === COO_PIN) {
-        pin = ''; updatePinDots();
-        currentRole = 'COO';
-        // Tampilkan tombol COO di nav
-        ['nav-coo-home','nav-coo-tasklist'].forEach(id => {
-          const el = document.getElementById(id);
-          if (el) el.style.display = 'block';
-        });
-        go('coo');
+        loginAsCOO();
       }
       else { showToast('PIN salah!'); pin = ''; updatePinDots(); }
     } else {
@@ -2730,6 +2723,62 @@
     document.getElementById('pin-role-icon').textContent = roleIcons[role] || '👤';
     // Go to PIN screen
     go('pin');
+
+    // Jika COO sudah daftarkan fingerprint & ini bukan role COO,
+    // tawarkan biometric shortcut untuk Pak Ian
+    if (role !== 'COO') {
+      const credId = localStorage.getItem('coo_cred_id');
+      if (credId && window.PublicKeyCredential) {
+        setTimeout(() => showBiometricShortcut(role), 400);
+      }
+    }
+  }
+
+  function showBiometricShortcut(role) {
+    // Tampilkan tombol fingerprint di bawah numpad PIN
+    const existing = document.getElementById('bio-shortcut');
+    if (existing) existing.remove();
+
+    const btn = document.createElement('button');
+    btn.id = 'bio-shortcut';
+    btn.innerHTML = '👆 Login dengan Fingerprint';
+    btn.style.cssText = 'width:calc(100% - 48px);margin:12px 24px 0;padding:14px;background:#1a2744;color:white;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;';
+    btn.onclick = () => biometricAuthForRole(role);
+
+    // Insert after numpad
+    const pinBody = document.querySelector('.pin-body');
+    if (pinBody) pinBody.appendChild(btn);
+  }
+
+  async function biometricAuthForRole(role) {
+    try {
+      const credId = localStorage.getItem('coo_cred_id');
+      if (!credId) { showToast('Fingerprint belum terdaftar'); return; }
+
+      const challenge = new Uint8Array(32);
+      crypto.getRandomValues(challenge);
+      const rawId = Uint8Array.from(atob(credId), c => c.charCodeAt(0));
+
+      await navigator.credentials.get({
+        publicKey: {
+          challenge,
+          allowCredentials: [{ type: 'public-key', id: rawId, transports: ['internal'] }],
+          userVerification: 'required',
+          timeout: 30000,
+        }
+      });
+
+      // Fingerprint berhasil — login langsung tanpa PIN
+      document.getElementById('bio-shortcut')?.remove();
+      showToast('✅ Fingerprint berhasil!');
+      setTimeout(() => doLogin(), 300);
+    } catch(e) {
+      if (e.name === 'NotAllowedError') {
+        showToast('❌ Dibatalkan — masukkan PIN');
+      } else {
+        showToast('⚠️ Gagal — masukkan PIN');
+      }
+    }
   }
 
   function updateRole() {
@@ -2768,6 +2817,133 @@
     go('home');
     // Ambil & simpan lokasi team saat login
     setTimeout(saveTeamLocation, 500);
+  }
+
+  // ===== BIOMETRIC / WEBAUTHN LOGIN COO =====
+  async function doLoginCOO() {
+    cooOpenedFrom = 'splash';
+
+    // Cek apakah browser support WebAuthn (biometrik)
+    if (window.PublicKeyCredential) {
+      try {
+        // Cek apakah platform authenticator tersedia (fingerprint/face)
+        const available = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+        if (available) {
+          // Cek apakah sudah ada credential tersimpan
+          const credId = localStorage.getItem('coo_cred_id');
+          if (credId) {
+            // Sudah terdaftar — langsung authenticate
+            await biometricAuthenticate();
+            return;
+          } else {
+            // Belum terdaftar — tawarkan daftar fingerprint
+            showBiometricPrompt();
+            return;
+          }
+        }
+      } catch(e) {
+        console.warn('WebAuthn check failed:', e);
+      }
+    }
+
+    // Fallback: PIN biasa
+    selectRole('COO');
+  }
+
+  function showBiometricPrompt() {
+    const modal = document.createElement('div');
+    modal.id = 'bio-modal';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:24px;';
+    modal.innerHTML = `
+      <div style="background:white;border-radius:20px;padding:28px 24px;max-width:320px;width:100%;text-align:center;">
+        <div style="font-size:48px;margin-bottom:12px;">🔐</div>
+        <h3 style="font-size:17px;font-weight:800;color:#1a2744;margin-bottom:8px;">Aktifkan Fingerprint</h3>
+        <p style="font-size:13px;color:#6b7280;line-height:1.6;margin-bottom:20px;">Gunakan fingerprint untuk login lebih cepat. Hanya perlu didaftarkan sekali.</p>
+        <button onclick="biometricRegister()" style="width:100%;padding:14px;background:#1a2744;color:white;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:10px;">👆 Daftarkan Fingerprint</button>
+        <button onclick="document.getElementById('bio-modal').remove();selectRole('COO');" style="width:100%;padding:12px;background:#f3f4f6;color:#374151;border:none;border-radius:12px;font-size:13px;font-weight:600;cursor:pointer;">Gunakan PIN saja</button>
+      </div>`;
+    document.body.appendChild(modal);
+  }
+
+  async function biometricRegister() {
+    document.getElementById('bio-modal')?.remove();
+    try {
+      const challenge = new Uint8Array(32);
+      crypto.getRandomValues(challenge);
+      const userId = new Uint8Array(16);
+      crypto.getRandomValues(userId);
+
+      const credential = await navigator.credentials.create({
+        publicKey: {
+          challenge,
+          rp: { name: 'Verse Hotels COO', id: location.hostname },
+          user: { id: userId, name: 'coo@versehotels.com', displayName: 'COO Verse Hotels' },
+          pubKeyCredParams: [{ alg: -7, type: 'public-key' }, { alg: -257, type: 'public-key' }],
+          authenticatorSelection: { authenticatorAttachment: 'platform', userVerification: 'required' },
+          timeout: 30000,
+        }
+      });
+
+      // Simpan credential ID di localStorage
+      const credId = btoa(String.fromCharCode(...new Uint8Array(credential.rawId)));
+      localStorage.setItem('coo_cred_id', credId);
+
+      showToast('✅ Fingerprint berhasil didaftarkan!');
+      setTimeout(() => loginAsCOO(), 800);
+    } catch(e) {
+      console.warn('Biometric register failed:', e);
+      if (e.name === 'NotAllowedError') {
+        showToast('❌ Fingerprint dibatalkan');
+      } else {
+        showToast('⚠️ Gagal daftar, gunakan PIN');
+        selectRole('COO');
+      }
+    }
+  }
+
+  async function biometricAuthenticate() {
+    try {
+      const credId = localStorage.getItem('coo_cred_id');
+      const challenge = new Uint8Array(32);
+      crypto.getRandomValues(challenge);
+
+      // Decode credential ID
+      const rawId = Uint8Array.from(atob(credId), c => c.charCodeAt(0));
+
+      await navigator.credentials.get({
+        publicKey: {
+          challenge,
+          allowCredentials: [{ type: 'public-key', id: rawId, transports: ['internal'] }],
+          userVerification: 'required',
+          timeout: 30000,
+        }
+      });
+
+      showToast('✅ Fingerprint berhasil!');
+      setTimeout(() => loginAsCOO(), 300);
+    } catch(e) {
+      console.warn('Biometric auth failed:', e);
+      if (e.name === 'NotAllowedError') {
+        showToast('❌ Dibatalkan — coba lagi atau gunakan PIN');
+        // Tawarkan fallback PIN
+        setTimeout(() => {
+          if (confirm('Gunakan PIN sebagai gantinya?')) selectRole('COO');
+        }, 500);
+      } else {
+        showToast('⚠️ Fingerprint gagal, gunakan PIN');
+        selectRole('COO');
+      }
+    }
+  }
+
+  function loginAsCOO() {
+    pin = ''; updatePinDots();
+    currentRole = 'COO';
+    ['nav-coo-home','nav-coo-tasklist'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.style.display = 'block';
+    });
+    go('coo');
   }
 
   function doLoginCOO() {
