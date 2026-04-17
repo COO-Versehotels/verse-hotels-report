@@ -8036,11 +8036,18 @@ const ROLE_TASKS = {
       {name:'Chief Engineering Corporate', icon:'⚙️'},
       {name:'EHK Corporate', icon:'🛏️'},
       {name:'CRA Corporate', icon:'🌐'},
+      {name:'HM Verse Lite', icon:'🏨'},
+      {name:'HM Verse Luxe', icon:'🏨'},
+      {name:'HM Verse Cirebon', icon:'🏨'},
+      {name:'HM Oak Tree', icon:'🏨'},
     ];
 
     // Hitung statistik dari laporan yang masuk
     const masuk = submittedReports.length;
-    const totalSlot = hotels.length * roles.length;
+    // Corporate: 5 roles x 4 hotels = 20, HM: 4 roles x 1 hotel = 4, total = 24
+    const corpRoles = roles.filter(r => !r.name.startsWith('HM')).length;
+    const hmRoles = roles.filter(r => r.name.startsWith('HM')).length;
+    const totalSlot = (corpRoles * hotels.length) + hmRoles;
     const belum = totalSlot - masuk;
     let totalPct = 0;
     let totalFU = 0;
@@ -8063,8 +8070,10 @@ const ROLE_TASKS = {
       const avgRolePct = submitted > 0
         ? Math.round(roleReports.reduce((a,r) => a + r.pct, 0) / submitted)
         : 0;
-      const statusColor = submitted === 0 ? 'var(--red)' : submitted === hotels.length ? 'var(--green)' : 'var(--amber)';
-      const statusText = submitted === 0 ? '⚠️ Belum ada' : `${submitted}/${hotels.length} hotel`;
+      const isHM = role.name.startsWith('HM ');
+      const maxHotel = isHM ? 1 : hotels.length;
+      const statusColor = submitted === 0 ? 'var(--red)' : submitted >= maxHotel ? 'var(--green)' : 'var(--amber)';
+      const statusText = submitted === 0 ? '⚠️ Belum ada' : isHM ? (submitted >= 1 ? `✅ Submit ${roleReports[0]?.pct||0}%` : '⚠️ Belum ada') : `${submitted}/${hotels.length} hotel`;
       const clickable = submitted > 0 ? `onclick="openDetailLaporan('${role.name}')" style="cursor:pointer;"` : '';
       roleSummaryHtml += `
         <div class="submit-row" style="align-items:center;" ${clickable}>
@@ -8079,10 +8088,20 @@ const ROLE_TASKS = {
 
     // Detail per Hotel
     let hotelDetailHtml = '';
+    // Map HM ke hotelnya
+    const hmHotelMap = {
+      'HM Verse Lite': 'Verse Lite Gajah Mada',
+      'HM Verse Luxe': 'Verse Luxe Wahid Hasyim',
+      'HM Verse Cirebon': 'Verse Hotel Cirebon',
+      'HM Oak Tree': 'Oak Tree Mahakam Blok M',
+    };
+
     hotels.forEach(hotel => {
       const hotelShort = hotel.replace('Verse ','').replace(' Gajah Mada','').replace(' Wahid Hasyim','');
       let roleRowsHtml = '';
       roles.forEach(role => {
+        // HM hanya tampil di hotelnya sendiri
+        if (role.name.startsWith('HM ') && hmHotelMap[role.name] !== hotel) return;
         const report = submittedReports.find(r => r.hotel === hotel && r.role === role.name);
         if (report) {
           const barColor = report.pct === 100 ? 'var(--green)' : report.pct >= 70 ? 'var(--navy)' : 'var(--amber)';
