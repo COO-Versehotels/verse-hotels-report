@@ -3285,21 +3285,23 @@
     document.querySelectorAll('#tasklist-content .task-item').forEach(item => {
       const status = item.dataset.status;
       const taskNumEl = item.querySelector('.task-number');
-      let taskNum = '?';
-      if (taskNumEl) {
-        // Prioritas: data-orig-num > id task > textContent
+      // Ambil nomor task dari id element (paling reliable)
+      let taskNum = item.id ? item.id.replace('task_','') : '?';
+      if (taskNum === '?' && taskNumEl) {
         taskNum = taskNumEl.dataset.origNum ||
-                  (item.id ? item.id.replace('task_','') : '') ||
                   taskNumEl.textContent.replace(/[^0-9]/g,'').trim() || '?';
       }
       const taskTextEl = item.querySelector('.task-text');
       const taskUlEl = item.querySelector('ul');
       let taskName = '';
-      if (taskTextEl) taskName = taskTextEl.textContent.trim().substring(0, 55);
-      else if (taskUlEl) {
+      if (taskTextEl) {
+        taskName = taskTextEl.textContent.trim().substring(0, 50);
+      } else if (taskUlEl) {
         const cat = item.closest('.task-category');
         const hdr = cat ? cat.querySelector('.task-cat-title') : null;
-        taskName = hdr ? hdr.textContent.trim() : 'Briefing';
+        taskName = hdr ? hdr.textContent.trim().substring(0, 50) : 'Task ' + taskNum;
+      } else {
+        taskName = 'Task ' + taskNum;
       }
 
       // note_only — opsional
