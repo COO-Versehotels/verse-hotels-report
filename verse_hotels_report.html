@@ -9908,15 +9908,17 @@ const ROLE_TASKS = {
     }
 
     if (total === 0 || !hotel) {
+      const _emptyLogo = (typeof HOTEL_LOGOS !== 'undefined' && HOTEL_LOGOS[currentRole])
+        ? `<div style="width:64px;height:64px;margin:0 auto 8px;border-radius:12px;background:white;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.10);"><img src="${HOTEL_LOGOS[currentRole]}" style="width:52px;height:52px;object-fit:contain;"></div>`
+        : `<div style="font-size:40px;margin-bottom:8px;">🏢</div>`;
       visitList.innerHTML = `<div style="text-align:center;padding:24px 16px;color:var(--gray-400);">
-        <div style="font-size:32px;margin-bottom:8px;">🏨</div>
+        ${_emptyLogo}
         <p style="font-size:13px;font-weight:600;">Belum ada pekerjaan yang dimulai hari ini</p>
-        <p style="font-size:12px;margin-top:4px;">Mulai tasklist dari halaman Tasklist</p>
+        <p style="font-size:12px;margin-top:4px;">Ketuk Tasklist untuk mulai mengerjakan tugas hari ini</p>
       </div>`;
       document.getElementById('home-pct').textContent = '0%';
       document.getElementById('home-progress-text').textContent = 'Belum ada tasklist hari ini';
       if (fuSection) fuSection.style.display = 'none';
-      updateVisitSectionLogo();
       return;
     }
 
