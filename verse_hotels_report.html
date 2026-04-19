@@ -9263,28 +9263,35 @@ const ROLE_TASKS = {
         'HM Verse Cirebon': 'Verse Hotel Cirebon',
         'HM Oak Tree': 'Oak Tree Mahakam Blok M',
       };
-      const hotel = hmMap[role] || 'Corporate';
+      const isHMRole = hmMap[role] !== undefined;
+
+      // Build URL — HM filter by hotel, Corporate tanpa filter hotel
+      const buildUrl = (table) => {
+        let url = SUPA_URL + '/rest/v1/' + table + '?role=eq.' + encodeURIComponent(role) +
+          '&tanggal=gte.' + fromStr + '&tanggal=lte.' + toStr +
+          '&select=tanggal,task_done,task_total,pct,fu_count,submitted_at&order=tanggal.desc';
+        if (isHMRole) url += '&hotel=eq.' + encodeURIComponent(hmMap[role]);
+        return url;
+      };
 
       // Fetch dari laporan + arsip
       const [res1, res2] = await Promise.all([
-        fetch(SUPA_URL + '/rest/v1/laporan?role=eq.' + encodeURIComponent(role) +
-          '&hotel=eq.' + encodeURIComponent(hotel) +
-          '&tanggal=gte.' + fromStr + '&tanggal=lte.' + toStr +
-          '&select=tanggal,task_done,task_total,pct,fu_count,submitted_at&order=tanggal.desc',
-          { headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY } }),
-        fetch(SUPA_URL + '/rest/v1/arsip?role=eq.' + encodeURIComponent(role) +
-          '&hotel=eq.' + encodeURIComponent(hotel) +
-          '&tanggal=gte.' + fromStr + '&tanggal=lte.' + toStr +
-          '&select=tanggal,task_done,task_total,pct,fu_count,submitted_at&order=tanggal.desc',
-          { headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY } })
+        fetch(buildUrl('laporan'), { headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY } }),
+        fetch(buildUrl('arsip'),   { headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY } })
       ]);
 
       const d1 = res1.ok ? await res1.json() : [];
       const d2 = res2.ok ? await res2.json() : [];
 
-      // Merge & deduplicate by tanggal (prefer laporan over arsip)
+      // Merge & deduplicate by tanggal — ambil yang submit terakhir per tanggal
       const merged = {};
-      [...d2, ...d1].forEach(r => { merged[r.tanggal] = r; });
+      [...d2, ...d1].forEach(r => {
+        if (!merged[r.tanggal] || 
+            (r.submitted_at || '') > (merged[r.tanggal].submitted_at || '') ||
+            (r.pct || 0) > (merged[r.tanggal].pct || 0)) {
+          merged[r.tanggal] = r;
+        }
+      });
       const rows = Object.values(merged).sort((a, b) => b.tanggal.localeCompare(a.tanggal));
 
       const displayRole = role.replace(' Corporate', '');
@@ -9462,7 +9469,20 @@ const ROLE_TASKS = {
       // Cek juga di tabel laporan (hari ini)
       const { data: laporanData } = await supa.from('laporan').select('*').eq('tanggal', selectedDate).order('submitted_at', { ascending: false });
 
-      const allData = [...(arsipData || []), ...(laporanData || [])];
+      // Deduplicate — jika role sama di tanggal sama, ambil yang submit terakhir
+      // Corporate roles: dedup by role saja (hotel bisa beda karena data lama)
+      // HM roles: dedup by role+hotel
+      const rawData = [...(arsipData || []), ...(laporanData || [])];
+      const HM_ROLES = ['HM Verse Lite','HM Verse Luxe','HM Verse Cirebon','HM Oak Tree'];
+      const deduped = {};
+      rawData.forEach(r => {
+        const isHM = HM_ROLES.includes(r.role);
+        const key = isHM ? (r.role + '|' + r.hotel) : r.role;
+        if (!deduped[key] || (r.submitted_at || '') > (deduped[key].submitted_at || '')) {
+          deduped[key] = r;
+        }
+      });
+      const allData = Object.values(deduped);
 
       if (allData.length === 0) {
         container.innerHTML = '<div style="text-align:center;padding:40px 0;color:var(--gray-400);"><div style="font-size:40px;margin-bottom:12px;">📭</div><p style="font-size:14px;font-weight:600;">Tidak ada laporan pada tanggal ini</p></div>';
