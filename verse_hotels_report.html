@@ -2324,19 +2324,7 @@
       );
       let data = res.ok ? await res.json() : [];
 
-      // Jika tidak ada data hari ini, cek kemarin (belum submit)
-      if (!data || data.length === 0) {
-        res = await fetch(
-          SUPA_URL + '/rest/v1/draft_tasklist?tanggal=eq.' + yDate +
-          '&role=eq.' + encodeURIComponent(role) +
-          '&hotel=eq.' + encodeURIComponent(hotel) + '&select=*',
-          { headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY } }
-        );
-        data = res.ok ? await res.json() : [];
-        if (data && data.length > 0) {
-          showToast('📂 Melanjutkan draft kemarin...');
-        }
-      }
+      // Draft hanya dari hari ini — tidak melanjutkan kemarin
 
       if (!data || data.length === 0) return;
 
@@ -2493,7 +2481,7 @@
       if (btns[1]) btns[1].classList.add('selected-red');
       if (num) { num.dataset.origNum = origNum; num.innerHTML = `<span style="font-size:9px;display:block;line-height:1;">${origNum}</span><span style="font-size:10px;">✗</span>`; num.className = 'task-number'; num.style.background='var(--red-soft)'; num.style.color='#c0392b'; }
       if (noteWrap) { noteWrap.classList.add('show'); const n = noteWrap.querySelector('.task-note'); if(n && !n.value) n.placeholder='Wajib diisi — jelaskan alasan tidak dikerjakan...'; }
-      if (uploadWrap) { uploadWrap.classList.remove('show'); }
+      if (uploadWrap) { uploadWrap.style.display = ''; uploadWrap.classList.remove('show'); }
     }
   }
 
@@ -3664,7 +3652,7 @@
         const files = taskFiles[id];
         if (!files || files.length === 0) {
           const uploadWrap = document.getElementById(id + '-upload');
-          if (uploadWrap) { uploadWrap.classList.add('show'); }
+          if (uploadWrap) { uploadWrap.style.display = ''; uploadWrap.classList.add('show'); }
           const area = document.getElementById(id + '-upload-area');
           if (area) { area.classList.add('required-alert'); setTimeout(() => area.classList.remove('required-alert'), 2500); }
           markError(item);
@@ -9163,7 +9151,7 @@ const ROLE_TASKS = {
 
       // Ambil total task dari ROLE_TASKS
       const roleTaskKey = {
-        'Ops HR Manager': 'Ops HR Manager', 'HR Officer': 'Ops HR Manager',
+        'Ops HR Manager': 'Ops HR Manager', 'HR Officer': 'HR Officer',
         'Chief Engineering Corporate': 'CE Corporate',
         'EHK Corporate': 'EHK Corporate', 'CRA Corporate': 'CRA Corporate',
         'HM Verse Lite': 'HM Verse Lite', 'HM Verse Luxe': 'HM Verse Luxe',
@@ -9226,8 +9214,9 @@ const ROLE_TASKS = {
                     const labelMap = TASK_LABEL_MAP[taskKey] || {};
                     const label = labelMap[row.task_id];
                     if (label) return label;
-                    if (String(row.task_id).startsWith('fu')) return '📋 Follow Up';
-                    return 'Task #' + row.task_id;
+                    if (String(row.task_id).startsWith('room_')) return 'Room Inspection — ' + (row.keterangan ? row.keterangan.split('—')[0].trim() : row.task_id);
+                    if (String(row.task_id).startsWith('fu')) return 'Follow Up';
+                    return 'Task ' + row.task_id;
                   })()}
                 </div>
                 ${row.keterangan ? `<div style="font-size:12px;color:var(--gray-600);background:var(--gray-50);border-radius:8px;padding:8px 10px;margin-bottom:6px;">💬 ${row.keterangan}</div>` : '<div style="font-size:11px;color:var(--gray-300);font-style:italic;margin-bottom:6px;">— Belum ada keterangan —</div>'}
@@ -9576,6 +9565,11 @@ const ROLE_TASKS = {
                 <span>📌 ${r.fu_count || 0} follow up</span>
                 <span>🕐 Submit ${submitTime}</span>
               </div>
+              <div style="margin-top:10px;text-align:right;">
+                <button onclick="openDetailLaporan('${r.role}','${r.hotel}','${r.tanggal}')" style="padding:7px 14px;background:var(--navy);color:white;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">
+                  👁 Lihat Detail Task →
+                </button>
+              </div>
               <div style="margin-top:8px;">
                 <div style="height:4px;background:var(--gray-100);border-radius:4px;overflow:hidden;">
                   <div style="height:100%;width:${pct}%;background:${pctColor};border-radius:4px;transition:width .5s;"></div>
@@ -9632,35 +9626,27 @@ const ROLE_TASKS = {
   }
 
   // Buka detail laporan per role/hotel
-  async function openDetailLaporan(roleName, hotelName) {
+  async function openDetailLaporan(roleName, hotelName, tanggalParam) {
     go('detail');
     document.getElementById('detail-title').textContent = roleName.replace(' Corporate','');
-    document.getElementById('detail-subtitle').textContent = hotelName || 'Semua Hotel';
+    const _dateLabel = tanggalParam ? new Date(tanggalParam + 'T00:00:00').toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'}) : 'Hari Ini';
+    document.getElementById('detail-subtitle').textContent = (hotelName && hotelName !== 'Corporate' ? hotelName : 'Tim Corporate') + ' · ' + _dateLabel;
     document.getElementById('detail-content').innerHTML = '<div style="text-align:center;padding:40px 0;color:var(--gray-400);"><div style="font-size:40px;">⏳</div><p style="font-size:14px;font-weight:600;margin-top:12px;">Memuat detail...</p></div>';
 
     try {
       const today = new Date().toISOString().split('T')[0];
-      const yesterday = new Date(); yesterday.setDate(yesterday.getDate()-1);
-      const yDate = yesterday.toISOString().split('T')[0];
+      const targetDate = tanggalParam || today;
 
-      // Coba hari ini dulu, lalu kemarin
       const buildUrl = (tanggal) => {
         let u = SUPA_URL + '/rest/v1/draft_tasklist?tanggal=eq.' + tanggal + '&role=eq.' + encodeURIComponent(roleName) + '&select=*&order=task_id.asc';
         if (hotelName) u += '&hotel=eq.' + encodeURIComponent(hotelName);
         return u;
       };
 
-      let res = await fetch(buildUrl(today), {
+      let res = await fetch(buildUrl(targetDate), {
         headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY }
       });
       let data = res.ok ? await res.json() : [];
-
-      if (!data || data.length === 0) {
-        res = await fetch(buildUrl(yDate), {
-          headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY }
-        });
-        data = res.ok ? await res.json() : [];
-      }
 
       if (!data || data.length === 0) {
         document.getElementById('detail-content').innerHTML = '<div style="text-align:center;padding:40px 0;color:var(--gray-400);"><div style="font-size:40px;">📭</div><p style="font-size:14px;font-weight:600;margin-top:12px;">Tidak ada data untuk laporan ini</p></div>';
@@ -9669,7 +9655,7 @@ const ROLE_TASKS = {
 
       // Ambil info laporan
       const laporanRes = await fetch(
-        SUPA_URL + '/rest/v1/laporan?tanggal=eq.' + today + '&role=eq.' + encodeURIComponent(roleName) + (hotelName ? '&hotel=eq.' + encodeURIComponent(hotelName) : '') + '&select=*',
+        SUPA_URL + '/rest/v1/laporan?tanggal=eq.' + targetDate + '&role=eq.' + encodeURIComponent(roleName) + (hotelName ? '&hotel=eq.' + encodeURIComponent(hotelName) : '') + '&select=*',
         { headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY } }
       );
       const laporanData = laporanRes.ok ? await laporanRes.json() : [];
@@ -9715,10 +9701,23 @@ const ROLE_TASKS = {
         const sColor = statusColor[d.status] || 'var(--gray-400)';
 
         html += `<div style="background:white;border-radius:var(--radius);padding:14px;margin-bottom:8px;box-shadow:var(--shadow-card);">`;
-        html += `<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-          <span style="font-size:16px;">${sIcon}</span>
-          <span style="font-size:12px;font-weight:700;color:${sColor};">${sLabel}</span>
-          <span style="font-size:10px;color:var(--gray-400);margin-left:auto;">Task ${d.task_id}</span>
+        // Cari nama task dari TASK_LABEL_MAP
+        const _roleTaskKey2 = {
+          'Ops HR Manager': 'Ops HR Manager', 'HR Officer': 'HR Officer',
+          'Chief Engineering Corporate': 'CE Corporate',
+          'EHK Corporate': 'EHK Corporate', 'CRA Corporate': 'CRA Corporate',
+          'HM Verse Lite': 'HM Verse Lite', 'HM Verse Luxe': 'HM Verse Luxe',
+          'HM Verse Cirebon': 'HM Verse Cirebon', 'HM Oak Tree': 'HM Oak Tree',
+        };
+        const _labelMap2 = TASK_LABEL_MAP[_roleTaskKey2[roleName] || roleName] || {};
+        const _taskName = _labelMap2[d.task_id] || (String(d.task_id).startsWith('room_') ? 'Room Inspection' : (String(d.task_id).startsWith('fu') ? 'Follow Up' : 'Task ' + d.task_id));
+
+        html += `<div style="margin-bottom:8px;">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+            <span style="font-size:16px;">${sIcon}</span>
+            <span style="font-size:12px;font-weight:700;color:${sColor};">${sLabel}</span>
+          </div>
+          <div style="font-size:13px;font-weight:700;color:var(--navy);line-height:1.4;">${_taskName}</div>
         </div>`;
 
         if (d.keterangan) {
@@ -9810,7 +9809,7 @@ const ROLE_TASKS = {
     if (status === 'done') {
       if (btnDone) { btnDone.style.background = 'var(--green-soft)'; btnDone.style.borderColor = '#2ecc71'; btnDone.style.color = '#1a9c4f'; }
       // Pakai classList.add('show') agar override !important di CSS
-      if (uploadWrap) { uploadWrap.classList.add('show'); }
+      if (uploadWrap) { uploadWrap.style.display = ''; uploadWrap.classList.add('show'); }
       if (noteWrap) {
         noteWrap.classList.add('show');
         const n = noteWrap.querySelector('.task-note');
@@ -9819,7 +9818,7 @@ const ROLE_TASKS = {
     } else {
       if (btnNot) { btnNot.style.background = 'var(--red-soft)'; btnNot.style.borderColor = 'var(--red)'; btnNot.style.color = '#c0392b'; }
       // Pakai classList.remove('show') agar upload benar-benar hilang
-      if (uploadWrap) { uploadWrap.classList.remove('show'); }
+      if (uploadWrap) { uploadWrap.style.display = ''; uploadWrap.classList.remove('show'); }
       if (noteWrap) {
         noteWrap.classList.add('show');
         const n = noteWrap.querySelector('.task-note');
