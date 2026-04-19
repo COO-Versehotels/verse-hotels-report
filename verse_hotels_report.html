@@ -2575,7 +2575,8 @@
               task_id: d.task_id,
               status: d.status,
               keterangan: d.keterangan,
-              file_urls: d.file_urls
+              file_urls: d.file_urls,
+              updated_at: d.updated_at
             }));
             await fetch(SUPA_URL + '/rest/v1/laporan_detail', {
               method: 'POST',
@@ -9340,7 +9341,8 @@ const ROLE_TASKS = {
                     return 'Task ' + row.task_id;
                   })()}
                 </div>
-                ${row.keterangan ? `<div style="font-size:12px;color:var(--gray-600);background:var(--gray-50);border-radius:8px;padding:8px 10px;margin-bottom:6px;">💬 ${row.keterangan.replace(/^(Kamar [^—]+)—\s*\1\s*$/, '$1').trim()}</div>` : '<div style="font-size:11px;color:var(--gray-300);font-style:italic;margin-bottom:6px;">— Belum ada keterangan —</div>'}
+                ${row.keterangan ? `<div style="font-size:12px;color:var(--gray-600);background:var(--gray-50);border-radius:8px;padding:8px 10px;margin-bottom:4px;">💬 ${row.keterangan.replace(/^(Kamar [^—]+)—\s*\1\s*$/, '$1').trim()}</div>` : '<div style="font-size:11px;color:var(--gray-300);font-style:italic;margin-bottom:4px;">— Belum ada keterangan —</div>'}
+                ${row.updated_at ? `<div style="font-size:10px;color:var(--gray-400);margin-bottom:6px;">🕐 ${new Date(row.updated_at).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit',timeZone:'Asia/Jakarta'})} WIB</div>` : ''}
                 ${fileUrls.length > 0 ? `
                   <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;">
                     ${fileUrls.map((url, i) => {
@@ -9862,10 +9864,18 @@ const ROLE_TASKS = {
           <div style="font-size:13px;font-weight:700;color:var(--navy);line-height:1.4;">${_taskName}</div>
         </div>`;
 
+        // Waktu input task
+        const _taskTime = d.updated_at
+          ? new Date(d.updated_at).toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit', timeZone:'Asia/Jakarta'}) + ' WIB'
+          : null;
+
         if (d.keterangan) {
           // Fix tampilan duplikat "Kamar X — Kamar X"
           const _cleanKet = d.keterangan.replace(/^(Kamar [^—]+)—\s*\1\s*$/, '$1').trim();
-          html += '<div style="font-size:13px;color:var(--gray-700);background:var(--gray-50);padding:10px 12px;border-radius:8px;margin-bottom:8px;line-height:1.6;">' + _cleanKet + '</div>';
+          html += '<div style="font-size:13px;color:var(--gray-700);background:var(--gray-50);padding:10px 12px;border-radius:8px;margin-bottom:6px;line-height:1.6;">' + _cleanKet + '</div>';
+        }
+        if (_taskTime) {
+          html += '<div style="font-size:11px;color:var(--gray-400);margin-bottom:6px;">🕐 Diinput ' + _taskTime + '</div>';
         }
 
         // Foto/dokumen — parse robust (string URL atau object {url,name,type})
