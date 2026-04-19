@@ -1860,21 +1860,64 @@
     </div>
 
     <div class="scroll-area">
-      <!-- Filter tanggal -->
-      <div style="padding:16px 16px 8px;display:flex;gap:8px;align-items:center;">
-        <input type="date" id="arsip-date-filter"
-          style="flex:1;padding:10px 14px;border:1.5px solid var(--gray-200);border-radius:10px;font-family:inherit;font-size:14px;color:var(--gray-800);background:var(--white);"
-          onchange="loadArsip()">
-        <button onclick="loadArsip()"
-          style="padding:10px 16px;background:var(--navy);color:white;border:none;border-radius:10px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;">
-          Cari
+      <!-- Tab Switcher -->
+      <div style="padding:12px 16px 0;display:flex;gap:8px;">
+        <button id="tab-perdate" onclick="switchArsipTab('perdate')"
+          style="flex:1;padding:10px;background:var(--navy);color:white;border:none;border-radius:10px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;">
+          Per Tanggal
+        </button>
+        <button id="tab-perrole" onclick="switchArsipTab('perrole')"
+          style="flex:1;padding:10px;background:var(--gray-100);color:var(--gray-600);border:none;border-radius:10px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;">
+          Per Role
         </button>
       </div>
 
-      <div id="arsip-content" style="padding:0 16px 20px;">
-        <div style="text-align:center;padding:40px 0;color:var(--gray-400);">
-          <div style="font-size:40px;margin-bottom:12px;">📁</div>
-          <p style="font-size:14px;font-weight:600;">Pilih tanggal untuk lihat arsip</p>
+      <!-- Panel Per Tanggal -->
+      <div id="panel-perdate">
+        <div style="padding:12px 16px 8px;display:flex;gap:8px;align-items:center;">
+          <input type="date" id="arsip-date-filter"
+            style="flex:1;padding:10px 14px;border:1.5px solid var(--gray-200);border-radius:10px;font-family:inherit;font-size:14px;color:var(--gray-800);background:var(--white);"
+            onchange="loadArsip()">
+          <button onclick="loadArsip()"
+            style="padding:10px 16px;background:var(--navy);color:white;border:none;border-radius:10px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;">
+            Cari
+          </button>
+        </div>
+        <div id="arsip-content" style="padding:0 16px 20px;">
+          <div style="text-align:center;padding:40px 0;color:var(--gray-400);">
+            <div style="font-size:40px;margin-bottom:12px;">📁</div>
+            <p style="font-size:14px;font-weight:600;">Pilih tanggal untuk lihat arsip</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Panel Per Role -->
+      <div id="panel-perrole" style="display:none;">
+        <div style="padding:12px 16px 8px;display:flex;gap:8px;align-items:center;">
+          <select id="role-filter-select"
+            style="flex:1;padding:10px 14px;border:1.5px solid var(--gray-200);border-radius:10px;font-family:inherit;font-size:13px;color:var(--gray-800);background:var(--white);"
+            onchange="loadRoleSummary()">
+            <option value="">Pilih Role...</option>
+            <option value="Ops HR Manager">Ops HR Manager</option>
+            <option value="HR Officer">HR Officer</option>
+            <option value="Chief Engineering Corporate">Chief Engineering</option>
+            <option value="EHK Corporate">EHK Corporate</option>
+            <option value="CRA Corporate">CRA Corporate</option>
+            <option value="HM Verse Lite">HM Verse Lite</option>
+            <option value="HM Verse Luxe">HM Verse Luxe</option>
+            <option value="HM Verse Cirebon">HM Verse Cirebon</option>
+            <option value="HM Oak Tree">HM Oak Tree</option>
+          </select>
+          <button onclick="exportRolePDF()"
+            style="padding:10px 14px;background:#c9973a;color:white;border:none;border-radius:10px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;">
+            📄 PDF
+          </button>
+        </div>
+        <div id="role-summary-content" style="padding:0 16px 20px;">
+          <div style="text-align:center;padding:40px 0;color:var(--gray-400);">
+            <div style="font-size:40px;margin-bottom:12px;">📊</div>
+            <p style="font-size:14px;font-weight:600;">Pilih role untuk lihat summary 30 hari</p>
+          </div>
         </div>
       </div>
     </div>
@@ -9183,6 +9226,221 @@ const ROLE_TASKS = {
     const idx = submittedReports.findIndex(r => r.role===role && r.hotel===hotel);
     if (idx >= 0) submittedReports.splice(idx, 1);
     submittedReports.push({ role, hotel, taskDone, taskTotal, pct, fuCount, time: `${h}:${m}` });
+  }
+
+
+  // ===== ARSIP TAB SWITCHER =====
+  function switchArsipTab(tab) {
+    const isDate = tab === 'perdate';
+    document.getElementById('panel-perdate').style.display = isDate ? 'block' : 'none';
+    document.getElementById('panel-perrole').style.display = isDate ? 'none' : 'block';
+    document.getElementById('tab-perdate').style.background = isDate ? 'var(--navy)' : 'var(--gray-100)';
+    document.getElementById('tab-perdate').style.color = isDate ? 'white' : 'var(--gray-600)';
+    document.getElementById('tab-perrole').style.background = isDate ? 'var(--gray-100)' : 'var(--navy)';
+    document.getElementById('tab-perrole').style.color = isDate ? 'var(--gray-600)' : 'white';
+  }
+
+  // ===== LOAD ROLE SUMMARY (30 hari) =====
+  async function loadRoleSummary() {
+    const role = document.getElementById('role-filter-select').value;
+    const container = document.getElementById('role-summary-content');
+    if (!role) return;
+
+    container.innerHTML = '<div style="text-align:center;padding:40px 0;color:var(--gray-400);">⏳ Memuat data 30 hari...</div>';
+
+    try {
+      // 30 hari ke belakang
+      const today = new Date();
+      const from = new Date(today);
+      from.setDate(from.getDate() - 29);
+      const fromStr = from.toISOString().split('T')[0];
+      const toStr = today.toISOString().split('T')[0];
+
+      // Hotel untuk role ini
+      const hmMap = {
+        'HM Verse Lite': 'Verse Lite Gajah Mada',
+        'HM Verse Luxe': 'Verse Luxe Wahid Hasyim',
+        'HM Verse Cirebon': 'Verse Hotel Cirebon',
+        'HM Oak Tree': 'Oak Tree Mahakam Blok M',
+      };
+      const hotel = hmMap[role] || 'Corporate';
+
+      // Fetch dari laporan + arsip
+      const [res1, res2] = await Promise.all([
+        fetch(SUPA_URL + '/rest/v1/laporan?role=eq.' + encodeURIComponent(role) +
+          '&hotel=eq.' + encodeURIComponent(hotel) +
+          '&tanggal=gte.' + fromStr + '&tanggal=lte.' + toStr +
+          '&select=tanggal,task_done,task_total,pct,fu_count,submitted_at&order=tanggal.desc',
+          { headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY } }),
+        fetch(SUPA_URL + '/rest/v1/arsip?role=eq.' + encodeURIComponent(role) +
+          '&hotel=eq.' + encodeURIComponent(hotel) +
+          '&tanggal=gte.' + fromStr + '&tanggal=lte.' + toStr +
+          '&select=tanggal,task_done,task_total,pct,fu_count,submitted_at&order=tanggal.desc',
+          { headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY } })
+      ]);
+
+      const d1 = res1.ok ? await res1.json() : [];
+      const d2 = res2.ok ? await res2.json() : [];
+
+      // Merge & deduplicate by tanggal (prefer laporan over arsip)
+      const merged = {};
+      [...d2, ...d1].forEach(r => { merged[r.tanggal] = r; });
+      const rows = Object.values(merged).sort((a, b) => b.tanggal.localeCompare(a.tanggal));
+
+      const displayRole = role.replace(' Corporate', '');
+      const days = ['Min','Sen','Sel','Rab','Kam','Jum','Sab'];
+      const months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+
+      // Summary stats
+      const totalDays = rows.length;
+      const avgPct = totalDays > 0 ? Math.round(rows.reduce((a,r) => a + (r.pct||0), 0) / totalDays) : 0;
+      const fullDays = rows.filter(r => r.pct === 100).length;
+      const totalFU = rows.reduce((a,r) => a + (r.fu_count||0), 0);
+
+      let html = `
+        <div id="role-summary-printable">
+          <!-- Header print -->
+          <div id="print-header" style="display:none;text-align:center;margin-bottom:16px;">
+            <div style="font-size:18px;font-weight:900;color:#1a2744;">VERSE HOTELS</div>
+            <div style="font-size:13px;color:#666;">Summary Kinerja — ${displayRole}</div>
+            <div style="font-size:11px;color:#999;">30 hari terakhir per ${toStr}</div>
+          </div>
+
+          <!-- Summary cards -->
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px;">
+            <div style="background:var(--navy);border-radius:10px;padding:12px;text-align:center;">
+              <div style="font-size:20px;font-weight:900;color:white;">${totalDays}</div>
+              <div style="font-size:10px;color:rgba(255,255,255,0.6);margin-top:2px;">Hari Submit</div>
+            </div>
+            <div style="background:#e8f5e9;border-radius:10px;padding:12px;text-align:center;">
+              <div style="font-size:20px;font-weight:900;color:#2e7d32;">${avgPct}%</div>
+              <div style="font-size:10px;color:#555;margin-top:2px;">Avg Progress</div>
+            </div>
+            <div style="background:#fff3e0;border-radius:10px;padding:12px;text-align:center;">
+              <div style="font-size:20px;font-weight:900;color:#e65100;">${fullDays}</div>
+              <div style="font-size:10px;color:#555;margin-top:2px;">Hari 100%</div>
+            </div>
+            <div style="background:#e3f2fd;border-radius:10px;padding:12px;text-align:center;">
+              <div style="font-size:20px;font-weight:900;color:#1565c0;">${totalFU}</div>
+              <div style="font-size:10px;color:#555;margin-top:2px;">Total FU</div>
+            </div>
+          </div>
+
+          <!-- Table -->
+          <div style="border-radius:10px;overflow:hidden;border:1px solid var(--gray-200);">
+            <table style="width:100%;border-collapse:collapse;font-size:12px;">
+              <thead>
+                <tr style="background:var(--navy);">
+                  <th style="padding:10px 8px;color:white;text-align:left;font-weight:700;">Tanggal</th>
+                  <th style="padding:10px 8px;color:white;text-align:center;font-weight:700;">Selesai</th>
+                  <th style="padding:10px 8px;color:white;text-align:center;font-weight:700;">Total</th>
+                  <th style="padding:10px 8px;color:white;text-align:center;font-weight:700;">Skip</th>
+                  <th style="padding:10px 8px;color:white;text-align:center;font-weight:700;">%</th>
+                  <th style="padding:10px 8px;color:white;text-align:center;font-weight:700;">FU</th>
+                  <th style="padding:10px 8px;color:white;text-align:center;font-weight:700;">Submit</th>
+                </tr>
+              </thead>
+              <tbody>`;
+
+      if (rows.length === 0) {
+        html += `<tr><td colspan="7" style="padding:24px;text-align:center;color:var(--gray-400);">Belum ada data 30 hari terakhir</td></tr>`;
+      } else {
+        rows.forEach((r, idx) => {
+          const d = new Date(r.tanggal + 'T00:00:00');
+          const dateLabel = days[d.getDay()] + ', ' + d.getDate() + ' ' + months[d.getMonth()];
+          const pct = r.pct || 0;
+          const skip = (r.task_total || 0) - (r.task_done || 0);
+          const pctColor = pct === 100 ? '#2e7d32' : pct >= 70 ? '#1a2744' : '#e65100';
+          const pctBg = pct === 100 ? '#e8f5e9' : pct >= 70 ? 'rgba(26,58,92,0.08)' : '#fff3e0';
+          const submitTime = r.submitted_at
+            ? new Date(r.submitted_at).toLocaleTimeString('id-ID', {hour:'2-digit',minute:'2-digit'})
+            : '—';
+          const rowBg = idx % 2 === 0 ? 'white' : '#fafafa';
+          html += `
+            <tr style="background:${rowBg};">
+              <td style="padding:9px 8px;border-bottom:1px solid var(--gray-100);font-weight:600;color:var(--navy);">${dateLabel}</td>
+              <td style="padding:9px 8px;border-bottom:1px solid var(--gray-100);text-align:center;color:#2e7d32;font-weight:700;">${r.task_done || 0}</td>
+              <td style="padding:9px 8px;border-bottom:1px solid var(--gray-100);text-align:center;">${r.task_total || 0}</td>
+              <td style="padding:9px 8px;border-bottom:1px solid var(--gray-100);text-align:center;color:#c62828;">${skip}</td>
+              <td style="padding:9px 8px;border-bottom:1px solid var(--gray-100);text-align:center;">
+                <span style="background:${pctBg};color:${pctColor};font-weight:800;padding:2px 8px;border-radius:20px;">${pct}%</span>
+              </td>
+              <td style="padding:9px 8px;border-bottom:1px solid var(--gray-100);text-align:center;">${r.fu_count || 0}</td>
+              <td style="padding:9px 8px;border-bottom:1px solid var(--gray-100);text-align:center;font-size:11px;color:var(--gray-400);">${submitTime}</td>
+            </tr>`;
+        });
+      }
+
+      html += `</tbody></table></div></div>`;
+      container.innerHTML = html;
+
+    } catch(e) {
+      container.innerHTML = '<div style="text-align:center;padding:40px 0;color:var(--red);">❌ Gagal memuat data</div>';
+      console.error(e);
+    }
+  }
+
+  // ===== EXPORT PDF =====
+  function exportRolePDF() {
+    const role = document.getElementById('role-filter-select').value;
+    if (!role) { showToast('Pilih role dulu!'); return; }
+
+    const printable = document.getElementById('role-summary-printable');
+    if (!printable) { showToast('Load data dulu!'); return; }
+
+    // Show print header
+    const printHeader = document.getElementById('print-header');
+    if (printHeader) printHeader.style.display = 'block';
+
+    // Create print window
+    const printContent = printable.innerHTML;
+    const displayRole = role.replace(' Corporate', '');
+    const today = new Date().toLocaleDateString('id-ID', {day:'2-digit',month:'long',year:'numeric'});
+
+    const win = window.open('', '_blank');
+    win.document.write(`<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Summary ${displayRole} — ${today}</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Arial, sans-serif; padding: 24px; color: #1a1a1a; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 8px 10px; }
+    thead tr { background: #1a2744 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    th { color: white !important; }
+    tr:nth-child(even) td { background: #fafafa; }
+    .print-title { text-align: center; margin-bottom: 20px; }
+    .print-title h1 { font-size: 20px; color: #1a2744; }
+    .print-title p { font-size: 12px; color: #666; margin-top: 4px; }
+    .summary-cards { display: flex; gap: 12px; margin-bottom: 16px; }
+    .summary-card { flex: 1; border: 2px solid #e0e0e0; border-radius: 8px; padding: 12px; text-align: center; }
+    .card-val { font-size: 22px; font-weight: 900; }
+    .card-label { font-size: 10px; color: #666; margin-top: 2px; }
+    span[style*="border-radius"] { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    @media print {
+      body { padding: 12px; }
+      button { display: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="print-title">
+    <h1>VERSE HOTELS — Summary Kinerja</h1>
+    <p>${displayRole} | 30 hari terakhir | Dicetak: ${today}</p>
+  </div>
+  ${printContent}
+  <scr' + 'ipt>
+    // Auto print
+    window.onload = () => { window.print(); }
+  </scr' + 'ipt>
+</body>
+</html>`);
+    win.document.close();
+
+    // Hide print header again
+    if (printHeader) printHeader.style.display = 'none';
   }
 
   // ===== ARSIP =====
