@@ -9315,7 +9315,7 @@ const ROLE_TASKS = {
 
           <!-- Summary cards -->
           <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px;">
-            <div style="background:var(--navy);border-radius:10px;padding:12px;text-align:center;">
+            <div style="background:#1a2744;border-radius:10px;padding:12px;text-align:center;">
               <div style="font-size:20px;font-weight:900;color:white;">${totalDays}</div>
               <div style="font-size:10px;color:rgba(255,255,255,0.6);margin-top:2px;">Hari Submit</div>
             </div>
@@ -9334,10 +9334,10 @@ const ROLE_TASKS = {
           </div>
 
           <!-- Table -->
-          <div style="border-radius:10px;overflow:hidden;border:1px solid var(--gray-200);">
+          <div style="border-radius:10px;overflow:hidden;border:1px solid #e0e0e0;">
             <table style="width:100%;border-collapse:collapse;font-size:12px;">
               <thead>
-                <tr style="background:var(--navy);">
+                <tr style="background:#1a2744;">
                   <th style="padding:10px 8px;color:white;text-align:left;font-weight:700;">Tanggal</th>
                   <th style="padding:10px 8px;color:white;text-align:center;font-weight:700;">Selesai</th>
                   <th style="padding:10px 8px;color:white;text-align:center;font-weight:700;">Total</th>
@@ -9365,15 +9365,15 @@ const ROLE_TASKS = {
           const rowBg = idx % 2 === 0 ? 'white' : '#fafafa';
           html += `
             <tr style="background:${rowBg};">
-              <td style="padding:9px 8px;border-bottom:1px solid var(--gray-100);font-weight:600;color:var(--navy);">${dateLabel}</td>
-              <td style="padding:9px 8px;border-bottom:1px solid var(--gray-100);text-align:center;color:#2e7d32;font-weight:700;">${r.task_done || 0}</td>
-              <td style="padding:9px 8px;border-bottom:1px solid var(--gray-100);text-align:center;">${r.task_total || 0}</td>
-              <td style="padding:9px 8px;border-bottom:1px solid var(--gray-100);text-align:center;color:#c62828;">${skip}</td>
-              <td style="padding:9px 8px;border-bottom:1px solid var(--gray-100);text-align:center;">
+              <td style="padding:9px 8px;border-bottom:1px solid #eee;font-weight:600;color:#1a2744;">${dateLabel}</td>
+              <td style="padding:9px 8px;border-bottom:1px solid #eee;text-align:center;color:#2e7d32;font-weight:700;">${r.task_done || 0}</td>
+              <td style="padding:9px 8px;border-bottom:1px solid #eee;text-align:center;">${r.task_total || 0}</td>
+              <td style="padding:9px 8px;border-bottom:1px solid #eee;text-align:center;color:#c62828;">${skip}</td>
+              <td style="padding:9px 8px;border-bottom:1px solid #eee;text-align:center;">
                 <span style="background:${pctBg};color:${pctColor};font-weight:800;padding:2px 8px;border-radius:20px;">${pct}%</span>
               </td>
               <td style="padding:9px 8px;border-bottom:1px solid var(--gray-100);text-align:center;">${r.fu_count || 0}</td>
-              <td style="padding:9px 8px;border-bottom:1px solid var(--gray-100);text-align:center;font-size:11px;color:var(--gray-400);">${submitTime}</td>
+              <td style="padding:9px 8px;border-bottom:1px solid #eee;text-align:center;font-size:11px;color:#999;">${submitTime}</td>
             </tr>`;
         });
       }
@@ -9438,13 +9438,11 @@ const ROLE_TASKS = {
     <p>${displayRole} | 30 hari terakhir | Dicetak: ${today}</p>
   </div>
   ${printContent}
-  <scr' + 'ipt>
-    // Auto print
-    window.onload = () => { window.print(); }
-  </scr' + 'ipt>
 </body>
 </html>`);
     win.document.close();
+    // Auto print after render
+    setTimeout(() => { win.focus(); win.print(); }, 600);
 
     // Hide print header again
     if (printHeader) printHeader.style.display = 'none';
