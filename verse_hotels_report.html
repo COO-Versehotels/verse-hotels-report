@@ -2074,6 +2074,38 @@
 
 <div class="toast" id="toast"></div>
 <script>
+
+  // ===== AUTO CLEANUP DRAFT LAMA =====
+  async function autoCleanupOldDrafts() {
+    const today = new Date().toISOString().split('T')[0];
+    const lastCleanKey = 'last_draft_cleanup';
+    const lastClean = localStorage.getItem(lastCleanKey);
+    
+    // Hanya jalankan sekali per hari
+    if (lastClean === today) return;
+    
+    try {
+      // Hapus draft kemarin dan sebelumnya (team mulai fresh setiap hari)
+      const res = await fetch(
+        SUPA_URL + '/rest/v1/draft_tasklist?tanggal=lt.' + today,
+        {
+          method: 'DELETE',
+          headers: {
+            'apikey': SUPA_KEY,
+            'Authorization': 'Bearer ' + SUPA_KEY,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+      if (res.ok) {
+        localStorage.setItem(lastCleanKey, today);
+        console.log('Auto cleanup draft > 7 hari berhasil:', cutoffDate);
+      }
+    } catch(e) {
+      // Silent fail - cleanup non-critical, akan coba lagi besok
+    }
+  }
+
   // ===== SESSION MANAGEMENT — sekali sehari =====
   function saveSessionToday(role, hotel) {
     if (!role || role === 'COO') return; // COO tidak perlu session (pakai biometrik)
@@ -2523,6 +2555,45 @@
         return false;
       }
       console.log('✅ Laporan tersimpan!');
+
+      // Simpan snapshot draft sebagai laporan_detail (untuk history foto+keterangan)
+      try {
+        const draftRes = await fetch(
+          SUPA_URL + '/rest/v1/draft_tasklist?tanggal=eq.' + today +
+          '&role=eq.' + encodeURIComponent(role) +
+          '&hotel=eq.' + encodeURIComponent(hotel) + '&select=*',
+          { headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY } }
+        );
+        if (draftRes.ok) {
+          const drafts = await draftRes.json();
+          if (drafts && drafts.length > 0) {
+            // Upsert ke laporan_detail
+            const details = drafts.map(d => ({
+              tanggal: today,
+              role: d.role,
+              hotel: d.hotel,
+              task_id: d.task_id,
+              status: d.status,
+              keterangan: d.keterangan,
+              file_urls: d.file_urls
+            }));
+            await fetch(SUPA_URL + '/rest/v1/laporan_detail', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'apikey': SUPA_KEY,
+                'Authorization': 'Bearer ' + SUPA_KEY,
+                'Prefer': 'resolution=merge-duplicates'
+              },
+              body: JSON.stringify(details)
+            });
+            console.log('✅ Detail laporan tersimpan:', details.length, 'tasks');
+          }
+        }
+      } catch(detailErr) {
+        console.log('Detail save error (non-critical):', detailErr);
+      }
+
       return true;
     } catch(e) {
       console.error('Save exception:', e);
@@ -3236,6 +3307,9 @@
   }
   updateSplashClock();
   setInterval(updateSplashClock, 10000);
+  
+  // Auto cleanup draft lama setiap hari (delay 5 detik agar koneksi siap)
+  setTimeout(autoCleanupOldDrafts, 5000);
 
   // Session harian aktif — PIN sekali sehari, auto-login dimatikan
   // User tetap pilih role dari splash, tapi tidak perlu PIN lagi hari ini
@@ -3588,6 +3662,43 @@
         if (!note || !note.value.trim()) {
           if (note) { note.classList.add('required-alert'); setTimeout(()=>note.classList.remove('required-alert'),2500); }
           markError(item);
+        }
+        return;
+      }
+
+      // ── CEK ROOM INSPECTION (room_16_*) ──────
+      if (id && id.startsWith('room_')) {
+        const roomStatus = item.dataset.status;
+        // Room wajib dipilih status
+        if (!roomStatus) {
+          shakeEl(item);
+          markError(item);
+          return;
+        }
+        // Jika status done → foto WAJIB
+        if (roomStatus === 'done') {
+          const roomFiles = taskFiles[id];
+          if (!roomFiles || roomFiles.length === 0) {
+            const uploadWrap = document.getElementById(id + '-upload');
+            if (uploadWrap) { uploadWrap.style.display = ''; uploadWrap.classList.add('show'); }
+            const area = document.getElementById(id + '-upload-area');
+            if (area) { area.classList.add('required-alert'); setTimeout(() => area.classList.remove('required-alert'), 2500); }
+            markError(item);
+          }
+          // Nomor kamar wajib diisi
+          const roomNumEl = document.getElementById(id + '-room-num');
+          if (!roomNumEl || !roomNumEl.value.trim()) {
+            if (roomNumEl) { roomNumEl.style.borderColor = 'var(--red)'; setTimeout(() => roomNumEl.style.borderColor = '', 2500); }
+            markError(item);
+          }
+        }
+        // Jika not → keterangan wajib
+        if (roomStatus === 'not') {
+          const roomNote = item.querySelector('.task-note');
+          if (!roomNote || !roomNote.value.trim()) {
+            if (roomNote) { roomNote.classList.add('required-alert'); setTimeout(() => roomNote.classList.remove('required-alert'), 2500); }
+            markError(item);
+          }
         }
         return;
       }
@@ -9409,8 +9520,9 @@ const ROLE_TASKS = {
             ? new Date(r.submitted_at).toLocaleTimeString('id-ID', {hour:'2-digit',minute:'2-digit'})
             : '—';
           const rowBg = idx % 2 === 0 ? 'white' : '#fafafa';
+          const _hotelForDetail = hmMap[role] || 'Corporate';
           html += `
-            <tr style="background:${rowBg};">
+            <tr style="background:${rowBg};cursor:pointer;" onclick="openDetailLaporan('${role}','${_hotelForDetail}','${r.tanggal}')">
               <td style="padding:9px 8px;border-bottom:1px solid #eee;font-weight:600;color:#1a2744;">${dateLabel}</td>
               <td style="padding:9px 8px;border-bottom:1px solid #eee;text-align:center;color:#2e7d32;font-weight:700;">${r.task_done || 0}</td>
               <td style="padding:9px 8px;border-bottom:1px solid #eee;text-align:center;">${r.task_total || 0}</td>
@@ -9419,7 +9531,7 @@ const ROLE_TASKS = {
                 <span style="background:${pctBg};color:${pctColor};font-weight:800;padding:2px 8px;border-radius:20px;">${pct}%</span>
               </td>
               <td style="padding:9px 8px;border-bottom:1px solid var(--gray-100);text-align:center;">${r.fu_count || 0}</td>
-              <td style="padding:9px 8px;border-bottom:1px solid #eee;text-align:center;font-size:11px;color:#999;">${submitTime}</td>
+              <td style="padding:9px 8px;border-bottom:1px solid #eee;text-align:center;font-size:11px;color:#1a2744;font-weight:700;">Detail →</td>
             </tr>`;
         });
       }
@@ -9647,16 +9759,26 @@ const ROLE_TASKS = {
       const today = new Date().toISOString().split('T')[0];
       const targetDate = tanggalParam || today;
 
-      const buildUrl = (tanggal) => {
-        let u = SUPA_URL + '/rest/v1/draft_tasklist?tanggal=eq.' + tanggal + '&role=eq.' + encodeURIComponent(roleName) + '&select=*&order=task_id.asc';
+      // Coba laporan_detail dulu (data permanen dari submit)
+      // Fallback ke draft_tasklist (data hari ini yang belum submit)
+      const buildDetailUrl = (tanggal, table) => {
+        let u = SUPA_URL + '/rest/v1/' + table + '?tanggal=eq.' + tanggal + '&role=eq.' + encodeURIComponent(roleName) + '&select=*';
         if (hotelName) u += '&hotel=eq.' + encodeURIComponent(hotelName);
         return u;
       };
 
-      let res = await fetch(buildUrl(targetDate), {
+      let res = await fetch(buildDetailUrl(targetDate, 'laporan_detail'), {
         headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY }
       });
       let data = res.ok ? await res.json() : [];
+
+      // Fallback ke draft_tasklist jika laporan_detail kosong
+      if (!data || data.length === 0) {
+        res = await fetch(buildDetailUrl(targetDate, 'draft_tasklist'), {
+          headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY }
+        });
+        data = res.ok ? await res.json() : [];
+      }
       // Sort numerically: task_1, task_2, ..., room_16_1, room_16_2, fu
       data.sort((a, b) => {
         const getId = id => {
