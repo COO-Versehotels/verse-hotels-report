@@ -2077,7 +2077,7 @@
 
   // ===== AUTO CLEANUP DRAFT LAMA =====
   async function autoCleanupOldDrafts() {
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Date(Date.now() + 7*3600000).toISOString().split('T')[0];
     const lastCleanKey = 'last_draft_cleanup';
     const lastClean = localStorage.getItem(lastCleanKey);
     
@@ -2109,7 +2109,7 @@
   // ===== SESSION MANAGEMENT — sekali sehari =====
   function saveSessionToday(role, hotel) {
     if (!role || role === 'COO') return; // COO tidak perlu session (pakai biometrik)
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Date(Date.now() + 7*3600000).toISOString().split('T')[0];
     const session = { role, hotel, date: today };
     localStorage.setItem('team_session', JSON.stringify(session));
   }
@@ -2119,7 +2119,7 @@
       const raw = localStorage.getItem('team_session');
       if (!raw) return null;
       const session = JSON.parse(raw);
-      const today = new Date().toISOString().split('T')[0];
+      const today = new Date(Date.now() + 7*3600000).toISOString().split('T')[0];
       if (session.date !== today) {
         // Session hari kemarin — hapus
             return null;
@@ -2253,7 +2253,7 @@
   // Simpan semua task sekarang
   async function saveDraftNow(taskId) {
     if (!currentRole || !currentHotel) return;
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Date(Date.now() + 7*3600000).toISOString().split('T')[0];
     const item = document.getElementById(taskId);
     if (!item) return;
 
@@ -2341,7 +2341,7 @@
       console.log('loadDraft skipped - role:', role, 'hotel:', hotel);
       return;
     }
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Date(Date.now() + 7*3600000).toISOString().split('T')[0];
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
     const yDate = yesterday.toISOString().split('T')[0];
@@ -2523,7 +2523,7 @@
   // Simpan laporan ke Supabase
   async function saveToSupabase(role, hotel, taskDone, taskTotal, taskProgress, taskNot, pct, fuCount, fileCount) {
     try {
-      const today = new Date().toISOString().split('T')[0];
+      const today = new Date(Date.now() + 7*3600000).toISOString().split('T')[0];
       const payload = {
         tanggal: today,
         role, hotel,
@@ -2606,7 +2606,7 @@
   // Load semua laporan hari ini dari Supabase
   async function loadFromSupabase() {
     try {
-      const today = new Date().toISOString().split('T')[0];
+      const today = new Date(Date.now() + 7*3600000).toISOString().split('T')[0];
       const res = await fetch(SUPA_URL + '/rest/v1/laporan?tanggal=eq.' + today + '&select=*', {
         headers: {
           'apikey': SUPA_KEY,
@@ -2676,7 +2676,7 @@
   // Auto reset — arsip dulu lalu hapus data hari kemarin
   async function checkAndReset() {
     try {
-      const yesterday = new Date();
+      const yesterday = new Date(Date.now() + 7*3600000);
       yesterday.setDate(yesterday.getDate() - 1);
       const yDate = yesterday.toISOString().split('T')[0];
 
@@ -2805,7 +2805,7 @@
 
     // Set default date untuk arsip = hari ini
     if (screen === 'arsip') {
-      const today = new Date().toISOString().split('T')[0];
+      const today = new Date(Date.now() + 7*3600000).toISOString().split('T')[0];
       const dateInput = document.getElementById('arsip-date-filter');
       if (dateInput && !dateInput.value) {
         dateInput.value = today;
@@ -3456,7 +3456,7 @@
     showToast('⏳ Mengupload file...');
 
     // Upload ke Supabase Storage
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Date(Date.now() + 7*3600000).toISOString().split('T')[0];
     const uploadedUrls = [];
 
     for (const file of toAdd) {
@@ -9024,7 +9024,7 @@ const ROLE_TASKS = {
     navigator.geolocation.getCurrentPosition(async (pos) => {
       const lat = pos.coords.latitude;
       const lng = pos.coords.longitude;
-      const today = new Date().toISOString().split('T')[0];
+      const today = new Date(Date.now() + 7*3600000).toISOString().split('T')[0];
       const now = new Date().toISOString();
 
       // Reverse geocode pakai Nominatim (gratis, no API key)
@@ -9118,7 +9118,7 @@ const ROLE_TASKS = {
 
   async function loadLiveProgress() {
     try {
-      const today = new Date().toISOString().split('T')[0];
+      const today = new Date(Date.now() + 7*3600000).toISOString().split('T')[0];
       const res = await fetch(SUPA_URL + '/rest/v1/draft_tasklist?tanggal=eq.' + today + '&select=role,hotel,status&order=role.asc', {
         headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY }
       });
@@ -9233,7 +9233,7 @@ const ROLE_TASKS = {
     document.getElementById('detail-content').innerHTML = '<div style="text-align:center;padding:40px 0;color:var(--gray-400);"><div style="font-size:40px;">⏳</div><p style="font-size:14px;font-weight:600;margin-top:12px;">Memuat progress live...</p></div>';
 
     try {
-      const today = new Date().toISOString().split('T')[0];
+      const today = new Date(Date.now() + 7*3600000).toISOString().split('T')[0];
       // Fetch by role saja (hotel filter di JS) agar tidak miss data karena hotel mismatch
       let url = SUPA_URL + '/rest/v1/draft_tasklist?tanggal=eq.' + today +
         '&role=eq.' + encodeURIComponent(roleName) +
@@ -9758,7 +9758,7 @@ const ROLE_TASKS = {
     document.getElementById('detail-content').innerHTML = '<div style="text-align:center;padding:40px 0;color:var(--gray-400);"><div style="font-size:40px;">⏳</div><p style="font-size:14px;font-weight:600;margin-top:12px;">Memuat detail...</p></div>';
 
     try {
-      const today = new Date().toISOString().split('T')[0];
+      const today = new Date(Date.now() + 7*3600000).toISOString().split('T')[0];
       const targetDate = tanggalParam || today;
 
       // Coba laporan_detail dulu (data permanen dari submit)
@@ -10019,7 +10019,7 @@ const ROLE_TASKS = {
     // Jika DOM kosong, load dari Supabase draft
     if (total === 0 && currentRole && currentHotel) {
       try {
-        const today = new Date().toISOString().split('T')[0];
+        const today = new Date(Date.now() + 7*3600000).toISOString().split('T')[0];
         const yesterday = new Date(); yesterday.setDate(yesterday.getDate()-1);
         const yDate = yesterday.toISOString().split('T')[0];
 
