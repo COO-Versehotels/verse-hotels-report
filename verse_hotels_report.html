@@ -2246,6 +2246,7 @@
 
   // Simpan satu task ke Supabase (debounced 1.5 detik)
   function autoSaveDraft(taskId) {
+    if (window._isRestoringDraft) return; // jangan save saat restore
     clearTimeout(autoSaveTimer);
     autoSaveTimer = setTimeout(() => saveDraftNow(taskId), 1500);
   }
@@ -2361,6 +2362,7 @@
       if (!data || data.length === 0) return;
 
       let restoredCount = 0;
+      window._isRestoringDraft = true;
 
       data.forEach(draft => {
         const item = document.getElementById(draft.task_id);
@@ -2436,8 +2438,10 @@
         }
       });
 
+      window._isRestoringDraft = false;
       if (restoredCount > 0) showToast('📂 Draft dimuat (' + restoredCount + ' task)');
     } catch(e) {
+      window._isRestoringDraft = false;
       console.error('Load draft error:', e);
     }
   }
@@ -9981,7 +9985,8 @@ const ROLE_TASKS = {
     }
     if (item) {
       item.dataset.status = status;
-      saveDraftNow(slotId);
+      // Tidak save saat restore (flag dari loadDraft)
+      if (!window._isRestoringDraft) saveDraftNow(slotId);
     }
   }
 
