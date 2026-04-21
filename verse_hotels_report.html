@@ -1863,6 +1863,9 @@
         <h2 style="color:white;">Arsip Laporan</h2>
         <p style="color:rgba(255,255,255,0.5);">Riwayat laporan harian</p>
       </div>
+      <div class="topbar-right">
+        <span style="font-size:20px;cursor:pointer;color:#ffd27a;" onclick="exportArsipPDF()" title="Export PDF Konsolidasi (sesuai tanggal filter)">📄</span>
+      </div>
     </div>
 
     <div class="scroll-area">
@@ -1961,7 +1964,7 @@
         <p style="color:rgba(255,255,255,0.5);" id="coo-date">Verse Group Hotels</p>
       </div>
       <div class="topbar-right">
-        <span style="font-size:20px;cursor:pointer;color:var(--gold);" onclick="showToast('Export PDF segera hadir!')">📄</span>
+        <span style="font-size:20px;cursor:pointer;color:var(--gold);" onclick="exportDashboardPDF()" title="Export PDF Konsolidasi">📄</span>
       </div>
     </div>
 
@@ -3208,6 +3211,151 @@
       if (win) { win.document.write(html); win.document.close(); showToast('✅ PDF siap — klik Print!'); }
       else showToast('❌ Popup diblokir — izinkan popup di browser');
     } catch(e) { console.error(e); showToast('❌ Gagal: ' + e.message); }
+  }
+
+  // ===== EXPORT DASHBOARD PDF KONSOLIDASI =====
+  // Konsolidasi semua role untuk tanggal tertentu (default: hari ini)
+  async function exportDashboardPDF(tanggalParam) {
+    showToast('⏳ Menyiapkan laporan konsolidasi...');
+    try {
+      const targetDate = tanggalParam || new Date(Date.now() + 7*3600000).toISOString().split('T')[0];
+      const dateLabel = new Date(targetDate + 'T00:00:00').toLocaleDateString('id-ID',
+        {weekday:'long', day:'numeric', month:'long', year:'numeric'});
+
+      // Ambil semua laporan untuk tanggal ini (coba arsip dulu, fallback laporan)
+      const fetchAll = async (table) => {
+        const r = await fetch(SUPA_URL + '/rest/v1/' + table + '?tanggal=eq.' + targetDate + '&select=*&order=role.asc',
+          { headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY } });
+        return r.ok ? await r.json() : [];
+      };
+      let laporanAll = await fetchAll('arsip');
+      if (!laporanAll || laporanAll.length === 0) laporanAll = await fetchAll('laporan');
+
+      // Kalau tetap kosong, pakai draft_tasklist untuk agregasi live (hari ini)
+      const isLive = !tanggalParam;
+      if ((!laporanAll || laporanAll.length === 0) && isLive) {
+        const r = await fetch(SUPA_URL + '/rest/v1/draft_tasklist?tanggal=eq.' + targetDate + '&select=*',
+          { headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY } });
+        const drafts = r.ok ? await r.json() : [];
+        // Group by role+hotel untuk hitung progress live
+        const grouped = {};
+        drafts.forEach(d => {
+          const key = (d.role || '') + '|' + (d.hotel || '');
+          if (!grouped[key]) grouped[key] = { role: d.role, hotel: d.hotel, tanggal: targetDate, task_done: 0, task_total: 0, task_not: 0, fu_count: 0, file_count: 0, pct: 0, submitted_at: null };
+          grouped[key].task_total++;
+          if (d.status === 'done') grouped[key].task_done++;
+          if (d.status === 'not') grouped[key].task_not++;
+          if (String(d.task_id || '').startsWith('fu')) grouped[key].fu_count++;
+          if (d.file_urls) { try { grouped[key].file_count += (JSON.parse(d.file_urls) || []).length; } catch(e){} }
+        });
+        laporanAll = Object.values(grouped).map(g => {
+          g.pct = g.task_total ? Math.round(g.task_done / g.task_total * 100) : 0;
+          return g;
+        });
+      }
+
+      if (!laporanAll || laporanAll.length === 0) {
+        showToast('❌ Belum ada laporan untuk tanggal ini');
+        return;
+      }
+
+      // Agregasi ringkasan
+      const totalLaporan = laporanAll.length;
+      const totalSelesai = laporanAll.filter(l => (l.pct || 0) === 100).length;
+      const avgPct = Math.round(laporanAll.reduce((s, l) => s + (l.pct || 0), 0) / totalLaporan);
+      const totalFU = laporanAll.reduce((s, l) => s + (l.fu_count || 0), 0);
+      const totalFile = laporanAll.reduce((s, l) => s + (l.file_count || 0), 0);
+
+      // Group by hotel
+      const byHotel = {};
+      laporanAll.forEach(l => {
+        const h = l.hotel || 'Corporate';
+        if (!byHotel[h]) byHotel[h] = [];
+        byHotel[h].push(l);
+      });
+
+      let bodyHtml = '';
+
+      // Per-hotel section
+      Object.keys(byHotel).sort().forEach(hotelName => {
+        const rows = byHotel[hotelName];
+        bodyHtml += '<h2 style="font-size:15px;color:#1a3a5c;margin:20px 0 10px 0;padding-bottom:6px;border-bottom:2px solid #c9973a;">🏨 ' + hotelName + '</h2>';
+        bodyHtml += '<table style="width:100%;border-collapse:collapse;font-size:11px;margin-bottom:10px;">' +
+          '<thead><tr style="background:#1a3a5c;color:white;">' +
+          '<th style="padding:8px;text-align:left;">Role</th>' +
+          '<th style="padding:8px;text-align:center;">Selesai</th>' +
+          '<th style="padding:8px;text-align:center;">Total</th>' +
+          '<th style="padding:8px;text-align:center;">Tidak</th>' +
+          '<th style="padding:8px;text-align:center;">FU</th>' +
+          '<th style="padding:8px;text-align:center;">File</th>' +
+          '<th style="padding:8px;text-align:center;">%</th>' +
+          '<th style="padding:8px;text-align:center;">Submit</th>' +
+          '</tr></thead><tbody>';
+        rows.forEach(r => {
+          const pct = r.pct || 0;
+          const pctColor = pct === 100 ? '#27ae60' : pct >= 70 ? '#1a3a5c' : pct >= 40 ? '#c9973a' : '#e74c3c';
+          const submitTime = r.submitted_at ? new Date(r.submitted_at).toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'}) : '—';
+          bodyHtml += '<tr style="border-bottom:1px solid #eee;">' +
+            '<td style="padding:7px;font-weight:600;">' + (r.role || '—') + '</td>' +
+            '<td style="padding:7px;text-align:center;color:#27ae60;font-weight:600;">' + (r.task_done || 0) + '</td>' +
+            '<td style="padding:7px;text-align:center;">' + (r.task_total || 0) + '</td>' +
+            '<td style="padding:7px;text-align:center;color:#e74c3c;">' + (r.task_not || 0) + '</td>' +
+            '<td style="padding:7px;text-align:center;">' + (r.fu_count || 0) + '</td>' +
+            '<td style="padding:7px;text-align:center;">' + (r.file_count || 0) + '</td>' +
+            '<td style="padding:7px;text-align:center;font-weight:700;color:' + pctColor + ';">' + pct + '%</td>' +
+            '<td style="padding:7px;text-align:center;font-size:10px;color:#666;">' + submitTime + '</td>' +
+            '</tr>';
+        });
+        bodyHtml += '</tbody></table>';
+      });
+
+      const html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Laporan Konsolidasi — ' + dateLabel + '</title>' +
+        '<style>' +
+        '@page { size: A4; margin: 15mm; }' +
+        'body { font-family: "Segoe UI", Arial, sans-serif; color:#2d3340; line-height:1.5; }' +
+        '.header { background:linear-gradient(135deg,#1a3a5c,#0e2340); color:white; padding:20px; border-radius:10px; margin-bottom:16px; }' +
+        '.header h1 { font-size:20px; margin:0 0 4px 0; }' +
+        '.header p { font-size:12px; opacity:0.85; margin:0; }' +
+        '.stats { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:16px; }' +
+        '.stat { background:#f7f8fa; border:1px solid #dde1e8; border-radius:8px; padding:12px; text-align:center; }' +
+        '.stat-val { font-size:20px; font-weight:800; color:#1a3a5c; }' +
+        '.stat-lbl { font-size:10px; color:#5c6475; text-transform:uppercase; letter-spacing:0.5px; margin-top:2px; }' +
+        '.footer { margin-top:24px; padding-top:12px; border-top:1px solid #ddd; font-size:10px; color:#999; text-align:center; }' +
+        '@media print { .no-print { display:none; } body { -webkit-print-color-adjust:exact; print-color-adjust:exact; } }' +
+        '.btn-print { position:fixed; top:12px; right:12px; padding:10px 18px; background:#1a3a5c; color:white; border:none; border-radius:8px; font-weight:700; cursor:pointer; box-shadow:0 2px 8px rgba(0,0,0,0.2); }' +
+        '</style></head><body>' +
+        '<button class="btn-print no-print" onclick="window.print()">🖨️ Print / Save as PDF</button>' +
+        '<div class="header">' +
+          '<h1>📊 Laporan Konsolidasi Harian — Verse Hotels Group</h1>' +
+          '<p>' + dateLabel + (isLive ? ' · 🔴 Live (belum final)' : '') + '</p>' +
+        '</div>' +
+        '<div class="stats">' +
+          '<div class="stat"><div class="stat-val" style="color:#1a3a5c;">' + totalLaporan + '</div><div class="stat-lbl">Total Laporan</div></div>' +
+          '<div class="stat"><div class="stat-val" style="color:#27ae60;">' + totalSelesai + '</div><div class="stat-lbl">Selesai 100%</div></div>' +
+          '<div class="stat"><div class="stat-val" style="color:#c9973a;">' + avgPct + '%</div><div class="stat-lbl">Rata-rata Progress</div></div>' +
+          '<div class="stat"><div class="stat-val" style="color:#e74c3c;">' + totalFU + '</div><div class="stat-lbl">Total Follow Up</div></div>' +
+        '</div>' +
+        bodyHtml +
+        '<div class="footer">Dibuat otomatis oleh Verse Hotels Corporate Report System · ' +
+          new Date().toLocaleString('id-ID', {dateStyle:'full', timeStyle:'short'}) + ' WIB · ' +
+          totalFile + ' file lampiran tercatat</div>' +
+        '</body></html>';
+
+      const win = window.open('', '_blank');
+      if (win) { win.document.write(html); win.document.close(); showToast('✅ PDF konsolidasi siap — klik Print!'); }
+      else showToast('❌ Popup diblokir — izinkan popup di browser');
+    } catch(e) { console.error('Export dashboard PDF error:', e); showToast('❌ Gagal: ' + e.message); }
+  }
+
+  // Wrapper: Export konsolidasi dari halaman Arsip (pakai tanggal dari filter)
+  async function exportArsipPDF() {
+    const dateInput = document.getElementById('arsip-date-filter');
+    const selectedDate = dateInput && dateInput.value ? dateInput.value : null;
+    if (!selectedDate) {
+      showToast('Pilih tanggal dulu di filter Arsip');
+      return;
+    }
+    await exportDashboardPDF(selectedDate);
   }
 
   async function exportRolePDF() {
@@ -9460,10 +9608,10 @@ const ROLE_TASKS = {
   // tapi dengan badge "Live" dan label yang berbeda
   async function openLiveDetail(roleName, hotelName) {
     go('detail');
-    // Simpan state untuk export PDF
+    // Simpan state untuk export PDF (live = hari ini, tanggal null)
     window._detailRole = roleName;
     window._detailHotel = hotelName;
-    window._detailTanggal = tanggalParam || null;
+    window._detailTanggal = null;
     document.getElementById('detail-title').textContent = roleName.replace(' Corporate','');
     document.getElementById('detail-subtitle').textContent = (hotelName === 'Corporate' ? 'Tim Corporate' : hotelName) + ' · 🔴 Live';
     document.getElementById('detail-content').innerHTML = '<div style="text-align:center;padding:40px 0;color:var(--gray-400);"><div style="font-size:40px;">⏳</div><p style="font-size:14px;font-weight:600;margin-top:12px;">Memuat progress live...</p></div>';
@@ -9925,7 +10073,10 @@ const ROLE_TASKS = {
                 <span>📌 ${r.fu_count || 0} follow up</span>
                 <span>🕐 Submit ${submitTime}</span>
               </div>
-              <div style="margin-top:10px;text-align:right;">
+              <div style="margin-top:10px;text-align:right;display:flex;gap:8px;justify-content:flex-end;">
+                <button onclick="exportDetailPDF('${r.role}','${r.hotel}','${r.tanggal}')" style="padding:7px 12px;background:var(--gold);color:white;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;" title="Export PDF">
+                  📄 PDF
+                </button>
                 <button onclick="openDetailLaporan('${r.role}','${r.hotel}','${r.tanggal}')" style="padding:7px 14px;background:var(--navy);color:white;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">
                   👁 Lihat Detail Task →
                 </button>
