@@ -2570,6 +2570,43 @@
 
       if (allItems.length === 0) return;
 
+      // B2: Sebelum save ke laporan_detail, merge dengan data dari draft_tasklist
+      // supaya file/keterangan dari session sebelumnya tidak hilang
+      try {
+        const draftRes = await fetch(
+          SUPA_URL + '/rest/v1/draft_tasklist?tanggal=eq.' + today +
+          '&role=eq.' + encodeURIComponent(role) +
+          '&hotel=eq.' + encodeURIComponent(hotel) + '&select=*',
+          { headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY } }
+        );
+        const draftData = draftRes.ok ? await draftRes.json() : [];
+        if (draftData && draftData.length > 0) {
+          const draftMap = {};
+          draftData.forEach(d => { if (d.task_id) draftMap[d.task_id] = d; });
+          // Merge: kalau draft punya file_urls/keterangan yang lebih lengkap, pakai dari draft
+          allItems.forEach(item => {
+            const d = draftMap[item.task_id];
+            if (!d) return;
+            if (!item.file_urls && d.file_urls) item.file_urls = d.file_urls;
+            if (!item.keterangan && d.keterangan) item.keterangan = d.keterangan;
+          });
+          // Tambahkan task yang hanya ada di draft (task yang tidak dirender di DOM saat submit)
+          const existingIds = new Set(allItems.map(i => i.task_id));
+          draftData.forEach(d => {
+            if (!d.task_id || existingIds.has(d.task_id)) return;
+            if (!d.status) return;
+            allItems.push({
+              tanggal: today, role, hotel,
+              task_id: d.task_id,
+              status: d.status,
+              keterangan: d.keterangan || null,
+              file_urls: d.file_urls || null
+            });
+          });
+          console.log('🔄 Merged from draft_tasklist:', draftData.length, 'draft rows');
+        }
+      } catch(e) { console.warn('Draft merge failed (non-fatal):', e); }
+
       // Simpan semua ke laporan_detail (batch upsert)
       for (const item of allItems) {
         // Cek apakah sudah ada
@@ -4018,6 +4055,7 @@
         el.style.animation = '';
       }, 2500);
     }
+
 
     // ── CEK SETIAP TASK UTAMA ──────────────────
     taskItems.forEach(item => {
@@ -10152,26 +10190,33 @@ const ROLE_TASKS = {
       const today = new Date(Date.now() + 7*3600000).toISOString().split('T')[0];
       const targetDate = tanggalParam || today;
 
-      // Coba laporan_detail dulu (data permanen dari submit)
-      // Fallback ke draft_tasklist (data hari ini yang belum submit)
-      const buildDetailUrl = (tanggal, table) => {
-        let u = SUPA_URL + '/rest/v1/' + table + '?tanggal=eq.' + tanggal + '&role=eq.' + encodeURIComponent(roleName) + '&select=*';
-        if (hotelName) u += '&hotel=eq.' + encodeURIComponent(hotelName);
-        return u;
+      // Helper: fetch dengan multi-fallback
+      // Level 1: strict match (role + hotel)
+      // Level 2: loose match (role saja) — tangkap data dengan hotel null/berbeda casing
+      // PRIORITY: draft_tasklist DULU (tempat data benar-benar tersimpan),
+      //           baru fallback ke laporan_detail (untuk laporan yang sudah di-arsipkan)
+      const fetchDetail = async (table, includeHotel) => {
+        let u = SUPA_URL + '/rest/v1/' + table + '?tanggal=eq.' + targetDate + '&role=eq.' + encodeURIComponent(roleName) + '&select=*';
+        if (includeHotel && hotelName) u += '&hotel=eq.' + encodeURIComponent(hotelName);
+        const r = await fetch(u, { headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY } });
+        return r.ok ? await r.json() : [];
       };
 
-      let res = await fetch(buildDetailUrl(targetDate, 'laporan_detail'), {
-        headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY }
-      });
-      let data = res.ok ? await res.json() : [];
+      // Coba 4 kombinasi berurutan sampai dapat data
+      // (draft_tasklist diprioritaskan karena itu tempat data real tersimpan)
+      let data = await fetchDetail('draft_tasklist', true);
+      if (!data || data.length === 0) data = await fetchDetail('draft_tasklist', false);
+      if (!data || data.length === 0) data = await fetchDetail('laporan_detail', true);
+      if (!data || data.length === 0) data = await fetchDetail('laporan_detail', false);
 
-      // Fallback ke draft_tasklist jika laporan_detail kosong
-      if (!data || data.length === 0) {
-        res = await fetch(buildDetailUrl(targetDate, 'draft_tasklist'), {
-          headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY }
-        });
-        data = res.ok ? await res.json() : [];
+      // Kalau setelah loose match data ada tapi hotel-nya beda, filter di JS
+      // (hanya kalau hotelName diberikan)
+      if (data && data.length > 0 && hotelName) {
+        const exactMatch = data.filter(r => (r.hotel || '') === hotelName);
+        // Kalau ada exact match, pakai itu. Kalau tidak ada, tetap pakai semua data yang match role+tanggal
+        if (exactMatch.length > 0) data = exactMatch;
       }
+
       // Sort numerically: task_1, task_2, ..., room_16_1, room_16_2, fu
       data.sort((a, b) => {
         const getId = id => {
@@ -10184,17 +10229,63 @@ const ROLE_TASKS = {
       });
 
       if (!data || data.length === 0) {
-        document.getElementById('detail-content').innerHTML = '<div style="text-align:center;padding:40px 0;color:var(--gray-400);"><div style="font-size:40px;">📭</div><p style="font-size:14px;font-weight:600;margin-top:12px;">Tidak ada data untuk laporan ini</p></div>';
+        // Coba tampilkan ringkasan minimal dari laporan/arsip biar user tidak kosong total
+        let ringkasan = null;
+        try {
+          const urls = [
+            SUPA_URL + '/rest/v1/arsip?tanggal=eq.' + targetDate + '&role=eq.' + encodeURIComponent(roleName) + (hotelName ? '&hotel=eq.' + encodeURIComponent(hotelName) : '') + '&select=*&limit=1',
+            SUPA_URL + '/rest/v1/laporan?tanggal=eq.' + targetDate + '&role=eq.' + encodeURIComponent(roleName) + (hotelName ? '&hotel=eq.' + encodeURIComponent(hotelName) : '') + '&select=*&limit=1'
+          ];
+          for (const u of urls) {
+            const r = await fetch(u, { headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY } });
+            const d = r.ok ? await r.json() : [];
+            if (d && d.length > 0) { ringkasan = d[0]; break; }
+          }
+        } catch(e) {}
+
+        if (ringkasan) {
+          const pct = ringkasan.pct || 0;
+          const pctColor = pct === 100 ? 'var(--green)' : pct >= 70 ? 'var(--navy)' : 'var(--amber)';
+          document.getElementById('detail-content').innerHTML =
+            '<div style="background:white;border-radius:var(--radius);padding:16px;margin-bottom:12px;box-shadow:var(--shadow-card);">' +
+              '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">' +
+                '<span style="font-size:13px;font-weight:700;color:var(--gray-400);">RINGKASAN</span>' +
+                '<span style="font-size:20px;font-weight:800;color:' + pctColor + ';">' + pct + '%</span>' +
+              '</div>' +
+              '<div style="height:6px;background:var(--gray-100);border-radius:4px;overflow:hidden;margin-bottom:10px;">' +
+                '<div style="height:100%;width:' + pct + '%;background:' + pctColor + ';border-radius:4px;"></div>' +
+              '</div>' +
+              '<div style="display:flex;gap:16px;font-size:12px;color:var(--gray-400);flex-wrap:wrap;">' +
+                '<span>✅ ' + (ringkasan.task_done || 0) + ' Sudah</span>' +
+                '<span>❌ ' + (ringkasan.task_not || 0) + ' Tidak Dikerjakan</span>' +
+                '<span>📎 ' + (ringkasan.file_count || 0) + ' File</span>' +
+              '</div>' +
+              '<div style="margin-top:8px;font-size:11px;color:var(--gray-400);">🕐 Submit ' + (ringkasan.submitted_at ? new Date(ringkasan.submitted_at).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'}) : '—') + ' WIB</div>' +
+            '</div>' +
+            '<div style="background:#fef3cd;border-left:4px solid #c9973a;border-radius:8px;padding:14px;margin-top:12px;">' +
+              '<p style="font-size:13px;font-weight:700;color:#7a5a1e;margin-bottom:4px;">⚠️ Detail per-task tidak tersedia</p>' +
+              '<p style="font-size:12px;color:#7a5a1e;line-height:1.5;">Laporan ini hanya menyimpan ringkasan (belum termasuk detail foto dan keterangan per-task). Kemungkinan laporan di-submit sebelum fitur detail tersimpan secara permanen. Hanya laporan baru (mulai hari ini) yang akan menyimpan detail lengkap.</p>' +
+            '</div>';
+        } else {
+          document.getElementById('detail-content').innerHTML = '<div style="text-align:center;padding:40px 0;color:var(--gray-400);"><div style="font-size:40px;">📭</div><p style="font-size:14px;font-weight:600;margin-top:12px;">Tidak ada data untuk laporan ini</p><p style="font-size:12px;margin-top:6px;color:var(--gray-400);">Role: ' + roleName + '<br/>Hotel: ' + (hotelName || '-') + '<br/>Tanggal: ' + targetDate + '</p></div>';
+        }
         return;
       }
 
-      // Ambil info laporan
-      const laporanRes = await fetch(
-        SUPA_URL + '/rest/v1/laporan?tanggal=eq.' + targetDate + '&role=eq.' + encodeURIComponent(roleName) + (hotelName ? '&hotel=eq.' + encodeURIComponent(hotelName) : '') + '&select=*',
-        { headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY } }
-      );
-      const laporanData = laporanRes.ok ? await laporanRes.json() : [];
-      const laporan = laporanData[0] || {};
+      // Ambil info laporan (coba arsip dulu, fallback laporan)
+      let laporan = {};
+      try {
+        const sumUrls = [
+          SUPA_URL + '/rest/v1/arsip?tanggal=eq.' + targetDate + '&role=eq.' + encodeURIComponent(roleName) + (hotelName ? '&hotel=eq.' + encodeURIComponent(hotelName) : '') + '&select=*&limit=1',
+          SUPA_URL + '/rest/v1/laporan?tanggal=eq.' + targetDate + '&role=eq.' + encodeURIComponent(roleName) + (hotelName ? '&hotel=eq.' + encodeURIComponent(hotelName) : '') + '&select=*&limit=1'
+        ];
+        for (const u of sumUrls) {
+          const r = await fetch(u, { headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY } });
+          const d = r.ok ? await r.json() : [];
+          if (d && d.length > 0) { laporan = d[0]; break; }
+        }
+      } catch(e) {}
+      const laporanData = [laporan];
 
       const statusIcon = { done: '✅', progress: '⏳', not: '❌', note_only: '📝' };
       const statusLabel = { done: 'Sudah', progress: 'Dalam Proses', not: 'Belum', note_only: 'Catatan' };
