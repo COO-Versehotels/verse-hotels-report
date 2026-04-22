@@ -10810,7 +10810,7 @@ window.FB_DETAIL_MAP = {"F&B Manager": {"task_1": "Memastikan Kitchen Area Bersi
     // Simpan state untuk export PDF
     window._detailRole = roleName;
     window._detailHotel = hotelName;
-    window._detailTanggal = tanggalParam || null;
+    window._detailTanggal = null;
     document.getElementById('detail-title').textContent = roleName.replace(' Corporate','');
     document.getElementById('detail-subtitle').textContent = (hotelName === 'Corporate' ? 'Tim Corporate' : hotelName) + ' · 🔴 Live';
     document.getElementById('detail-content').innerHTML = '<div style="text-align:center;padding:40px 0;color:var(--gray-400);"><div style="font-size:40px;">⏳</div><p style="font-size:14px;font-weight:600;margin-top:12px;">Memuat progress live...</p></div>';
