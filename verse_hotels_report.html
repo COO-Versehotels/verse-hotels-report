@@ -2620,8 +2620,7 @@
       if (apNote && apNote.value.trim()) {
         let apText = apNote.value.trim();
         if (needsUnitVisitTomorrow(role) && apHotelVal && apHotelVal.value) {
-          apText = 'Unit Visit Tomorrow: ' + apHotelVal.value + '
-' + apText;
+          apText = 'Unit Visit Tomorrow: ' + apHotelVal.value + '\n' + apText;
         }
         allItems.push({ tanggal: today, role, hotel, task_id: 'activity-plan', status: 'note_only', keterangan: apText, file_urls: null });
       }
@@ -2876,6 +2875,10 @@
     'HM Verse Luxe': '1020',
     'HM Verse Cirebon': '1030',
     'HM Oak Tree': '1040',
+    'F&B Manager': '0110',
+    'Team Kitchen': '0120',
+    'F&B Attendant': '0130',
+    'CEO': '0909',
   };
 
   // Navigation
@@ -3159,6 +3162,7 @@
     }
 
     currentRole = role;
+    loginScreenContext = ['F&B Manager','Team Kitchen','F&B Attendant'].includes(role) ? 'login-fb' : (role.startsWith('HM ') ? 'splash' : 'login');
     pin = '';
     updatePinDots();
     // Update PIN screen header
@@ -3174,6 +3178,29 @@
           if (available) setTimeout(() => showBiometricShortcut(role), 400);
         }).catch(() => {});
     }
+  }
+
+  function goBackFromPin() {
+    if (currentRole === 'COO' || currentRole === 'CEO') {
+      currentRole = '';
+      pin = '';
+      updatePinDots();
+      go('splash');
+      return;
+    }
+    pin = '';
+    updatePinDots();
+    go(loginScreenContext || 'login');
+  }
+
+  function openCEOLogin() {
+    currentRole = 'CEO';
+    loginScreenContext = 'splash';
+    pin = '';
+    updatePinDots();
+    document.getElementById('pin-role-name').textContent = 'CEO';
+    document.getElementById('pin-role-icon').textContent = '👑';
+    go('pin');
   }
 
   function showBiometricShortcut(role) {
@@ -3617,6 +3644,16 @@
   function loginAsCOO() {
     pin = ''; updatePinDots();
     currentRole = 'COO';
+    ['nav-coo-home','nav-coo-tasklist'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.style.display = 'block';
+    });
+    go('coo');
+  }
+
+  function loginAsCEO() {
+    pin = ''; updatePinDots();
+    currentRole = 'CEO';
     ['nav-coo-home','nav-coo-tasklist'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.style.display = 'block';
@@ -4308,15 +4345,15 @@
       }
     });
 
-    // Cek Activity Plan
+    // Cek Planning for Tomorrow
     const apHotel = document.getElementById('activity-plan-hotel-val');
     const apNote = document.querySelector('#activity-plan .task-note');
     // Unit Visit Tomorrow wajib hanya untuk Team Corporate
     if (needsUnitVisitTomorrow(currentRole) && (!apHotel || !apHotel.value)) {
-      requiredItems.push('• <b>Activity Plan</b> — <i>Unit Visit Tomorrow belum dipilih</i>');
+      requiredItems.push('• <b>Planning for Tomorrow</b> — <i>Unit Visit Tomorrow belum dipilih</i>');
     }
     if (!apNote || !apNote.value.trim()) {
-      requiredItems.push('• <b>Activity Plan</b> — <i>Follow Up List for Tomorrow belum diisi</i>');
+      requiredItems.push('• <b>Planning for Tomorrow</b> — <i>Catatan rencana besok belum diisi</i>');
     }
 
     if (requiredItems.length > 0 || optionalItems.length > 0) {
@@ -11585,7 +11622,7 @@ window.FB_DETAIL_MAP = {"F&B Manager": {"task_1": "Memastikan Kitchen Area Bersi
     }
   }
 
-  // Select hotel di Activity Plan
+  // Select hotel di Planning for Tomorrow
   function selectActivityHotel(btn, taskId) {
     const container = document.getElementById(taskId + '-hotel-select');
     if (!container) return;
