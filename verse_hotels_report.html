@@ -2616,8 +2616,14 @@
 
       // Activity plan
       const apNote = document.querySelector('#activity-plan .task-note');
+      const apHotelVal = document.getElementById('activity-plan-hotel-val');
       if (apNote && apNote.value.trim()) {
-        allItems.push({ tanggal: today, role, hotel, task_id: 'activity-plan', status: 'note_only', keterangan: apNote.value.trim(), file_urls: null });
+        let apText = apNote.value.trim();
+        if (needsUnitVisitTomorrow(role) && apHotelVal && apHotelVal.value) {
+          apText = 'Unit Visit Tomorrow: ' + apHotelVal.value + '
+' + apText;
+        }
+        allItems.push({ tanggal: today, role, hotel, task_id: 'activity-plan', status: 'note_only', keterangan: apText, file_urls: null });
       }
 
       if (allItems.length === 0) return;
@@ -2997,11 +3003,10 @@
       }
       document.getElementById('tasklist-hotel').textContent = currentHotel;
 
-      // Sembunyikan Unit Visit untuk HM
+      // Unit Visit Tomorrow hanya untuk Team Corporate
       const apHotelSection = document.getElementById('activity-plan-hotel-section');
       if (apHotelSection) {
-        const isHM = currentRole && currentRole.startsWith('HM ');
-        apHotelSection.style.display = isHM ? 'none' : 'block';
+        apHotelSection.style.display = needsUnitVisitTomorrow(currentRole) ? 'block' : 'none';
       }
 
       // Load draft setelah DOM ready
@@ -3104,6 +3109,15 @@
     'CEO': '👑',
     'COO': '🔒'
   };
+
+
+  function isCorporateTeamRole(role) {
+    return ['Ops HR Manager','HR Officer','Chief Engineering Corporate','EHK Corporate','CRA Corporate'].includes(role);
+  }
+
+  function needsUnitVisitTomorrow(role) {
+    return isCorporateTeamRole(role);
+  }
 
   function selectRole(role) {
     loginScreenContext = ['F&B Manager','Team Kitchen','F&B Attendant'].includes(role) ? 'login-fb' : 'login';
@@ -4105,11 +4119,11 @@
     if (apItem) {
       const hotelVal = document.getElementById('activity-plan-hotel-val');
       const apNote = apItem.querySelector('.task-note');
-      const isHMRole = currentRole && currentRole.startsWith('HM ');
+      const requireUnitVisitTomorrow = needsUnitVisitTomorrow(currentRole);
       let apError = false;
 
-      // Wajib pilih hotel — untuk Corporate (HM sudah terikat di unitnya)
-      if (!isHMRole && (!hotelVal || !hotelVal.value)) {
+      // Wajib pilih Unit Visit Tomorrow — hanya untuk Team Corporate
+      if (requireUnitVisitTomorrow && (!hotelVal || !hotelVal.value)) {
         const container = document.getElementById('activity-plan-hotel-select');
         if (container) {
           container.style.outline = '2px solid var(--red)';
@@ -4297,10 +4311,8 @@
     // Cek Activity Plan
     const apHotel = document.getElementById('activity-plan-hotel-val');
     const apNote = document.querySelector('#activity-plan .task-note');
-    const isHMRoleCheck = currentRole && currentRole.startsWith('HM ');
-    const isCorporateRole = !isHMRoleCheck; // semua non-HM adalah Corporate
-    // Unit Visit Tomorrow wajib untuk Corporate, HM sudah terikat di unitnya
-    if (!isHMRoleCheck && (!apHotel || !apHotel.value)) {
+    // Unit Visit Tomorrow wajib hanya untuk Team Corporate
+    if (needsUnitVisitTomorrow(currentRole) && (!apHotel || !apHotel.value)) {
       requiredItems.push('• <b>Activity Plan</b> — <i>Unit Visit Tomorrow belum dipilih</i>');
     }
     if (!apNote || !apNote.value.trim()) {
