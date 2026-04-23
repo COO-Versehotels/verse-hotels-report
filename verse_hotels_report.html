@@ -249,6 +249,16 @@
     display: flex;
   }
 
+  #screen-login-fb {
+    background: linear-gradient(170deg, #1a3a5c 0%, #0e2340 100%);
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+  }
+  #screen-login-fb.active {
+    display: flex;
+  }
+
   .login-top {
     padding: 20px 20px 14px;
     text-align: center;
@@ -1471,20 +1481,11 @@
     <div class="splash-menu-section">
       <div class="splash-menu-label">Pilih Akses</div>
 
-      <button class="splash-menu-btn" onclick="go('login')">
+      <button class="splash-menu-btn" onclick="openCorporateRoles()">
         <div class="splash-menu-icon icon-navy">👔</div>
         <div class="splash-menu-info">
           <h3>Tim Corporate</h3>
           <p>Ops HR · CE · EHK · CRA</p>
-        </div>
-        <span class="splash-menu-arrow">›</span>
-      </button>
-
-      <button class="splash-menu-btn" onclick="doLoginCOO()">
-        <div class="splash-menu-icon icon-gold">📊</div>
-        <div class="splash-menu-info">
-          <h3>Dashboard COO</h3>
-          <p>Rekap semua hotel & tim</p>
         </div>
         <span class="splash-menu-arrow">›</span>
       </button>
@@ -1494,6 +1495,33 @@
         <div class="splash-menu-info">
           <h3>Hotel Manager</h3>
           <p>Verse Lite · Verse Luxe · Verse Cirebon · Oak Tree</p>
+        </div>
+        <span class="splash-menu-arrow">›</span>
+      </button>
+
+      <button class="splash-menu-btn" onclick="openFBRoles()">
+        <div class="splash-menu-icon" style="background:linear-gradient(135deg,#8b5cf6,#a855f7);">🍽️</div>
+        <div class="splash-menu-info">
+          <h3>F&amp;B Department</h3>
+          <p>F&amp;B Manager · Team Kitchen · F&amp;B Attendant</p>
+        </div>
+        <span class="splash-menu-arrow">›</span>
+      </button>
+
+      <button class="splash-menu-btn" onclick="doLoginCOO()">
+        <div class="splash-menu-icon icon-gold">📊</div>
+        <div class="splash-menu-info">
+          <h3>Dashboard COO</h3>
+          <p>Rekap semua hotel &amp; tim</p>
+        </div>
+        <span class="splash-menu-arrow">›</span>
+      </button>
+
+      <button class="splash-menu-btn" onclick="openCEOLogin()">
+        <div class="splash-menu-icon" style="background:linear-gradient(135deg,#7c3aed,#a855f7);">👑</div>
+        <div class="splash-menu-info">
+          <h3>Dashboard CEO</h3>
+          <p>Akses rekap semua hotel &amp; tim</p>
         </div>
         <span class="splash-menu-arrow">›</span>
       </button>
@@ -1543,9 +1571,33 @@
           <div class="role-card-icon">🌐</div>
           <div class="role-card-name">CRA Corporate</div>
         </button>
-        <button class="role-card" onclick="doLoginCOO()" style="border-color:var(--gold);background:rgba(201,151,58,0.05);">
-          <div class="role-card-icon" style="background:linear-gradient(135deg,#c9973a,#e8b86d);">🔒</div>
-          <div class="role-card-name" style="color:var(--gold);font-weight:800;">COO</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== LOGIN: PILIH JABATAN F&B ===== -->
+  <div class="screen" id="screen-login-fb">
+    <div style="display:flex;align-items:center;padding:12px 16px 0;">
+      <button onclick="go('splash')" style="background:rgba(255,255,255,0.15);border:none;border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;color:white;flex-shrink:0;">←</button>
+    </div>
+    <div class="login-top" style="padding-top:8px;">
+      <h2>Pilih Jabatan</h2>
+      <p>Verse Group Hotels · F&amp;B Department</p>
+    </div>
+    <div class="login-card">
+      <p class="login-section-label">Jabatan / Title</p>
+      <div class="role-grid">
+        <button class="role-card" onclick="selectRole('F&B Manager')">
+          <div class="role-card-icon">🍽️</div>
+          <div class="role-card-name">F&amp;B Manager</div>
+        </button>
+        <button class="role-card" onclick="selectRole('Team Kitchen')">
+          <div class="role-card-icon">👨‍🍳</div>
+          <div class="role-card-name">Team Kitchen</div>
+        </button>
+        <button class="role-card" onclick="selectRole('F&B Attendant')">
+          <div class="role-card-icon">🥂</div>
+          <div class="role-card-name">F&amp;B Attendant</div>
         </button>
       </div>
     </div>
@@ -1554,7 +1606,7 @@
   <!-- ===== LOGIN: PIN ===== -->
   <div class="screen" id="screen-pin">
     <div class="pin-screen-header">
-      <button class="pin-back-btn" onclick="document.getElementById('bio-shortcut')?.remove();go('login');">←</button>
+      <button class="pin-back-btn" onclick="document.getElementById('bio-shortcut')?.remove();go(loginScreenContext || 'login');">←</button>
       <div class="pin-role-badge" id="pin-role-badge">
         <div class="pin-role-icon" id="pin-role-icon">👔</div>
         <div>
@@ -1695,7 +1747,7 @@
         <div class="task-cat-header" style="background:linear-gradient(135deg,#7b341e,#a0522d);">
           <span style="font-size:16px;">📌</span>
           <span class="task-cat-title" style="color:white;">Follow Up — Pekerjaan Hari Ini Di Luar Tasklist</span>
-          <span class="task-cat-count" style="background:rgba(255,255,255,0.2);color:white;">7 slot</span>
+          <span class="task-cat-count" id="followup-slot-count" style="background:rgba(255,255,255,0.2);color:white;">7 slot</span>
         </div>
         <div id="followup-list">
           <!-- FU 1-7 generated by JS -->
@@ -1706,13 +1758,13 @@
       <div class="task-category" style="margin:0 16px 8px;border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow-card);" id="activity-plan-section">
         <div class="task-cat-header" style="background:linear-gradient(135deg,var(--navy),#0e2340);">
           <span style="font-size:16px;">📅</span>
-          <span class="task-cat-title" style="color:white;">Activity Plan (Follow Up diluar Tasklist) For Tomorrow</span>
+          <span class="task-cat-title" style="color:white;">Planning for Tomorrow</span>
         </div>
         <div style="padding:14px 16px;background:white;">
           <div class="task-item" id="activity-plan" data-status="note_only" style="padding:4px 0;">
             <!-- Unit Visit hanya untuk Corporate, HM tidak perlu -->
             <div id="activity-plan-hotel-section">
-              <label style="font-size:11px;font-weight:700;color:var(--gray-400);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:8px;">🏨 Unit Visit Tomorrow?</label>
+              <label style="font-size:11px;font-weight:700;color:var(--gray-400);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:8px;">🏨 Unit / Hotel Visit Tomorrow</label>
               <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;" id="activity-plan-hotel-select">
                 <button onclick="event.stopPropagation();selectActivityHotel(this,'activity-plan')" data-hotel="Verse Lite Gajah Mada" class="activity-hotel-btn">Verse Lite</button>
                 <button onclick="event.stopPropagation();selectActivityHotel(this,'activity-plan')" data-hotel="Verse Luxe Wahid Hasyim" class="activity-hotel-btn">Verse Luxe</button>
@@ -1722,7 +1774,7 @@
               <input type="hidden" id="activity-plan-hotel-val" value="">
             </div>
             <div style="margin-top:12px;">
-              <label style="font-size:11px;font-weight:700;color:var(--gray-400);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:6px;">📝 Follow Up List for Tomorrow</label>
+              <label style="font-size:11px;font-weight:700;color:var(--gray-400);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:6px;">📝 Planning for Tomorrow</label>
               <div class="task-note-wrap show" id="activity-plan-note" style="margin-top:0;">
                 <textarea class="task-note" rows="4" placeholder="Wajib diisi — tuliskan pekerjaan di luar tasklist yang direncanakan esok hari..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
               </div>
@@ -1909,6 +1961,9 @@
             <option value="Chief Engineering Corporate">Chief Engineering</option>
             <option value="EHK Corporate">EHK Corporate</option>
             <option value="CRA Corporate">CRA Corporate</option>
+            <option value="F&B Manager">F&B Manager</option>
+            <option value="Team Kitchen">Team Kitchen</option>
+            <option value="F&B Attendant">F&B Attendant</option>
             <option value="HM Verse Lite">HM Verse Lite</option>
             <option value="HM Verse Luxe">HM Verse Luxe</option>
             <option value="HM Verse Cirebon">HM Verse Cirebon</option>
@@ -2112,7 +2167,7 @@
 
   // ===== SESSION MANAGEMENT — sekali sehari =====
   function saveSessionToday(role, hotel) {
-    if (!role || role === 'COO') return; // COO tidak perlu session (pakai biometrik)
+    if (!role || role === 'COO' || role === 'CEO') return; // dashboard role tidak perlu session
     const today = new Date(Date.now() + 7*3600000).toISOString().split('T')[0];
     const session = { role, hotel, date: today };
     localStorage.setItem('team_session', JSON.stringify(session));
@@ -2561,8 +2616,13 @@
 
       // Activity plan
       const apNote = document.querySelector('#activity-plan .task-note');
+      const apHotelVal = document.getElementById('activity-plan-hotel-val');
       if (apNote && apNote.value.trim()) {
-        allItems.push({ tanggal: today, role, hotel, task_id: 'activity-plan', status: 'note_only', keterangan: apNote.value.trim(), file_urls: null });
+        let apText = apNote.value.trim();
+        if (needsUnitVisitTomorrow(role) && apHotelVal && apHotelVal.value) {
+          apText = 'Unit Visit Tomorrow: ' + apHotelVal.value + '\n' + apText;
+        }
+        allItems.push({ tanggal: today, role, hotel, task_id: 'activity-plan', status: 'note_only', keterangan: apText, file_urls: null });
       }
 
       if (allItems.length === 0) return;
@@ -2806,11 +2866,19 @@
     'Chief Engineering Corporate': '0103',
     'EHK Corporate': '0104',
     'CRA Corporate': '0105',
+    'F&B Manager': '0110',
+    'Team Kitchen': '0120',
+    'F&B Attendant': '0130',
+    'CEO': '0909',
     'COO': '1986',
     'HM Verse Lite': '1010',
     'HM Verse Luxe': '1020',
     'HM Verse Cirebon': '1030',
     'HM Oak Tree': '1040',
+    'F&B Manager': '0110',
+    'Team Kitchen': '0120',
+    'F&B Attendant': '0130',
+    'CEO': '0909',
   };
 
   // Navigation
@@ -2831,9 +2899,26 @@
 
   // Track dari mana COO dibuka
   let cooOpenedFrom = 'splash';
+  let loginScreenContext = 'login';
 
+  function openCorporateRoles() {
+    loginScreenContext = 'login';
+    go('login');
+  }
 
+  function openFBRoles() {
+    loginScreenContext = 'login-fb';
+    go('login-fb');
+  }
 
+  function openCEOLogin() {
+    loginScreenContext = 'splash';
+    currentRole = 'CEO';
+    pin = ''; updatePinDots();
+    document.getElementById('pin-role-name').textContent = 'CEO';
+    document.getElementById('pin-role-icon').textContent = '👑';
+    go('pin');
+  }
 
   // Buka COO dari bottom nav (team sudah login)
   function openCOOFromNav() {
@@ -2911,7 +2996,7 @@
         'HM Verse Cirebon': 'Verse Hotel Cirebon',
         'HM Oak Tree': 'Oak Tree Mahakam Blok M',
       };
-      const CORP_ROLES2 = ['Ops HR Manager','HR Officer','Chief Engineering Corporate','EHK Corporate','CRA Corporate','COO'];
+      const CORP_ROLES2 = ['Ops HR Manager','HR Officer','Chief Engineering Corporate','EHK Corporate','CRA Corporate','F&B Manager','Team Kitchen','F&B Attendant','COO'];
       if (hmHotelMap2[currentRole]) {
         currentHotel = hmHotelMap2[currentRole];
       } else if (CORP_ROLES2.includes(currentRole)) {
@@ -2921,11 +3006,10 @@
       }
       document.getElementById('tasklist-hotel').textContent = currentHotel;
 
-      // Sembunyikan Unit Visit untuk HM
+      // Unit Visit Tomorrow hanya untuk Team Corporate
       const apHotelSection = document.getElementById('activity-plan-hotel-section');
       if (apHotelSection) {
-        const isHM = currentRole && currentRole.startsWith('HM ');
-        apHotelSection.style.display = isHM ? 'none' : 'block';
+        apHotelSection.style.display = needsUnitVisitTomorrow(currentRole) ? 'block' : 'none';
       }
 
       // Load draft setelah DOM ready
@@ -3003,12 +3087,14 @@
   }
 
   function autoLogin() {
-    const correctPin = ROLE_PINS[currentRole] || '1234';
     if (currentRole === 'COO') {
       if (pin === COO_PIN) {
         loginAsCOO();
-      }
-      else { showToast('PIN salah!'); pin = ''; updatePinDots(); }
+      } else { showToast('PIN salah!'); pin = ''; updatePinDots(); }
+    } else if (currentRole === 'CEO') {
+      if (pin === (ROLE_PINS['CEO'] || '0909')) {
+        loginAsCEO();
+      } else { showToast('PIN salah!'); pin = ''; updatePinDots(); }
     } else {
       doLogin();
     }
@@ -3020,14 +3106,33 @@
     'Chief Engineering Corporate': '⚙️',
     'EHK Corporate': '🏨',
     'CRA Corporate': '🌐',
+    'F&B Manager': '🍽️',
+    'Team Kitchen': '👨‍🍳',
+    'F&B Attendant': '🥂',
+    'CEO': '👑',
     'COO': '🔒'
   };
 
+
+  function isCorporateTeamRole(role) {
+    return ['Ops HR Manager','HR Officer','Chief Engineering Corporate','EHK Corporate','CRA Corporate'].includes(role);
+  }
+
+  function needsUnitVisitTomorrow(role) {
+    return isCorporateTeamRole(role);
+  }
+
   function selectRole(role) {
+    loginScreenContext = ['F&B Manager','Team Kitchen','F&B Attendant'].includes(role) ? 'login-fb' : 'login';
     // Untuk COO — langsung pakai alur biometrik/PIN COO
     if (role === 'COO') {
       cooOpenedFrom = 'login';
       doLoginCOO();
+      return;
+    }
+
+    if (role === 'CEO') {
+      openCEOLogin();
       return;
     }
 
@@ -3057,6 +3162,7 @@
     }
 
     currentRole = role;
+    loginScreenContext = ['F&B Manager','Team Kitchen','F&B Attendant'].includes(role) ? 'login-fb' : (role.startsWith('HM ') ? 'splash' : 'login');
     pin = '';
     updatePinDots();
     // Update PIN screen header
@@ -3072,6 +3178,29 @@
           if (available) setTimeout(() => showBiometricShortcut(role), 400);
         }).catch(() => {});
     }
+  }
+
+  function goBackFromPin() {
+    if (currentRole === 'COO' || currentRole === 'CEO') {
+      currentRole = '';
+      pin = '';
+      updatePinDots();
+      go('splash');
+      return;
+    }
+    pin = '';
+    updatePinDots();
+    go(loginScreenContext || 'login');
+  }
+
+  function openCEOLogin() {
+    currentRole = 'CEO';
+    loginScreenContext = 'splash';
+    pin = '';
+    updatePinDots();
+    document.getElementById('pin-role-name').textContent = 'CEO';
+    document.getElementById('pin-role-icon').textContent = '👑';
+    go('pin');
   }
 
   function showBiometricShortcut(role) {
@@ -3330,7 +3459,7 @@
       'HM Verse Cirebon': 'Verse Hotel Cirebon',
       'HM Oak Tree': 'Oak Tree Mahakam Blok M',
     };
-    const CORPORATE_ROLES = ['Ops HR Manager','HR Officer','Chief Engineering Corporate','EHK Corporate','CRA Corporate','COO'];
+    const CORPORATE_ROLES = ['Ops HR Manager','HR Officer','Chief Engineering Corporate','EHK Corporate','CRA Corporate','F&B Manager','Team Kitchen','F&B Attendant','COO'];
     currentHotel = hmHotels[currentRole] || (CORPORATE_ROLES.includes(currentRole) ? 'Corporate' : '');
     // Reset taskFiles & taskFileUrls
     Object.keys(taskFiles).forEach(k => delete taskFiles[k]);
@@ -3499,7 +3628,7 @@
       'HM Verse Cirebon': 'Verse Hotel Cirebon',
       'HM Oak Tree': 'Oak Tree Mahakam Blok M',
     };
-    const CORPORATE_ROLES = ['Ops HR Manager','HR Officer','Chief Engineering Corporate','EHK Corporate','CRA Corporate','COO'];
+    const CORPORATE_ROLES = ['Ops HR Manager','HR Officer','Chief Engineering Corporate','EHK Corporate','CRA Corporate','F&B Manager','Team Kitchen','F&B Attendant','COO'];
     currentHotel = hmHotels[role] || (CORPORATE_ROLES.includes(role) ? 'Corporate' : '');
     Object.keys(taskFiles).forEach(k => delete taskFiles[k]);
     Object.keys(taskFileUrls).forEach(k => delete taskFileUrls[k]);
@@ -3515,6 +3644,26 @@
   function loginAsCOO() {
     pin = ''; updatePinDots();
     currentRole = 'COO';
+    ['nav-coo-home','nav-coo-tasklist'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.style.display = 'block';
+    });
+    go('coo');
+  }
+
+  function loginAsCEO() {
+    pin = ''; updatePinDots();
+    currentRole = 'CEO';
+    ['nav-coo-home','nav-coo-tasklist'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.style.display = 'block';
+    });
+    go('coo');
+  }
+
+  function loginAsCEO() {
+    pin = ''; updatePinDots();
+    currentRole = 'CEO';
     ['nav-coo-home','nav-coo-tasklist'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.style.display = 'block';
@@ -4007,11 +4156,11 @@
     if (apItem) {
       const hotelVal = document.getElementById('activity-plan-hotel-val');
       const apNote = apItem.querySelector('.task-note');
-      const isHMRole = currentRole && currentRole.startsWith('HM ');
+      const requireUnitVisitTomorrow = needsUnitVisitTomorrow(currentRole);
       let apError = false;
 
-      // Wajib pilih hotel — untuk Corporate (HM sudah terikat di unitnya)
-      if (!isHMRole && (!hotelVal || !hotelVal.value)) {
+      // Wajib pilih Unit Visit Tomorrow — hanya untuk Team Corporate
+      if (requireUnitVisitTomorrow && (!hotelVal || !hotelVal.value)) {
         const container = document.getElementById('activity-plan-hotel-select');
         if (container) {
           container.style.outline = '2px solid var(--red)';
@@ -4196,17 +4345,15 @@
       }
     });
 
-    // Cek Activity Plan
+    // Cek Planning for Tomorrow
     const apHotel = document.getElementById('activity-plan-hotel-val');
     const apNote = document.querySelector('#activity-plan .task-note');
-    const isHMRoleCheck = currentRole && currentRole.startsWith('HM ');
-    const isCorporateRole = !isHMRoleCheck; // semua non-HM adalah Corporate
-    // Unit Visit Tomorrow wajib untuk Corporate, HM sudah terikat di unitnya
-    if (!isHMRoleCheck && (!apHotel || !apHotel.value)) {
-      requiredItems.push('• <b>Activity Plan</b> — <i>Unit Visit Tomorrow belum dipilih</i>');
+    // Unit Visit Tomorrow wajib hanya untuk Team Corporate
+    if (needsUnitVisitTomorrow(currentRole) && (!apHotel || !apHotel.value)) {
+      requiredItems.push('• <b>Planning for Tomorrow</b> — <i>Unit Visit Tomorrow belum dipilih</i>');
     }
     if (!apNote || !apNote.value.trim()) {
-      requiredItems.push('• <b>Activity Plan</b> — <i>Follow Up List for Tomorrow belum diisi</i>');
+      requiredItems.push('• <b>Planning for Tomorrow</b> — <i>Catatan rencana besok belum diisi</i>');
     }
 
     if (requiredItems.length > 0 || optionalItems.length > 0) {
@@ -4367,10 +4514,11 @@
     const jam = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
 
     let msg = '';
-    msg += `*📋 LAPORAN KUNJUNGAN HOTEL*\n`;
+    const isFBRole = ['F&B Manager','Team Kitchen','F&B Attendant'].includes(role);
+    msg += isFBRole ? `*📊 F&B DAILY REPORT*\n` : `*📋 LAPORAN KUNJUNGAN HOTEL*\n`;
     msg += `━━━━━━━━━━━━━━━━━━━━━━\n`;
     msg += `👤 *Jabatan:* ${role}\n`;
-    msg += `🏨 *Hotel:* ${hotel}\n`;
+    msg += `🏨 *${isFBRole ? 'Hotel Visit' : 'Hotel'}:* ${hotel}\n`;
     msg += `📅 *Tanggal:* ${date}\n`;
     msg += `🕐 *Jam Kirim:* ${jam} WIB\n`;
     msg += '📊 *Progress:* ' + pct + '\n';
@@ -4410,13 +4558,18 @@
       msg += `\n📌 *FOLLOW UP:*${fuLines}\n`;
     }
 
+    const planNote = document.querySelector('#activity-plan .task-note');
+    const planText = planNote && planNote.value.trim() ? planNote.value.trim() : '';
+    if (planText) msg += `\n📝 *Planning for Tomorrow:*\n${planText}\n`;
     msg += `\n━━━━━━━━━━━━━━━━━━━━━━`;
     msg += `\n_Dikirim via Verse Hotels Report App_`;
 
-    // Copy pesan ke clipboard lalu buka group WA
-    const waUrl = currentRole && currentRole.startsWith('HM ')
-      ? 'https://chat.whatsapp.com/HLQzgxSMMO6Bvm40sIn9qP'
-      : 'https://chat.whatsapp.com/LWd1d8MrSpUC59Rea9lRT0';
+    // Routing WA per role
+    const waUrl = isFBRole
+      ? 'https://wa.me/6285888888399'
+      : (currentRole && currentRole.startsWith('HM ')
+        ? 'https://chat.whatsapp.com/HLQzgxSMMO6Bvm40sIn9qP'
+        : 'https://chat.whatsapp.com/LWd1d8MrSpUC59Rea9lRT0');
 
     const doOpenWA = () => {
       // Tampilkan modal dengan teks pesan + tombol copy
@@ -4433,7 +4586,7 @@
               t.select(); t.setSelectionRange(0,99999);
               navigator.clipboard ? navigator.clipboard.writeText(t.value).then(()=>{this.textContent='✅ Tersalin!';this.style.background='#2ecc71';}) : document.execCommand('copy');
             " style="flex:1;padding:12px;background:#25D366;color:white;border:none;border-radius:10px;font-weight:700;font-size:13px;font-family:inherit;cursor:pointer;">📋 Salin Pesan</button>
-            <button onclick="window.open('${waUrl}','_blank');" style="flex:1;padding:12px;background:#075E54;color:white;border:none;border-radius:10px;font-weight:700;font-size:13px;font-family:inherit;cursor:pointer;">💬 Buka WA Group</button>
+            <button onclick="window.open('${waUrl}','_blank');" style="flex:1;padding:12px;background:#075E54;color:white;border:none;border-radius:10px;font-weight:700;font-size:13px;font-family:inherit;cursor:pointer;">💬 Buka WhatsApp</button>
           </div>
           <button onclick="this.closest('div[style]').remove();" style="width:100%;margin-top:8px;padding:10px;background:#f0f0f0;border:none;border-radius:10px;font-weight:600;font-size:13px;font-family:inherit;cursor:pointer;">Tutup</button>
         </div>`;
@@ -8904,6 +9057,1239 @@ const ROLE_TASKS = {
   },
 };
 
+// ===== EXTENSION: F&B Department + CEO =====
+TASK_LABEL_MAP["F&B Manager"] = {"task_1": "Check Kitchen Area Lantai M", "task_2": "Check Resto Area", "task_3": "Check Breakfast Setup", "task_4": "Check Closing Breakfast", "task_5": "Check Kitchen Area Lantai M", "task_6": "Check Meeting Room Attap Utara", "task_7": "Check Meeting Room Attap Selatan", "task_8": "Check Meeting Room Attap Langit", "task_9": "Check Bar Area Lantai T", "task_10": "Check Bar Area Lobby", "task_11": "Check Clearup Koridor / Emergency  Staircase", "task_12": "Chek Total Stock Kebutuhan F&B"};
+ROLE_TASKS["F&B Manager"] = { count: 12, html: `
+        <div class="task-category">
+          <div class="task-cat-header">
+            <span style="font-size:16px;">🍽️</span>
+            <span class="task-cat-title">Check Kitchen Area Lantai M</span>
+            <span class="task-cat-count">0/1</span>
+          </div>
+          <div class="task-item" id="task_1" onclick="toggleTask('task_1')">
+            <div class="task-item-top">
+              <div class="task-number" id="task_1-num" data-orig-num="1">1</div>
+              <div style="flex:1;">
+                <span class="task-text">Check Kitchen Area Lantai M</span>
+                <div style="font-size:12px;color:var(--gray-400);margin-top:4px;line-height:1.5;">Memastikan Kitchen Area Bersih Secara Keseluruhan</div>
+              </div>
+            </div>
+            <div class="task-status-row">
+              <button class="status-btn" onclick="setStatus(event,'task_1','done')">✓ Sudah</button>
+              <button class="status-btn" onclick="setStatus(event,'task_1','not')">✗ Tidak Dikerjakan</button>
+            </div>
+            <div class="task-upload-wrap" id="task_1-upload">
+              <div class="task-upload-area" id="task_1-upload-area">
+                <input type="file" accept="image/*,.pdf,.doc,.docx" multiple onchange="handleFileUpload(this,'task_1')">
+                <span class="task-upload-icon">📎</span>
+                <div class="task-upload-text">
+                  <strong>Upload Foto / Dokumen</strong>
+                  <span>Wajib jika status Sudah</span>
+                </div>
+              </div>
+              <div class="file-preview-list" id="task_1-filelist"></div>
+            </div>
+            <div class="task-note-wrap" id="task_1-note">
+              <textarea class="task-note" rows="2" placeholder="Tambahkan keterangan bila diperlukan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="task-category">
+          <div class="task-cat-header">
+            <span style="font-size:16px;">🍽️</span>
+            <span class="task-cat-title">Check Resto Area</span>
+            <span class="task-cat-count">0/1</span>
+          </div>
+          <div class="task-item" id="task_2" onclick="toggleTask('task_2')">
+            <div class="task-item-top">
+              <div class="task-number" id="task_2-num" data-orig-num="2">2</div>
+              <div style="flex:1;">
+                <span class="task-text">Check Resto Area</span>
+                <div style="font-size:12px;color:var(--gray-400);margin-top:4px;line-height:1.5;">Memastikan Resto Area Area Bersih Secara Keseluruhan</div>
+              </div>
+            </div>
+            <div class="task-status-row">
+              <button class="status-btn" onclick="setStatus(event,'task_2','done')">✓ Sudah</button>
+              <button class="status-btn" onclick="setStatus(event,'task_2','not')">✗ Tidak Dikerjakan</button>
+            </div>
+            <div class="task-upload-wrap" id="task_2-upload">
+              <div class="task-upload-area" id="task_2-upload-area">
+                <input type="file" accept="image/*,.pdf,.doc,.docx" multiple onchange="handleFileUpload(this,'task_2')">
+                <span class="task-upload-icon">📎</span>
+                <div class="task-upload-text">
+                  <strong>Upload Foto / Dokumen</strong>
+                  <span>Wajib jika status Sudah</span>
+                </div>
+              </div>
+              <div class="file-preview-list" id="task_2-filelist"></div>
+            </div>
+            <div class="task-note-wrap" id="task_2-note">
+              <textarea class="task-note" rows="2" placeholder="Tambahkan keterangan bila diperlukan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="task-category">
+          <div class="task-cat-header">
+            <span style="font-size:16px;">🍽️</span>
+            <span class="task-cat-title">Check Breakfast Setup</span>
+            <span class="task-cat-count">0/1</span>
+          </div>
+          <div class="task-item" id="task_3" onclick="toggleTask('task_3')">
+            <div class="task-item-top">
+              <div class="task-number" id="task_3-num" data-orig-num="3">3</div>
+              <div style="flex:1;">
+                <span class="task-text">Check Breakfast Setup</span>
+                <div style="font-size:12px;color:var(--gray-400);margin-top:4px;line-height:1.5;">Memastikan semua menu Breakfast lengkap,rapih,bersih dan taste good</div>
+              </div>
+            </div>
+            <div class="task-status-row">
+              <button class="status-btn" onclick="setStatus(event,'task_3','done')">✓ Sudah</button>
+              <button class="status-btn" onclick="setStatus(event,'task_3','not')">✗ Tidak Dikerjakan</button>
+            </div>
+            <div class="task-upload-wrap" id="task_3-upload">
+              <div class="task-upload-area" id="task_3-upload-area">
+                <input type="file" accept="image/*,.pdf,.doc,.docx" multiple onchange="handleFileUpload(this,'task_3')">
+                <span class="task-upload-icon">📎</span>
+                <div class="task-upload-text">
+                  <strong>Upload Foto / Dokumen</strong>
+                  <span>Wajib jika status Sudah</span>
+                </div>
+              </div>
+              <div class="file-preview-list" id="task_3-filelist"></div>
+            </div>
+            <div class="task-note-wrap" id="task_3-note">
+              <textarea class="task-note" rows="2" placeholder="Tambahkan keterangan bila diperlukan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="task-category">
+          <div class="task-cat-header">
+            <span style="font-size:16px;">🍽️</span>
+            <span class="task-cat-title">Check Closing Breakfast</span>
+            <span class="task-cat-count">0/1</span>
+          </div>
+          <div class="task-item" id="task_4" onclick="toggleTask('task_4')">
+            <div class="task-item-top">
+              <div class="task-number" id="task_4-num" data-orig-num="4">4</div>
+              <div style="flex:1;">
+                <span class="task-text">Check Closing Breakfast</span>
+                <div style="font-size:12px;color:var(--gray-400);margin-top:4px;line-height:1.5;">Memastikan Area Resto &amp; Kitchen sudah dalam keadaan bersih dan Rapih</div>
+              </div>
+            </div>
+            <div class="task-status-row">
+              <button class="status-btn" onclick="setStatus(event,'task_4','done')">✓ Sudah</button>
+              <button class="status-btn" onclick="setStatus(event,'task_4','not')">✗ Tidak Dikerjakan</button>
+            </div>
+            <div class="task-upload-wrap" id="task_4-upload">
+              <div class="task-upload-area" id="task_4-upload-area">
+                <input type="file" accept="image/*,.pdf,.doc,.docx" multiple onchange="handleFileUpload(this,'task_4')">
+                <span class="task-upload-icon">📎</span>
+                <div class="task-upload-text">
+                  <strong>Upload Foto / Dokumen</strong>
+                  <span>Wajib jika status Sudah</span>
+                </div>
+              </div>
+              <div class="file-preview-list" id="task_4-filelist"></div>
+            </div>
+            <div class="task-note-wrap" id="task_4-note">
+              <textarea class="task-note" rows="2" placeholder="Tambahkan keterangan bila diperlukan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="task-category">
+          <div class="task-cat-header">
+            <span style="font-size:16px;">🍽️</span>
+            <span class="task-cat-title">Check Kitchen Area Lantai M</span>
+            <span class="task-cat-count">0/1</span>
+          </div>
+          <div class="task-item" id="task_5" onclick="toggleTask('task_5')">
+            <div class="task-item-top">
+              <div class="task-number" id="task_5-num" data-orig-num="5">5</div>
+              <div style="flex:1;">
+                <span class="task-text">Check Kitchen Area Lantai M</span>
+                <div style="font-size:12px;color:var(--gray-400);margin-top:4px;line-height:1.5;">Memastikan Kitchen Area Bersih Secara Keseluruhan</div>
+              </div>
+            </div>
+            <div class="task-status-row">
+              <button class="status-btn" onclick="setStatus(event,'task_5','done')">✓ Sudah</button>
+              <button class="status-btn" onclick="setStatus(event,'task_5','not')">✗ Tidak Dikerjakan</button>
+            </div>
+            <div class="task-upload-wrap" id="task_5-upload">
+              <div class="task-upload-area" id="task_5-upload-area">
+                <input type="file" accept="image/*,.pdf,.doc,.docx" multiple onchange="handleFileUpload(this,'task_5')">
+                <span class="task-upload-icon">📎</span>
+                <div class="task-upload-text">
+                  <strong>Upload Foto / Dokumen</strong>
+                  <span>Wajib jika status Sudah</span>
+                </div>
+              </div>
+              <div class="file-preview-list" id="task_5-filelist"></div>
+            </div>
+            <div class="task-note-wrap" id="task_5-note">
+              <textarea class="task-note" rows="2" placeholder="Tambahkan keterangan bila diperlukan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="task-category">
+          <div class="task-cat-header">
+            <span style="font-size:16px;">🍽️</span>
+            <span class="task-cat-title">Check Meeting Room Attap Utara</span>
+            <span class="task-cat-count">0/1</span>
+          </div>
+          <div class="task-item" id="task_6" onclick="toggleTask('task_6')">
+            <div class="task-item-top">
+              <div class="task-number" id="task_6-num" data-orig-num="6">6</div>
+              <div style="flex:1;">
+                <span class="task-text">Check Meeting Room Attap Utara</span>
+                <div style="font-size:12px;color:var(--gray-400);margin-top:4px;line-height:1.5;">Memastikan Area Bersih,Rapih tidak berantakan atau ada kerusakan</div>
+              </div>
+            </div>
+            <div class="task-status-row">
+              <button class="status-btn" onclick="setStatus(event,'task_6','done')">✓ Sudah</button>
+              <button class="status-btn" onclick="setStatus(event,'task_6','not')">✗ Tidak Dikerjakan</button>
+            </div>
+            <div class="task-upload-wrap" id="task_6-upload">
+              <div class="task-upload-area" id="task_6-upload-area">
+                <input type="file" accept="image/*,.pdf,.doc,.docx" multiple onchange="handleFileUpload(this,'task_6')">
+                <span class="task-upload-icon">📎</span>
+                <div class="task-upload-text">
+                  <strong>Upload Foto / Dokumen</strong>
+                  <span>Wajib jika status Sudah</span>
+                </div>
+              </div>
+              <div class="file-preview-list" id="task_6-filelist"></div>
+            </div>
+            <div class="task-note-wrap" id="task_6-note">
+              <textarea class="task-note" rows="2" placeholder="Tambahkan keterangan bila diperlukan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="task-category">
+          <div class="task-cat-header">
+            <span style="font-size:16px;">🍽️</span>
+            <span class="task-cat-title">Check Meeting Room Attap Selatan</span>
+            <span class="task-cat-count">0/1</span>
+          </div>
+          <div class="task-item" id="task_7" onclick="toggleTask('task_7')">
+            <div class="task-item-top">
+              <div class="task-number" id="task_7-num" data-orig-num="7">7</div>
+              <div style="flex:1;">
+                <span class="task-text">Check Meeting Room Attap Selatan</span>
+                <div style="font-size:12px;color:var(--gray-400);margin-top:4px;line-height:1.5;">Memastikan Area Bersih,Rapih tidak berantakan atau ada kerusakan</div>
+              </div>
+            </div>
+            <div class="task-status-row">
+              <button class="status-btn" onclick="setStatus(event,'task_7','done')">✓ Sudah</button>
+              <button class="status-btn" onclick="setStatus(event,'task_7','not')">✗ Tidak Dikerjakan</button>
+            </div>
+            <div class="task-upload-wrap" id="task_7-upload">
+              <div class="task-upload-area" id="task_7-upload-area">
+                <input type="file" accept="image/*,.pdf,.doc,.docx" multiple onchange="handleFileUpload(this,'task_7')">
+                <span class="task-upload-icon">📎</span>
+                <div class="task-upload-text">
+                  <strong>Upload Foto / Dokumen</strong>
+                  <span>Wajib jika status Sudah</span>
+                </div>
+              </div>
+              <div class="file-preview-list" id="task_7-filelist"></div>
+            </div>
+            <div class="task-note-wrap" id="task_7-note">
+              <textarea class="task-note" rows="2" placeholder="Tambahkan keterangan bila diperlukan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="task-category">
+          <div class="task-cat-header">
+            <span style="font-size:16px;">🍽️</span>
+            <span class="task-cat-title">Check Meeting Room Attap Langit</span>
+            <span class="task-cat-count">0/1</span>
+          </div>
+          <div class="task-item" id="task_8" onclick="toggleTask('task_8')">
+            <div class="task-item-top">
+              <div class="task-number" id="task_8-num" data-orig-num="8">8</div>
+              <div style="flex:1;">
+                <span class="task-text">Check Meeting Room Attap Langit</span>
+                <div style="font-size:12px;color:var(--gray-400);margin-top:4px;line-height:1.5;">Memastikan Area Bersih,Rapih tidak berantakan atau ada kerusakan</div>
+              </div>
+            </div>
+            <div class="task-status-row">
+              <button class="status-btn" onclick="setStatus(event,'task_8','done')">✓ Sudah</button>
+              <button class="status-btn" onclick="setStatus(event,'task_8','not')">✗ Tidak Dikerjakan</button>
+            </div>
+            <div class="task-upload-wrap" id="task_8-upload">
+              <div class="task-upload-area" id="task_8-upload-area">
+                <input type="file" accept="image/*,.pdf,.doc,.docx" multiple onchange="handleFileUpload(this,'task_8')">
+                <span class="task-upload-icon">📎</span>
+                <div class="task-upload-text">
+                  <strong>Upload Foto / Dokumen</strong>
+                  <span>Wajib jika status Sudah</span>
+                </div>
+              </div>
+              <div class="file-preview-list" id="task_8-filelist"></div>
+            </div>
+            <div class="task-note-wrap" id="task_8-note">
+              <textarea class="task-note" rows="2" placeholder="Tambahkan keterangan bila diperlukan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="task-category">
+          <div class="task-cat-header">
+            <span style="font-size:16px;">🍽️</span>
+            <span class="task-cat-title">Check Bar Area Lantai T</span>
+            <span class="task-cat-count">0/1</span>
+          </div>
+          <div class="task-item" id="task_9" onclick="toggleTask('task_9')">
+            <div class="task-item-top">
+              <div class="task-number" id="task_9-num" data-orig-num="9">9</div>
+              <div style="flex:1;">
+                <span class="task-text">Check Bar Area Lantai T</span>
+                <div style="font-size:12px;color:var(--gray-400);margin-top:4px;line-height:1.5;">Memastikan Area Bersih,Rapih tidak berantakan atau ada kerusakan</div>
+              </div>
+            </div>
+            <div class="task-status-row">
+              <button class="status-btn" onclick="setStatus(event,'task_9','done')">✓ Sudah</button>
+              <button class="status-btn" onclick="setStatus(event,'task_9','not')">✗ Tidak Dikerjakan</button>
+            </div>
+            <div class="task-upload-wrap" id="task_9-upload">
+              <div class="task-upload-area" id="task_9-upload-area">
+                <input type="file" accept="image/*,.pdf,.doc,.docx" multiple onchange="handleFileUpload(this,'task_9')">
+                <span class="task-upload-icon">📎</span>
+                <div class="task-upload-text">
+                  <strong>Upload Foto / Dokumen</strong>
+                  <span>Wajib jika status Sudah</span>
+                </div>
+              </div>
+              <div class="file-preview-list" id="task_9-filelist"></div>
+            </div>
+            <div class="task-note-wrap" id="task_9-note">
+              <textarea class="task-note" rows="2" placeholder="Tambahkan keterangan bila diperlukan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="task-category">
+          <div class="task-cat-header">
+            <span style="font-size:16px;">🍽️</span>
+            <span class="task-cat-title">Check Bar Area Lobby</span>
+            <span class="task-cat-count">0/1</span>
+          </div>
+          <div class="task-item" id="task_10" onclick="toggleTask('task_10')">
+            <div class="task-item-top">
+              <div class="task-number" id="task_10-num" data-orig-num="10">10</div>
+              <div style="flex:1;">
+                <span class="task-text">Check Bar Area Lobby</span>
+                <div style="font-size:12px;color:var(--gray-400);margin-top:4px;line-height:1.5;">Memastikan Area Bersih,Rapih tidak berantakan atau ada kerusakan</div>
+              </div>
+            </div>
+            <div class="task-status-row">
+              <button class="status-btn" onclick="setStatus(event,'task_10','done')">✓ Sudah</button>
+              <button class="status-btn" onclick="setStatus(event,'task_10','not')">✗ Tidak Dikerjakan</button>
+            </div>
+            <div class="task-upload-wrap" id="task_10-upload">
+              <div class="task-upload-area" id="task_10-upload-area">
+                <input type="file" accept="image/*,.pdf,.doc,.docx" multiple onchange="handleFileUpload(this,'task_10')">
+                <span class="task-upload-icon">📎</span>
+                <div class="task-upload-text">
+                  <strong>Upload Foto / Dokumen</strong>
+                  <span>Wajib jika status Sudah</span>
+                </div>
+              </div>
+              <div class="file-preview-list" id="task_10-filelist"></div>
+            </div>
+            <div class="task-note-wrap" id="task_10-note">
+              <textarea class="task-note" rows="2" placeholder="Tambahkan keterangan bila diperlukan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="task-category">
+          <div class="task-cat-header">
+            <span style="font-size:16px;">🍽️</span>
+            <span class="task-cat-title">Check Clearup Koridor / Emergency  Staircase</span>
+            <span class="task-cat-count">0/1</span>
+          </div>
+          <div class="task-item" id="task_11" onclick="toggleTask('task_11')">
+            <div class="task-item-top">
+              <div class="task-number" id="task_11-num" data-orig-num="11">11</div>
+              <div style="flex:1;">
+                <span class="task-text">Check Clearup Koridor / Emergency  Staircase</span>
+                <div style="font-size:12px;color:var(--gray-400);margin-top:4px;line-height:1.5;">Memastikan tidak ada Clear Up yang berada di koridor maupun tangga exit</div>
+              </div>
+            </div>
+            <div class="task-status-row">
+              <button class="status-btn" onclick="setStatus(event,'task_11','done')">✓ Sudah</button>
+              <button class="status-btn" onclick="setStatus(event,'task_11','not')">✗ Tidak Dikerjakan</button>
+            </div>
+            <div class="task-upload-wrap" id="task_11-upload">
+              <div class="task-upload-area" id="task_11-upload-area">
+                <input type="file" accept="image/*,.pdf,.doc,.docx" multiple onchange="handleFileUpload(this,'task_11')">
+                <span class="task-upload-icon">📎</span>
+                <div class="task-upload-text">
+                  <strong>Upload Foto / Dokumen</strong>
+                  <span>Wajib jika status Sudah</span>
+                </div>
+              </div>
+              <div class="file-preview-list" id="task_11-filelist"></div>
+            </div>
+            <div class="task-note-wrap" id="task_11-note">
+              <textarea class="task-note" rows="2" placeholder="Keterangan opsional..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="task-category">
+          <div class="task-cat-header">
+            <span style="font-size:16px;">🍽️</span>
+            <span class="task-cat-title">Chek Total Stock Kebutuhan F&amp;B</span>
+            <span class="task-cat-count">0/1</span>
+          </div>
+          <div class="task-item" id="task_12" onclick="toggleTask('task_12')">
+            <div class="task-item-top">
+              <div class="task-number" id="task_12-num" data-orig-num="12">12</div>
+              <div style="flex:1;">
+                <span class="task-text">Chek Total Stock Kebutuhan F&amp;B</span>
+                <div style="font-size:12px;color:var(--gray-400);margin-top:4px;line-height:1.5;">Menghitung Daily Stock Bahan Makanan F&amp;B dan Area Penyimpanan bersih dan Rapih</div>
+              </div>
+            </div>
+            <div class="task-status-row">
+              <button class="status-btn" onclick="setStatus(event,'task_12','done')">✓ Sudah</button>
+              <button class="status-btn" onclick="setStatus(event,'task_12','not')">✗ Tidak Dikerjakan</button>
+            </div>
+            <div class="task-upload-wrap" id="task_12-upload">
+              <div class="task-upload-area" id="task_12-upload-area">
+                <input type="file" accept="image/*,.pdf,.doc,.docx" multiple onchange="handleFileUpload(this,'task_12')">
+                <span class="task-upload-icon">📎</span>
+                <div class="task-upload-text">
+                  <strong>Upload Foto / Dokumen</strong>
+                  <span>Wajib jika status Sudah</span>
+                </div>
+              </div>
+              <div class="file-preview-list" id="task_12-filelist"></div>
+            </div>
+            <div class="task-note-wrap" id="task_12-note">
+              <textarea class="task-note" rows="2" placeholder="Tambahkan keterangan bila diperlukan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+            </div>
+          </div>
+        </div>` };
+TASK_LABEL_MAP["Team Kitchen"] = {"task_1": "Check Kitchen Area Lantai M", "task_2": "Check Resto Area", "task_3": "Check Breakfast Setup", "task_4": "Check Closing Breakfast", "task_5": "Check Kitchen Area Lantai M", "task_6": "Check Meeting Room Attap Utara", "task_7": "Check Meeting Room Attap Selatan", "task_8": "Check Meeting Room Attap Langit", "task_9": "Check Bar Area Lantai T", "task_10": "Check Bar Area Lobby", "task_11": "Check Clearup Koridor / Emergency  Staircase", "task_12": "Chek Total Stock Kebutuhan F&B"};
+ROLE_TASKS["Team Kitchen"] = { count: 12, html: `
+        <div class="task-category">
+          <div class="task-cat-header">
+            <span style="font-size:16px;">🍽️</span>
+            <span class="task-cat-title">Check Kitchen Area Lantai M</span>
+            <span class="task-cat-count">0/1</span>
+          </div>
+          <div class="task-item" id="task_1" onclick="toggleTask('task_1')">
+            <div class="task-item-top">
+              <div class="task-number" id="task_1-num" data-orig-num="1">1</div>
+              <div style="flex:1;">
+                <span class="task-text">Check Kitchen Area Lantai M</span>
+                <div style="font-size:12px;color:var(--gray-400);margin-top:4px;line-height:1.5;">Memastikan Kitchen Area Bersih Secara Keseluruhan</div>
+              </div>
+            </div>
+            <div class="task-status-row">
+              <button class="status-btn" onclick="setStatus(event,'task_1','done')">✓ Sudah</button>
+              <button class="status-btn" onclick="setStatus(event,'task_1','not')">✗ Tidak Dikerjakan</button>
+            </div>
+            <div class="task-upload-wrap" id="task_1-upload">
+              <div class="task-upload-area" id="task_1-upload-area">
+                <input type="file" accept="image/*,.pdf,.doc,.docx" multiple onchange="handleFileUpload(this,'task_1')">
+                <span class="task-upload-icon">📎</span>
+                <div class="task-upload-text">
+                  <strong>Upload Foto / Dokumen</strong>
+                  <span>Wajib jika status Sudah</span>
+                </div>
+              </div>
+              <div class="file-preview-list" id="task_1-filelist"></div>
+            </div>
+            <div class="task-note-wrap" id="task_1-note">
+              <textarea class="task-note" rows="2" placeholder="Tambahkan keterangan bila diperlukan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="task-category">
+          <div class="task-cat-header">
+            <span style="font-size:16px;">🍽️</span>
+            <span class="task-cat-title">Check Resto Area</span>
+            <span class="task-cat-count">0/1</span>
+          </div>
+          <div class="task-item" id="task_2" onclick="toggleTask('task_2')">
+            <div class="task-item-top">
+              <div class="task-number" id="task_2-num" data-orig-num="2">2</div>
+              <div style="flex:1;">
+                <span class="task-text">Check Resto Area</span>
+                <div style="font-size:12px;color:var(--gray-400);margin-top:4px;line-height:1.5;">Memastikan Resto Area Area Bersih Secara Keseluruhan</div>
+              </div>
+            </div>
+            <div class="task-status-row">
+              <button class="status-btn" onclick="setStatus(event,'task_2','done')">✓ Sudah</button>
+              <button class="status-btn" onclick="setStatus(event,'task_2','not')">✗ Tidak Dikerjakan</button>
+            </div>
+            <div class="task-upload-wrap" id="task_2-upload">
+              <div class="task-upload-area" id="task_2-upload-area">
+                <input type="file" accept="image/*,.pdf,.doc,.docx" multiple onchange="handleFileUpload(this,'task_2')">
+                <span class="task-upload-icon">📎</span>
+                <div class="task-upload-text">
+                  <strong>Upload Foto / Dokumen</strong>
+                  <span>Wajib jika status Sudah</span>
+                </div>
+              </div>
+              <div class="file-preview-list" id="task_2-filelist"></div>
+            </div>
+            <div class="task-note-wrap" id="task_2-note">
+              <textarea class="task-note" rows="2" placeholder="Tambahkan keterangan bila diperlukan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="task-category">
+          <div class="task-cat-header">
+            <span style="font-size:16px;">🍽️</span>
+            <span class="task-cat-title">Check Breakfast Setup</span>
+            <span class="task-cat-count">0/1</span>
+          </div>
+          <div class="task-item" id="task_3" onclick="toggleTask('task_3')">
+            <div class="task-item-top">
+              <div class="task-number" id="task_3-num" data-orig-num="3">3</div>
+              <div style="flex:1;">
+                <span class="task-text">Check Breakfast Setup</span>
+                <div style="font-size:12px;color:var(--gray-400);margin-top:4px;line-height:1.5;">Memastikan semua menu Breakfast lengkap,rapih,bersih dan taste good</div>
+              </div>
+            </div>
+            <div class="task-status-row">
+              <button class="status-btn" onclick="setStatus(event,'task_3','done')">✓ Sudah</button>
+              <button class="status-btn" onclick="setStatus(event,'task_3','not')">✗ Tidak Dikerjakan</button>
+            </div>
+            <div class="task-upload-wrap" id="task_3-upload">
+              <div class="task-upload-area" id="task_3-upload-area">
+                <input type="file" accept="image/*,.pdf,.doc,.docx" multiple onchange="handleFileUpload(this,'task_3')">
+                <span class="task-upload-icon">📎</span>
+                <div class="task-upload-text">
+                  <strong>Upload Foto / Dokumen</strong>
+                  <span>Wajib jika status Sudah</span>
+                </div>
+              </div>
+              <div class="file-preview-list" id="task_3-filelist"></div>
+            </div>
+            <div class="task-note-wrap" id="task_3-note">
+              <textarea class="task-note" rows="2" placeholder="Tambahkan keterangan bila diperlukan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="task-category">
+          <div class="task-cat-header">
+            <span style="font-size:16px;">🍽️</span>
+            <span class="task-cat-title">Check Closing Breakfast</span>
+            <span class="task-cat-count">0/1</span>
+          </div>
+          <div class="task-item" id="task_4" onclick="toggleTask('task_4')">
+            <div class="task-item-top">
+              <div class="task-number" id="task_4-num" data-orig-num="4">4</div>
+              <div style="flex:1;">
+                <span class="task-text">Check Closing Breakfast</span>
+                <div style="font-size:12px;color:var(--gray-400);margin-top:4px;line-height:1.5;">Memastikan Area Resto &amp; Kitchen sudah dalam keadaan bersih dan Rapih</div>
+              </div>
+            </div>
+            <div class="task-status-row">
+              <button class="status-btn" onclick="setStatus(event,'task_4','done')">✓ Sudah</button>
+              <button class="status-btn" onclick="setStatus(event,'task_4','not')">✗ Tidak Dikerjakan</button>
+            </div>
+            <div class="task-upload-wrap" id="task_4-upload">
+              <div class="task-upload-area" id="task_4-upload-area">
+                <input type="file" accept="image/*,.pdf,.doc,.docx" multiple onchange="handleFileUpload(this,'task_4')">
+                <span class="task-upload-icon">📎</span>
+                <div class="task-upload-text">
+                  <strong>Upload Foto / Dokumen</strong>
+                  <span>Wajib jika status Sudah</span>
+                </div>
+              </div>
+              <div class="file-preview-list" id="task_4-filelist"></div>
+            </div>
+            <div class="task-note-wrap" id="task_4-note">
+              <textarea class="task-note" rows="2" placeholder="Tambahkan keterangan bila diperlukan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="task-category">
+          <div class="task-cat-header">
+            <span style="font-size:16px;">🍽️</span>
+            <span class="task-cat-title">Check Kitchen Area Lantai M</span>
+            <span class="task-cat-count">0/1</span>
+          </div>
+          <div class="task-item" id="task_5" onclick="toggleTask('task_5')">
+            <div class="task-item-top">
+              <div class="task-number" id="task_5-num" data-orig-num="5">5</div>
+              <div style="flex:1;">
+                <span class="task-text">Check Kitchen Area Lantai M</span>
+                <div style="font-size:12px;color:var(--gray-400);margin-top:4px;line-height:1.5;">Memastikan Kitchen Area Bersih Secara Keseluruhan</div>
+              </div>
+            </div>
+            <div class="task-status-row">
+              <button class="status-btn" onclick="setStatus(event,'task_5','done')">✓ Sudah</button>
+              <button class="status-btn" onclick="setStatus(event,'task_5','not')">✗ Tidak Dikerjakan</button>
+            </div>
+            <div class="task-upload-wrap" id="task_5-upload">
+              <div class="task-upload-area" id="task_5-upload-area">
+                <input type="file" accept="image/*,.pdf,.doc,.docx" multiple onchange="handleFileUpload(this,'task_5')">
+                <span class="task-upload-icon">📎</span>
+                <div class="task-upload-text">
+                  <strong>Upload Foto / Dokumen</strong>
+                  <span>Wajib jika status Sudah</span>
+                </div>
+              </div>
+              <div class="file-preview-list" id="task_5-filelist"></div>
+            </div>
+            <div class="task-note-wrap" id="task_5-note">
+              <textarea class="task-note" rows="2" placeholder="Tambahkan keterangan bila diperlukan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="task-category">
+          <div class="task-cat-header">
+            <span style="font-size:16px;">🍽️</span>
+            <span class="task-cat-title">Check Meeting Room Attap Utara</span>
+            <span class="task-cat-count">0/1</span>
+          </div>
+          <div class="task-item" id="task_6" onclick="toggleTask('task_6')">
+            <div class="task-item-top">
+              <div class="task-number" id="task_6-num" data-orig-num="6">6</div>
+              <div style="flex:1;">
+                <span class="task-text">Check Meeting Room Attap Utara</span>
+                <div style="font-size:12px;color:var(--gray-400);margin-top:4px;line-height:1.5;">Memastikan Area Bersih,Rapih tidak berantakan atau ada kerusakan</div>
+              </div>
+            </div>
+            <div class="task-status-row">
+              <button class="status-btn" onclick="setStatus(event,'task_6','done')">✓ Sudah</button>
+              <button class="status-btn" onclick="setStatus(event,'task_6','not')">✗ Tidak Dikerjakan</button>
+            </div>
+            <div class="task-upload-wrap" id="task_6-upload">
+              <div class="task-upload-area" id="task_6-upload-area">
+                <input type="file" accept="image/*,.pdf,.doc,.docx" multiple onchange="handleFileUpload(this,'task_6')">
+                <span class="task-upload-icon">📎</span>
+                <div class="task-upload-text">
+                  <strong>Upload Foto / Dokumen</strong>
+                  <span>Wajib jika status Sudah</span>
+                </div>
+              </div>
+              <div class="file-preview-list" id="task_6-filelist"></div>
+            </div>
+            <div class="task-note-wrap" id="task_6-note">
+              <textarea class="task-note" rows="2" placeholder="Tambahkan keterangan bila diperlukan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="task-category">
+          <div class="task-cat-header">
+            <span style="font-size:16px;">🍽️</span>
+            <span class="task-cat-title">Check Meeting Room Attap Selatan</span>
+            <span class="task-cat-count">0/1</span>
+          </div>
+          <div class="task-item" id="task_7" onclick="toggleTask('task_7')">
+            <div class="task-item-top">
+              <div class="task-number" id="task_7-num" data-orig-num="7">7</div>
+              <div style="flex:1;">
+                <span class="task-text">Check Meeting Room Attap Selatan</span>
+                <div style="font-size:12px;color:var(--gray-400);margin-top:4px;line-height:1.5;">Memastikan Area Bersih,Rapih tidak berantakan atau ada kerusakan</div>
+              </div>
+            </div>
+            <div class="task-status-row">
+              <button class="status-btn" onclick="setStatus(event,'task_7','done')">✓ Sudah</button>
+              <button class="status-btn" onclick="setStatus(event,'task_7','not')">✗ Tidak Dikerjakan</button>
+            </div>
+            <div class="task-upload-wrap" id="task_7-upload">
+              <div class="task-upload-area" id="task_7-upload-area">
+                <input type="file" accept="image/*,.pdf,.doc,.docx" multiple onchange="handleFileUpload(this,'task_7')">
+                <span class="task-upload-icon">📎</span>
+                <div class="task-upload-text">
+                  <strong>Upload Foto / Dokumen</strong>
+                  <span>Wajib jika status Sudah</span>
+                </div>
+              </div>
+              <div class="file-preview-list" id="task_7-filelist"></div>
+            </div>
+            <div class="task-note-wrap" id="task_7-note">
+              <textarea class="task-note" rows="2" placeholder="Tambahkan keterangan bila diperlukan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="task-category">
+          <div class="task-cat-header">
+            <span style="font-size:16px;">🍽️</span>
+            <span class="task-cat-title">Check Meeting Room Attap Langit</span>
+            <span class="task-cat-count">0/1</span>
+          </div>
+          <div class="task-item" id="task_8" onclick="toggleTask('task_8')">
+            <div class="task-item-top">
+              <div class="task-number" id="task_8-num" data-orig-num="8">8</div>
+              <div style="flex:1;">
+                <span class="task-text">Check Meeting Room Attap Langit</span>
+                <div style="font-size:12px;color:var(--gray-400);margin-top:4px;line-height:1.5;">Memastikan Area Bersih,Rapih tidak berantakan atau ada kerusakan</div>
+              </div>
+            </div>
+            <div class="task-status-row">
+              <button class="status-btn" onclick="setStatus(event,'task_8','done')">✓ Sudah</button>
+              <button class="status-btn" onclick="setStatus(event,'task_8','not')">✗ Tidak Dikerjakan</button>
+            </div>
+            <div class="task-upload-wrap" id="task_8-upload">
+              <div class="task-upload-area" id="task_8-upload-area">
+                <input type="file" accept="image/*,.pdf,.doc,.docx" multiple onchange="handleFileUpload(this,'task_8')">
+                <span class="task-upload-icon">📎</span>
+                <div class="task-upload-text">
+                  <strong>Upload Foto / Dokumen</strong>
+                  <span>Wajib jika status Sudah</span>
+                </div>
+              </div>
+              <div class="file-preview-list" id="task_8-filelist"></div>
+            </div>
+            <div class="task-note-wrap" id="task_8-note">
+              <textarea class="task-note" rows="2" placeholder="Tambahkan keterangan bila diperlukan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="task-category">
+          <div class="task-cat-header">
+            <span style="font-size:16px;">🍽️</span>
+            <span class="task-cat-title">Check Bar Area Lantai T</span>
+            <span class="task-cat-count">0/1</span>
+          </div>
+          <div class="task-item" id="task_9" onclick="toggleTask('task_9')">
+            <div class="task-item-top">
+              <div class="task-number" id="task_9-num" data-orig-num="9">9</div>
+              <div style="flex:1;">
+                <span class="task-text">Check Bar Area Lantai T</span>
+                <div style="font-size:12px;color:var(--gray-400);margin-top:4px;line-height:1.5;">Memastikan Area Bersih,Rapih tidak berantakan atau ada kerusakan</div>
+              </div>
+            </div>
+            <div class="task-status-row">
+              <button class="status-btn" onclick="setStatus(event,'task_9','done')">✓ Sudah</button>
+              <button class="status-btn" onclick="setStatus(event,'task_9','not')">✗ Tidak Dikerjakan</button>
+            </div>
+            <div class="task-upload-wrap" id="task_9-upload">
+              <div class="task-upload-area" id="task_9-upload-area">
+                <input type="file" accept="image/*,.pdf,.doc,.docx" multiple onchange="handleFileUpload(this,'task_9')">
+                <span class="task-upload-icon">📎</span>
+                <div class="task-upload-text">
+                  <strong>Upload Foto / Dokumen</strong>
+                  <span>Wajib jika status Sudah</span>
+                </div>
+              </div>
+              <div class="file-preview-list" id="task_9-filelist"></div>
+            </div>
+            <div class="task-note-wrap" id="task_9-note">
+              <textarea class="task-note" rows="2" placeholder="Tambahkan keterangan bila diperlukan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="task-category">
+          <div class="task-cat-header">
+            <span style="font-size:16px;">🍽️</span>
+            <span class="task-cat-title">Check Bar Area Lobby</span>
+            <span class="task-cat-count">0/1</span>
+          </div>
+          <div class="task-item" id="task_10" onclick="toggleTask('task_10')">
+            <div class="task-item-top">
+              <div class="task-number" id="task_10-num" data-orig-num="10">10</div>
+              <div style="flex:1;">
+                <span class="task-text">Check Bar Area Lobby</span>
+                <div style="font-size:12px;color:var(--gray-400);margin-top:4px;line-height:1.5;">Memastikan Area Bersih,Rapih tidak berantakan atau ada kerusakan</div>
+              </div>
+            </div>
+            <div class="task-status-row">
+              <button class="status-btn" onclick="setStatus(event,'task_10','done')">✓ Sudah</button>
+              <button class="status-btn" onclick="setStatus(event,'task_10','not')">✗ Tidak Dikerjakan</button>
+            </div>
+            <div class="task-upload-wrap" id="task_10-upload">
+              <div class="task-upload-area" id="task_10-upload-area">
+                <input type="file" accept="image/*,.pdf,.doc,.docx" multiple onchange="handleFileUpload(this,'task_10')">
+                <span class="task-upload-icon">📎</span>
+                <div class="task-upload-text">
+                  <strong>Upload Foto / Dokumen</strong>
+                  <span>Wajib jika status Sudah</span>
+                </div>
+              </div>
+              <div class="file-preview-list" id="task_10-filelist"></div>
+            </div>
+            <div class="task-note-wrap" id="task_10-note">
+              <textarea class="task-note" rows="2" placeholder="Tambahkan keterangan bila diperlukan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="task-category">
+          <div class="task-cat-header">
+            <span style="font-size:16px;">🍽️</span>
+            <span class="task-cat-title">Check Clearup Koridor / Emergency  Staircase</span>
+            <span class="task-cat-count">0/1</span>
+          </div>
+          <div class="task-item" id="task_11" onclick="toggleTask('task_11')">
+            <div class="task-item-top">
+              <div class="task-number" id="task_11-num" data-orig-num="11">11</div>
+              <div style="flex:1;">
+                <span class="task-text">Check Clearup Koridor / Emergency  Staircase</span>
+                <div style="font-size:12px;color:var(--gray-400);margin-top:4px;line-height:1.5;">Memastikan tidak ada Clear Up yang berada di koridor maupun tangga exit</div>
+              </div>
+            </div>
+            <div class="task-status-row">
+              <button class="status-btn" onclick="setStatus(event,'task_11','done')">✓ Sudah</button>
+              <button class="status-btn" onclick="setStatus(event,'task_11','not')">✗ Tidak Dikerjakan</button>
+            </div>
+            <div class="task-upload-wrap" id="task_11-upload">
+              <div class="task-upload-area" id="task_11-upload-area">
+                <input type="file" accept="image/*,.pdf,.doc,.docx" multiple onchange="handleFileUpload(this,'task_11')">
+                <span class="task-upload-icon">📎</span>
+                <div class="task-upload-text">
+                  <strong>Upload Foto / Dokumen</strong>
+                  <span>Wajib jika status Sudah</span>
+                </div>
+              </div>
+              <div class="file-preview-list" id="task_11-filelist"></div>
+            </div>
+            <div class="task-note-wrap" id="task_11-note">
+              <textarea class="task-note" rows="2" placeholder="Keterangan opsional..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="task-category">
+          <div class="task-cat-header">
+            <span style="font-size:16px;">🍽️</span>
+            <span class="task-cat-title">Chek Total Stock Kebutuhan F&amp;B</span>
+            <span class="task-cat-count">0/1</span>
+          </div>
+          <div class="task-item" id="task_12" onclick="toggleTask('task_12')">
+            <div class="task-item-top">
+              <div class="task-number" id="task_12-num" data-orig-num="12">12</div>
+              <div style="flex:1;">
+                <span class="task-text">Chek Total Stock Kebutuhan F&amp;B</span>
+                <div style="font-size:12px;color:var(--gray-400);margin-top:4px;line-height:1.5;">Menghitung Daily Stock Bahan Makanan F&amp;B dan Area Penyimpanan bersih dan Rapih</div>
+              </div>
+            </div>
+            <div class="task-status-row">
+              <button class="status-btn" onclick="setStatus(event,'task_12','done')">✓ Sudah</button>
+              <button class="status-btn" onclick="setStatus(event,'task_12','not')">✗ Tidak Dikerjakan</button>
+            </div>
+            <div class="task-upload-wrap" id="task_12-upload">
+              <div class="task-upload-area" id="task_12-upload-area">
+                <input type="file" accept="image/*,.pdf,.doc,.docx" multiple onchange="handleFileUpload(this,'task_12')">
+                <span class="task-upload-icon">📎</span>
+                <div class="task-upload-text">
+                  <strong>Upload Foto / Dokumen</strong>
+                  <span>Wajib jika status Sudah</span>
+                </div>
+              </div>
+              <div class="file-preview-list" id="task_12-filelist"></div>
+            </div>
+            <div class="task-note-wrap" id="task_12-note">
+              <textarea class="task-note" rows="2" placeholder="Tambahkan keterangan bila diperlukan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+            </div>
+          </div>
+        </div>` };
+TASK_LABEL_MAP["F&B Attendant"] = {"task_1": "Check Kitchen Area Lantai M", "task_2": "Check Resto Area", "task_3": "Check Breakfast Setup", "task_4": "Check Closing Breakfast", "task_5": "Check Kitchen Area Lantai M", "task_6": "Check Meeting Room Attap Utara", "task_7": "Check Meeting Room Attap Selatan", "task_8": "Check Meeting Room Attap Langit", "task_9": "Check Bar Area Lantai T", "task_10": "Check Bar Area Lobby", "task_11": "Check Clearup Koridor / Emergency  Staircase", "task_12": "Chek Total Stock Kebutuhan F&B"};
+ROLE_TASKS["F&B Attendant"] = { count: 12, html: `
+        <div class="task-category">
+          <div class="task-cat-header">
+            <span style="font-size:16px;">🍽️</span>
+            <span class="task-cat-title">Check Kitchen Area Lantai M</span>
+            <span class="task-cat-count">0/1</span>
+          </div>
+          <div class="task-item" id="task_1" onclick="toggleTask('task_1')">
+            <div class="task-item-top">
+              <div class="task-number" id="task_1-num" data-orig-num="1">1</div>
+              <div style="flex:1;">
+                <span class="task-text">Check Kitchen Area Lantai M</span>
+                <div style="font-size:12px;color:var(--gray-400);margin-top:4px;line-height:1.5;">Memastikan Kitchen Area Bersih Secara Keseluruhan</div>
+              </div>
+            </div>
+            <div class="task-status-row">
+              <button class="status-btn" onclick="setStatus(event,'task_1','done')">✓ Sudah</button>
+              <button class="status-btn" onclick="setStatus(event,'task_1','not')">✗ Tidak Dikerjakan</button>
+            </div>
+            <div class="task-upload-wrap" id="task_1-upload">
+              <div class="task-upload-area" id="task_1-upload-area">
+                <input type="file" accept="image/*,.pdf,.doc,.docx" multiple onchange="handleFileUpload(this,'task_1')">
+                <span class="task-upload-icon">📎</span>
+                <div class="task-upload-text">
+                  <strong>Upload Foto / Dokumen</strong>
+                  <span>Wajib jika status Sudah</span>
+                </div>
+              </div>
+              <div class="file-preview-list" id="task_1-filelist"></div>
+            </div>
+            <div class="task-note-wrap" id="task_1-note">
+              <textarea class="task-note" rows="2" placeholder="Tambahkan keterangan bila diperlukan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="task-category">
+          <div class="task-cat-header">
+            <span style="font-size:16px;">🍽️</span>
+            <span class="task-cat-title">Check Resto Area</span>
+            <span class="task-cat-count">0/1</span>
+          </div>
+          <div class="task-item" id="task_2" onclick="toggleTask('task_2')">
+            <div class="task-item-top">
+              <div class="task-number" id="task_2-num" data-orig-num="2">2</div>
+              <div style="flex:1;">
+                <span class="task-text">Check Resto Area</span>
+                <div style="font-size:12px;color:var(--gray-400);margin-top:4px;line-height:1.5;">Memastikan Resto Area Area Bersih Secara Keseluruhan</div>
+              </div>
+            </div>
+            <div class="task-status-row">
+              <button class="status-btn" onclick="setStatus(event,'task_2','done')">✓ Sudah</button>
+              <button class="status-btn" onclick="setStatus(event,'task_2','not')">✗ Tidak Dikerjakan</button>
+            </div>
+            <div class="task-upload-wrap" id="task_2-upload">
+              <div class="task-upload-area" id="task_2-upload-area">
+                <input type="file" accept="image/*,.pdf,.doc,.docx" multiple onchange="handleFileUpload(this,'task_2')">
+                <span class="task-upload-icon">📎</span>
+                <div class="task-upload-text">
+                  <strong>Upload Foto / Dokumen</strong>
+                  <span>Wajib jika status Sudah</span>
+                </div>
+              </div>
+              <div class="file-preview-list" id="task_2-filelist"></div>
+            </div>
+            <div class="task-note-wrap" id="task_2-note">
+              <textarea class="task-note" rows="2" placeholder="Tambahkan keterangan bila diperlukan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="task-category">
+          <div class="task-cat-header">
+            <span style="font-size:16px;">🍽️</span>
+            <span class="task-cat-title">Check Breakfast Setup</span>
+            <span class="task-cat-count">0/1</span>
+          </div>
+          <div class="task-item" id="task_3" onclick="toggleTask('task_3')">
+            <div class="task-item-top">
+              <div class="task-number" id="task_3-num" data-orig-num="3">3</div>
+              <div style="flex:1;">
+                <span class="task-text">Check Breakfast Setup</span>
+                <div style="font-size:12px;color:var(--gray-400);margin-top:4px;line-height:1.5;">Memastikan semua menu Breakfast lengkap,rapih,bersih dan taste good</div>
+              </div>
+            </div>
+            <div class="task-status-row">
+              <button class="status-btn" onclick="setStatus(event,'task_3','done')">✓ Sudah</button>
+              <button class="status-btn" onclick="setStatus(event,'task_3','not')">✗ Tidak Dikerjakan</button>
+            </div>
+            <div class="task-upload-wrap" id="task_3-upload">
+              <div class="task-upload-area" id="task_3-upload-area">
+                <input type="file" accept="image/*,.pdf,.doc,.docx" multiple onchange="handleFileUpload(this,'task_3')">
+                <span class="task-upload-icon">📎</span>
+                <div class="task-upload-text">
+                  <strong>Upload Foto / Dokumen</strong>
+                  <span>Wajib jika status Sudah</span>
+                </div>
+              </div>
+              <div class="file-preview-list" id="task_3-filelist"></div>
+            </div>
+            <div class="task-note-wrap" id="task_3-note">
+              <textarea class="task-note" rows="2" placeholder="Tambahkan keterangan bila diperlukan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="task-category">
+          <div class="task-cat-header">
+            <span style="font-size:16px;">🍽️</span>
+            <span class="task-cat-title">Check Closing Breakfast</span>
+            <span class="task-cat-count">0/1</span>
+          </div>
+          <div class="task-item" id="task_4" onclick="toggleTask('task_4')">
+            <div class="task-item-top">
+              <div class="task-number" id="task_4-num" data-orig-num="4">4</div>
+              <div style="flex:1;">
+                <span class="task-text">Check Closing Breakfast</span>
+                <div style="font-size:12px;color:var(--gray-400);margin-top:4px;line-height:1.5;">Memastikan Area Resto &amp; Kitchen sudah dalam keadaan bersih dan Rapih</div>
+              </div>
+            </div>
+            <div class="task-status-row">
+              <button class="status-btn" onclick="setStatus(event,'task_4','done')">✓ Sudah</button>
+              <button class="status-btn" onclick="setStatus(event,'task_4','not')">✗ Tidak Dikerjakan</button>
+            </div>
+            <div class="task-upload-wrap" id="task_4-upload">
+              <div class="task-upload-area" id="task_4-upload-area">
+                <input type="file" accept="image/*,.pdf,.doc,.docx" multiple onchange="handleFileUpload(this,'task_4')">
+                <span class="task-upload-icon">📎</span>
+                <div class="task-upload-text">
+                  <strong>Upload Foto / Dokumen</strong>
+                  <span>Wajib jika status Sudah</span>
+                </div>
+              </div>
+              <div class="file-preview-list" id="task_4-filelist"></div>
+            </div>
+            <div class="task-note-wrap" id="task_4-note">
+              <textarea class="task-note" rows="2" placeholder="Tambahkan keterangan bila diperlukan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="task-category">
+          <div class="task-cat-header">
+            <span style="font-size:16px;">🍽️</span>
+            <span class="task-cat-title">Check Kitchen Area Lantai M</span>
+            <span class="task-cat-count">0/1</span>
+          </div>
+          <div class="task-item" id="task_5" onclick="toggleTask('task_5')">
+            <div class="task-item-top">
+              <div class="task-number" id="task_5-num" data-orig-num="5">5</div>
+              <div style="flex:1;">
+                <span class="task-text">Check Kitchen Area Lantai M</span>
+                <div style="font-size:12px;color:var(--gray-400);margin-top:4px;line-height:1.5;">Memastikan Kitchen Area Bersih Secara Keseluruhan</div>
+              </div>
+            </div>
+            <div class="task-status-row">
+              <button class="status-btn" onclick="setStatus(event,'task_5','done')">✓ Sudah</button>
+              <button class="status-btn" onclick="setStatus(event,'task_5','not')">✗ Tidak Dikerjakan</button>
+            </div>
+            <div class="task-upload-wrap" id="task_5-upload">
+              <div class="task-upload-area" id="task_5-upload-area">
+                <input type="file" accept="image/*,.pdf,.doc,.docx" multiple onchange="handleFileUpload(this,'task_5')">
+                <span class="task-upload-icon">📎</span>
+                <div class="task-upload-text">
+                  <strong>Upload Foto / Dokumen</strong>
+                  <span>Wajib jika status Sudah</span>
+                </div>
+              </div>
+              <div class="file-preview-list" id="task_5-filelist"></div>
+            </div>
+            <div class="task-note-wrap" id="task_5-note">
+              <textarea class="task-note" rows="2" placeholder="Tambahkan keterangan bila diperlukan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="task-category">
+          <div class="task-cat-header">
+            <span style="font-size:16px;">🍽️</span>
+            <span class="task-cat-title">Check Meeting Room Attap Utara</span>
+            <span class="task-cat-count">0/1</span>
+          </div>
+          <div class="task-item" id="task_6" onclick="toggleTask('task_6')">
+            <div class="task-item-top">
+              <div class="task-number" id="task_6-num" data-orig-num="6">6</div>
+              <div style="flex:1;">
+                <span class="task-text">Check Meeting Room Attap Utara</span>
+                <div style="font-size:12px;color:var(--gray-400);margin-top:4px;line-height:1.5;">Memastikan Area Bersih,Rapih tidak berantakan atau ada kerusakan</div>
+              </div>
+            </div>
+            <div class="task-status-row">
+              <button class="status-btn" onclick="setStatus(event,'task_6','done')">✓ Sudah</button>
+              <button class="status-btn" onclick="setStatus(event,'task_6','not')">✗ Tidak Dikerjakan</button>
+            </div>
+            <div class="task-upload-wrap" id="task_6-upload">
+              <div class="task-upload-area" id="task_6-upload-area">
+                <input type="file" accept="image/*,.pdf,.doc,.docx" multiple onchange="handleFileUpload(this,'task_6')">
+                <span class="task-upload-icon">📎</span>
+                <div class="task-upload-text">
+                  <strong>Upload Foto / Dokumen</strong>
+                  <span>Wajib jika status Sudah</span>
+                </div>
+              </div>
+              <div class="file-preview-list" id="task_6-filelist"></div>
+            </div>
+            <div class="task-note-wrap" id="task_6-note">
+              <textarea class="task-note" rows="2" placeholder="Tambahkan keterangan bila diperlukan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="task-category">
+          <div class="task-cat-header">
+            <span style="font-size:16px;">🍽️</span>
+            <span class="task-cat-title">Check Meeting Room Attap Selatan</span>
+            <span class="task-cat-count">0/1</span>
+          </div>
+          <div class="task-item" id="task_7" onclick="toggleTask('task_7')">
+            <div class="task-item-top">
+              <div class="task-number" id="task_7-num" data-orig-num="7">7</div>
+              <div style="flex:1;">
+                <span class="task-text">Check Meeting Room Attap Selatan</span>
+                <div style="font-size:12px;color:var(--gray-400);margin-top:4px;line-height:1.5;">Memastikan Area Bersih,Rapih tidak berantakan atau ada kerusakan</div>
+              </div>
+            </div>
+            <div class="task-status-row">
+              <button class="status-btn" onclick="setStatus(event,'task_7','done')">✓ Sudah</button>
+              <button class="status-btn" onclick="setStatus(event,'task_7','not')">✗ Tidak Dikerjakan</button>
+            </div>
+            <div class="task-upload-wrap" id="task_7-upload">
+              <div class="task-upload-area" id="task_7-upload-area">
+                <input type="file" accept="image/*,.pdf,.doc,.docx" multiple onchange="handleFileUpload(this,'task_7')">
+                <span class="task-upload-icon">📎</span>
+                <div class="task-upload-text">
+                  <strong>Upload Foto / Dokumen</strong>
+                  <span>Wajib jika status Sudah</span>
+                </div>
+              </div>
+              <div class="file-preview-list" id="task_7-filelist"></div>
+            </div>
+            <div class="task-note-wrap" id="task_7-note">
+              <textarea class="task-note" rows="2" placeholder="Tambahkan keterangan bila diperlukan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="task-category">
+          <div class="task-cat-header">
+            <span style="font-size:16px;">🍽️</span>
+            <span class="task-cat-title">Check Meeting Room Attap Langit</span>
+            <span class="task-cat-count">0/1</span>
+          </div>
+          <div class="task-item" id="task_8" onclick="toggleTask('task_8')">
+            <div class="task-item-top">
+              <div class="task-number" id="task_8-num" data-orig-num="8">8</div>
+              <div style="flex:1;">
+                <span class="task-text">Check Meeting Room Attap Langit</span>
+                <div style="font-size:12px;color:var(--gray-400);margin-top:4px;line-height:1.5;">Memastikan Area Bersih,Rapih tidak berantakan atau ada kerusakan</div>
+              </div>
+            </div>
+            <div class="task-status-row">
+              <button class="status-btn" onclick="setStatus(event,'task_8','done')">✓ Sudah</button>
+              <button class="status-btn" onclick="setStatus(event,'task_8','not')">✗ Tidak Dikerjakan</button>
+            </div>
+            <div class="task-upload-wrap" id="task_8-upload">
+              <div class="task-upload-area" id="task_8-upload-area">
+                <input type="file" accept="image/*,.pdf,.doc,.docx" multiple onchange="handleFileUpload(this,'task_8')">
+                <span class="task-upload-icon">📎</span>
+                <div class="task-upload-text">
+                  <strong>Upload Foto / Dokumen</strong>
+                  <span>Wajib jika status Sudah</span>
+                </div>
+              </div>
+              <div class="file-preview-list" id="task_8-filelist"></div>
+            </div>
+            <div class="task-note-wrap" id="task_8-note">
+              <textarea class="task-note" rows="2" placeholder="Tambahkan keterangan bila diperlukan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="task-category">
+          <div class="task-cat-header">
+            <span style="font-size:16px;">🍽️</span>
+            <span class="task-cat-title">Check Bar Area Lantai T</span>
+            <span class="task-cat-count">0/1</span>
+          </div>
+          <div class="task-item" id="task_9" onclick="toggleTask('task_9')">
+            <div class="task-item-top">
+              <div class="task-number" id="task_9-num" data-orig-num="9">9</div>
+              <div style="flex:1;">
+                <span class="task-text">Check Bar Area Lantai T</span>
+                <div style="font-size:12px;color:var(--gray-400);margin-top:4px;line-height:1.5;">Memastikan Area Bersih,Rapih tidak berantakan atau ada kerusakan</div>
+              </div>
+            </div>
+            <div class="task-status-row">
+              <button class="status-btn" onclick="setStatus(event,'task_9','done')">✓ Sudah</button>
+              <button class="status-btn" onclick="setStatus(event,'task_9','not')">✗ Tidak Dikerjakan</button>
+            </div>
+            <div class="task-upload-wrap" id="task_9-upload">
+              <div class="task-upload-area" id="task_9-upload-area">
+                <input type="file" accept="image/*,.pdf,.doc,.docx" multiple onchange="handleFileUpload(this,'task_9')">
+                <span class="task-upload-icon">📎</span>
+                <div class="task-upload-text">
+                  <strong>Upload Foto / Dokumen</strong>
+                  <span>Wajib jika status Sudah</span>
+                </div>
+              </div>
+              <div class="file-preview-list" id="task_9-filelist"></div>
+            </div>
+            <div class="task-note-wrap" id="task_9-note">
+              <textarea class="task-note" rows="2" placeholder="Tambahkan keterangan bila diperlukan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="task-category">
+          <div class="task-cat-header">
+            <span style="font-size:16px;">🍽️</span>
+            <span class="task-cat-title">Check Bar Area Lobby</span>
+            <span class="task-cat-count">0/1</span>
+          </div>
+          <div class="task-item" id="task_10" onclick="toggleTask('task_10')">
+            <div class="task-item-top">
+              <div class="task-number" id="task_10-num" data-orig-num="10">10</div>
+              <div style="flex:1;">
+                <span class="task-text">Check Bar Area Lobby</span>
+                <div style="font-size:12px;color:var(--gray-400);margin-top:4px;line-height:1.5;">Memastikan Area Bersih,Rapih tidak berantakan atau ada kerusakan</div>
+              </div>
+            </div>
+            <div class="task-status-row">
+              <button class="status-btn" onclick="setStatus(event,'task_10','done')">✓ Sudah</button>
+              <button class="status-btn" onclick="setStatus(event,'task_10','not')">✗ Tidak Dikerjakan</button>
+            </div>
+            <div class="task-upload-wrap" id="task_10-upload">
+              <div class="task-upload-area" id="task_10-upload-area">
+                <input type="file" accept="image/*,.pdf,.doc,.docx" multiple onchange="handleFileUpload(this,'task_10')">
+                <span class="task-upload-icon">📎</span>
+                <div class="task-upload-text">
+                  <strong>Upload Foto / Dokumen</strong>
+                  <span>Wajib jika status Sudah</span>
+                </div>
+              </div>
+              <div class="file-preview-list" id="task_10-filelist"></div>
+            </div>
+            <div class="task-note-wrap" id="task_10-note">
+              <textarea class="task-note" rows="2" placeholder="Tambahkan keterangan bila diperlukan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="task-category">
+          <div class="task-cat-header">
+            <span style="font-size:16px;">🍽️</span>
+            <span class="task-cat-title">Check Clearup Koridor / Emergency  Staircase</span>
+            <span class="task-cat-count">0/1</span>
+          </div>
+          <div class="task-item" id="task_11" onclick="toggleTask('task_11')">
+            <div class="task-item-top">
+              <div class="task-number" id="task_11-num" data-orig-num="11">11</div>
+              <div style="flex:1;">
+                <span class="task-text">Check Clearup Koridor / Emergency  Staircase</span>
+                <div style="font-size:12px;color:var(--gray-400);margin-top:4px;line-height:1.5;">Memastikan tidak ada Clear Up yang berada di koridor maupun tangga exit</div>
+              </div>
+            </div>
+            <div class="task-status-row">
+              <button class="status-btn" onclick="setStatus(event,'task_11','done')">✓ Sudah</button>
+              <button class="status-btn" onclick="setStatus(event,'task_11','not')">✗ Tidak Dikerjakan</button>
+            </div>
+            <div class="task-upload-wrap" id="task_11-upload">
+              <div class="task-upload-area" id="task_11-upload-area">
+                <input type="file" accept="image/*,.pdf,.doc,.docx" multiple onchange="handleFileUpload(this,'task_11')">
+                <span class="task-upload-icon">📎</span>
+                <div class="task-upload-text">
+                  <strong>Upload Foto / Dokumen</strong>
+                  <span>Wajib jika status Sudah</span>
+                </div>
+              </div>
+              <div class="file-preview-list" id="task_11-filelist"></div>
+            </div>
+            <div class="task-note-wrap" id="task_11-note">
+              <textarea class="task-note" rows="2" placeholder="Keterangan opsional..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="task-category">
+          <div class="task-cat-header">
+            <span style="font-size:16px;">🍽️</span>
+            <span class="task-cat-title">Chek Total Stock Kebutuhan F&amp;B</span>
+            <span class="task-cat-count">0/1</span>
+          </div>
+          <div class="task-item" id="task_12" onclick="toggleTask('task_12')">
+            <div class="task-item-top">
+              <div class="task-number" id="task_12-num" data-orig-num="12">12</div>
+              <div style="flex:1;">
+                <span class="task-text">Chek Total Stock Kebutuhan F&amp;B</span>
+                <div style="font-size:12px;color:var(--gray-400);margin-top:4px;line-height:1.5;">Menghitung Daily Stock Bahan Makanan F&amp;B dan Area Penyimpanan bersih dan Rapih</div>
+              </div>
+            </div>
+            <div class="task-status-row">
+              <button class="status-btn" onclick="setStatus(event,'task_12','done')">✓ Sudah</button>
+              <button class="status-btn" onclick="setStatus(event,'task_12','not')">✗ Tidak Dikerjakan</button>
+            </div>
+            <div class="task-upload-wrap" id="task_12-upload">
+              <div class="task-upload-area" id="task_12-upload-area">
+                <input type="file" accept="image/*,.pdf,.doc,.docx" multiple onchange="handleFileUpload(this,'task_12')">
+                <span class="task-upload-icon">📎</span>
+                <div class="task-upload-text">
+                  <strong>Upload Foto / Dokumen</strong>
+                  <span>Wajib jika status Sudah</span>
+                </div>
+              </div>
+              <div class="file-preview-list" id="task_12-filelist"></div>
+            </div>
+            <div class="task-note-wrap" id="task_12-note">
+              <textarea class="task-note" rows="2" placeholder="Tambahkan keterangan bila diperlukan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+            </div>
+          </div>
+        </div>` };
+window.FB_DETAIL_MAP = {"F&B Manager": {"task_1": "Memastikan Kitchen Area Bersih Secara Keseluruhan", "task_2": "Memastikan Resto Area Area Bersih Secara Keseluruhan", "task_3": "Memastikan semua menu Breakfast lengkap,rapih,bersih dan taste good", "task_4": "Memastikan Area Resto & Kitchen sudah dalam keadaan bersih dan Rapih", "task_5": "Memastikan Kitchen Area Bersih Secara Keseluruhan", "task_6": "Memastikan Area Bersih,Rapih tidak berantakan atau ada kerusakan", "task_7": "Memastikan Area Bersih,Rapih tidak berantakan atau ada kerusakan", "task_8": "Memastikan Area Bersih,Rapih tidak berantakan atau ada kerusakan", "task_9": "Memastikan Area Bersih,Rapih tidak berantakan atau ada kerusakan", "task_10": "Memastikan Area Bersih,Rapih tidak berantakan atau ada kerusakan", "task_11": "Memastikan tidak ada Clear Up yang berada di koridor maupun tangga exit", "task_12": "Menghitung Daily Stock Bahan Makanan F&B dan Area Penyimpanan bersih dan Rapih"}, "Team Kitchen": {"task_1": "Memastikan Kitchen Area Bersih Secara Keseluruhan", "task_2": "Memastikan Resto Area Area Bersih Secara Keseluruhan", "task_3": "Memastikan semua menu Breakfast lengkap,rapih,bersih dan taste good", "task_4": "Memastikan Area Resto & Kitchen sudah dalam keadaan bersih dan Rapih", "task_5": "Memastikan Kitchen Area Bersih Secara Keseluruhan", "task_6": "Memastikan Area Bersih,Rapih tidak berantakan atau ada kerusakan", "task_7": "Memastikan Area Bersih,Rapih tidak berantakan atau ada kerusakan", "task_8": "Memastikan Area Bersih,Rapih tidak berantakan atau ada kerusakan", "task_9": "Memastikan Area Bersih,Rapih tidak berantakan atau ada kerusakan", "task_10": "Memastikan Area Bersih,Rapih tidak berantakan atau ada kerusakan", "task_11": "Memastikan tidak ada Clear Up yang berada di koridor maupun tangga exit", "task_12": "Menghitung Daily Stock Bahan Makanan F&B dan Area Penyimpanan bersih dan Rapih"}, "F&B Attendant": {"task_1": "Memastikan Kitchen Area Bersih Secara Keseluruhan", "task_2": "Memastikan Resto Area Area Bersih Secara Keseluruhan", "task_3": "Memastikan semua menu Breakfast lengkap,rapih,bersih dan taste good", "task_4": "Memastikan Area Resto & Kitchen sudah dalam keadaan bersih dan Rapih", "task_5": "Memastikan Kitchen Area Bersih Secara Keseluruhan", "task_6": "Memastikan Area Bersih,Rapih tidak berantakan atau ada kerusakan", "task_7": "Memastikan Area Bersih,Rapih tidak berantakan atau ada kerusakan", "task_8": "Memastikan Area Bersih,Rapih tidak berantakan atau ada kerusakan", "task_9": "Memastikan Area Bersih,Rapih tidak berantakan atau ada kerusakan", "task_10": "Memastikan Area Bersih,Rapih tidak berantakan atau ada kerusakan", "task_11": "Memastikan tidak ada Clear Up yang berada di koridor maupun tangga exit", "task_12": "Menghitung Daily Stock Bahan Makanan F&B dan Area Penyimpanan bersih dan Rapih"}};
+
 
   // Render tasklist for current role
   // Simpan state tasklist
@@ -8932,11 +10318,12 @@ const ROLE_TASKS = {
       if (chipRow) chipRow.style.display = 'none';
     } else {
       // Corporate roles — set hotel ke 'Corporate', sembunyikan chip
-      const CORP_ROLES3 = ['Ops HR Manager','HR Officer','Chief Engineering Corporate','EHK Corporate','CRA Corporate','COO'];
+      const CORP_ROLES3 = ['Ops HR Manager','HR Officer','Chief Engineering Corporate','EHK Corporate','CRA Corporate','F&B Manager','Team Kitchen','F&B Attendant','COO'];
       if (CORP_ROLES3.includes(role)) {
-        currentHotel = 'Corporate';
+        const activeHotelBtn = document.querySelector('.hotel-chip.active');
+        currentHotel = activeHotelBtn ? activeHotelBtn.textContent.trim() : 'Verse Lite Gajah Mada';
         const hotelEl = document.getElementById('tasklist-hotel');
-        if (hotelEl) hotelEl.textContent = 'Corporate';
+        if (hotelEl) hotelEl.textContent = currentHotel;
       }
       const chipRow = document.querySelector('.hotel-chips-row');
       if (chipRow) chipRow.style.display = '';
@@ -8965,7 +10352,10 @@ const ROLE_TASKS = {
 
     // Render follow up slots
     let fuHtml = '';
-    for (let i = 1; i <= 7; i++) {
+    const fuSlots = ['F&B Manager','Team Kitchen','F&B Attendant'].includes(role) ? 3 : 7;
+    const fuCountEl = document.getElementById('followup-slot-count');
+    if (fuCountEl) fuCountEl.textContent = fuSlots + ' slot';
+    for (let i = 1; i <= fuSlots; i++) {
       fuHtml += `
         <div class="task-item" id="fu${i}">
           <div class="task-item-top">
@@ -9079,6 +10469,9 @@ const ROLE_TASKS = {
       {name:'Chief Engineering Corporate', icon:'⚙️'},
       {name:'EHK Corporate', icon:'🛏️'},
       {name:'CRA Corporate', icon:'🌐'},
+      {name:'F&B Manager', icon:'🍽️'},
+      {name:'Team Kitchen', icon:'👨‍🍳'},
+      {name:'F&B Attendant', icon:'🥂'},
       {name:'HM Verse Lite', icon:'🏨'},
       {name:'HM Verse Luxe', icon:'🏨'},
       {name:'HM Verse Cirebon', icon:'🏨'},
@@ -9205,7 +10598,7 @@ const ROLE_TASKS = {
     const corpRoleList = roles.filter(r => !r.name.startsWith('HM '));
     let corpSectionHtml = `<div class="hotel-report-card" style="margin-top:12px;">
       <div class="hotel-report-header">
-        <h3>🏢 Tim Corporate</h3>
+        <h3>🏢 Tim Corporate & F&B Department</h3>
         <span>${submittedReports.filter(r=>r.hotel==='Corporate').length}/${corpRoleList.length} submit</span>
       </div>`;
     corpRoleList.forEach(role => {
@@ -9250,7 +10643,7 @@ const ROLE_TASKS = {
 
   // ===== TEAM LOCATION TRACKING =====
   async function saveTeamLocation() {
-    if (!currentRole || currentRole === 'COO') return; // COO tidak perlu simpan lokasi
+    if (!currentRole || currentRole === 'COO' || currentRole === 'CEO') return; // dashboard role tidak perlu simpan lokasi
     if (!navigator.geolocation) return;
 
     navigator.geolocation.getCurrentPosition(async (pos) => {
@@ -9363,6 +10756,9 @@ const ROLE_TASKS = {
         {name:'Chief Engineering Corporate', icon:'⚙️', hotel:'Corporate', taskKey:'CE Corporate'},
         {name:'EHK Corporate', icon:'🛏️', hotel:'Corporate', taskKey:'EHK Corporate'},
         {name:'CRA Corporate', icon:'🌐', hotel:'Corporate', taskKey:'CRA Corporate'},
+        {name:'F&B Manager', icon:'🍽️', hotel:'Corporate', taskKey:'F&B Manager'},
+        {name:'Team Kitchen', icon:'👨‍🍳', hotel:'Corporate', taskKey:'Team Kitchen'},
+        {name:'F&B Attendant', icon:'🥂', hotel:'Corporate', taskKey:'F&B Attendant'},
         {name:'HM Verse Lite', icon:'🏨', hotel:'Verse Lite Gajah Mada', taskKey:'HM Verse Lite'},
         {name:'HM Verse Luxe', icon:'🏨', hotel:'Verse Luxe Wahid Hasyim', taskKey:'HM Verse Luxe'},
         {name:'HM Verse Cirebon', icon:'🏨', hotel:'Verse Hotel Cirebon', taskKey:'HM Verse Cirebon'},
@@ -9463,7 +10859,7 @@ const ROLE_TASKS = {
     // Simpan state untuk export PDF
     window._detailRole = roleName;
     window._detailHotel = hotelName;
-    window._detailTanggal = tanggalParam || null;
+    window._detailTanggal = null;
     document.getElementById('detail-title').textContent = roleName.replace(' Corporate','');
     document.getElementById('detail-subtitle').textContent = (hotelName === 'Corporate' ? 'Tim Corporate' : hotelName) + ' · 🔴 Live';
     document.getElementById('detail-content').innerHTML = '<div style="text-align:center;padding:40px 0;color:var(--gray-400);"><div style="font-size:40px;">⏳</div><p style="font-size:14px;font-weight:600;margin-top:12px;">Memuat progress live...</p></div>';
@@ -9511,7 +10907,7 @@ const ROLE_TASKS = {
       const roleTaskKey = {
         'Ops HR Manager': 'Ops HR Manager', 'HR Officer': 'HR Officer',
         'Chief Engineering Corporate': 'CE Corporate',
-        'EHK Corporate': 'EHK Corporate', 'CRA Corporate': 'CRA Corporate',
+        'EHK Corporate': 'EHK Corporate', 'CRA Corporate': 'CRA Corporate', 'F&B Manager': 'F&B Manager', 'Team Kitchen': 'Team Kitchen', 'F&B Attendant': 'F&B Attendant',
         'HM Verse Lite': 'HM Verse Lite', 'HM Verse Luxe': 'HM Verse Luxe',
         'HM Verse Cirebon': 'HM Verse Cirebon', 'HM Oak Tree': 'HM Oak Tree',
       };
@@ -9902,7 +11298,7 @@ const ROLE_TASKS = {
       const roleIcons = {
         'Ops HR Manager': '👔', 'HR Officer': '🧑‍💼',
         'Chief Engineering Corporate': '⚙️',
-        'EHK Corporate': '🛏️', 'CRA Corporate': '🌐'
+        'EHK Corporate': '🛏️', 'CRA Corporate': '🌐', 'F&B Manager': '🍽️', 'Team Kitchen': '👨‍🍳', 'F&B Attendant': '🥂'
       };
 
       Object.entries(byHotel).forEach(([hotel, reports]) => {
@@ -10089,7 +11485,7 @@ const ROLE_TASKS = {
         const _roleTaskKey2 = {
           'Ops HR Manager': 'Ops HR Manager', 'HR Officer': 'HR Officer',
           'Chief Engineering Corporate': 'CE Corporate',
-          'EHK Corporate': 'EHK Corporate', 'CRA Corporate': 'CRA Corporate',
+          'EHK Corporate': 'EHK Corporate', 'CRA Corporate': 'CRA Corporate', 'F&B Manager': 'F&B Manager', 'Team Kitchen': 'Team Kitchen', 'F&B Attendant': 'F&B Attendant',
           'HM Verse Lite': 'HM Verse Lite', 'HM Verse Luxe': 'HM Verse Luxe',
           'HM Verse Cirebon': 'HM Verse Cirebon', 'HM Oak Tree': 'HM Oak Tree',
         };
@@ -10226,7 +11622,7 @@ const ROLE_TASKS = {
     }
   }
 
-  // Select hotel di Activity Plan
+  // Select hotel di Planning for Tomorrow
   function selectActivityHotel(btn, taskId) {
     const container = document.getElementById(taskId + '-hotel-select');
     if (!container) return;
@@ -10290,7 +11686,7 @@ const ROLE_TASKS = {
             'HM Verse Cirebon': 23, 'HM Oak Tree': 23,
             'Ops HR Manager': 15, 'HR Officer': 15,
             'Chief Engineering Corporate': 9,
-            'EHK Corporate': 9, 'CRA Corporate': 9
+            'EHK Corporate': 9, 'CRA Corporate': 9, 'F&B Manager': 12, 'Team Kitchen': 12, 'F&B Attendant': 12
           };
           total = roleTotals[currentRole] || 19;
           drafts.forEach(d => {
