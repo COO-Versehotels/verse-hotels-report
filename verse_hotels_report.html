@@ -1915,6 +1915,9 @@
         <h2 style="color:white;">Arsip Laporan</h2>
         <p style="color:rgba(255,255,255,0.5);">Riwayat laporan harian</p>
       </div>
+      <div class="topbar-right">
+        <span style="font-size:20px;cursor:pointer;color:#ffd27a;" onclick="exportArsipPDF()" title="Export PDF Konsolidasi (sesuai tanggal filter)">📄</span>
+      </div>
     </div>
 
     <div class="scroll-area">
@@ -1952,7 +1955,7 @@
       <!-- Panel Per Role -->
       <div id="panel-perrole" style="display:none;">
         <div style="padding:12px 16px 8px;display:flex;gap:8px;align-items:center;">
-          <select id="pdf-role-select" id="role-filter-select"
+          <select id="role-filter-select"
             style="flex:1;padding:10px 14px;border:1.5px solid var(--gray-200);border-radius:10px;font-family:inherit;font-size:13px;color:var(--gray-800);background:var(--white);"
             onchange="loadRoleSummary()">
             <option value="">Pilih Role...</option>
@@ -2016,7 +2019,7 @@
         <p style="color:rgba(255,255,255,0.5);" id="coo-date">Verse Group Hotels</p>
       </div>
       <div class="topbar-right">
-        <span style="font-size:20px;cursor:pointer;color:var(--gold);" onclick="showToast('Export PDF segera hadir!')">📄</span>
+        <span style="font-size:20px;cursor:pointer;color:var(--gold);" onclick="exportDashboardPDF()" title="Export PDF Konsolidasi">📄</span>
       </div>
     </div>
 
@@ -2614,18 +2617,72 @@
         allItems.push({ tanggal: today, role, hotel, task_id: taskId, status, keterangan, file_urls: fileUrls });
       });
 
-      // Activity plan
+      // Activity plan — pecah jadi 2 entri terpisah supaya label di detail view jelas
+      // dan tidak lagi tampil "Task activity-plan" generic
       const apNote = document.querySelector('#activity-plan .task-note');
       const apHotelVal = document.getElementById('activity-plan-hotel-val');
+
+      // 1. Unit Visit Tomorrow — HANYA untuk Corporate role
+      if (needsUnitVisitTomorrow(role) && apHotelVal && apHotelVal.value) {
+        allItems.push({
+          tanggal: today, role, hotel,
+          task_id: 'unit-visit-tomorrow',
+          status: 'note_only',
+          keterangan: apHotelVal.value,
+          file_urls: null
+        });
+      }
+
+      // 2. Planning for Tomorrow — untuk SEMUA role (Corporate & HM)
       if (apNote && apNote.value.trim()) {
-        let apText = apNote.value.trim();
-        if (needsUnitVisitTomorrow(role) && apHotelVal && apHotelVal.value) {
-          apText = 'Unit Visit Tomorrow: ' + apHotelVal.value + '\n' + apText;
-        }
-        allItems.push({ tanggal: today, role, hotel, task_id: 'activity-plan', status: 'note_only', keterangan: apText, file_urls: null });
+        allItems.push({
+          tanggal: today, role, hotel,
+          task_id: 'planning-tomorrow',
+          status: 'note_only',
+          keterangan: apNote.value.trim(),
+          file_urls: null
+        });
       }
 
       if (allItems.length === 0) return;
+
+      // B2: Sebelum save ke laporan_detail, merge dengan data dari draft_tasklist
+      // supaya file/keterangan dari session sebelumnya tidak hilang, dan task yang
+      // tidak ter-render di DOM saat submit juga tetap tersimpan.
+      try {
+        const draftRes = await fetch(
+          SUPA_URL + '/rest/v1/draft_tasklist?tanggal=eq.' + today +
+          '&role=eq.' + encodeURIComponent(role) +
+          '&hotel=eq.' + encodeURIComponent(hotel) + '&select=*',
+          { headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY } }
+        );
+        const draftData = draftRes.ok ? await draftRes.json() : [];
+        if (draftData && draftData.length > 0) {
+          const draftMap = {};
+          draftData.forEach(d => { if (d.task_id) draftMap[d.task_id] = d; });
+          // Merge: kalau draft punya file_urls/keterangan lebih lengkap, pakai dari draft
+          allItems.forEach(item => {
+            const d = draftMap[item.task_id];
+            if (!d) return;
+            if (!item.file_urls && d.file_urls) item.file_urls = d.file_urls;
+            if (!item.keterangan && d.keterangan) item.keterangan = d.keterangan;
+          });
+          // Tambahkan task yang hanya ada di draft (yang tidak dirender di DOM saat submit)
+          const existingIds = new Set(allItems.map(i => i.task_id));
+          draftData.forEach(d => {
+            if (!d.task_id || existingIds.has(d.task_id)) return;
+            if (!d.status) return;
+            allItems.push({
+              tanggal: today, role, hotel,
+              task_id: d.task_id,
+              status: d.status,
+              keterangan: d.keterangan || null,
+              file_urls: d.file_urls || null
+            });
+          });
+          console.log('🔄 Merged from draft_tasklist:', draftData.length, 'draft rows');
+        }
+      } catch(e) { console.warn('Draft merge failed (non-fatal):', e); }
 
       // Simpan semua ke laporan_detail (batch upsert)
       for (const item of allItems) {
@@ -3000,7 +3057,14 @@
       if (hmHotelMap2[currentRole]) {
         currentHotel = hmHotelMap2[currentRole];
       } else if (CORP_ROLES2.includes(currentRole)) {
-        currentHotel = 'Corporate';
+        // Corporate roles: default ke hotel dari chip aktif (bukan "Corporate")
+        // supaya WA report dan laporan detail tampil unit yang dikunjungi, bukan literal "Corporate"
+        const activeChip = document.querySelector('.hotel-chip.active');
+        if (activeChip && activeChip.dataset.hotel) {
+          currentHotel = activeChip.dataset.hotel;
+        } else if (!currentHotel || currentHotel === 'Corporate') {
+          currentHotel = 'Verse Lite Gajah Mada'; // default unit pertama
+        }
       } else if (!currentHotel) {
         currentHotel = 'Verse Lite Gajah Mada';
       }
@@ -3337,6 +3401,151 @@
       if (win) { win.document.write(html); win.document.close(); showToast('✅ PDF siap — klik Print!'); }
       else showToast('❌ Popup diblokir — izinkan popup di browser');
     } catch(e) { console.error(e); showToast('❌ Gagal: ' + e.message); }
+  }
+
+  // ===== EXPORT DASHBOARD PDF KONSOLIDASI =====
+  // Konsolidasi semua role untuk tanggal tertentu (default: hari ini)
+  async function exportDashboardPDF(tanggalParam) {
+    showToast('⏳ Menyiapkan laporan konsolidasi...');
+    try {
+      const targetDate = tanggalParam || new Date(Date.now() + 7*3600000).toISOString().split('T')[0];
+      const dateLabel = new Date(targetDate + 'T00:00:00').toLocaleDateString('id-ID',
+        {weekday:'long', day:'numeric', month:'long', year:'numeric'});
+
+      // Ambil semua laporan untuk tanggal ini (coba arsip dulu, fallback laporan)
+      const fetchAll = async (table) => {
+        const r = await fetch(SUPA_URL + '/rest/v1/' + table + '?tanggal=eq.' + targetDate + '&select=*&order=role.asc',
+          { headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY } });
+        return r.ok ? await r.json() : [];
+      };
+      let laporanAll = await fetchAll('arsip');
+      if (!laporanAll || laporanAll.length === 0) laporanAll = await fetchAll('laporan');
+
+      // Kalau tetap kosong, pakai draft_tasklist untuk agregasi live (hari ini)
+      const isLive = !tanggalParam;
+      if ((!laporanAll || laporanAll.length === 0) && isLive) {
+        const r = await fetch(SUPA_URL + '/rest/v1/draft_tasklist?tanggal=eq.' + targetDate + '&select=*',
+          { headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY } });
+        const drafts = r.ok ? await r.json() : [];
+        // Group by role+hotel untuk hitung progress live
+        const grouped = {};
+        drafts.forEach(d => {
+          const key = (d.role || '') + '|' + (d.hotel || '');
+          if (!grouped[key]) grouped[key] = { role: d.role, hotel: d.hotel, tanggal: targetDate, task_done: 0, task_total: 0, task_not: 0, fu_count: 0, file_count: 0, pct: 0, submitted_at: null };
+          grouped[key].task_total++;
+          if (d.status === 'done') grouped[key].task_done++;
+          if (d.status === 'not') grouped[key].task_not++;
+          if (String(d.task_id || '').startsWith('fu')) grouped[key].fu_count++;
+          if (d.file_urls) { try { grouped[key].file_count += (JSON.parse(d.file_urls) || []).length; } catch(e){} }
+        });
+        laporanAll = Object.values(grouped).map(g => {
+          g.pct = g.task_total ? Math.round(g.task_done / g.task_total * 100) : 0;
+          return g;
+        });
+      }
+
+      if (!laporanAll || laporanAll.length === 0) {
+        showToast('❌ Belum ada laporan untuk tanggal ini');
+        return;
+      }
+
+      // Agregasi ringkasan
+      const totalLaporan = laporanAll.length;
+      const totalSelesai = laporanAll.filter(l => (l.pct || 0) === 100).length;
+      const avgPct = Math.round(laporanAll.reduce((s, l) => s + (l.pct || 0), 0) / totalLaporan);
+      const totalFU = laporanAll.reduce((s, l) => s + (l.fu_count || 0), 0);
+      const totalFile = laporanAll.reduce((s, l) => s + (l.file_count || 0), 0);
+
+      // Group by hotel
+      const byHotel = {};
+      laporanAll.forEach(l => {
+        const h = l.hotel || 'Corporate';
+        if (!byHotel[h]) byHotel[h] = [];
+        byHotel[h].push(l);
+      });
+
+      let bodyHtml = '';
+
+      // Per-hotel section
+      Object.keys(byHotel).sort().forEach(hotelName => {
+        const rows = byHotel[hotelName];
+        bodyHtml += '<h2 style="font-size:15px;color:#1a3a5c;margin:20px 0 10px 0;padding-bottom:6px;border-bottom:2px solid #c9973a;">🏨 ' + hotelName + '</h2>';
+        bodyHtml += '<table style="width:100%;border-collapse:collapse;font-size:11px;margin-bottom:10px;">' +
+          '<thead><tr style="background:#1a3a5c;color:white;">' +
+          '<th style="padding:8px;text-align:left;">Role</th>' +
+          '<th style="padding:8px;text-align:center;">Selesai</th>' +
+          '<th style="padding:8px;text-align:center;">Total</th>' +
+          '<th style="padding:8px;text-align:center;">Tidak</th>' +
+          '<th style="padding:8px;text-align:center;">FU</th>' +
+          '<th style="padding:8px;text-align:center;">File</th>' +
+          '<th style="padding:8px;text-align:center;">%</th>' +
+          '<th style="padding:8px;text-align:center;">Submit</th>' +
+          '</tr></thead><tbody>';
+        rows.forEach(r => {
+          const pct = r.pct || 0;
+          const pctColor = pct === 100 ? '#27ae60' : pct >= 70 ? '#1a3a5c' : pct >= 40 ? '#c9973a' : '#e74c3c';
+          const submitTime = r.submitted_at ? new Date(r.submitted_at).toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'}) : '—';
+          bodyHtml += '<tr style="border-bottom:1px solid #eee;">' +
+            '<td style="padding:7px;font-weight:600;">' + (r.role || '—') + '</td>' +
+            '<td style="padding:7px;text-align:center;color:#27ae60;font-weight:600;">' + (r.task_done || 0) + '</td>' +
+            '<td style="padding:7px;text-align:center;">' + (r.task_total || 0) + '</td>' +
+            '<td style="padding:7px;text-align:center;color:#e74c3c;">' + (r.task_not || 0) + '</td>' +
+            '<td style="padding:7px;text-align:center;">' + (r.fu_count || 0) + '</td>' +
+            '<td style="padding:7px;text-align:center;">' + (r.file_count || 0) + '</td>' +
+            '<td style="padding:7px;text-align:center;font-weight:700;color:' + pctColor + ';">' + pct + '%</td>' +
+            '<td style="padding:7px;text-align:center;font-size:10px;color:#666;">' + submitTime + '</td>' +
+            '</tr>';
+        });
+        bodyHtml += '</tbody></table>';
+      });
+
+      const html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Laporan Konsolidasi — ' + dateLabel + '</title>' +
+        '<style>' +
+        '@page { size: A4; margin: 15mm; }' +
+        'body { font-family: "Segoe UI", Arial, sans-serif; color:#2d3340; line-height:1.5; }' +
+        '.header { background:linear-gradient(135deg,#1a3a5c,#0e2340); color:white; padding:20px; border-radius:10px; margin-bottom:16px; }' +
+        '.header h1 { font-size:20px; margin:0 0 4px 0; }' +
+        '.header p { font-size:12px; opacity:0.85; margin:0; }' +
+        '.stats { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:16px; }' +
+        '.stat { background:#f7f8fa; border:1px solid #dde1e8; border-radius:8px; padding:12px; text-align:center; }' +
+        '.stat-val { font-size:20px; font-weight:800; color:#1a3a5c; }' +
+        '.stat-lbl { font-size:10px; color:#5c6475; text-transform:uppercase; letter-spacing:0.5px; margin-top:2px; }' +
+        '.footer { margin-top:24px; padding-top:12px; border-top:1px solid #ddd; font-size:10px; color:#999; text-align:center; }' +
+        '@media print { .no-print { display:none; } body { -webkit-print-color-adjust:exact; print-color-adjust:exact; } }' +
+        '.btn-print { position:fixed; top:12px; right:12px; padding:10px 18px; background:#1a3a5c; color:white; border:none; border-radius:8px; font-weight:700; cursor:pointer; box-shadow:0 2px 8px rgba(0,0,0,0.2); }' +
+        '</style></head><body>' +
+        '<button class="btn-print no-print" onclick="window.print()">🖨️ Print / Save as PDF</button>' +
+        '<div class="header">' +
+          '<h1>📊 Laporan Konsolidasi Harian — Verse Hotels Group</h1>' +
+          '<p>' + dateLabel + (isLive ? ' · 🔴 Live (belum final)' : '') + '</p>' +
+        '</div>' +
+        '<div class="stats">' +
+          '<div class="stat"><div class="stat-val" style="color:#1a3a5c;">' + totalLaporan + '</div><div class="stat-lbl">Total Laporan</div></div>' +
+          '<div class="stat"><div class="stat-val" style="color:#27ae60;">' + totalSelesai + '</div><div class="stat-lbl">Selesai 100%</div></div>' +
+          '<div class="stat"><div class="stat-val" style="color:#c9973a;">' + avgPct + '%</div><div class="stat-lbl">Rata-rata Progress</div></div>' +
+          '<div class="stat"><div class="stat-val" style="color:#e74c3c;">' + totalFU + '</div><div class="stat-lbl">Total Follow Up</div></div>' +
+        '</div>' +
+        bodyHtml +
+        '<div class="footer">Dibuat otomatis oleh Verse Hotels Corporate Report System · ' +
+          new Date().toLocaleString('id-ID', {dateStyle:'full', timeStyle:'short'}) + ' WIB · ' +
+          totalFile + ' file lampiran tercatat</div>' +
+        '</body></html>';
+
+      const win = window.open('', '_blank');
+      if (win) { win.document.write(html); win.document.close(); showToast('✅ PDF konsolidasi siap — klik Print!'); }
+      else showToast('❌ Popup diblokir — izinkan popup di browser');
+    } catch(e) { console.error('Export dashboard PDF error:', e); showToast('❌ Gagal: ' + e.message); }
+  }
+
+  // Wrapper: Export konsolidasi dari halaman Arsip (pakai tanggal dari filter)
+  async function exportArsipPDF() {
+    const dateInput = document.getElementById('arsip-date-filter');
+    const selectedDate = dateInput && dateInput.value ? dateInput.value : null;
+    if (!selectedDate) {
+      showToast('Pilih tanggal dulu di filter Arsip');
+      return;
+    }
+    await exportDashboardPDF(selectedDate);
   }
 
   async function exportRolePDF() {
@@ -11321,7 +11530,10 @@ window.FB_DETAIL_MAP = {"F&B Manager": {"task_1": "Memastikan Kitchen Area Bersi
                 <span>📌 ${r.fu_count || 0} follow up</span>
                 <span>🕐 Submit ${submitTime}</span>
               </div>
-              <div style="margin-top:10px;text-align:right;">
+              <div style="margin-top:10px;text-align:right;display:flex;gap:8px;justify-content:flex-end;">
+                <button onclick="exportDetailPDF('${r.role}','${r.hotel}','${r.tanggal}')" style="padding:7px 12px;background:var(--gold);color:white;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;" title="Export PDF">
+                  📄 PDF
+                </button>
                 <button onclick="openDetailLaporan('${r.role}','${r.hotel}','${r.tanggal}')" style="padding:7px 14px;background:var(--navy);color:white;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">
                   👁 Lihat Detail Task →
                 </button>
@@ -11397,26 +11609,33 @@ window.FB_DETAIL_MAP = {"F&B Manager": {"task_1": "Memastikan Kitchen Area Bersi
       const today = new Date(Date.now() + 7*3600000).toISOString().split('T')[0];
       const targetDate = tanggalParam || today;
 
-      // Coba laporan_detail dulu (data permanen dari submit)
-      // Fallback ke draft_tasklist (data hari ini yang belum submit)
-      const buildDetailUrl = (tanggal, table) => {
-        let u = SUPA_URL + '/rest/v1/' + table + '?tanggal=eq.' + tanggal + '&role=eq.' + encodeURIComponent(roleName) + '&select=*';
-        if (hotelName) u += '&hotel=eq.' + encodeURIComponent(hotelName);
-        return u;
+      // Helper: fetch dengan multi-fallback
+      // Level 1: strict match (role + hotel)
+      // Level 2: loose match (role saja) — tangkap data dengan hotel null/berbeda casing
+      // PRIORITY: draft_tasklist DULU (tempat data real tersimpan saat HM kerja),
+      //           baru fallback ke laporan_detail (untuk laporan yang sudah di-arsipkan)
+      const fetchDetail = async (table, includeHotel) => {
+        let u = SUPA_URL + '/rest/v1/' + table + '?tanggal=eq.' + targetDate + '&role=eq.' + encodeURIComponent(roleName) + '&select=*';
+        if (includeHotel && hotelName) u += '&hotel=eq.' + encodeURIComponent(hotelName);
+        const r = await fetch(u, { headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY } });
+        return r.ok ? await r.json() : [];
       };
 
-      let res = await fetch(buildDetailUrl(targetDate, 'laporan_detail'), {
-        headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY }
-      });
-      let data = res.ok ? await res.json() : [];
+      // Coba 4 kombinasi berurutan sampai dapat data
+      // (draft_tasklist diprioritaskan karena itu tempat data real tersimpan)
+      let data = await fetchDetail('draft_tasklist', true);
+      if (!data || data.length === 0) data = await fetchDetail('draft_tasklist', false);
+      if (!data || data.length === 0) data = await fetchDetail('laporan_detail', true);
+      if (!data || data.length === 0) data = await fetchDetail('laporan_detail', false);
 
-      // Fallback ke draft_tasklist jika laporan_detail kosong
-      if (!data || data.length === 0) {
-        res = await fetch(buildDetailUrl(targetDate, 'draft_tasklist'), {
-          headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY }
-        });
-        data = res.ok ? await res.json() : [];
+      // Kalau setelah loose match data ada tapi hotel-nya beda, filter di JS
+      // (hanya kalau hotelName diberikan)
+      if (data && data.length > 0 && hotelName) {
+        const exactMatch = data.filter(r => (r.hotel || '') === hotelName);
+        // Kalau ada exact match, pakai itu. Kalau tidak ada, tetap pakai semua data yang match role+tanggal
+        if (exactMatch.length > 0) data = exactMatch;
       }
+
       // Sort numerically: task_1, task_2, ..., room_16_1, room_16_2, fu
       data.sort((a, b) => {
         const getId = id => {
@@ -11429,17 +11648,63 @@ window.FB_DETAIL_MAP = {"F&B Manager": {"task_1": "Memastikan Kitchen Area Bersi
       });
 
       if (!data || data.length === 0) {
-        document.getElementById('detail-content').innerHTML = '<div style="text-align:center;padding:40px 0;color:var(--gray-400);"><div style="font-size:40px;">📭</div><p style="font-size:14px;font-weight:600;margin-top:12px;">Tidak ada data untuk laporan ini</p></div>';
+        // Coba tampilkan ringkasan minimal dari laporan/arsip biar user tidak kosong total
+        let ringkasan = null;
+        try {
+          const urls = [
+            SUPA_URL + '/rest/v1/arsip?tanggal=eq.' + targetDate + '&role=eq.' + encodeURIComponent(roleName) + (hotelName ? '&hotel=eq.' + encodeURIComponent(hotelName) : '') + '&select=*&limit=1',
+            SUPA_URL + '/rest/v1/laporan?tanggal=eq.' + targetDate + '&role=eq.' + encodeURIComponent(roleName) + (hotelName ? '&hotel=eq.' + encodeURIComponent(hotelName) : '') + '&select=*&limit=1'
+          ];
+          for (const u of urls) {
+            const r = await fetch(u, { headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY } });
+            const d = r.ok ? await r.json() : [];
+            if (d && d.length > 0) { ringkasan = d[0]; break; }
+          }
+        } catch(e) {}
+
+        if (ringkasan) {
+          const pct = ringkasan.pct || 0;
+          const pctColor = pct === 100 ? 'var(--green)' : pct >= 70 ? 'var(--navy)' : 'var(--amber)';
+          document.getElementById('detail-content').innerHTML =
+            '<div style="background:white;border-radius:var(--radius);padding:16px;margin-bottom:12px;box-shadow:var(--shadow-card);">' +
+              '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">' +
+                '<span style="font-size:13px;font-weight:700;color:var(--gray-400);">RINGKASAN</span>' +
+                '<span style="font-size:20px;font-weight:800;color:' + pctColor + ';">' + pct + '%</span>' +
+              '</div>' +
+              '<div style="height:6px;background:var(--gray-100);border-radius:4px;overflow:hidden;margin-bottom:10px;">' +
+                '<div style="height:100%;width:' + pct + '%;background:' + pctColor + ';border-radius:4px;"></div>' +
+              '</div>' +
+              '<div style="display:flex;gap:16px;font-size:12px;color:var(--gray-400);flex-wrap:wrap;">' +
+                '<span>✅ ' + (ringkasan.task_done || 0) + ' Sudah</span>' +
+                '<span>❌ ' + (ringkasan.task_not || 0) + ' Tidak Dikerjakan</span>' +
+                '<span>📎 ' + (ringkasan.file_count || 0) + ' File</span>' +
+              '</div>' +
+              '<div style="margin-top:8px;font-size:11px;color:var(--gray-400);">🕐 Submit ' + (ringkasan.submitted_at ? new Date(ringkasan.submitted_at).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'}) : '—') + ' WIB</div>' +
+            '</div>' +
+            '<div style="background:#fef3cd;border-left:4px solid #c9973a;border-radius:8px;padding:14px;margin-top:12px;">' +
+              '<p style="font-size:13px;font-weight:700;color:#7a5a1e;margin-bottom:4px;">⚠️ Detail per-task tidak tersedia</p>' +
+              '<p style="font-size:12px;color:#7a5a1e;line-height:1.5;">Laporan ini hanya menyimpan ringkasan. Kemungkinan data detail sudah di-purge (draft biasanya dihapus setelah beberapa hari). Untuk laporan mulai hari ini, detail akan tersimpan permanen di arsip.</p>' +
+            '</div>';
+        } else {
+          document.getElementById('detail-content').innerHTML = '<div style="text-align:center;padding:40px 0;color:var(--gray-400);"><div style="font-size:40px;">📭</div><p style="font-size:14px;font-weight:600;margin-top:12px;">Tidak ada data untuk laporan ini</p><p style="font-size:12px;margin-top:6px;color:var(--gray-400);">Role: ' + roleName + '<br/>Hotel: ' + (hotelName || '-') + '<br/>Tanggal: ' + targetDate + '</p></div>';
+        }
         return;
       }
 
-      // Ambil info laporan
-      const laporanRes = await fetch(
-        SUPA_URL + '/rest/v1/laporan?tanggal=eq.' + targetDate + '&role=eq.' + encodeURIComponent(roleName) + (hotelName ? '&hotel=eq.' + encodeURIComponent(hotelName) : '') + '&select=*',
-        { headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY } }
-      );
-      const laporanData = laporanRes.ok ? await laporanRes.json() : [];
-      const laporan = laporanData[0] || {};
+      // Ambil info laporan (coba arsip dulu, fallback laporan)
+      let laporan = {};
+      try {
+        const sumUrls = [
+          SUPA_URL + '/rest/v1/arsip?tanggal=eq.' + targetDate + '&role=eq.' + encodeURIComponent(roleName) + (hotelName ? '&hotel=eq.' + encodeURIComponent(hotelName) : '') + '&select=*&limit=1',
+          SUPA_URL + '/rest/v1/laporan?tanggal=eq.' + targetDate + '&role=eq.' + encodeURIComponent(roleName) + (hotelName ? '&hotel=eq.' + encodeURIComponent(hotelName) : '') + '&select=*&limit=1'
+        ];
+        for (const u of sumUrls) {
+          const r = await fetch(u, { headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY } });
+          const d = r.ok ? await r.json() : [];
+          if (d && d.length > 0) { laporan = d[0]; break; }
+        }
+      } catch(e) {}
+      const laporanData = [laporan];
 
       const statusIcon = { done: '✅', progress: '⏳', not: '❌', note_only: '📝' };
       const statusLabel = { done: 'Sudah', progress: 'Dalam Proses', not: 'Belum', note_only: 'Catatan' };
@@ -11490,7 +11755,19 @@ window.FB_DETAIL_MAP = {"F&B Manager": {"task_1": "Memastikan Kitchen Area Bersi
           'HM Verse Cirebon': 'HM Verse Cirebon', 'HM Oak Tree': 'HM Oak Tree',
         };
         const _labelMap2 = TASK_LABEL_MAP[_roleTaskKey2[roleName] || roleName] || {};
-        const _taskName = _labelMap2[d.task_id] || (String(d.task_id).startsWith('room_') ? 'Room Inspection' : (String(d.task_id).startsWith('fu') ? 'Follow Up' : 'Task ' + d.task_id));
+        // Label task: kasih nama yang proper untuk activity-plan, unit-visit-tomorrow, planning-tomorrow
+        // Selain itu pakai TASK_LABEL_MAP, fallback ke room/fu/generic
+        let _taskName;
+        if (d.task_id === 'unit-visit-tomorrow') {
+          _taskName = '🏨 Unit Visit Tomorrow';
+        } else if (d.task_id === 'planning-tomorrow') {
+          _taskName = '📝 Planning for Tomorrow';
+        } else if (d.task_id === 'activity-plan') {
+          // Backward compat untuk data lama
+          _taskName = '📅 Planning for Tomorrow';
+        } else {
+          _taskName = _labelMap2[d.task_id] || (String(d.task_id).startsWith('room_') ? 'Room Inspection' : (String(d.task_id).startsWith('fu') ? 'Follow Up' : 'Task ' + d.task_id));
+        }
 
         html += `<div style="margin-bottom:8px;">
           <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
