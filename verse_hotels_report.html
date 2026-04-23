@@ -48,9 +48,9 @@
   /* ===== APP SHELL ===== */
   #app {
     width: 100%;
-    max-width: 100%;
+    max-width: 430px;
     height: 100dvh;
-    margin: 0;
+    margin: 0 auto;
     background: var(--cream);
     display: flex;
     flex-direction: column;
@@ -2620,8 +2620,7 @@
       if (apNote && apNote.value.trim()) {
         let apText = apNote.value.trim();
         if (needsUnitVisitTomorrow(role) && apHotelVal && apHotelVal.value) {
-          apText = 'Planning Visit: ' + apHotelVal.value + '
-' + apText;
+          apText = 'Unit Visit Tomorrow: ' + apHotelVal.value + '\n' + apText;
         }
         allItems.push({ tanggal: today, role, hotel, task_id: 'activity-plan', status: 'note_only', keterangan: apText, file_urls: null });
       }
@@ -2875,7 +2874,11 @@
     'HM Verse Lite': '1010',
     'HM Verse Luxe': '1020',
     'HM Verse Cirebon': '1030',
-    'HM Oak Tree': '1040'
+    'HM Oak Tree': '1040',
+    'F&B Manager': '0110',
+    'Team Kitchen': '0120',
+    'F&B Attendant': '0130',
+    'CEO': '0909',
   };
 
   // Navigation
@@ -2956,13 +2959,8 @@
   }
 
   function go(screen) {
-    const target = document.getElementById('screen-' + screen);
-    if (!target) {
-      console.warn('Screen not found:', screen);
-      return;
-    }
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-    target.classList.add('active');
+    document.getElementById('screen-' + screen).classList.add('active');
     window.scrollTo(0,0);
 
     // Populate submit screen
@@ -2998,14 +2996,11 @@
         'HM Verse Cirebon': 'Verse Hotel Cirebon',
         'HM Oak Tree': 'Oak Tree Mahakam Blok M',
       };
-      const CORP_ROLES2 = ['Ops HR Manager','HR Officer','Chief Engineering Corporate','EHK Corporate','CRA Corporate'];
-      const FB_ROLES2 = ['F&B Manager','Team Kitchen','F&B Attendant'];
+      const CORP_ROLES2 = ['Ops HR Manager','HR Officer','Chief Engineering Corporate','EHK Corporate','CRA Corporate','F&B Manager','Team Kitchen','F&B Attendant','COO'];
       if (hmHotelMap2[currentRole]) {
         currentHotel = hmHotelMap2[currentRole];
       } else if (CORP_ROLES2.includes(currentRole)) {
         currentHotel = 'Corporate';
-      } else if (FB_ROLES2.includes(currentRole)) {
-        currentHotel = currentHotel || 'Verse Lite Gajah Mada';
       } else if (!currentHotel) {
         currentHotel = 'Verse Lite Gajah Mada';
       }
@@ -3336,7 +3331,59 @@
         '<div class="no-print" style="text-align:center;margin-top:20px;">' +
         '<button onclick="window.print()" style="padding:12px 32px;background:#1a3a5c;color:white;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;margin-right:8px;">🖨️ Print / Save PDF</button>' +
         '<button onclick="window.close()" style="padding:12px 20px;background:#eee;color:#333;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;">Tutup</button></div>' +
-        '</body></html>';
+        '
+<script>
+(function(){
+  function bindHomepageButtons(){
+    var root = document.getElementById('screen-splash');
+    if(!root) return;
+    var buttons = root.querySelectorAll('.splash-menu-btn');
+    var actions = [
+      function(){ if (typeof openCorporateRoles==='function') openCorporateRoles(); },
+      function(){ if (typeof showHMSelect==='function') showHMSelect(); },
+      function(){ if (typeof openFBRoles==='function') openFBRoles(); },
+      function(){ if (typeof doLoginCOO==='function') doLoginCOO(); },
+      function(){ if (typeof openCEOLogin==='function') openCEOLogin(); },
+      function(){ if (typeof go==='function') go('arsip'); }
+    ];
+    buttons.forEach(function(btn, idx){
+      try {
+        btn.style.pointerEvents = 'auto';
+        btn.style.position = 'relative';
+        btn.style.zIndex = '9999';
+        btn.onclick = null;
+        var handler = function(ev){
+          if(ev){ ev.preventDefault(); ev.stopPropagation(); }
+          try { actions[idx] && actions[idx](); }
+          catch(err){ console.error('Homepage click handler error', idx, err); }
+          return false;
+        };
+        btn.addEventListener('click', handler, true);
+        btn.addEventListener('touchend', handler, true);
+      } catch(e){ console.error('Bind splash button failed', idx, e); }
+    });
+  }
+
+  function forceSplashClickable(){
+    var app = document.getElementById('app');
+    if(app){ app.style.maxWidth = '100%'; app.style.width = '100%'; }
+    var splash = document.getElementById('screen-splash');
+    if(splash){ splash.style.pointerEvents = 'auto'; splash.style.width = '100%'; }
+    document.querySelectorAll('.splash-menu-section,.splash-menu-btn,.splash-menu-info,.splash-menu-arrow,.splash-menu-icon').forEach(function(el){
+      el.style.pointerEvents = 'auto';
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', function(){
+    forceSplashClickable();
+    bindHomepageButtons();
+    setTimeout(function(){ forceSplashClickable(); bindHomepageButtons(); }, 600);
+    setTimeout(function(){ forceSplashClickable(); bindHomepageButtons(); }, 1500);
+  });
+})();
+</script>
+
+</body></html>';
 
       const win = window.open('', '_blank');
       if (win) { win.document.write(html); win.document.close(); showToast('✅ PDF siap — klik Print!'); }
@@ -3371,7 +3418,59 @@
         '<table><thead><tr><th>Tanggal</th><th>Hotel</th><th>Progress</th><th>Task</th><th>Follow Up</th><th>Submit</th></tr></thead><tbody>' + rows + '</tbody></table>' +
         '<div style="margin-top:12px;text-align:center;font-size:10px;color:#bbb;">Total ' + data.length + ' laporan · ' + new Date().toLocaleString('id-ID') + '</div>' +
         '<div class="no-print" style="text-align:center;margin-top:16px;"><button onclick="window.print()" style="padding:12px 32px;background:#1a3a5c;color:white;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;">🖨️ Print / Save PDF</button></div>' +
-        '</body></html>';
+        '
+<script>
+(function(){
+  function bindHomepageButtons(){
+    var root = document.getElementById('screen-splash');
+    if(!root) return;
+    var buttons = root.querySelectorAll('.splash-menu-btn');
+    var actions = [
+      function(){ if (typeof openCorporateRoles==='function') openCorporateRoles(); },
+      function(){ if (typeof showHMSelect==='function') showHMSelect(); },
+      function(){ if (typeof openFBRoles==='function') openFBRoles(); },
+      function(){ if (typeof doLoginCOO==='function') doLoginCOO(); },
+      function(){ if (typeof openCEOLogin==='function') openCEOLogin(); },
+      function(){ if (typeof go==='function') go('arsip'); }
+    ];
+    buttons.forEach(function(btn, idx){
+      try {
+        btn.style.pointerEvents = 'auto';
+        btn.style.position = 'relative';
+        btn.style.zIndex = '9999';
+        btn.onclick = null;
+        var handler = function(ev){
+          if(ev){ ev.preventDefault(); ev.stopPropagation(); }
+          try { actions[idx] && actions[idx](); }
+          catch(err){ console.error('Homepage click handler error', idx, err); }
+          return false;
+        };
+        btn.addEventListener('click', handler, true);
+        btn.addEventListener('touchend', handler, true);
+      } catch(e){ console.error('Bind splash button failed', idx, e); }
+    });
+  }
+
+  function forceSplashClickable(){
+    var app = document.getElementById('app');
+    if(app){ app.style.maxWidth = '100%'; app.style.width = '100%'; }
+    var splash = document.getElementById('screen-splash');
+    if(splash){ splash.style.pointerEvents = 'auto'; splash.style.width = '100%'; }
+    document.querySelectorAll('.splash-menu-section,.splash-menu-btn,.splash-menu-info,.splash-menu-arrow,.splash-menu-icon').forEach(function(el){
+      el.style.pointerEvents = 'auto';
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', function(){
+    forceSplashClickable();
+    bindHomepageButtons();
+    setTimeout(function(){ forceSplashClickable(); bindHomepageButtons(); }, 600);
+    setTimeout(function(){ forceSplashClickable(); bindHomepageButtons(); }, 1500);
+  });
+})();
+</script>
+
+</body></html>';
       const win = window.open('', '_blank');
       if (win) { win.document.write(html); win.document.close(); showToast('✅ PDF siap!'); }
       else showToast('❌ Popup diblokir');
@@ -3649,6 +3748,16 @@
   function loginAsCOO() {
     pin = ''; updatePinDots();
     currentRole = 'COO';
+    ['nav-coo-home','nav-coo-tasklist'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.style.display = 'block';
+    });
+    go('coo');
+  }
+
+  function loginAsCEO() {
+    pin = ''; updatePinDots();
+    currentRole = 'CEO';
     ['nav-coo-home','nav-coo-tasklist'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.style.display = 'block';
@@ -4025,8 +4134,9 @@
 
       // Skip & validasi note_only (hanya wajib keterangan)
       if (status === 'note_only') {
+        // Cek jika ini activity plan — wajib pilih hotel
         const hotelInput = document.getElementById(id + '-hotel-val');
-        if (needsUnitVisitTomorrow(currentRole) && hotelInput !== null && !hotelInput.value) {
+        if (hotelInput !== null && !hotelInput.value) {
           const container = document.getElementById(id + '-hotel-select');
           if (container) { container.style.outline = '2px solid var(--red)'; container.style.borderRadius = '10px'; setTimeout(() => container.style.outline = '', 2500); }
           markError(item);
@@ -11228,38 +11338,52 @@ window.FB_DETAIL_MAP = {"F&B Manager": {"task_1": "Memastikan Kitchen Area Bersi
 
 <script>
 (function(){
-  function bindHomeMenuClicks(){
-    const root = document.getElementById('screen-splash');
+  function bindHomepageButtons(){
+    var root = document.getElementById('screen-splash');
     if(!root) return;
-    const buttons = root.querySelectorAll('.splash-menu-btn');
-    if(!buttons || buttons.length < 6) return;
-    buttons.forEach(btn => {
-      btn.style.pointerEvents = 'auto';
-      btn.style.touchAction = 'manipulation';
-      btn.style.position = 'relative';
-      btn.style.zIndex = '20';
-    });
-    const actions = [
-      () => go('login'),
-      () => showHMSelect(),
-      () => openFBRoles(),
-      () => doLoginCOO(),
-      () => openCEOLogin(),
-      () => go('arsip')
+    var buttons = root.querySelectorAll('.splash-menu-btn');
+    var actions = [
+      function(){ if (typeof openCorporateRoles==='function') openCorporateRoles(); },
+      function(){ if (typeof showHMSelect==='function') showHMSelect(); },
+      function(){ if (typeof openFBRoles==='function') openFBRoles(); },
+      function(){ if (typeof doLoginCOO==='function') doLoginCOO(); },
+      function(){ if (typeof openCEOLogin==='function') openCEOLogin(); },
+      function(){ if (typeof go==='function') go('arsip'); }
     ];
-    buttons.forEach((btn, idx) => {
-      const act = actions[idx];
-      if(!act) return;
-      btn.addEventListener('click', function(e){ e.preventDefault(); e.stopPropagation(); act(); }, { passive:false });
-      btn.addEventListener('touchend', function(e){ e.preventDefault(); e.stopPropagation(); act(); }, { passive:false });
+    buttons.forEach(function(btn, idx){
+      try {
+        btn.style.pointerEvents = 'auto';
+        btn.style.position = 'relative';
+        btn.style.zIndex = '9999';
+        btn.onclick = null;
+        var handler = function(ev){
+          if(ev){ ev.preventDefault(); ev.stopPropagation(); }
+          try { actions[idx] && actions[idx](); }
+          catch(err){ console.error('Homepage click handler error', idx, err); }
+          return false;
+        };
+        btn.addEventListener('click', handler, true);
+        btn.addEventListener('touchend', handler, true);
+      } catch(e){ console.error('Bind splash button failed', idx, e); }
     });
   }
-  if(document.readyState === 'loading'){
-    document.addEventListener('DOMContentLoaded', bindHomeMenuClicks);
-  } else {
-    bindHomeMenuClicks();
+
+  function forceSplashClickable(){
+    var app = document.getElementById('app');
+    if(app){ app.style.maxWidth = '100%'; app.style.width = '100%'; }
+    var splash = document.getElementById('screen-splash');
+    if(splash){ splash.style.pointerEvents = 'auto'; splash.style.width = '100%'; }
+    document.querySelectorAll('.splash-menu-section,.splash-menu-btn,.splash-menu-info,.splash-menu-arrow,.splash-menu-icon').forEach(function(el){
+      el.style.pointerEvents = 'auto';
+    });
   }
-  window.bindHomeMenuClicks = bindHomeMenuClicks;
+
+  document.addEventListener('DOMContentLoaded', function(){
+    forceSplashClickable();
+    bindHomepageButtons();
+    setTimeout(function(){ forceSplashClickable(); bindHomepageButtons(); }, 600);
+    setTimeout(function(){ forceSplashClickable(); bindHomepageButtons(); }, 1500);
+  });
 })();
 </script>
 
@@ -11832,38 +11956,52 @@ window.FB_DETAIL_MAP = {"F&B Manager": {"task_1": "Memastikan Kitchen Area Bersi
 
 <script>
 (function(){
-  function bindHomeMenuClicks(){
-    const root = document.getElementById('screen-splash');
+  function bindHomepageButtons(){
+    var root = document.getElementById('screen-splash');
     if(!root) return;
-    const buttons = root.querySelectorAll('.splash-menu-btn');
-    if(!buttons || buttons.length < 6) return;
-    buttons.forEach(btn => {
-      btn.style.pointerEvents = 'auto';
-      btn.style.touchAction = 'manipulation';
-      btn.style.position = 'relative';
-      btn.style.zIndex = '20';
-    });
-    const actions = [
-      () => go('login'),
-      () => showHMSelect(),
-      () => openFBRoles(),
-      () => doLoginCOO(),
-      () => openCEOLogin(),
-      () => go('arsip')
+    var buttons = root.querySelectorAll('.splash-menu-btn');
+    var actions = [
+      function(){ if (typeof openCorporateRoles==='function') openCorporateRoles(); },
+      function(){ if (typeof showHMSelect==='function') showHMSelect(); },
+      function(){ if (typeof openFBRoles==='function') openFBRoles(); },
+      function(){ if (typeof doLoginCOO==='function') doLoginCOO(); },
+      function(){ if (typeof openCEOLogin==='function') openCEOLogin(); },
+      function(){ if (typeof go==='function') go('arsip'); }
     ];
-    buttons.forEach((btn, idx) => {
-      const act = actions[idx];
-      if(!act) return;
-      btn.addEventListener('click', function(e){ e.preventDefault(); e.stopPropagation(); act(); }, { passive:false });
-      btn.addEventListener('touchend', function(e){ e.preventDefault(); e.stopPropagation(); act(); }, { passive:false });
+    buttons.forEach(function(btn, idx){
+      try {
+        btn.style.pointerEvents = 'auto';
+        btn.style.position = 'relative';
+        btn.style.zIndex = '9999';
+        btn.onclick = null;
+        var handler = function(ev){
+          if(ev){ ev.preventDefault(); ev.stopPropagation(); }
+          try { actions[idx] && actions[idx](); }
+          catch(err){ console.error('Homepage click handler error', idx, err); }
+          return false;
+        };
+        btn.addEventListener('click', handler, true);
+        btn.addEventListener('touchend', handler, true);
+      } catch(e){ console.error('Bind splash button failed', idx, e); }
     });
   }
-  if(document.readyState === 'loading'){
-    document.addEventListener('DOMContentLoaded', bindHomeMenuClicks);
-  } else {
-    bindHomeMenuClicks();
+
+  function forceSplashClickable(){
+    var app = document.getElementById('app');
+    if(app){ app.style.maxWidth = '100%'; app.style.width = '100%'; }
+    var splash = document.getElementById('screen-splash');
+    if(splash){ splash.style.pointerEvents = 'auto'; splash.style.width = '100%'; }
+    document.querySelectorAll('.splash-menu-section,.splash-menu-btn,.splash-menu-info,.splash-menu-arrow,.splash-menu-icon').forEach(function(el){
+      el.style.pointerEvents = 'auto';
+    });
   }
-  window.bindHomeMenuClicks = bindHomeMenuClicks;
+
+  document.addEventListener('DOMContentLoaded', function(){
+    forceSplashClickable();
+    bindHomepageButtons();
+    setTimeout(function(){ forceSplashClickable(); bindHomepageButtons(); }, 600);
+    setTimeout(function(){ forceSplashClickable(); bindHomepageButtons(); }, 1500);
+  });
 })();
 </script>
 
