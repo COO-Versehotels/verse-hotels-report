@@ -48,9 +48,9 @@
   /* ===== APP SHELL ===== */
   #app {
     width: 100%;
-    max-width: 430px;
+    max-width: 100%;
     height: 100dvh;
-    margin: 0 auto;
+    margin: 0;
     background: var(--cream);
     display: flex;
     flex-direction: column;
@@ -3336,45 +3336,7 @@
         '<div class="no-print" style="text-align:center;margin-top:20px;">' +
         '<button onclick="window.print()" style="padding:12px 32px;background:#1a3a5c;color:white;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;margin-right:8px;">🖨️ Print / Save PDF</button>' +
         '<button onclick="window.close()" style="padding:12px 20px;background:#eee;color:#333;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;">Tutup</button></div>' +
-        '
-<script>
-(function(){
-  function bindHomeMenuClicks(){
-    const root = document.getElementById('screen-splash');
-    if(!root) return;
-    const buttons = root.querySelectorAll('.splash-menu-btn');
-    if(!buttons || buttons.length < 6) return;
-    buttons.forEach(btn => {
-      btn.style.pointerEvents = 'auto';
-      btn.style.touchAction = 'manipulation';
-      btn.style.position = 'relative';
-      btn.style.zIndex = '20';
-    });
-    const actions = [
-      () => go('login'),
-      () => showHMSelect(),
-      () => openFBRoles(),
-      () => doLoginCOO(),
-      () => openCEOLogin(),
-      () => go('arsip')
-    ];
-    buttons.forEach((btn, idx) => {
-      const act = actions[idx];
-      if(!act) return;
-      btn.addEventListener('click', function(e){ e.preventDefault(); e.stopPropagation(); act(); }, { passive:false });
-      btn.addEventListener('touchend', function(e){ e.preventDefault(); e.stopPropagation(); act(); }, { passive:false });
-    });
-  }
-  if(document.readyState === 'loading'){
-    document.addEventListener('DOMContentLoaded', bindHomeMenuClicks);
-  } else {
-    bindHomeMenuClicks();
-  }
-  window.bindHomeMenuClicks = bindHomeMenuClicks;
-})();
-</script>
-
-</body></html>';
+        '</body></html>';
 
       const win = window.open('', '_blank');
       if (win) { win.document.write(html); win.document.close(); showToast('✅ PDF siap — klik Print!'); }
@@ -3409,45 +3371,7 @@
         '<table><thead><tr><th>Tanggal</th><th>Hotel</th><th>Progress</th><th>Task</th><th>Follow Up</th><th>Submit</th></tr></thead><tbody>' + rows + '</tbody></table>' +
         '<div style="margin-top:12px;text-align:center;font-size:10px;color:#bbb;">Total ' + data.length + ' laporan · ' + new Date().toLocaleString('id-ID') + '</div>' +
         '<div class="no-print" style="text-align:center;margin-top:16px;"><button onclick="window.print()" style="padding:12px 32px;background:#1a3a5c;color:white;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;">🖨️ Print / Save PDF</button></div>' +
-        '
-<script>
-(function(){
-  function bindHomeMenuClicks(){
-    const root = document.getElementById('screen-splash');
-    if(!root) return;
-    const buttons = root.querySelectorAll('.splash-menu-btn');
-    if(!buttons || buttons.length < 6) return;
-    buttons.forEach(btn => {
-      btn.style.pointerEvents = 'auto';
-      btn.style.touchAction = 'manipulation';
-      btn.style.position = 'relative';
-      btn.style.zIndex = '20';
-    });
-    const actions = [
-      () => go('login'),
-      () => showHMSelect(),
-      () => openFBRoles(),
-      () => doLoginCOO(),
-      () => openCEOLogin(),
-      () => go('arsip')
-    ];
-    buttons.forEach((btn, idx) => {
-      const act = actions[idx];
-      if(!act) return;
-      btn.addEventListener('click', function(e){ e.preventDefault(); e.stopPropagation(); act(); }, { passive:false });
-      btn.addEventListener('touchend', function(e){ e.preventDefault(); e.stopPropagation(); act(); }, { passive:false });
-    });
-  }
-  if(document.readyState === 'loading'){
-    document.addEventListener('DOMContentLoaded', bindHomeMenuClicks);
-  } else {
-    bindHomeMenuClicks();
-  }
-  window.bindHomeMenuClicks = bindHomeMenuClicks;
-})();
-</script>
-
-</body></html>';
+        '</body></html>';
       const win = window.open('', '_blank');
       if (win) { win.document.write(html); win.document.close(); showToast('✅ PDF siap!'); }
       else showToast('❌ Popup diblokir');
