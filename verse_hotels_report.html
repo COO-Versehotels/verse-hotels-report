@@ -2583,6 +2583,37 @@
   // Track hotel aktif
   let currentHotel = '';
 
+  const FULL_HOTEL_NAME_MAP = {
+    'Verse Lite': 'Verse Lite Gajah Mada',
+    'Verse Luxe': 'Verse Luxe Wahid Hasyim',
+    'Verse Cirebon': 'Verse Hotel Cirebon',
+    'Oak Tree': 'Oak Tree Mahakam Blok M',
+    'Oak Tree Hotel Blok M': 'Oak Tree Mahakam Blok M',
+  };
+
+  function normalizeHotelName(name) {
+    const clean = (name || '').trim();
+    return FULL_HOTEL_NAME_MAP[clean] || clean;
+  }
+
+  function isCorporateRole(role) {
+    return ['Ops HR Manager','HR Officer','Chief Engineering Corporate','EHK Corporate','CRA Corporate'].includes(role);
+  }
+
+  function getActiveWorkingHotel(role = currentRole) {
+    const activeChip = document.querySelector('.hotel-chip.active');
+    const activeChipName = activeChip ? normalizeHotelName(activeChip.textContent) : '';
+    const tasklistHotel = normalizeHotelName(document.getElementById('tasklist-hotel')?.textContent || '');
+    const current = normalizeHotelName(currentHotel || '');
+    const candidates = isCorporateRole(role)
+      ? [tasklistHotel, current, activeChipName]
+      : [tasklistHotel, current, activeChipName];
+    for (const candidate of candidates) {
+      if (candidate && candidate !== '—' && candidate !== 'Corporate') return candidate;
+    }
+    return candidates.find(Boolean) || '—';
+  }
+
   // Simpan laporan ke Supabase
   // Simpan detail task (foto + keterangan) ke laporan_detail saat submit
   async function saveLaporanDetail(role, hotel) {
@@ -2620,7 +2651,8 @@
       if (apNote && apNote.value.trim()) {
         let apText = apNote.value.trim();
         if (needsUnitVisitTomorrow(role) && apHotelVal && apHotelVal.value) {
-          apText = 'Unit Visit Tomorrow: ' + apHotelVal.value + '\n' + apText;
+          apText = 'Planning Visit: ' + apHotelVal.value + '
+' + apText;
         }
         allItems.push({ tanggal: today, role, hotel, task_id: 'activity-plan', status: 'note_only', keterangan: apText, file_urls: null });
       }
@@ -2874,11 +2906,7 @@
     'HM Verse Lite': '1010',
     'HM Verse Luxe': '1020',
     'HM Verse Cirebon': '1030',
-    'HM Oak Tree': '1040',
-    'F&B Manager': '0110',
-    'Team Kitchen': '0120',
-    'F&B Attendant': '0130',
-    'CEO': '0909',
+    'HM Oak Tree': '1040'
   };
 
   // Navigation
@@ -2996,11 +3024,14 @@
         'HM Verse Cirebon': 'Verse Hotel Cirebon',
         'HM Oak Tree': 'Oak Tree Mahakam Blok M',
       };
-      const CORP_ROLES2 = ['Ops HR Manager','HR Officer','Chief Engineering Corporate','EHK Corporate','CRA Corporate','F&B Manager','Team Kitchen','F&B Attendant','COO'];
+      const CORP_ROLES2 = ['Ops HR Manager','HR Officer','Chief Engineering Corporate','EHK Corporate','CRA Corporate'];
+      const FB_ROLES2 = ['F&B Manager','Team Kitchen','F&B Attendant'];
       if (hmHotelMap2[currentRole]) {
         currentHotel = hmHotelMap2[currentRole];
       } else if (CORP_ROLES2.includes(currentRole)) {
-        currentHotel = 'Corporate';
+        currentHotel = getActiveWorkingHotel(role) || 'Verse Lite Gajah Mada';
+      } else if (FB_ROLES2.includes(currentRole)) {
+        currentHotel = currentHotel || 'Verse Lite Gajah Mada';
       } else if (!currentHotel) {
         currentHotel = 'Verse Lite Gajah Mada';
       }
@@ -3460,7 +3491,7 @@
       'HM Oak Tree': 'Oak Tree Mahakam Blok M',
     };
     const CORPORATE_ROLES = ['Ops HR Manager','HR Officer','Chief Engineering Corporate','EHK Corporate','CRA Corporate','F&B Manager','Team Kitchen','F&B Attendant','COO'];
-    currentHotel = hmHotels[currentRole] || (CORPORATE_ROLES.includes(currentRole) ? 'Corporate' : '');
+    currentHotel = hmHotels[currentRole] || (CORPORATE_ROLES.includes(currentRole) ? getActiveWorkingHotel(currentRole) || 'Verse Lite Gajah Mada' : '');
     // Reset taskFiles & taskFileUrls
     Object.keys(taskFiles).forEach(k => delete taskFiles[k]);
     Object.keys(taskFileUrls).forEach(k => delete taskFileUrls[k]);
@@ -3629,7 +3660,7 @@
       'HM Oak Tree': 'Oak Tree Mahakam Blok M',
     };
     const CORPORATE_ROLES = ['Ops HR Manager','HR Officer','Chief Engineering Corporate','EHK Corporate','CRA Corporate','F&B Manager','Team Kitchen','F&B Attendant','COO'];
-    currentHotel = hmHotels[role] || (CORPORATE_ROLES.includes(role) ? 'Corporate' : '');
+    currentHotel = hmHotels[role] || (CORPORATE_ROLES.includes(role) ? getActiveWorkingHotel(role) || 'Verse Lite Gajah Mada' : '');
     Object.keys(taskFiles).forEach(k => delete taskFiles[k]);
     Object.keys(taskFileUrls).forEach(k => delete taskFileUrls[k]);
     ['nav-coo-home','nav-coo-tasklist'].forEach(id => {
@@ -3644,16 +3675,6 @@
   function loginAsCOO() {
     pin = ''; updatePinDots();
     currentRole = 'COO';
-    ['nav-coo-home','nav-coo-tasklist'].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.style.display = 'block';
-    });
-    go('coo');
-  }
-
-  function loginAsCEO() {
-    pin = ''; updatePinDots();
-    currentRole = 'CEO';
     ['nav-coo-home','nav-coo-tasklist'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.style.display = 'block';
@@ -4030,9 +4051,8 @@
 
       // Skip & validasi note_only (hanya wajib keterangan)
       if (status === 'note_only') {
-        // Cek jika ini activity plan — wajib pilih hotel
         const hotelInput = document.getElementById(id + '-hotel-val');
-        if (hotelInput !== null && !hotelInput.value) {
+        if (needsUnitVisitTomorrow(currentRole) && hotelInput !== null && !hotelInput.value) {
           const container = document.getElementById(id + '-hotel-select');
           if (container) { container.style.outline = '2px solid var(--red)'; container.style.borderRadius = '10px'; setTimeout(() => container.style.outline = '', 2500); }
           markError(item);
@@ -4219,7 +4239,7 @@
 
     // Hotel aktif
     const hotelEl = document.querySelector('.hotel-chip.active');
-    const hotel = hotelEl ? hotelEl.dataset.hotel || document.getElementById('tasklist-hotel').textContent : '—';
+    const hotel = getActiveWorkingHotel(currentRole);
 
     document.getElementById('submit-role').textContent = currentRole || '—';
     document.getElementById('submit-hotel').textContent = hotel;
@@ -4392,7 +4412,7 @@
     });
     let fileCount = 0;
     Object.values(taskFiles).forEach(files => { fileCount += files.length; });
-    const hotel = document.getElementById('tasklist-hotel').textContent || '—';
+    const hotel = getActiveWorkingHotel(currentRole);
     const pct = taskTotal > 0 ? Math.round((taskDone/taskTotal)*100) : 0;
 
     // Simpan ke local (COO dashboard sesi ini)
@@ -4436,7 +4456,7 @@
     });
     let fileCount = 0;
     Object.values(taskFiles).forEach(files => { fileCount += files.length; });
-    const hotel = document.getElementById('tasklist-hotel').textContent || '—';
+    const hotel = getActiveWorkingHotel(currentRole);
     const pct = taskTotal > 0 ? Math.max(0, Math.round(((taskDone - Math.min(0, taskDone)) / taskTotal) * 100)) : 0;
 
     // Simpan ke local COO dashboard
@@ -4458,7 +4478,7 @@
 
   function sendWA() {
     const role = document.getElementById('submit-role').textContent;
-    const hotel = document.getElementById('submit-hotel').textContent;
+    const hotel = normalizeHotelName(document.getElementById('submit-hotel').textContent || getActiveWorkingHotel(role));
     const date = document.getElementById('submit-date').textContent;
     const pct = document.getElementById('submit-pct').textContent;
     const files = document.getElementById('submit-files').textContent;
@@ -4518,7 +4538,8 @@
     msg += isFBRole ? `*📊 F&B DAILY REPORT*\n` : `*📋 LAPORAN KUNJUNGAN HOTEL*\n`;
     msg += `━━━━━━━━━━━━━━━━━━━━━━\n`;
     msg += `👤 *Jabatan:* ${role}\n`;
-    msg += `🏨 *${isFBRole ? 'Hotel Visit' : 'Hotel'}:* ${hotel}\n`;
+    const hotelLabel = (isFBRole || isCorporateRole(role)) ? 'Hotel Visit' : 'Hotel';
+    msg += `🏨 *${hotelLabel}:* ${hotel}\n`;
     msg += `📅 *Tanggal:* ${date}\n`;
     msg += `🕐 *Jam Kirim:* ${jam} WIB\n`;
     msg += '📊 *Progress:* ' + pct + '\n';
