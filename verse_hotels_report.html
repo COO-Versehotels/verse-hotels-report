@@ -2600,7 +2600,15 @@
         const status = item.dataset.status || null;
         if (!status) return;
         const noteEl = item.querySelector('.task-note');
-        const keterangan = noteEl ? noteEl.value.trim() : '';
+        let keterangan = noteEl ? noteEl.value.trim() : '';
+        // Untuk room tasks — gabungkan nomor kamar ke keterangan (sama seperti saveDraftNow)
+        if (taskId.startsWith('room_')) {
+          const roomNumEl = document.getElementById(taskId + '-room-num');
+          if (roomNumEl && roomNumEl.value.trim()) {
+            const roomNum = roomNumEl.value.trim();
+            keterangan = keterangan ? 'Kamar ' + roomNum + ' — ' + keterangan : 'Kamar ' + roomNum;
+          }
+        }
         const fileUrls = taskFileUrls[taskId] ? JSON.stringify(taskFileUrls[taskId]) : null;
         allItems.push({ tanggal: today, role, hotel, task_id: taskId, status, keterangan: keterangan || null, file_urls: fileUrls });
       });
@@ -11769,6 +11777,18 @@ window.FB_DETAIL_MAP = {"F&B Manager": {"task_1": "Memastikan Kitchen Area Bersi
           _taskName = _labelMap2[d.task_id] || (String(d.task_id).startsWith('room_') ? 'Room Inspection' : (String(d.task_id).startsWith('fu') ? 'Follow Up' : 'Task ' + d.task_id));
         }
 
+        // Untuk Room Inspection (room_*): extract nomor kamar dari keterangan, tampilkan di title
+        // Format keterangan saat save: "Kamar 312 — note" atau "Kamar 312"
+        let _displayKet = d.keterangan || '';
+        if (String(d.task_id).startsWith('room_') && _displayKet) {
+          const _kmMatch = _displayKet.match(/^Kamar\s+([^—\n]+?)\s*(?:—\s*(.*))?$/s);
+          if (_kmMatch) {
+            const _roomNum = _kmMatch[1].trim();
+            _taskName = _taskName + ' — Kamar ' + _roomNum;
+            _displayKet = (_kmMatch[2] || '').trim(); // body tanpa prefix
+          }
+        }
+
         html += `<div style="margin-bottom:8px;">
           <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
             <span style="font-size:16px;">${sIcon}</span>
@@ -11783,9 +11803,18 @@ window.FB_DETAIL_MAP = {"F&B Manager": {"task_1": "Memastikan Kitchen Area Bersi
           : null;
 
         if (d.keterangan) {
-          // Fix tampilan duplikat "Kamar X — Kamar X"
-          const _cleanKet = d.keterangan.replace(/^(Kamar [^—]+)—\s*\1\s*$/, '$1').trim();
-          html += '<div style="font-size:13px;color:var(--gray-700);background:var(--gray-50);padding:10px 12px;border-radius:8px;margin-bottom:6px;line-height:1.6;">' + _cleanKet + '</div>';
+          // Untuk room_*: pakai _displayKet (sudah strip prefix "Kamar XXX — ")
+          // Untuk task lain: tetap pakai logic dedup duplikat lama
+          let _bodyKet;
+          if (String(d.task_id).startsWith('room_')) {
+            _bodyKet = _displayKet; // dari blok extract nomor kamar di atas
+          } else {
+            // Fix tampilan duplikat "Kamar X — Kamar X"
+            _bodyKet = d.keterangan.replace(/^(Kamar [^—]+)—\s*\1\s*$/, '$1').trim();
+          }
+          if (_bodyKet) {
+            html += '<div style="font-size:13px;color:var(--gray-700);background:var(--gray-50);padding:10px 12px;border-radius:8px;margin-bottom:6px;line-height:1.6;">' + _bodyKet + '</div>';
+          }
         }
         if (_taskTime) {
           html += '<div style="font-size:11px;color:var(--gray-400);margin-bottom:6px;">🕐 Diinput ' + _taskTime + '</div>';
