@@ -2230,7 +2230,7 @@
   });
 
   // ===== KOMPRESI FOTO =====
-  async function compressImage(file, maxSizeKB = 300, maxWidth = 1280) {
+  async function compressImage(file, maxSizeKB = 150, maxWidth = 1024) {
     // Hanya kompres file gambar
     if (!file.type.startsWith('image/')) return file;
 
@@ -4018,7 +4018,7 @@
 
     for (const file of toAdd) {
       // Kompres foto sebelum upload
-      const processedFile = await compressImage(file, 300, 1280);
+      const processedFile = await compressImage(file, 150, 1024);
       const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
       const path = today + '/' + currentRole.replace(/ /g,'_') + '/' + currentHotel.replace(/ /g,'_') + '/' + taskId + '/' + Date.now() + '_' + safeName;
       try {
@@ -4821,7 +4821,16 @@ const TASK_LABEL_MAP = {
     "task_1": "Cek Grooming Team sesuai standar (rambut, seragam, kebersihan)",
     "task_2": "Mengecek Cleanliness seluruh Public Area mulai dari Guest sampai Employee Area",
     "task_3": "Mengecek Seluruh Alat HK untuk memastikan kelengkapan dan fungsi",
-    "task_4": "Mengecek Standar Room Cleanliness menggunakan Form Inspection Room",
+    "room_4_1": "Room Inspection Check (10 Kamar)",
+    "room_4_2": "Room Inspection Check (10 Kamar)",
+    "room_4_3": "Room Inspection Check (10 Kamar)",
+    "room_4_4": "Room Inspection Check (10 Kamar)",
+    "room_4_5": "Room Inspection Check (10 Kamar)",
+    "room_4_6": "Room Inspection Check (10 Kamar)",
+    "room_4_7": "Room Inspection Check (10 Kamar)",
+    "room_4_8": "Room Inspection Check (10 Kamar)",
+    "room_4_9": "Room Inspection Check (10 Kamar)",
+    "room_4_10": "Room Inspection Check (10 Kamar)",
     "task_5": "Cek Grooming Team sesuai standar (rambut, seragam, kebersihan)",
     "task_6": "Memastikan Daily Cleaning & Activity sesuai dengan MJA serta Planning yang ada",
     "task_7": "Memastikan Master Checklist Room Project HK diisi sesuai dengan Planning dan Act",
@@ -5721,34 +5730,292 @@ const ROLE_TASKS = {
           </div>
         </div>
         <div class="task-category">
-          <div class="task-cat-header">
+          <div class="task-cat-header" style="background:linear-gradient(135deg,#1a3a5c,#2d6a9f);">
             <span style="font-size:16px;">🚪</span>
-            <span class="task-cat-title">Check 10 Room (With Checklist)</span>
-            <span class="task-cat-count">0/1</span>
+            <span class="task-cat-title" style="color:white;">Room Inspection Check (10 Kamar)</span>
+            <span class="task-cat-count" style="background:rgba(255,255,255,0.2);color:white;">0/10</span>
           </div>
-          <div class="task-item" id="task_4" onclick="toggleTask('task_4')">
-            <div class="task-item-top">
-              <div class="task-number" id="task_4-num" data-orig-num="4">4</div>
-              <span class="task-text">Mengecek Standar Room Cleanliness menggunakan Form Inspection Room</span>
+          <div style="padding:8px 0;">
+          <div class="task-item" id="room_4_1" data-status="note_only" style="margin-bottom:8px;border:1.5px solid var(--gray-200);border-radius:12px;padding:12px;" onclick="toggleTask('room_4_1')">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+              <span style="font-size:13px;font-weight:700;color:var(--navy);min-width:60px;">Kamar 1</span>
+              <input type="text" id="room_4_1-room-num" placeholder="No. Kamar (wajib)"
+                style="flex:1;padding:8px 12px;border:1.5px solid var(--gray-200);border-radius:8px;font-family:inherit;font-size:13px;"
+                onclick="event.stopPropagation()" oninput="autoSaveDraft('room_4_1')">
             </div>
-            <div class="task-status-row">
-              <button class="status-btn" onclick="setStatus(event,'task_4','done')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,'task_4','not')">✗ Tidak Dikerjakan</button>
+            <div style="display:flex;gap:8px;margin-bottom:8px;">
+              <button onclick="event.stopPropagation();setRoomStatus('room_4_1','done')" id="room_4_1-btn-done"
+                style="flex:1;padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;background:var(--gray-50);cursor:pointer;">✓ Sudah</button>
+              <button onclick="event.stopPropagation();setRoomStatus('room_4_1','not')" id="room_4_1-btn-not"
+                style="flex:1;padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;background:var(--gray-50);cursor:pointer;">✗ Tidak Dikerjakan</button>
             </div>
-            <div class="task-upload-wrap" id="task_4-upload">
-              <div class="task-upload-area" id="task_4-upload-area">
-                <input type="file" accept="image/*,.pdf,.doc,.docx" multiple onchange="handleFileUpload(this,'task_4')">
-                <span class="task-upload-icon">📎</span>
+            <div class="task-upload-wrap" id="room_4_1-upload" style="display:none;">
+              <div class="task-upload-area" id="room_4_1-upload-area">
+                <input type="file" accept="image/*,.pdf" multiple onchange="handleFileUpload(this,'room_4_1')">
+                <span class="task-upload-icon">📸</span>
                 <div class="task-upload-text">
-                  <strong>Upload Foto / Dokumen</strong>
-                  <span>Wajib jika status Sudah atau Proses</span>
+                  <strong>Upload Foto Kamar 1</strong>
+                  <span>Wajib diupload</span>
                 </div>
               </div>
-              <div class="file-preview-list" id="task_4-filelist"></div>
+              <div class="file-preview-list" id="room_4_1-filelist"></div>
             </div>
-            <div class="task-note-wrap" id="task_4-note">
-              <textarea class="task-note" rows="2" placeholder="Wajib diisi — deskripsikan apa yang dikerjakan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+            <div class="task-note-wrap" id="room_4_1-note" style="margin-top:8px;">
+              <textarea class="task-note" rows="2" placeholder="Keterangan kondisi kamar (wajib diisi)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
             </div>
+          </div>
+          <div class="task-item" id="room_4_2" data-status="note_only" style="margin-bottom:8px;border:1.5px solid var(--gray-200);border-radius:12px;padding:12px;" onclick="toggleTask('room_4_2')">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+              <span style="font-size:13px;font-weight:700;color:var(--navy);min-width:60px;">Kamar 2</span>
+              <input type="text" id="room_4_2-room-num" placeholder="No. Kamar (wajib)"
+                style="flex:1;padding:8px 12px;border:1.5px solid var(--gray-200);border-radius:8px;font-family:inherit;font-size:13px;"
+                onclick="event.stopPropagation()" oninput="autoSaveDraft('room_4_2')">
+            </div>
+            <div style="display:flex;gap:8px;margin-bottom:8px;">
+              <button onclick="event.stopPropagation();setRoomStatus('room_4_2','done')" id="room_4_2-btn-done"
+                style="flex:1;padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;background:var(--gray-50);cursor:pointer;">✓ Sudah</button>
+              <button onclick="event.stopPropagation();setRoomStatus('room_4_2','not')" id="room_4_2-btn-not"
+                style="flex:1;padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;background:var(--gray-50);cursor:pointer;">✗ Tidak Dikerjakan</button>
+            </div>
+            <div class="task-upload-wrap" id="room_4_2-upload" style="display:none;">
+              <div class="task-upload-area" id="room_4_2-upload-area">
+                <input type="file" accept="image/*,.pdf" multiple onchange="handleFileUpload(this,'room_4_2')">
+                <span class="task-upload-icon">📸</span>
+                <div class="task-upload-text">
+                  <strong>Upload Foto Kamar 2</strong>
+                  <span>Wajib diupload</span>
+                </div>
+              </div>
+              <div class="file-preview-list" id="room_4_2-filelist"></div>
+            </div>
+            <div class="task-note-wrap" id="room_4_2-note" style="margin-top:8px;">
+              <textarea class="task-note" rows="2" placeholder="Keterangan kondisi kamar (wajib diisi)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+            </div>
+          </div>
+          <div class="task-item" id="room_4_3" data-status="note_only" style="margin-bottom:8px;border:1.5px solid var(--gray-200);border-radius:12px;padding:12px;" onclick="toggleTask('room_4_3')">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+              <span style="font-size:13px;font-weight:700;color:var(--navy);min-width:60px;">Kamar 3</span>
+              <input type="text" id="room_4_3-room-num" placeholder="No. Kamar (wajib)"
+                style="flex:1;padding:8px 12px;border:1.5px solid var(--gray-200);border-radius:8px;font-family:inherit;font-size:13px;"
+                onclick="event.stopPropagation()" oninput="autoSaveDraft('room_4_3')">
+            </div>
+            <div style="display:flex;gap:8px;margin-bottom:8px;">
+              <button onclick="event.stopPropagation();setRoomStatus('room_4_3','done')" id="room_4_3-btn-done"
+                style="flex:1;padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;background:var(--gray-50);cursor:pointer;">✓ Sudah</button>
+              <button onclick="event.stopPropagation();setRoomStatus('room_4_3','not')" id="room_4_3-btn-not"
+                style="flex:1;padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;background:var(--gray-50);cursor:pointer;">✗ Tidak Dikerjakan</button>
+            </div>
+            <div class="task-upload-wrap" id="room_4_3-upload" style="display:none;">
+              <div class="task-upload-area" id="room_4_3-upload-area">
+                <input type="file" accept="image/*,.pdf" multiple onchange="handleFileUpload(this,'room_4_3')">
+                <span class="task-upload-icon">📸</span>
+                <div class="task-upload-text">
+                  <strong>Upload Foto Kamar 3</strong>
+                  <span>Wajib diupload</span>
+                </div>
+              </div>
+              <div class="file-preview-list" id="room_4_3-filelist"></div>
+            </div>
+            <div class="task-note-wrap" id="room_4_3-note" style="margin-top:8px;">
+              <textarea class="task-note" rows="2" placeholder="Keterangan kondisi kamar (wajib diisi)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+            </div>
+          </div>
+          <div class="task-item" id="room_4_4" data-status="note_only" style="margin-bottom:8px;border:1.5px solid var(--gray-200);border-radius:12px;padding:12px;" onclick="toggleTask('room_4_4')">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+              <span style="font-size:13px;font-weight:700;color:var(--navy);min-width:60px;">Kamar 4</span>
+              <input type="text" id="room_4_4-room-num" placeholder="No. Kamar (wajib)"
+                style="flex:1;padding:8px 12px;border:1.5px solid var(--gray-200);border-radius:8px;font-family:inherit;font-size:13px;"
+                onclick="event.stopPropagation()" oninput="autoSaveDraft('room_4_4')">
+            </div>
+            <div style="display:flex;gap:8px;margin-bottom:8px;">
+              <button onclick="event.stopPropagation();setRoomStatus('room_4_4','done')" id="room_4_4-btn-done"
+                style="flex:1;padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;background:var(--gray-50);cursor:pointer;">✓ Sudah</button>
+              <button onclick="event.stopPropagation();setRoomStatus('room_4_4','not')" id="room_4_4-btn-not"
+                style="flex:1;padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;background:var(--gray-50);cursor:pointer;">✗ Tidak Dikerjakan</button>
+            </div>
+            <div class="task-upload-wrap" id="room_4_4-upload" style="display:none;">
+              <div class="task-upload-area" id="room_4_4-upload-area">
+                <input type="file" accept="image/*,.pdf" multiple onchange="handleFileUpload(this,'room_4_4')">
+                <span class="task-upload-icon">📸</span>
+                <div class="task-upload-text">
+                  <strong>Upload Foto Kamar 4</strong>
+                  <span>Wajib diupload</span>
+                </div>
+              </div>
+              <div class="file-preview-list" id="room_4_4-filelist"></div>
+            </div>
+            <div class="task-note-wrap" id="room_4_4-note" style="margin-top:8px;">
+              <textarea class="task-note" rows="2" placeholder="Keterangan kondisi kamar (wajib diisi)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+            </div>
+          </div>
+          <div class="task-item" id="room_4_5" data-status="note_only" style="margin-bottom:8px;border:1.5px solid var(--gray-200);border-radius:12px;padding:12px;" onclick="toggleTask('room_4_5')">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+              <span style="font-size:13px;font-weight:700;color:var(--navy);min-width:60px;">Kamar 5</span>
+              <input type="text" id="room_4_5-room-num" placeholder="No. Kamar (wajib)"
+                style="flex:1;padding:8px 12px;border:1.5px solid var(--gray-200);border-radius:8px;font-family:inherit;font-size:13px;"
+                onclick="event.stopPropagation()" oninput="autoSaveDraft('room_4_5')">
+            </div>
+            <div style="display:flex;gap:8px;margin-bottom:8px;">
+              <button onclick="event.stopPropagation();setRoomStatus('room_4_5','done')" id="room_4_5-btn-done"
+                style="flex:1;padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;background:var(--gray-50);cursor:pointer;">✓ Sudah</button>
+              <button onclick="event.stopPropagation();setRoomStatus('room_4_5','not')" id="room_4_5-btn-not"
+                style="flex:1;padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;background:var(--gray-50);cursor:pointer;">✗ Tidak Dikerjakan</button>
+            </div>
+            <div class="task-upload-wrap" id="room_4_5-upload" style="display:none;">
+              <div class="task-upload-area" id="room_4_5-upload-area">
+                <input type="file" accept="image/*,.pdf" multiple onchange="handleFileUpload(this,'room_4_5')">
+                <span class="task-upload-icon">📸</span>
+                <div class="task-upload-text">
+                  <strong>Upload Foto Kamar 5</strong>
+                  <span>Wajib diupload</span>
+                </div>
+              </div>
+              <div class="file-preview-list" id="room_4_5-filelist"></div>
+            </div>
+            <div class="task-note-wrap" id="room_4_5-note" style="margin-top:8px;">
+              <textarea class="task-note" rows="2" placeholder="Keterangan kondisi kamar (wajib diisi)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+            </div>
+          </div>
+          <div class="task-item" id="room_4_6" data-status="note_only" style="margin-bottom:8px;border:1.5px solid var(--gray-200);border-radius:12px;padding:12px;" onclick="toggleTask('room_4_6')">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+              <span style="font-size:13px;font-weight:700;color:var(--navy);min-width:60px;">Kamar 6</span>
+              <input type="text" id="room_4_6-room-num" placeholder="No. Kamar (wajib)"
+                style="flex:1;padding:8px 12px;border:1.5px solid var(--gray-200);border-radius:8px;font-family:inherit;font-size:13px;"
+                onclick="event.stopPropagation()" oninput="autoSaveDraft('room_4_6')">
+            </div>
+            <div style="display:flex;gap:8px;margin-bottom:8px;">
+              <button onclick="event.stopPropagation();setRoomStatus('room_4_6','done')" id="room_4_6-btn-done"
+                style="flex:1;padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;background:var(--gray-50);cursor:pointer;">✓ Sudah</button>
+              <button onclick="event.stopPropagation();setRoomStatus('room_4_6','not')" id="room_4_6-btn-not"
+                style="flex:1;padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;background:var(--gray-50);cursor:pointer;">✗ Tidak Dikerjakan</button>
+            </div>
+            <div class="task-upload-wrap" id="room_4_6-upload" style="display:none;">
+              <div class="task-upload-area" id="room_4_6-upload-area">
+                <input type="file" accept="image/*,.pdf" multiple onchange="handleFileUpload(this,'room_4_6')">
+                <span class="task-upload-icon">📸</span>
+                <div class="task-upload-text">
+                  <strong>Upload Foto Kamar 6</strong>
+                  <span>Wajib diupload</span>
+                </div>
+              </div>
+              <div class="file-preview-list" id="room_4_6-filelist"></div>
+            </div>
+            <div class="task-note-wrap" id="room_4_6-note" style="margin-top:8px;">
+              <textarea class="task-note" rows="2" placeholder="Keterangan kondisi kamar (wajib diisi)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+            </div>
+          </div>
+          <div class="task-item" id="room_4_7" data-status="note_only" style="margin-bottom:8px;border:1.5px solid var(--gray-200);border-radius:12px;padding:12px;" onclick="toggleTask('room_4_7')">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+              <span style="font-size:13px;font-weight:700;color:var(--navy);min-width:60px;">Kamar 7</span>
+              <input type="text" id="room_4_7-room-num" placeholder="No. Kamar (wajib)"
+                style="flex:1;padding:8px 12px;border:1.5px solid var(--gray-200);border-radius:8px;font-family:inherit;font-size:13px;"
+                onclick="event.stopPropagation()" oninput="autoSaveDraft('room_4_7')">
+            </div>
+            <div style="display:flex;gap:8px;margin-bottom:8px;">
+              <button onclick="event.stopPropagation();setRoomStatus('room_4_7','done')" id="room_4_7-btn-done"
+                style="flex:1;padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;background:var(--gray-50);cursor:pointer;">✓ Sudah</button>
+              <button onclick="event.stopPropagation();setRoomStatus('room_4_7','not')" id="room_4_7-btn-not"
+                style="flex:1;padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;background:var(--gray-50);cursor:pointer;">✗ Tidak Dikerjakan</button>
+            </div>
+            <div class="task-upload-wrap" id="room_4_7-upload" style="display:none;">
+              <div class="task-upload-area" id="room_4_7-upload-area">
+                <input type="file" accept="image/*,.pdf" multiple onchange="handleFileUpload(this,'room_4_7')">
+                <span class="task-upload-icon">📸</span>
+                <div class="task-upload-text">
+                  <strong>Upload Foto Kamar 7</strong>
+                  <span>Wajib diupload</span>
+                </div>
+              </div>
+              <div class="file-preview-list" id="room_4_7-filelist"></div>
+            </div>
+            <div class="task-note-wrap" id="room_4_7-note" style="margin-top:8px;">
+              <textarea class="task-note" rows="2" placeholder="Keterangan kondisi kamar (wajib diisi)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+            </div>
+          </div>
+          <div class="task-item" id="room_4_8" data-status="note_only" style="margin-bottom:8px;border:1.5px solid var(--gray-200);border-radius:12px;padding:12px;" onclick="toggleTask('room_4_8')">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+              <span style="font-size:13px;font-weight:700;color:var(--navy);min-width:60px;">Kamar 8</span>
+              <input type="text" id="room_4_8-room-num" placeholder="No. Kamar (wajib)"
+                style="flex:1;padding:8px 12px;border:1.5px solid var(--gray-200);border-radius:8px;font-family:inherit;font-size:13px;"
+                onclick="event.stopPropagation()" oninput="autoSaveDraft('room_4_8')">
+            </div>
+            <div style="display:flex;gap:8px;margin-bottom:8px;">
+              <button onclick="event.stopPropagation();setRoomStatus('room_4_8','done')" id="room_4_8-btn-done"
+                style="flex:1;padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;background:var(--gray-50);cursor:pointer;">✓ Sudah</button>
+              <button onclick="event.stopPropagation();setRoomStatus('room_4_8','not')" id="room_4_8-btn-not"
+                style="flex:1;padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;background:var(--gray-50);cursor:pointer;">✗ Tidak Dikerjakan</button>
+            </div>
+            <div class="task-upload-wrap" id="room_4_8-upload" style="display:none;">
+              <div class="task-upload-area" id="room_4_8-upload-area">
+                <input type="file" accept="image/*,.pdf" multiple onchange="handleFileUpload(this,'room_4_8')">
+                <span class="task-upload-icon">📸</span>
+                <div class="task-upload-text">
+                  <strong>Upload Foto Kamar 8</strong>
+                  <span>Wajib diupload</span>
+                </div>
+              </div>
+              <div class="file-preview-list" id="room_4_8-filelist"></div>
+            </div>
+            <div class="task-note-wrap" id="room_4_8-note" style="margin-top:8px;">
+              <textarea class="task-note" rows="2" placeholder="Keterangan kondisi kamar (wajib diisi)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+            </div>
+          </div>
+          <div class="task-item" id="room_4_9" data-status="note_only" style="margin-bottom:8px;border:1.5px solid var(--gray-200);border-radius:12px;padding:12px;" onclick="toggleTask('room_4_9')">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+              <span style="font-size:13px;font-weight:700;color:var(--navy);min-width:60px;">Kamar 9</span>
+              <input type="text" id="room_4_9-room-num" placeholder="No. Kamar (wajib)"
+                style="flex:1;padding:8px 12px;border:1.5px solid var(--gray-200);border-radius:8px;font-family:inherit;font-size:13px;"
+                onclick="event.stopPropagation()" oninput="autoSaveDraft('room_4_9')">
+            </div>
+            <div style="display:flex;gap:8px;margin-bottom:8px;">
+              <button onclick="event.stopPropagation();setRoomStatus('room_4_9','done')" id="room_4_9-btn-done"
+                style="flex:1;padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;background:var(--gray-50);cursor:pointer;">✓ Sudah</button>
+              <button onclick="event.stopPropagation();setRoomStatus('room_4_9','not')" id="room_4_9-btn-not"
+                style="flex:1;padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;background:var(--gray-50);cursor:pointer;">✗ Tidak Dikerjakan</button>
+            </div>
+            <div class="task-upload-wrap" id="room_4_9-upload" style="display:none;">
+              <div class="task-upload-area" id="room_4_9-upload-area">
+                <input type="file" accept="image/*,.pdf" multiple onchange="handleFileUpload(this,'room_4_9')">
+                <span class="task-upload-icon">📸</span>
+                <div class="task-upload-text">
+                  <strong>Upload Foto Kamar 9</strong>
+                  <span>Wajib diupload</span>
+                </div>
+              </div>
+              <div class="file-preview-list" id="room_4_9-filelist"></div>
+            </div>
+            <div class="task-note-wrap" id="room_4_9-note" style="margin-top:8px;">
+              <textarea class="task-note" rows="2" placeholder="Keterangan kondisi kamar (wajib diisi)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+            </div>
+          </div>
+          <div class="task-item" id="room_4_10" data-status="note_only" style="margin-bottom:8px;border:1.5px solid var(--gray-200);border-radius:12px;padding:12px;" onclick="toggleTask('room_4_10')">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+              <span style="font-size:13px;font-weight:700;color:var(--navy);min-width:60px;">Kamar 10</span>
+              <input type="text" id="room_4_10-room-num" placeholder="No. Kamar (wajib)"
+                style="flex:1;padding:8px 12px;border:1.5px solid var(--gray-200);border-radius:8px;font-family:inherit;font-size:13px;"
+                onclick="event.stopPropagation()" oninput="autoSaveDraft('room_4_10')">
+            </div>
+            <div style="display:flex;gap:8px;margin-bottom:8px;">
+              <button onclick="event.stopPropagation();setRoomStatus('room_4_10','done')" id="room_4_10-btn-done"
+                style="flex:1;padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;background:var(--gray-50);cursor:pointer;">✓ Sudah</button>
+              <button onclick="event.stopPropagation();setRoomStatus('room_4_10','not')" id="room_4_10-btn-not"
+                style="flex:1;padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;background:var(--gray-50);cursor:pointer;">✗ Tidak Dikerjakan</button>
+            </div>
+            <div class="task-upload-wrap" id="room_4_10-upload" style="display:none;">
+              <div class="task-upload-area" id="room_4_10-upload-area">
+                <input type="file" accept="image/*,.pdf" multiple onchange="handleFileUpload(this,'room_4_10')">
+                <span class="task-upload-icon">📸</span>
+                <div class="task-upload-text">
+                  <strong>Upload Foto Kamar 10</strong>
+                  <span>Wajib diupload</span>
+                </div>
+              </div>
+              <div class="file-preview-list" id="room_4_10-filelist"></div>
+            </div>
+            <div class="task-note-wrap" id="room_4_10-note" style="margin-top:8px;">
+              <textarea class="task-note" rows="2" placeholder="Keterangan kondisi kamar (wajib diisi)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+            </div>
+          </div>
           </div>
         </div>
         <div class="task-category">
@@ -11948,7 +12215,7 @@ window.FB_DETAIL_MAP = {"F&B Manager": {"task_1": "Memastikan Kitchen Area Bersi
             'HM Verse Cirebon': 23, 'HM Oak Tree': 23,
             'Ops HR Manager': 15, 'HR Officer': 15,
             'Chief Engineering Corporate': 9,
-            'EHK Corporate': 9, 'CRA Corporate': 9, 'F&B Manager': 12, 'Team Kitchen': 12, 'F&B Attendant': 12
+            'EHK Corporate': 18, 'CRA Corporate': 9, 'F&B Manager': 12, 'Team Kitchen': 12, 'F&B Attendant': 12
           };
           total = roleTotals[currentRole] || 19;
           drafts.forEach(d => {
