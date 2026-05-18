@@ -4739,6 +4739,14 @@
 
     const planNote = document.querySelector('#activity-plan .task-note');
     const planText = planNote && planNote.value.trim() ? planNote.value.trim() : '';
+
+    // Unit Visit Tomorrow — hanya untuk Corporate role
+    if (needsUnitVisitTomorrow(currentRole)) {
+      const apHotelValEl = document.getElementById('activity-plan-hotel-val');
+      const visitHotel = apHotelValEl && apHotelValEl.value ? apHotelValEl.value : '';
+      if (visitHotel) msg += `\n🏨 *Unit Visit Tomorrow:*\n${visitHotel}\n`;
+    }
+
     if (planText) msg += `\n📝 *Planning for Tomorrow:*\n${planText}\n`;
     msg += `\n━━━━━━━━━━━━━━━━━━━━━━`;
     msg += `\n_Dikirim via Verse Hotels Report App_`;
