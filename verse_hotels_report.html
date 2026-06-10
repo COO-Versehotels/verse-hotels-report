@@ -12349,6 +12349,8 @@ window.FB_DETAIL_MAP = {"F&B Manager": {"task_1": "Memastikan Kitchen Area Bersi
     const content = document.getElementById('pub-content');
     content.innerHTML = '<div style="text-align:center;padding:40px;color:#aaa;">⏳ Memuat data...</div>';
 
+    const escHtml = (str) => String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
     try {
       const res = await fetch(
         SUPA_URL + '/rest/v1/laporan_detail?tanggal=eq.' + tanggal +
@@ -12378,17 +12380,19 @@ window.FB_DETAIL_MAP = {"F&B Manager": {"task_1": "Memastikan Kitchen Area Bersi
         let s = `<div style="margin-bottom:16px;">
           <div style="font-weight:700;color:${color};margin-bottom:8px;font-size:13px;">${icon} ${label}</div>`;
         list.forEach(item => {
-          const fileUrls = item.file_urls ? JSON.parse(item.file_urls) : [];
+          let fileUrls = [];
+          try { fileUrls = item.file_urls ? JSON.parse(item.file_urls) : []; } catch(e) {}
+          const taskLabel = escHtml(item.task_id.replace(/_/g,' ').replace(/-/g,' '));
           s += `<div style="background:#f9f9f9;border-radius:10px;padding:12px;margin-bottom:8px;border-left:3px solid ${color};">`;
-          s += `<div style="font-size:13px;font-weight:600;color:#333;">${esc(item.task_id.replace(/_/g,' ').replace(/-/g,' '))}</div>`;
+          s += `<div style="font-size:13px;font-weight:600;color:#333;">${taskLabel}</div>`;
           if (item.keterangan) {
-            s += `<div style="font-size:12px;color:#666;margin-top:4px;">${esc(item.keterangan)}</div>`;
+            s += `<div style="font-size:12px;color:#666;margin-top:4px;">${escHtml(item.keterangan)}</div>`;
           }
           if (fileUrls.length) {
             s += '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;">';
             fileUrls.forEach(url => {
               s += `<a href="${url}" target="_blank" style="display:block;">
-                <img src="${url}" style="width:80px;height:80px;object-fit:cover;border-radius:8px;border:1px solid #eee;" loading="lazy" onerror="this.style.display='none'">
+                <img src="${url}" style="width:80px;height:80px;object-fit:cover;border-radius:8px;border:1px solid #eee;" loading="lazy" onerror="this.style.display=\'none\'">
               </a>`;
             });
             s += '</div>';
@@ -12414,7 +12418,7 @@ window.FB_DETAIL_MAP = {"F&B Manager": {"task_1": "Memastikan Kitchen Area Bersi
   }
 
   // Cek URL parameter saat load
-  (function checkPublicView() {
+  document.addEventListener('DOMContentLoaded', function checkPublicView() {
     const params = new URLSearchParams(window.location.search);
     const view = params.get('view');
     if (view === 'detail') {
@@ -12427,7 +12431,7 @@ window.FB_DETAIL_MAP = {"F&B Manager": {"task_1": "Memastikan Kitchen Area Bersi
         loadPublicDetail(role, hotel, tanggal);
       }
     }
-  })();
+  });
 </script>
 
 <!-- Public detail view screen -->
