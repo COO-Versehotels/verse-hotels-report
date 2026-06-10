@@ -12339,17 +12339,46 @@ window.FB_DETAIL_MAP = {"F&B Manager": {"task_1": "Memastikan Kitchen Area Bersi
     const screen = document.getElementById('screen-public-detail');
     screen.style.display = 'block';
 
-    // Format tanggal display
     const [y, m, d] = tanggal.split('-');
     const bulan = ['','Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
     const tglDisplay = `${parseInt(d)} ${bulan[parseInt(m)]} ${y}`;
-
     document.getElementById('pub-meta').textContent = `${role} · ${hotel} · ${tglDisplay}`;
 
     const content = document.getElementById('pub-content');
     content.innerHTML = '<div style="text-align:center;padding:40px;color:#aaa;">⏳ Memuat data...</div>';
+    const escHtml = (str) => String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 
-    const escHtml = (str) => String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    // Build task name map dari ROLE_TASKS HTML
+    const taskNameMap = {};
+    const taskData = ROLE_TASKS[role] || ROLE_TASKS['Ops HR Manager'];
+    let tempDiv = document.getElementById('_pub_render');
+    if (!tempDiv) {
+      tempDiv = document.createElement('div');
+      tempDiv.id = '_pub_render';
+      tempDiv.style.cssText = 'display:none;position:absolute;left:-9999px;';
+      document.body.appendChild(tempDiv);
+    }
+    if (taskData) {
+      tempDiv.innerHTML = taskData.html;
+      tempDiv.querySelectorAll('.task-item[id]').forEach(item => {
+        const id = item.id;
+        if (!id) return;
+        const textEl = item.querySelector('.task-text');
+        if (textEl) { taskNameMap[id] = textEl.textContent.trim(); return; }
+        const catTitle = (item.closest('.task-category')||{}).querySelector && item.closest('.task-category').querySelector('.task-cat-title');
+        if (catTitle) { taskNameMap[id] = catTitle.textContent.trim(); return; }
+      });
+    }
+    taskNameMap['activity-plan'] = 'Activity Plan';
+    taskNameMap['unit-visit-tomorrow'] = 'Unit Visit Tomorrow';
+    taskNameMap['planning-tomorrow'] = 'Planning for Tomorrow';
+
+    const getTaskName = (taskId) => {
+      if (taskNameMap[taskId]) return taskNameMap[taskId];
+      if (taskId.startsWith('fu')) return 'Follow Up';
+      if (taskId.startsWith('room_')) return 'Room Inspection';
+      return taskId.replace(/_/g,' ').replace(/-/g,' ');
+    };
 
     try {
       const res = await fetch(
@@ -12359,60 +12388,52 @@ window.FB_DETAIL_MAP = {"F&B Manager": {"task_1": "Memastikan Kitchen Area Bersi
         '&order=task_id.asc&select=*',
         { headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY } }
       );
-
       const items = res.ok ? await res.json() : [];
 
       if (!items || items.length === 0) {
-        content.innerHTML = '<div style="text-align:center;padding:40px;color:#aaa;">Tidak ada data dokumentasi untuk laporan ini.</div>';
+        content.innerHTML = '<div style="text-align:center;padding:40px;color:#aaa;">Tidak ada data dokumentasi.</div>';
         return;
       }
 
-      // Group by status
       const done = items.filter(i => i.status === 'done');
-      const progress = items.filter(i => i.status === 'progress');
-      const not = items.filter(i => i.status === 'not');
-      const notes = items.filter(i => i.status === 'note_only');
+      const prog = items.filter(i => i.status === 'progress');
+      const not  = items.filter(i => i.status === 'not');
+      const note = items.filter(i => i.status === 'note_only');
 
-      let html = '';
-
-      const renderItems = (list, icon, label, color) => {
+      const renderSection = (list, icon, label, color) => {
         if (!list.length) return '';
-        let s = `<div style="margin-bottom:16px;">
-          <div style="font-weight:700;color:${color};margin-bottom:8px;font-size:13px;">${icon} ${label}</div>`;
+        let s = `<div style="margin-bottom:20px;"><div style="font-weight:700;color:${color};margin-bottom:10px;font-size:14px;">${icon} ${label}</div>`;
         list.forEach(item => {
-          let fileUrls = [];
-          try { fileUrls = item.file_urls ? JSON.parse(item.file_urls) : []; } catch(e) {}
-          const taskLabel = escHtml(item.task_id.replace(/_/g,' ').replace(/-/g,' '));
-          s += `<div style="background:#f9f9f9;border-radius:10px;padding:12px;margin-bottom:8px;border-left:3px solid ${color};">`;
-          s += `<div style="font-size:13px;font-weight:600;color:#333;">${taskLabel}</div>`;
-          if (item.keterangan) {
-            s += `<div style="font-size:12px;color:#666;margin-top:4px;">${escHtml(item.keterangan)}</div>`;
-          }
-          if (fileUrls.length) {
-            s += '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;">';
-            fileUrls.forEach(url => {
-              s += `<a href="${url}" target="_blank" style="display:block;">
-                <img src="${url}" style="width:80px;height:80px;object-fit:cover;border-radius:8px;border:1px solid #eee;" loading="lazy" onerror="this.style.display=\'none\'">
-              </a>`;
+          let urls = [];
+          try { urls = item.file_urls ? JSON.parse(item.file_urls) : []; } catch(e) {}
+          const name = escHtml(getTaskName(item.task_id));
+          s += `<div style="background:#f9f9f9;border-radius:12px;padding:12px 14px;margin-bottom:8px;border-left:4px solid ${color};">`;
+          s += `<div style="font-size:14px;font-weight:700;color:#1a1a2e;margin-bottom:${item.keterangan||urls.length?'6px':'0'};">${name}</div>`;
+          if (item.keterangan) s += `<div style="font-size:13px;color:#555;line-height:1.5;">${escHtml(item.keterangan)}</div>`;
+          if (urls.length) {
+            s += `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;">`;
+            urls.forEach(url => {
+              if (/\.(jpg|jpeg|png|gif|webp|heic)(\?|$)/i.test(url)) {
+                s += `<a href="${url}" target="_blank"><img src="${url}" style="width:90px;height:90px;object-fit:cover;border-radius:8px;border:1px solid #e0e0e0;" loading="lazy" onerror="this.parentElement.style.display='none'"></a>`;
+              } else {
+                s += `<a href="${url}" target="_blank" style="display:inline-flex;align-items:center;gap:4px;background:#e8f4fd;color:#2980b9;padding:6px 10px;border-radius:8px;font-size:12px;text-decoration:none;">📎 Lihat File</a>`;
+              }
             });
-            s += '</div>';
+            s += `</div>`;
           }
-          s += '</div>';
+          s += `</div>`;
         });
-        s += '</div>';
-        return s;
+        return s + `</div>`;
       };
 
-      html += renderItems(done, '✅', 'Sudah Dilakukan', '#2ecc71');
-      html += renderItems(progress, '⏳', 'Dalam Proses', '#f39c12');
-      html += renderItems(not, '❌', 'Belum Dilakukan', '#e74c3c');
-      html += renderItems(notes, '📝', 'Catatan', '#3498db');
-
-      if (!html) html = '<div style="text-align:center;padding:40px;color:#aaa;">Tidak ada data.</div>';
-      content.innerHTML = html;
+      let html = renderSection(done,'✅','Sudah Dilakukan','#27ae60');
+      html += renderSection(prog,'⏳','Dalam Proses','#e67e22');
+      html += renderSection(not,'❌','Belum Dilakukan','#e74c3c');
+      html += renderSection(note,'📝','Catatan','#2980b9');
+      content.innerHTML = html || '<div style="text-align:center;padding:40px;color:#aaa;">Tidak ada data.</div>';
 
     } catch(e) {
-      content.innerHTML = '<div style="text-align:center;padding:40px;color:#e74c3c;">Gagal memuat data. Coba refresh halaman.</div>';
+      content.innerHTML = '<div style="text-align:center;padding:40px;color:#e74c3c;">Gagal memuat data.</div>';
       console.error(e);
     }
   }
