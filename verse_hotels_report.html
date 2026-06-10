@@ -12404,17 +12404,27 @@ window.FB_DETAIL_MAP = {"F&B Manager": {"task_1": "Memastikan Kitchen Area Bersi
         if (!list.length) return '';
         let s = `<div style="margin-bottom:20px;"><div style="font-weight:700;color:${color};margin-bottom:10px;font-size:14px;">${icon} ${label}</div>`;
         list.forEach(item => {
+          // Parse file_urls — bisa array of strings atau array of {name,url,type}
           let urls = [];
-          try { urls = item.file_urls ? JSON.parse(item.file_urls) : []; } catch(e) {}
+          try {
+            const raw = item.file_urls;
+            if (!raw) { urls = []; }
+            else if (Array.isArray(raw)) { urls = raw; }
+            else if (typeof raw === 'string') { urls = JSON.parse(raw); }
+          } catch(e) { urls = []; }
+          // Normalize: extract URL string
+          const fileUrls = urls.map(f => typeof f === 'string' ? f : (f.url || '')).filter(u => u && u.startsWith('http'));
+
           const name = escHtml(getTaskName(item.task_id));
           s += `<div style="background:#f9f9f9;border-radius:12px;padding:12px 14px;margin-bottom:8px;border-left:4px solid ${color};">`;
-          s += `<div style="font-size:14px;font-weight:700;color:#1a1a2e;margin-bottom:${item.keterangan||urls.length?'6px':'0'};">${name}</div>`;
+          s += `<div style="font-size:14px;font-weight:700;color:#1a1a2e;margin-bottom:${item.keterangan||fileUrls.length?'6px':'0'};">${name}</div>`;
           if (item.keterangan) s += `<div style="font-size:13px;color:#555;line-height:1.5;">${escHtml(item.keterangan)}</div>`;
-          if (urls.length) {
+          if (fileUrls.length) {
             s += `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;">`;
-            urls.forEach(url => {
-              if (/\.(jpg|jpeg|png|gif|webp|heic)(\?|$)/i.test(url)) {
-                s += `<a href="${url}" target="_blank"><img src="${url}" style="width:90px;height:90px;object-fit:cover;border-radius:8px;border:1px solid #e0e0e0;" loading="lazy" onerror="this.parentElement.style.display='none'"></a>`;
+            fileUrls.forEach(url => {
+              const isImg = /supabase\.co.*storage|\.(jpg|jpeg|png|gif|webp|heic)(\?|$)/i.test(url);
+              if (isImg) {
+                s += `<a href="${url}" target="_blank" style="display:block;flex-shrink:0;"><img src="${url}" style="width:90px;height:90px;object-fit:cover;border-radius:8px;border:1px solid #e0e0e0;" loading="lazy" onerror="this.parentElement.innerHTML='📷'"></a>`;
               } else {
                 s += `<a href="${url}" target="_blank" style="display:inline-flex;align-items:center;gap:4px;background:#e8f4fd;color:#2980b9;padding:6px 10px;border-radius:8px;font-size:12px;text-decoration:none;">📎 Lihat File</a>`;
               }
