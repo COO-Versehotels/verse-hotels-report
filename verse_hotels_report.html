@@ -12395,10 +12395,20 @@ window.FB_DETAIL_MAP = {"F&B Manager": {"task_1": "Memastikan Kitchen Area Bersi
         return;
       }
 
-      const done = items.filter(i => i.status === 'done');
-      const prog = items.filter(i => i.status === 'progress');
-      const not  = items.filter(i => i.status === 'not');
-      const note = items.filter(i => i.status === 'note_only');
+      // Deduplikasi: untuk fu items, hapus duplikat berdasarkan keterangan
+      const dedup = (arr) => {
+        const seen = new Set();
+        return arr.filter(i => {
+          const key = i.task_id + '||' + (i.keterangan || '');
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+      };
+      const done = dedup(items.filter(i => i.status === 'done'));
+      const prog = dedup(items.filter(i => i.status === 'progress'));
+      const not  = dedup(items.filter(i => i.status === 'not'));
+      const note = dedup(items.filter(i => i.status === 'note_only'));
 
       const renderSection = (list, icon, label, color) => {
         if (!list.length) return '';
@@ -12412,8 +12422,11 @@ window.FB_DETAIL_MAP = {"F&B Manager": {"task_1": "Memastikan Kitchen Area Bersi
             else if (Array.isArray(raw)) { urls = raw; }
             else if (typeof raw === 'string') { urls = JSON.parse(raw); }
           } catch(e) { urls = []; }
-          // Normalize: extract URL string
-          const fileUrls = urls.map(f => typeof f === 'string' ? f : (f.url || '')).filter(u => u && u.startsWith('http'));
+          // Normalize: extract {url, isImg} dari tiap entry
+          const fileUrls = urls.map(f => {
+            if (typeof f === 'string') return { url: f, isImg: /\.(jpg|jpeg|png|gif|webp|heic)/i.test(f) };
+            return { url: f.url || '', isImg: (f.type && f.type.startsWith('image/')) || /\.(jpg|jpeg|png|gif|webp|heic)/i.test(f.url||'') || /supabase\.co.*storage/i.test(f.url||'') };
+          }).filter(f => f.url && f.url.startsWith('http'));
 
           const name = escHtml(getTaskName(item.task_id));
           s += `<div style="background:#f9f9f9;border-radius:12px;padding:12px 14px;margin-bottom:8px;border-left:4px solid ${color};">`;
@@ -12421,8 +12434,7 @@ window.FB_DETAIL_MAP = {"F&B Manager": {"task_1": "Memastikan Kitchen Area Bersi
           if (item.keterangan) s += `<div style="font-size:13px;color:#555;line-height:1.5;">${escHtml(item.keterangan)}</div>`;
           if (fileUrls.length) {
             s += `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;">`;
-            fileUrls.forEach(url => {
-              const isImg = /supabase\.co.*storage|\.(jpg|jpeg|png|gif|webp|heic)(\?|$)/i.test(url);
+            fileUrls.forEach(({url, isImg}) => {
               if (isImg) {
                 s += `<a href="${url}" target="_blank" style="display:block;flex-shrink:0;"><img src="${url}" style="width:90px;height:90px;object-fit:cover;border-radius:8px;border:1px solid #e0e0e0;" loading="lazy" onerror="this.parentElement.innerHTML='📷'"></a>`;
               } else {
