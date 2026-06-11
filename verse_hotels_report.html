@@ -2019,6 +2019,7 @@
         <p style="color:rgba(255,255,255,0.5);" id="coo-date">Verse Group Hotels</p>
       </div>
       <div class="topbar-right">
+        <span id="coo-user-btn" style="font-size:20px;cursor:pointer;color:var(--gold);margin-right:10px;display:none;" onclick="openUserMgmtReport()" title="Manage User">👥</span>
         <span style="font-size:20px;cursor:pointer;color:var(--gold);" onclick="exportDashboardPDF()" title="Export PDF Konsolidasi">📄</span>
       </div>
     </div>
@@ -2999,6 +3000,9 @@
     if (screen === 'coo') {
       populateCOO();
       startLiveRefresh();
+      // Tombol Manage User hanya untuk COO
+      const ub = document.getElementById('coo-user-btn');
+      if (ub) ub.style.display = (currentRole === 'COO') ? 'inline' : 'none';
     }
 
     // Set default date untuk arsip = hari ini
@@ -3120,15 +3124,35 @@
     }
   }
 
-  function autoLogin() {
+  // Verifikasi PIN: sumber utama tabel report_users di Supabase.
+  // Pengaman: (1) PIN COO 1986 selalu berlaku sebagai kunci cadangan,
+  //           (2) bila database tidak terjangkau, fallback ke daftar PIN tertanam.
+  async function cekPinRole(role, p) {
+    if (role === 'COO' && p === COO_PIN) return true; // kunci cadangan
+    try {
+      const res = await fetch(
+        SUPA_URL + '/rest/v1/report_users?role=eq.' + encodeURIComponent(role) + '&select=pin',
+        { headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY } }
+      );
+      if (res.ok) {
+        const rows = await res.json();
+        if (rows.length > 0) return rows.some(r => r.pin === p);
+        // role belum ada di tabel (mis. SQL belum dijalankan) -> pakai daftar tertanam
+        return p === (ROLE_PINS[role] || '');
+      }
+    } catch (e) { /* jaringan/DB bermasalah -> fallback di bawah */ }
+    return p === (ROLE_PINS[role] || '');
+  }
+
+  async function autoLogin() {
+    if (!currentRole) { showToast('Pilih jabatan dulu!'); pin = ''; updatePinDots(); return; }
+    const masukan = pin;
+    const ok = await cekPinRole(currentRole, masukan);
+    if (!ok) { showToast('PIN salah!'); pin = ''; updatePinDots(); return; }
     if (currentRole === 'COO') {
-      if (pin === COO_PIN) {
-        loginAsCOO();
-      } else { showToast('PIN salah!'); pin = ''; updatePinDots(); }
+      loginAsCOO();
     } else if (currentRole === 'CEO') {
-      if (pin === (ROLE_PINS['CEO'] || '0909')) {
-        loginAsCEO();
-      } else { showToast('PIN salah!'); pin = ''; updatePinDots(); }
+      loginAsCEO();
     } else {
       doLogin();
     }
@@ -3622,8 +3646,7 @@
 
   function doLogin() {
     if (!currentRole) { showToast('Pilih jabatan dulu!'); return; }
-    const correctPin = ROLE_PINS[currentRole] || '1234';
-    if (pin !== correctPin) { showToast('PIN salah!'); pin = ''; updatePinDots(); return; }
+    // Catatan: PIN sudah diverifikasi di autoLogin() lewat tabel report_users.
     document.getElementById('role-display').textContent = currentRole;
     document.getElementById('profile-role-name').textContent = currentRole;
     pin = '';
@@ -12475,6 +12498,126 @@ window.FB_DETAIL_MAP = {"F&B Manager": {"task_1": "Memastikan Kitchen Area Bersi
       }
     }
   });
+
+  // ============ MANAGE USER REPORT (khusus COO) ============
+  const REPORT_ROLE_LIST = ['Ops HR Manager','HR Officer','Chief Engineering Corporate','EHK Corporate','CRA Corporate','F&B Manager','Team Kitchen','F&B Attendant','CEO','COO','HM Verse Lite','HM Verse Luxe','HM Verse Cirebon','HM Oak Tree'];
+  let _umrData = [];
+  const _umrEsc = s => (s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const _umrHeaders = { 'Content-Type':'application/json', 'apikey': SUPA_KEY, 'Authorization':'Bearer '+SUPA_KEY };
+
+  function openUserMgmtReport() {
+    if (currentRole !== 'COO') { showToast('Hanya COO yang dapat mengelola user.'); return; }
+    const old = document.getElementById('umr-overlay'); if (old) old.remove();
+    const ov = document.createElement('div');
+    ov.id = 'umr-overlay';
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;padding:16px;z-index:100000;';
+    ov.innerHTML = `
+      <div style="background:white;border-radius:18px;padding:20px;max-width:520px;width:100%;max-height:88vh;overflow-y:auto;">
+        <div style="font-size:18px;font-weight:800;color:var(--navy);">👥 Manage User</div>
+        <p style="font-size:12px;color:#888;margin:6px 0 12px;">Tambah, edit, atau hapus PIN per jabatan. Satu jabatan boleh punya beberapa PIN (beberapa orang). Perubahan berlaku saat login berikutnya. PIN COO <b>1986</b> adalah kunci utama — tidak dapat dihapus atau diubah.</p>
+        <div id="umr-list" style="font-size:13px;color:#555;">Memuat…</div>
+        <div style="background:#f4f6fa;border-radius:12px;padding:14px;margin-top:14px;">
+          <div id="umr-form-title" style="font-weight:700;color:var(--navy);margin-bottom:8px;">Tambah PIN Baru</div>
+          <input type="hidden" id="umr-edit-pin">
+          <label style="font-size:12px;color:#666;">Jabatan / Role</label>
+          <select id="umr-role" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;margin:4px 0 10px;">
+            ${REPORT_ROLE_LIST.map(r=>`<option value="${_umrEsc(r)}">${_umrEsc(r)}</option>`).join('')}
+          </select>
+          <label style="font-size:12px;color:#666;">PIN (4 digit angka, unik)</label>
+          <input id="umr-pin" maxlength="4" inputmode="numeric" placeholder="cth. 0210" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;margin:4px 0 10px;">
+          <label style="font-size:12px;color:#666;">Nama pemegang PIN (opsional, untuk catatan)</label>
+          <input id="umr-nama" placeholder="cth. Budi - HR baru" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;margin:4px 0 12px;">
+          <div style="display:flex;gap:8px;">
+            <button onclick="simpanReportUser()" style="flex:1;padding:11px;background:var(--navy);color:white;border:none;border-radius:8px;font-weight:700;">Simpan</button>
+            <button id="umr-batal" onclick="resetFormReportUser()" style="display:none;padding:11px 14px;background:#eee;color:#555;border:none;border-radius:8px;">Batal Edit</button>
+          </div>
+        </div>
+        <button onclick="document.getElementById('umr-overlay').remove()" style="width:100%;margin-top:12px;padding:11px;background:#eee;color:#555;border:none;border-radius:8px;">Tutup</button>
+      </div>`;
+    document.body.appendChild(ov);
+    muatReportUsers();
+  }
+  async function muatReportUsers() {
+    const el = document.getElementById('umr-list'); if (!el) return;
+    try {
+      const res = await fetch(SUPA_URL + '/rest/v1/report_users?select=*&order=role,pin', { headers: _umrHeaders });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      _umrData = await res.json();
+      if (!_umrData.length) {
+        el.innerHTML = 'Tabel user kosong. <span style="color:#c0564a;">Jalankan dulu skrip SQL <b>report_users.sql</b> di Supabase, lalu buka ulang menu ini.</span>';
+        return;
+      }
+      el.innerHTML = '<table style="width:100%;border-collapse:collapse;font-size:12px;">' +
+        '<tr style="color:#888;text-align:left;"><th style="padding:6px 4px;">Jabatan</th><th>PIN</th><th>Nama</th><th></th></tr>' +
+        _umrData.map(u => `<tr style="border-top:1px solid #eee;">
+          <td style="padding:7px 4px;">${_umrEsc(u.role)}</td>
+          <td><b>${_umrEsc(u.pin)}</b></td>
+          <td>${_umrEsc(u.nama || '—')}</td>
+          <td style="white-space:nowrap;text-align:right;">
+            ${u.pin === '1986' ? '<span style="font-size:11px;color:#aaa;">kunci utama</span>' : `
+            <button onclick="isiFormEditReportUser('${_umrEsc(u.pin)}')" style="padding:4px 9px;background:#f0f0f0;border:none;border-radius:6px;margin-right:4px;">Edit</button>
+            <button onclick="hapusReportUser('${_umrEsc(u.pin)}')" style="padding:4px 9px;background:#fde8e8;color:#c0564a;border:none;border-radius:6px;">Hapus</button>`}
+          </td></tr>`).join('') + '</table>';
+    } catch (e) {
+      el.innerHTML = '<span style="color:#c0564a;">Gagal memuat daftar user: ' + _umrEsc(e.message || e) + '</span>';
+    }
+  }
+  function isiFormEditReportUser(p) {
+    const u = _umrData.find(x => x.pin === p); if (!u) return;
+    document.getElementById('umr-edit-pin').value = u.pin;
+    document.getElementById('umr-role').value = u.role;
+    document.getElementById('umr-pin').value = u.pin;
+    document.getElementById('umr-nama').value = u.nama || '';
+    document.getElementById('umr-form-title').textContent = 'Edit PIN: ' + u.pin + ' (' + u.role + ')';
+    document.getElementById('umr-batal').style.display = 'inline-block';
+  }
+  function resetFormReportUser() {
+    document.getElementById('umr-edit-pin').value = '';
+    document.getElementById('umr-pin').value = '';
+    document.getElementById('umr-nama').value = '';
+    document.getElementById('umr-form-title').textContent = 'Tambah PIN Baru';
+    document.getElementById('umr-batal').style.display = 'none';
+  }
+  async function simpanReportUser() {
+    const editPin = document.getElementById('umr-edit-pin').value;
+    const role = document.getElementById('umr-role').value;
+    const pinBaru = (document.getElementById('umr-pin').value || '').trim();
+    const nama = (document.getElementById('umr-nama').value || '').trim();
+    if (!/^\d{4}$/.test(pinBaru)) { showToast('PIN harus tepat 4 digit angka.'); return; }
+    if (editPin === '1986' || (!editPin && pinBaru === '1986')) { showToast('PIN COO 1986 tidak dapat diubah.'); return; }
+    try {
+      // PIN harus unik global
+      const dup = _umrData.find(x => x.pin === pinBaru && x.pin !== editPin);
+      if (dup) { showToast('PIN ' + pinBaru + ' sudah dipakai (' + dup.role + ').'); return; }
+      if (editPin) {
+        const res = await fetch(SUPA_URL + '/rest/v1/report_users?pin=eq.' + encodeURIComponent(editPin), {
+          method: 'PATCH', headers: _umrHeaders,
+          body: JSON.stringify({ pin: pinBaru, role: role, nama: nama || null })
+        });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        showToast('✅ User diperbarui');
+      } else {
+        const res = await fetch(SUPA_URL + '/rest/v1/report_users', {
+          method: 'POST', headers: _umrHeaders,
+          body: JSON.stringify({ pin: pinBaru, role: role, nama: nama || null })
+        });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        showToast('✅ User ditambahkan');
+      }
+      resetFormReportUser(); muatReportUsers();
+    } catch (e) { showToast('Gagal menyimpan: ' + (e.message || e)); }
+  }
+  async function hapusReportUser(p) {
+    if (p === '1986') { showToast('PIN COO 1986 tidak dapat dihapus.'); return; }
+    const u = _umrData.find(x => x.pin === p);
+    if (!confirm('Hapus PIN ' + p + (u ? ' (' + u.role + (u.nama ? ' — ' + u.nama : '') + ')' : '') + '?\n\nPemegang PIN ini tidak akan bisa login lagi.')) return;
+    try {
+      const res = await fetch(SUPA_URL + '/rest/v1/report_users?pin=eq.' + encodeURIComponent(p), {
+        method: 'DELETE', headers: _umrHeaders });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      showToast('✅ User dihapus'); muatReportUsers();
+    } catch (e) { showToast('Gagal menghapus: ' + (e.message || e)); }
+  }
 </script>
 
 <!-- Public detail view screen -->
