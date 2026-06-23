@@ -2567,7 +2567,7 @@
       </div>
 
       <div class="rc-field">
-        <label class="rc-label">Foto Cleanliness (opsional)</label>
+        <label class="rc-label">Foto Cleanliness * <span style="font-weight:400;color:#6b7280;font-size:11px;">(minimal 3 foto)</span></label>
         <div class="rc-photo-grid" id="rc-form-photos">
           <label class="rc-photo-add">
             <span>+</span>Foto
@@ -2577,7 +2577,7 @@
       </div>
 
       <div class="rc-field">
-        <label class="rc-label">Kelengkapan Asset (catatan)</label>
+        <label class="rc-label">Kelengkapan Asset *</label>
         <textarea class="rc-textarea" id="rc-form-asset" placeholder="Catat asset yang kurang / rusak / lengkap..."></textarea>
       </div>
 
@@ -2588,7 +2588,7 @@
       </div>
 
       <div class="rc-field">
-        <label class="rc-label">Follow Up / Catatan</label>
+        <label class="rc-label" id="rc-form-followup-label">Follow Up / Catatan</label>
         <textarea class="rc-textarea" id="rc-form-followup" placeholder="Catat hal yang perlu di-follow up..."></textarea>
       </div>
 
@@ -13455,6 +13455,9 @@ window.FB_DETAIL_MAP = {"F&B Manager": {"task_1": "Memastikan Kitchen Area Bersi
     document.querySelectorAll('#rc-form-clean .rc-seg-opt').forEach(o => o.classList.remove('active'));
     document.getElementById('rc-form-asset').value = '';
     document.getElementById('rc-form-followup').value = '';
+    // Reset label Follow Up ke kondisi default
+    const followupLabel = document.getElementById('rc-form-followup-label');
+    if (followupLabel) followupLabel.textContent = 'Follow Up / Catatan';
     rcFormPhotos = [];
     rcFormDefects = [];
     rcRenderFormPhotos();
@@ -13471,6 +13474,16 @@ window.FB_DETAIL_MAP = {"F&B Manager": {"task_1": "Memastikan Kitchen Area Bersi
   function rcPickClean(el) {
     el.parentElement.querySelectorAll('.rc-seg-opt').forEach(o => o.classList.remove('active'));
     el.classList.add('active');
+    // Update label Follow Up: wajib (*) kalau Sedang/Buruk
+    const v = el.dataset.v;
+    const followupLabel = document.getElementById('rc-form-followup-label');
+    if (followupLabel) {
+      if (v === 'Sedang' || v === 'Buruk') {
+        followupLabel.innerHTML = 'Follow Up / Catatan * <span style="font-weight:400;color:#ef4444;font-size:11px;">(wajib karena ' + v + ')</span>';
+      } else {
+        followupLabel.textContent = 'Follow Up / Catatan';
+      }
+    }
   }
 
   // ====== PHOTOS (MULTI) ======
@@ -13571,6 +13584,25 @@ window.FB_DETAIL_MAP = {"F&B Manager": {"task_1": "Memastikan Kitchen Area Bersi
     const cleanliness = cleanEl.dataset.v;
     const assetNotes = document.getElementById('rc-form-asset').value.trim();
     const followupNotes = document.getElementById('rc-form-followup').value.trim();
+
+    // === VALIDASI WAJIB ===
+    // 1. Foto Cleanliness wajib minimal 3
+    if (!rcFormPhotos || rcFormPhotos.length < 3) {
+      showToast('⚠️ Foto Cleanliness wajib minimal 3 foto (sekarang: ' + (rcFormPhotos ? rcFormPhotos.length : 0) + ')');
+      return;
+    }
+    // 2. Kelengkapan Asset wajib diisi
+    if (!assetNotes) {
+      showToast('⚠️ Kelengkapan Asset wajib diisi');
+      document.getElementById('rc-form-asset').focus();
+      return;
+    }
+    // 3. Follow Up wajib kalau Cleanliness = Sedang atau Buruk
+    if ((cleanliness === 'Sedang' || cleanliness === 'Buruk') && !followupNotes) {
+      showToast('⚠️ Follow Up wajib diisi karena Cleanliness ' + cleanliness);
+      document.getElementById('rc-form-followup').focus();
+      return;
+    }
 
     const saveBtn = document.getElementById('rc-form-save-btn');
     saveBtn.disabled = true;
