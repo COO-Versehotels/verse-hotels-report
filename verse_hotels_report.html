@@ -1455,6 +1455,289 @@
     margin-bottom: 16px;
   }
 
+
+  /* ===== ROOM CHECK STYLES ===== */
+  /* ===== ROOM CHECK FEATURE — Tambahan ===== */
+  .rc-menu-card {
+    background: linear-gradient(135deg, #1a3a5c, #2a5278);
+    color: white;
+    border-radius: 16px;
+    padding: 16px;
+    margin: 0 16px 14px;
+    box-shadow: 0 4px 12px rgba(26,58,92,0.25);
+    display: flex; align-items: center; gap: 14px;
+    cursor: pointer;
+    transition: transform 0.15s;
+  }
+  .rc-menu-card:active { transform: scale(0.97); }
+  .rc-menu-card .rc-icon {
+    width: 48px; height: 48px;
+    background: rgba(255,255,255,0.18);
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 26px; flex-shrink: 0;
+  }
+  .rc-menu-card .rc-text { flex: 1; min-width: 0; }
+  .rc-menu-card .rc-title { font-size: 15px; font-weight: 700; margin-bottom: 2px; }
+  .rc-menu-card .rc-sub { font-size: 12px; opacity: 0.8; }
+  .rc-menu-card .rc-arrow { font-size: 22px; opacity: 0.6; }
+
+  /* Screen: room check */
+  #screen-roomcheck { background: #f5f7fa; }
+  .rc-header {
+    background: linear-gradient(135deg, #1a3a5c, #0e2340);
+    color: white;
+    padding: 48px 16px 16px;
+  }
+  .rc-header h2 { font-size: 19px; font-weight: 700; color: white; }
+  .rc-header p { font-size: 12px; color: rgba(255,255,255,0.65); margin-top: 2px; }
+  .rc-back {
+    background: rgba(255,255,255,0.15); color: white; border: none;
+    border-radius: 50%; width: 36px; height: 36px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; cursor: pointer; margin-bottom: 10px;
+  }
+
+  .rc-hotel-tabs {
+    display: flex; gap: 8px; flex-wrap: wrap;
+    padding: 12px 16px; background: white;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  .rc-hotel-chip {
+    padding: 8px 14px; border-radius: 999px;
+    background: #f3f4f6; color: #4b5563;
+    font-size: 13px; font-weight: 600;
+    border: 1px solid transparent; cursor: pointer;
+    transition: all 0.15s;
+  }
+  .rc-hotel-chip.active {
+    background: #1a3a5c; color: white;
+    box-shadow: 0 2px 6px rgba(26,58,92,0.25);
+  }
+
+  .rc-month-bar {
+    display: flex; align-items: center; gap: 8px;
+    padding: 12px 16px; background: white;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  .rc-month-btn {
+    padding: 7px 13px; border-radius: 8px;
+    background: #f3f4f6; color: #4b5563;
+    font-size: 13px; font-weight: 600;
+    border: none; cursor: pointer;
+  }
+  .rc-month-btn.active { background: #1a3a5c; color: white; }
+  .rc-month-label { flex: 1; text-align: right; font-size: 12px; color: #6b7280; font-weight: 600; }
+
+  .rc-progress-bar {
+    background: white; padding: 12px 16px;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  .rc-progress-text {
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 14px; font-weight: 700; color: #1a3a5c;
+    margin-bottom: 6px;
+  }
+  .rc-progress-text small { font-size: 11px; color: #6b7280; font-weight: 500; }
+  .rc-progress-track {
+    height: 8px; background: #e5e7eb; border-radius: 999px;
+    overflow: hidden;
+  }
+  .rc-progress-fill {
+    height: 100%; background: linear-gradient(90deg, #22c55e, #16a34a);
+    transition: width 0.3s;
+  }
+
+  .rc-legend {
+    display: flex; gap: 12px; flex-wrap: wrap;
+    padding: 10px 16px; background: white;
+    border-bottom: 1px solid #e5e7eb;
+    font-size: 11px; color: #6b7280;
+  }
+  .rc-legend span { display: flex; align-items: center; gap: 4px; }
+  .rc-legend i {
+    display: inline-block; width: 10px; height: 10px;
+    border-radius: 3px; vertical-align: middle;
+  }
+  .rc-dot-unchecked { background: #d1d5db; }
+  .rc-dot-checked { background: #22c55e; }
+  .rc-dot-multi { background: #3b82f6; }
+
+  .rc-rooms-wrapper { padding: 12px; }
+  .rc-floor-block {
+    background: white; border-radius: 12px;
+    padding: 12px; margin-bottom: 10px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  }
+  .rc-floor-title {
+    font-size: 12px; font-weight: 700;
+    color: #1a3a5c; text-transform: uppercase;
+    letter-spacing: 0.5px; margin-bottom: 8px;
+  }
+  .rc-room-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(78px, 1fr));
+    gap: 6px;
+  }
+  .rc-room-cell {
+    background: #f9fafb;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 8px 4px;
+    text-align: center;
+    cursor: pointer;
+    position: relative;
+    transition: transform 0.1s;
+  }
+  .rc-room-cell:active { transform: scale(0.95); }
+  .rc-room-cell.checked { background: #dcfce7; border-color: #22c55e; }
+  .rc-room-cell.multi { background: #dbeafe; border-color: #3b82f6; }
+  .rc-room-cell .rc-rn { font-size: 13px; font-weight: 700; color: #1f2937; }
+  .rc-room-cell .rc-rt { font-size: 10px; color: #6b7280; margin-top: 2px; }
+  .rc-room-cell .rc-cnt {
+    position: absolute; top: 3px; right: 4px;
+    background: #3b82f6; color: white;
+    font-size: 10px; font-weight: 700;
+    padding: 0 5px; border-radius: 999px; min-width: 16px;
+  }
+
+  /* Modal Room Detail */
+  #rc-modal, #rc-form-modal {
+    position: fixed; inset: 0; z-index: 9999;
+    background: rgba(0,0,0,0.5);
+    display: none; align-items: flex-end;
+  }
+  #rc-modal.show, #rc-form-modal.show { display: flex; }
+  .rc-modal-content {
+    background: white; width: 100%;
+    max-height: 90vh; overflow-y: auto;
+    border-radius: 20px 20px 0 0;
+    padding: 20px 16px 24px;
+    animation: rcSlideUp 0.25s ease-out;
+  }
+  @keyframes rcSlideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+  .rc-modal-head {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .rc-modal-title { font-size: 17px; font-weight: 700; color: #1a3a5c; }
+  .rc-modal-close {
+    background: #f3f4f6; border: none;
+    width: 32px; height: 32px; border-radius: 50%;
+    font-size: 18px; cursor: pointer; color: #6b7280;
+  }
+  .rc-history-item {
+    background: #f9fafb; border-radius: 10px;
+    padding: 12px; margin-bottom: 8px;
+    border-left: 4px solid #22c55e;
+  }
+  .rc-history-meta {
+    font-size: 11px; color: #6b7280; margin-bottom: 6px;
+    display: flex; justify-content: space-between; flex-wrap: wrap; gap: 4px;
+  }
+  .rc-history-clean { font-size: 13px; font-weight: 600; color: #1f2937; }
+  .rc-history-clean.s-baik { color: #16a34a; }
+  .rc-history-clean.s-sedang { color: #d97706; }
+  .rc-history-clean.s-buruk { color: #dc2626; }
+  .rc-history-notes { font-size: 12px; color: #4b5563; margin-top: 4px; }
+  .rc-history-photos { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 6px; }
+  .rc-history-photos img { width: 60px; height: 60px; object-fit: cover; border-radius: 6px; }
+
+  .rc-btn-primary {
+    width: 100%; background: linear-gradient(135deg, #1a3a5c, #2a5278);
+    color: white; border: none; padding: 13px;
+    border-radius: 10px; font-size: 14px; font-weight: 700;
+    cursor: pointer; margin-top: 8px;
+  }
+  .rc-btn-ghost {
+    width: 100%; background: white; border: 1px solid #d1d5db;
+    color: #4b5563; padding: 11px;
+    border-radius: 10px; font-size: 13px; font-weight: 600;
+    cursor: pointer; margin-top: 6px;
+  }
+
+  /* Form */
+  .rc-field { margin-bottom: 14px; }
+  .rc-label {
+    display: block; font-size: 11px; font-weight: 700;
+    color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px;
+    margin-bottom: 6px;
+  }
+  .rc-input, .rc-textarea, .rc-select {
+    width: 100%; padding: 10px 12px;
+    border: 1px solid #d1d5db; border-radius: 8px;
+    font-size: 14px; font-family: inherit;
+    background: white;
+  }
+  .rc-textarea { min-height: 70px; resize: vertical; }
+  .rc-seg {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px;
+  }
+  .rc-seg-opt {
+    padding: 10px 6px; border-radius: 8px;
+    background: #f3f4f6; color: #4b5563;
+    font-size: 13px; font-weight: 600;
+    text-align: center; cursor: pointer;
+    border: 2px solid transparent;
+  }
+  .rc-seg-opt.active.s-baik { background: #dcfce7; color: #16a34a; border-color: #22c55e; }
+  .rc-seg-opt.active.s-sedang { background: #fed7aa; color: #c2410c; border-color: #f59e0b; }
+  .rc-seg-opt.active.s-buruk { background: #fee2e2; color: #b91c1c; border-color: #ef4444; }
+
+  .rc-photo-grid { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+  .rc-photo-thumb {
+    position: relative; width: 70px; height: 70px;
+    border-radius: 8px; overflow: hidden;
+    border: 1px solid #d1d5db;
+  }
+  .rc-photo-thumb img { width: 100%; height: 100%; object-fit: cover; }
+  .rc-photo-thumb .rc-photo-del {
+    position: absolute; top: 2px; right: 2px;
+    background: rgba(220,38,38,0.9); color: white;
+    width: 18px; height: 18px; border-radius: 50%;
+    font-size: 10px; display: flex; align-items: center; justify-content: center;
+    border: none; cursor: pointer;
+  }
+  .rc-photo-add {
+    width: 70px; height: 70px; border-radius: 8px;
+    background: #f3f4f6; border: 2px dashed #d1d5db;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    cursor: pointer; color: #6b7280; font-size: 10px;
+  }
+  .rc-photo-add span { font-size: 22px; line-height: 1; margin-bottom: 2px; }
+
+  .rc-defect-item {
+    background: #fef3c7; border-left: 3px solid #f59e0b;
+    border-radius: 8px; padding: 10px 12px; margin-bottom: 6px;
+    font-size: 12px;
+  }
+  .rc-defect-item .rc-defect-desc { font-weight: 600; color: #78350f; }
+  .rc-defect-item .rc-defect-meta { font-size: 10px; color: #92400e; margin-top: 2px; }
+
+  /* COO Dashboard Room Check section */
+  .rc-coo-section {
+    background: white; margin: 12px 16px; border-radius: 12px;
+    padding: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  }
+  .rc-coo-title {
+    font-size: 13px; font-weight: 700; color: #1a3a5c;
+    margin-bottom: 10px; display: flex; align-items: center; gap: 6px;
+  }
+  .rc-coo-hotel-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 8px 0; border-bottom: 1px solid #f3f4f6;
+    font-size: 13px;
+  }
+  .rc-coo-hotel-row:last-child { border-bottom: none; }
+  .rc-coo-hotel-name { font-weight: 600; color: #1f2937; flex: 1; }
+  .rc-coo-hotel-progress {
+    background: #e5e7eb; height: 6px; border-radius: 999px;
+    width: 90px; margin: 0 10px; overflow: hidden;
+  }
+  .rc-coo-hotel-fill { background: #22c55e; height: 100%; }
+  .rc-coo-hotel-pct { font-weight: 700; color: #16a34a; min-width: 50px; text-align: right; font-size: 12px; }
+
+
 </style>
 </head>
 <body>
@@ -1675,6 +1958,16 @@
     </div>
 
     <div class="scroll-area">
+      <!-- Room Check Menu Card (visible only for HM/EHK/CE roles) -->
+      <div class="rc-menu-card" id="rc-home-card" style="display:none;" onclick="rcEnter()">
+        <div class="rc-icon">🏨</div>
+        <div class="rc-text">
+          <div class="rc-title">Pengecekan Kamar</div>
+          <div class="rc-sub">—</div>
+        </div>
+        <div class="rc-arrow">›</div>
+      </div>
+
       <div class="section">
         <div class="section-title">PEKERJAAN HARI INI</div>
         <div id="home-visit-list">
@@ -2071,7 +2364,39 @@
         <!-- Diisi JS -->
       </div>
 
+      <!-- Room Check Section -->
+      <div style="padding:16px 16px 6px;font-size:11px;color:var(--gray-400);font-weight:700;text-transform:uppercase;letter-spacing:1px;">🏨 Pengecekan Kamar (Bulan Ini)</div>
+      <div class="rc-coo-section" id="rc-coo-section">
+        <div class="rc-coo-title">📊 Coverage per Hotel</div>
+        <div id="rc-coo-section-body">
+          <div style="text-align:center;padding:14px;color:#9ca3af;font-size:12px;">Memuat...</div>
+        </div>
+        <button class="rc-btn-primary" onclick="rcOpenMonthlyReport()" style="margin-top:12px;background:#1a3a5c;">📤 Buat & Kirim Laporan Bulan Lalu</button>
+      </div>
+
       <div style="height:20px;"></div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: Monthly Report (Laporan Bulanan) ===== -->
+  <div id="rc-monthly-modal" style="position:fixed;inset:0;z-index:10001;background:rgba(0,0,0,0.7);display:none;align-items:flex-end;justify-content:center;" onclick="if(event.target.id==='rc-monthly-modal')rcCloseMonthlyReport()">
+    <div class="rc-modal-content" style="max-width:560px;max-height:90vh;width:100%;">
+      <div class="rc-modal-head">
+        <div>
+          <div class="rc-modal-title" id="rc-monthly-title">📤 Laporan Bulanan</div>
+          <div style="font-size:11px;color:#6b7280;" id="rc-monthly-subtitle">—</div>
+        </div>
+        <button class="rc-modal-close" onclick="rcCloseMonthlyReport()">×</button>
+      </div>
+      <div id="rc-monthly-body" style="font-size:13px;color:#374151;line-height:1.5;">
+        <div style="text-align:center;padding:30px;color:#9ca3af;">Menyiapkan laporan...</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px;">
+        <button class="rc-btn-primary" onclick="rcSendReportWA()" style="background:#25D366;">📱 Kirim ke WA</button>
+        <button class="rc-btn-primary" onclick="rcSendReportEmail()" style="background:#3b82f6;">📧 Kirim Email</button>
+      </div>
+      <button class="rc-btn-ghost" onclick="rcCopyReport()" style="margin-top:8px;">📋 Copy ke Clipboard</button>
+      <button class="rc-btn-ghost" onclick="rcCloseMonthlyReport()" style="margin-top:0;">Tutup</button>
     </div>
   </div>
 
@@ -2133,6 +2458,176 @@
     </div>
   </div>
 
+  <!-- ===== ROOM CHECK SCREEN ===== -->
+  <div class="screen" id="screen-roomcheck">
+    <div class="rc-header">
+      <button class="rc-back" onclick="rcBack()">←</button>
+      <h2>🏨 Pengecekan Kamar</h2>
+      <p id="rc-subtitle">—</p>
+    </div>
+
+    <!-- Hotel selector (for Corporate roles) -->
+    <div class="rc-hotel-tabs" id="rc-hotel-tabs" style="display:none;">
+      <div class="rc-hotel-chip" data-hotel="Verse Luxe Wahid Hasyim" onclick="rcSelectHotel(this)">Verse Luxe</div>
+      <div class="rc-hotel-chip" data-hotel="Verse Lite Gajah Mada" onclick="rcSelectHotel(this)">Verse Lite</div>
+      <div class="rc-hotel-chip" data-hotel="Verse Hotel Cirebon" onclick="rcSelectHotel(this)">Verse Cirebon</div>
+      <div class="rc-hotel-chip" data-hotel="Oak Tree Mahakam Blok M" onclick="rcSelectHotel(this)">Oak Tree</div>
+    </div>
+
+    <!-- Month selector -->
+    <div class="rc-month-bar">
+      <button class="rc-month-btn active" data-month-offset="0" onclick="rcSelectMonth(this, 0)">Bulan Ini</button>
+      <button class="rc-month-btn" data-month-offset="-1" onclick="rcSelectMonth(this, -1)">Bulan Lalu</button>
+      <input type="month" class="rc-month-btn" id="rc-month-pick" onchange="rcPickMonth(this.value)" style="padding:6px 8px;">
+      <span class="rc-month-label" id="rc-month-label">—</span>
+    </div>
+
+    <!-- Progress bar -->
+    <div class="rc-progress-bar">
+      <div class="rc-progress-text">
+        <span id="rc-progress-main">0/0 kamar dicek (0%)</span>
+        <small id="rc-progress-detail">—</small>
+      </div>
+      <div class="rc-progress-track">
+        <div class="rc-progress-fill" id="rc-progress-fill" style="width:0%"></div>
+      </div>
+    </div>
+
+    <!-- Legend -->
+    <div class="rc-legend">
+      <span><i class="rc-dot-unchecked"></i> Belum dicek</span>
+      <span><i class="rc-dot-checked"></i> Sudah dicek</span>
+      <span><i class="rc-dot-multi"></i> Multi-cek</span>
+    </div>
+
+    <!-- Rooms grid -->
+    <div class="scroll-area" style="background:#f5f7fa;">
+      <div class="rc-rooms-wrapper" id="rc-rooms-wrapper">
+        <div style="text-align:center;padding:40px;color:#9ca3af;font-size:13px;">Pilih hotel untuk mulai...</div>
+      </div>
+      <div style="height:20px;"></div>
+    </div>
+
+    <div class="bottom-nav">
+      <button class="nav-item" onclick="go('home')">
+        <span class="nav-icon">🏠</span>
+        <span class="nav-label">Beranda</span>
+      </button>
+      <button class="nav-item" onclick="go('tasklist')">
+        <span class="nav-icon">✅</span>
+        <span class="nav-label">Tasklist</span>
+      </button>
+      <button class="nav-item active">
+        <span class="nav-icon">🏨</span>
+        <span class="nav-label">Cek Kamar</span>
+      </button>
+      <button class="nav-item" onclick="go('profile')">
+        <span class="nav-icon">👤</span>
+        <span class="nav-label">Profil</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: Room History ===== -->
+  <div id="rc-modal" onclick="if(event.target.id==='rc-modal')rcCloseModal()">
+    <div class="rc-modal-content">
+      <div class="rc-modal-head">
+        <div>
+          <div class="rc-modal-title" id="rc-modal-title">Kamar —</div>
+          <div style="font-size:11px;color:#6b7280;" id="rc-modal-subtitle">—</div>
+        </div>
+        <button class="rc-modal-close" onclick="rcCloseModal()">×</button>
+      </div>
+      <div id="rc-history-list">
+        <!-- diisi JS -->
+      </div>
+      <button class="rc-btn-primary" onclick="rcOpenForm()">+ Buat Check Baru</button>
+      <button class="rc-btn-ghost" onclick="rcCloseModal()">Tutup</button>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: Form Cek ===== -->
+  <div id="rc-form-modal" onclick="if(event.target.id==='rc-form-modal')rcCloseForm()">
+    <div class="rc-modal-content">
+      <div class="rc-modal-head">
+        <div>
+          <div class="rc-modal-title" id="rc-form-title">Cek Kamar —</div>
+          <div style="font-size:11px;color:#6b7280;" id="rc-form-subtitle">Lengkapi pengecekan</div>
+        </div>
+        <button class="rc-modal-close" onclick="rcCloseForm()">×</button>
+      </div>
+
+      <div class="rc-field">
+        <label class="rc-label">Cleanliness *</label>
+        <div class="rc-seg" id="rc-form-clean">
+          <div class="rc-seg-opt s-baik" data-v="Baik" onclick="rcPickClean(this)">✅ Baik</div>
+          <div class="rc-seg-opt s-sedang" data-v="Sedang" onclick="rcPickClean(this)">⚠️ Sedang</div>
+          <div class="rc-seg-opt s-buruk" data-v="Buruk" onclick="rcPickClean(this)">❌ Buruk</div>
+        </div>
+      </div>
+
+      <div class="rc-field">
+        <label class="rc-label">Foto Cleanliness (opsional)</label>
+        <div class="rc-photo-grid" id="rc-form-photos">
+          <label class="rc-photo-add">
+            <span>+</span>Foto
+            <input type="file" accept="image/*" multiple style="display:none;" onchange="rcAddPhotos(event)">
+          </label>
+        </div>
+      </div>
+
+      <div class="rc-field">
+        <label class="rc-label">Kelengkapan Asset (catatan)</label>
+        <textarea class="rc-textarea" id="rc-form-asset" placeholder="Catat asset yang kurang / rusak / lengkap..."></textarea>
+      </div>
+
+      <div class="rc-field">
+        <label class="rc-label">Defect (akan otomatis masuk Defect Tracker)</label>
+        <div id="rc-form-defects-list" style="margin-bottom:6px;"></div>
+        <button class="rc-btn-ghost" onclick="rcAddDefect()" style="margin-top:0;">+ Tambah Defect</button>
+      </div>
+
+      <div class="rc-field">
+        <label class="rc-label">Follow Up / Catatan</label>
+        <textarea class="rc-textarea" id="rc-form-followup" placeholder="Catat hal yang perlu di-follow up..."></textarea>
+      </div>
+
+      <button class="rc-btn-primary" id="rc-form-save-btn" onclick="rcSaveCheck()">💾 Simpan Pengecekan</button>
+      <button class="rc-btn-ghost" onclick="rcCloseForm()">Batal</button>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: Tambah Defect ===== -->
+  <div id="rc-defect-modal" style="position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,0.6);display:none;align-items:flex-end;" onclick="if(event.target.id==='rc-defect-modal')rcCloseDefectForm()">
+    <div class="rc-modal-content">
+      <div class="rc-modal-head">
+        <div class="rc-modal-title">+ Defect Baru</div>
+        <button class="rc-modal-close" onclick="rcCloseDefectForm()">×</button>
+      </div>
+      <div class="rc-field">
+        <label class="rc-label">Kategori *</label>
+        <div class="rc-seg" style="grid-template-columns:1fr 1fr;">
+          <div class="rc-seg-opt s-baik" data-cat="HK" onclick="rcPickDefectCat(this)" style="background:#dbeafe;color:#1e40af;">🧹 HK</div>
+          <div class="rc-seg-opt s-sedang" data-cat="ENG" onclick="rcPickDefectCat(this)" style="background:#fed7aa;color:#c2410c;">🔧 ENG</div>
+        </div>
+      </div>
+      <div class="rc-field">
+        <label class="rc-label">Prioritas *</label>
+        <select class="rc-select" id="rc-defect-prio">
+          <option value="Low">Low</option>
+          <option value="Medium" selected>Medium</option>
+          <option value="High">High</option>
+          <option value="Urgent">Urgent</option>
+        </select>
+      </div>
+      <div class="rc-field">
+        <label class="rc-label">Deskripsi *</label>
+        <textarea class="rc-textarea" id="rc-defect-desc" placeholder="Jelaskan defect..."></textarea>
+      </div>
+      <button class="rc-btn-primary" onclick="rcSubmitDefect()">+ Tambahkan</button>
+      <button class="rc-btn-ghost" onclick="rcCloseDefectForm()">Batal</button>
+    </div>
+  </div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -3003,6 +3498,10 @@
       // Tombol Manage User hanya untuk COO
       const ub = document.getElementById('coo-user-btn');
       if (ub) ub.style.display = (currentRole === 'COO') ? 'inline' : 'none';
+      // Load Room Check summary
+      if (typeof rcLoadCOORoomCheckSummary === 'function') rcLoadCOORoomCheckSummary();
+      // Auto-prompt laporan bulanan kalau di awal bulan & belum dikirim
+      if (typeof rcMaybePromptMonthlyReport === 'function') rcMaybePromptMonthlyReport();
     }
 
     // Set default date untuk arsip = hari ini
@@ -3066,6 +3565,9 @@
       const h = new Date().getHours();
       const g = h < 12 ? 'Selamat pagi' : h < 17 ? 'Selamat siang' : 'Selamat sore';
       document.getElementById('greeting-text').textContent = g;
+
+      // Show/hide Room Check menu card based on role
+      if (typeof rcMaybeShowHomeMenu === 'function') rcMaybeShowHomeMenu();
 
       const d = new Date();
       const days = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
@@ -12618,6 +13120,836 @@ window.FB_DETAIL_MAP = {"F&B Manager": {"task_1": "Memastikan Kitchen Area Bersi
       showToast('✅ User dihapus'); muatReportUsers();
     } catch (e) { showToast('Gagal menghapus: ' + (e.message || e)); }
   }
+  // ============================================================
+  // ============ ROOM CHECK FEATURE — TAMBAHAN BARU ============
+  // ============================================================
+
+  // Daftar kamar per hotel (di-copy dari Defect Tracker masing-masing)
+  const RC_ROOMS_BY_HOTEL = {
+    'Verse Luxe Wahid Hasyim': [
+      // 120 kamar Luxe (501-512 lt 5, dst lt 6-12)
+      {r:"501",t:"SUI"},{r:"502",t:"DLXT"},{r:"503",t:"DLXD"},{r:"505",t:"SPRD"},{r:"506",t:"SPRT"},{r:"507",t:"SPRD"},{r:"508",t:"SPRT"},{r:"509",t:"SPRD"},{r:"510",t:"DLXT"},{r:"511",t:"DLXD"},{r:"512",t:"EXEJ"},
+      {r:"601",t:"SUI"},{r:"602",t:"DLXT"},{r:"603",t:"DLXD"},{r:"605",t:"SPRD"},{r:"606",t:"SPRT"},{r:"607",t:"SPRD"},{r:"608",t:"SPRT"},{r:"609",t:"SPRD"},{r:"610",t:"DLXT"},{r:"611",t:"DLXD"},{r:"612",t:"EXEJ"},
+      {r:"701",t:"SUI"},{r:"702",t:"DLXT"},{r:"703",t:"DLXD"},{r:"705",t:"SPRD"},{r:"706",t:"SPRT"},{r:"707",t:"SPRD"},{r:"708",t:"SPRT"},{r:"709",t:"SPRD"},{r:"710",t:"DLXT"},{r:"711",t:"DLXD"},{r:"712",t:"EXEJ"},
+      {r:"801",t:"SUI"},{r:"802",t:"DLXT"},{r:"803",t:"DLXD"},{r:"805",t:"SPRD"},{r:"806",t:"SPRT"},{r:"807",t:"SPRD"},{r:"808",t:"SPRT"},{r:"809",t:"SPRD"},{r:"810",t:"DLXT"},{r:"811",t:"DLXD"},{r:"812",t:"EXEJ"},
+      {r:"901",t:"SUI"},{r:"902",t:"DLXT"},{r:"903",t:"DLXD"},{r:"905",t:"SPRD"},{r:"906",t:"SPRT"},{r:"907",t:"SPRD"},{r:"908",t:"SPRT"},{r:"909",t:"SPRD"},{r:"910",t:"DLXT"},{r:"911",t:"DLXD"},{r:"912",t:"EXEJ"},
+      {r:"1001",t:"SUI"},{r:"1002",t:"DLXT"},{r:"1003",t:"DLXD"},{r:"1005",t:"SPRD"},{r:"1006",t:"SPRT"},{r:"1007",t:"SPRD"},{r:"1008",t:"SPRT"},{r:"1009",t:"SPRD"},{r:"1010",t:"DLXT"},{r:"1011",t:"DLXD"},{r:"1012",t:"EXEJ"},
+      {r:"1101",t:"SUI"},{r:"1102",t:"DLXT"},{r:"1103",t:"DLXD"},{r:"1105",t:"SPRD"},{r:"1106",t:"SPRT"},{r:"1107",t:"SPRD"},{r:"1108",t:"SPRT"},{r:"1109",t:"SPRD"},{r:"1110",t:"DLXT"},{r:"1111",t:"DLXD"},{r:"1112",t:"EXEJ"},
+      {r:"1201",t:"SUI"},{r:"1202",t:"DLXT"},{r:"1203",t:"DLXD"},{r:"1205",t:"SPRD"},{r:"1206",t:"SPRT"},{r:"1207",t:"SPRD"},{r:"1208",t:"SPRT"},{r:"1209",t:"SPRD"},{r:"1210",t:"DLXT"},{r:"1211",t:"DLXD"},{r:"1212",t:"EXEJ"}
+    ],
+    'Verse Lite Gajah Mada': [
+      {r:"501",t:"SUI"},{r:"502",t:"DLX"},{r:"503",t:"DLX"},{r:"505",t:"SPR"},{r:"506",t:"SPR"},{r:"507",t:"SPR"},{r:"508",t:"SPR"},{r:"509",t:"SPR"},{r:"510",t:"DLX"},{r:"511",t:"DLX"},{r:"512",t:"EXEJ"},
+      {r:"601",t:"SUI"},{r:"602",t:"DLX"},{r:"603",t:"DLX"},{r:"605",t:"SPR"},{r:"606",t:"SPR"},{r:"607",t:"SPR"},{r:"608",t:"SPR"},{r:"609",t:"SPR"},{r:"610",t:"DLX"},{r:"611",t:"DLX"},{r:"612",t:"EXEJ"},
+      {r:"701",t:"SUI"},{r:"702",t:"DLX"},{r:"703",t:"DLX"},{r:"705",t:"SPR"},{r:"706",t:"SPR"},{r:"707",t:"SPR"},{r:"708",t:"SPR"},{r:"709",t:"SPR"},{r:"710",t:"DLX"},{r:"711",t:"DLX"},{r:"712",t:"EXEJ"},
+      {r:"801",t:"SUI"},{r:"802",t:"DLX"},{r:"803",t:"DLX"},{r:"805",t:"SPR"},{r:"806",t:"SPR"},{r:"807",t:"SPR"},{r:"808",t:"SPR"},{r:"809",t:"SPR"},{r:"810",t:"DLX"},{r:"811",t:"DLX"},{r:"812",t:"EXEJ"},
+      {r:"901",t:"SUI"},{r:"902",t:"DLX"},{r:"903",t:"DLX"},{r:"905",t:"SPR"},{r:"906",t:"SPR"},{r:"907",t:"SPR"},{r:"908",t:"SPR"},{r:"909",t:"SPR"},{r:"910",t:"DLX"},{r:"911",t:"DLX"},{r:"912",t:"EXEJ"}
+    ],
+    'Verse Hotel Cirebon': [
+      {r:"LOFT A",t:"LOFT"},{r:"LOFT B",t:"LOFT"},{r:"LOFT C",t:"LOFT"},{r:"LOFT D",t:"LOFT"},{r:"LOFT E",t:"LOFT"},{r:"LOFT F",t:"LOFT"},{r:"LOFT G",t:"LOFT"},{r:"LOFT H",t:"LOFT"},{r:"LOFT I",t:"LOFT"},{r:"LOFT J",t:"LOFT"},{r:"LOFT K",t:"LOFT"},{r:"LOFT L",t:"LOFT"},{r:"LOFT M",t:"LOFT"},{r:"LOFT N",t:"LOFT"},
+      {r:"501",t:"SPR"},{r:"502",t:"EXEJ"},{r:"503",t:"SPR"},{r:"505",t:"SPR"},{r:"506",t:"PREMIERE"},{r:"507",t:"SPR"},{r:"509",t:"SPR"},{r:"511",t:"SPR"},{r:"515",t:"SPR"},{r:"516",t:"DLXP"},{r:"517",t:"DLX"},{r:"518",t:"DLXP"},{r:"519",t:"DLX"},{r:"520",t:"DLXP"},{r:"521",t:"DLX"},{r:"522",t:"DLXP"},{r:"523",t:"DLX"},{r:"524",t:"DLXP"},{r:"525",t:"SPR"},{r:"526",t:"DLXTRIP"},{r:"527",t:"SPR"},{r:"528",t:"DLXTRIP"},{r:"529",t:"SPR"},{r:"530",t:"DLXTRIP"},{r:"531",t:"SPR"},{r:"532",t:"DLXP"},{r:"533",t:"SPR"},{r:"534",t:"DLXP"},
+      {r:"601",t:"SPR"},{r:"602",t:"EXEJ"},{r:"603",t:"SPR"},{r:"605",t:"SPR"},{r:"606",t:"PREMIERE"},{r:"607",t:"SPR"},{r:"609",t:"SPR"},{r:"611",t:"SPR"},{r:"615",t:"SPR"},{r:"616",t:"DLXP"},{r:"617",t:"DLX"},{r:"618",t:"DLXP"},{r:"619",t:"DLX"},{r:"620",t:"DLXP"},{r:"621",t:"DLX"},{r:"622",t:"DLXP"},{r:"623",t:"DLX"},{r:"624",t:"DLXP"},{r:"625",t:"SPR"},{r:"626",t:"DLXTRIP"},{r:"627",t:"SPR"},{r:"628",t:"DLXTRIP"},{r:"629",t:"SPR"},{r:"630",t:"DLXP"},{r:"631",t:"SPR"},{r:"632",t:"DLXP"},{r:"633",t:"SPR"},{r:"634",t:"DLXTRIP"},
+      {r:"701",t:"SPR"},{r:"702",t:"EXEJ"},{r:"703",t:"SPR"},{r:"705",t:"SPR"},{r:"706",t:"PREMIERE"},{r:"707",t:"SPR"},{r:"709",t:"SPR"},{r:"711",t:"SPR"},{r:"715",t:"SPR"},{r:"716",t:"DLXP"},{r:"717",t:"DLX"},{r:"718",t:"DLXP"},{r:"719",t:"DLX"},{r:"720",t:"DLXP"},{r:"721",t:"DLX"},{r:"722",t:"DLXP"},{r:"723",t:"DLX"},{r:"724",t:"DLXP"},{r:"725",t:"SPR"},{r:"726",t:"DLXTRIP"},{r:"727",t:"SPR"},{r:"728",t:"DLXTRIP"},{r:"729",t:"SPR"},{r:"730",t:"DLXP"},{r:"731",t:"SPR"},{r:"732",t:"DLXP"},{r:"733",t:"SPR"},{r:"734",t:"DLXP"},
+      {r:"801",t:"SPR"},{r:"802",t:"EXEJ"},{r:"803",t:"SPR"},{r:"805",t:"SPR"},{r:"806",t:"PREMIERE"},{r:"807",t:"SPR"},{r:"809",t:"SPR"},{r:"811",t:"SPR"},{r:"815",t:"SPR"},{r:"816",t:"DLXP"},{r:"817",t:"DLX"},{r:"818",t:"DLXP"},{r:"819",t:"DLX"},{r:"820",t:"DLXP"},{r:"821",t:"DLX"},{r:"822",t:"DLXP"},{r:"823",t:"DLX"},{r:"824",t:"DLXP"},{r:"825",t:"SPR"},{r:"826",t:"DLXTRIP"},{r:"827",t:"SPR"},{r:"828",t:"DLXTRIP"},{r:"829",t:"SPR"},{r:"830",t:"DLXP"},{r:"831",t:"SPR"},{r:"832",t:"DLXP"},{r:"833",t:"SPR"},{r:"834",t:"DLXP"}
+    ],
+    'Oak Tree Mahakam Blok M': [
+      {r:"001",t:"EXCJ"},{r:"002",t:"EXCJ"},{r:"003",t:"EXCJ"},{r:"005",t:"EXCJ"},{r:"006",t:"EXCJ"},{r:"007",t:"EXCJ"},{r:"008",t:"EXCJ"},{r:"009",t:"EXCJ"},
+      {r:"G01",t:"DLX"},{r:"G02",t:"JAC"},{r:"G03",t:"JAC"},{r:"G05",t:"SPR"},{r:"G06",t:"SPR"},{r:"G07",t:"SPR"},{r:"G08",t:"STD"},{r:"G09",t:"SPR"},{r:"G10",t:"SPR"},{r:"G11",t:"SPR"},{r:"G12",t:"SPR"},{r:"G15",t:"SPR"},
+      {r:"101",t:"DLX"},{r:"102",t:"SPR"},{r:"103",t:"DLX"},{r:"105",t:"SPR"},{r:"106",t:"SPR"},{r:"107",t:"SPR"},{r:"108",t:"SPR"},{r:"109",t:"SPR"},{r:"110",t:"DLX"},{r:"111",t:"SPR"},{r:"112",t:"DLX"},{r:"115",t:"SPR"},{r:"116",t:"DLX"},{r:"117",t:"SPR"},{r:"118",t:"DLX"},
+      {r:"201",t:"DLX"},{r:"202",t:"SPR"},{r:"203",t:"DLX"},{r:"205",t:"SPR"},{r:"206",t:"SPR"},{r:"207",t:"SPR"},{r:"208",t:"SPR"},{r:"209",t:"SPR"},{r:"210",t:"DLX"},{r:"211",t:"SPR"},{r:"212",t:"DLX"},{r:"215",t:"SPR"},{r:"216",t:"DLX"},{r:"217",t:"SPR"},{r:"218",t:"DLX"},
+      {r:"301",t:"DLX"},{r:"302",t:"SPR"},{r:"303",t:"DLX"},{r:"305",t:"SPR"},{r:"306",t:"SPR"},{r:"307",t:"SPR"},{r:"308",t:"SPR"},{r:"309",t:"SPR"},{r:"310",t:"DLX"},{r:"311",t:"SPR"},{r:"312",t:"DLX"},{r:"315",t:"SPR"},{r:"316",t:"DLX"},{r:"317",t:"SPR"},{r:"318",t:"DLX"},
+      {r:"501",t:"DLX"},{r:"502",t:"SPR"},{r:"503",t:"SPR"},{r:"505",t:"SPR"},{r:"506",t:"DLX"},{r:"507",t:"SPR"},{r:"508",t:"DLX"},{r:"509",t:"SPR"},{r:"510",t:"DLX"},{r:"511",t:"SPR"},{r:"512",t:"DLX"},
+      {r:"555",t:"NUSA"},{r:"777",t:"KUTA"},{r:"888",t:"SEMINYAK"},{r:"999",t:"UBUD"}
+    ]
+  };
+
+  // Map role → hotel (untuk HM)
+  const RC_HM_HOTEL_MAP = {
+    'HM Verse Lite': 'Verse Lite Gajah Mada',
+    'HM Verse Luxe': 'Verse Luxe Wahid Hasyim',
+    'HM Verse Cirebon': 'Verse Hotel Cirebon',
+    'HM Oak Tree': 'Oak Tree Mahakam Blok M',
+  };
+
+  // State Room Check
+  let rcCurrentHotel = null;
+  let rcCurrentMonthKey = null; // 'YYYY-MM'
+  let rcChecks = []; // semua check untuk hotel & month yang aktif
+  let rcCurrentRoom = null; // kamar yang sedang dibuka di modal
+  let rcFormPhotos = []; // {file, dataUrl} array
+  let rcFormDefects = []; // {category, priority, description, _tempId} array
+  let rcUserRoleType = null; // 'HM' / 'EHK' / 'CE'
+
+  // Check if current role is eligible for Room Check
+  function rcIsEligibleRole() {
+    if (!currentRole) return false;
+    if (currentRole.startsWith('HM ')) return true;
+    if (currentRole === 'EHK Corporate') return true;
+    if (currentRole === 'Chief Engineering Corporate') return true;
+    return false;
+  }
+
+  // Get short role type
+  function rcGetUserRoleType() {
+    if (!currentRole) return null;
+    if (currentRole.startsWith('HM ')) return 'HM';
+    if (currentRole === 'EHK Corporate') return 'EHK';
+    if (currentRole === 'Chief Engineering Corporate') return 'CE';
+    return null;
+  }
+
+  // ====== ENTER ROOM CHECK SCREEN ======
+  function rcEnter() {
+    if (!rcIsEligibleRole()) {
+      showToast('Role Anda tidak punya akses Pengecekan Kamar');
+      return;
+    }
+    rcUserRoleType = rcGetUserRoleType();
+
+    // Set current month default
+    const today = new Date(Date.now() + 7*3600000);
+    rcCurrentMonthKey = today.toISOString().slice(0, 7); // 'YYYY-MM'
+
+    // Subtitle
+    const subtitle = rcUserRoleType === 'HM'
+      ? `${currentRole} · Tanggung jawab kamar`
+      : `${currentRole} · Unit Visit`;
+    document.getElementById('rc-subtitle').textContent = subtitle;
+
+    // Show hotel tabs only for Corporate roles
+    const hotelTabs = document.getElementById('rc-hotel-tabs');
+    if (rcUserRoleType === 'HM') {
+      hotelTabs.style.display = 'none';
+      rcCurrentHotel = RC_HM_HOTEL_MAP[currentRole];
+    } else {
+      hotelTabs.style.display = 'flex';
+      // Reset selected hotel kalau pindah dari hotel sebelumnya
+      if (!rcCurrentHotel) {
+        rcCurrentHotel = null; // user pilih manual
+      } else {
+        // Highlight chip yang sudah aktif
+        document.querySelectorAll('.rc-hotel-chip').forEach(el => {
+          el.classList.toggle('active', el.dataset.hotel === rcCurrentHotel);
+        });
+      }
+    }
+
+    // Reset month buttons
+    document.querySelectorAll('.rc-month-btn').forEach(b => b.classList.remove('active'));
+    const bulanIniBtn = document.querySelector('.rc-month-btn[data-month-offset="0"]');
+    if (bulanIniBtn) bulanIniBtn.classList.add('active');
+
+    // Go to screen
+    go('roomcheck');
+
+    // Load data if hotel already set
+    if (rcCurrentHotel) {
+      rcLoadAndRender();
+    }
+    rcUpdateMonthLabel();
+  }
+
+  function rcBack() {
+    go('home');
+  }
+
+  // ====== HOTEL SELECTION ======
+  function rcSelectHotel(el) {
+    document.querySelectorAll('.rc-hotel-chip').forEach(c => c.classList.remove('active'));
+    el.classList.add('active');
+    rcCurrentHotel = el.dataset.hotel;
+    rcLoadAndRender();
+  }
+
+  // ====== MONTH SELECTION ======
+  function rcSelectMonth(btn, offset) {
+    document.querySelectorAll('.rc-month-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const today = new Date(Date.now() + 7*3600000);
+    const target = new Date(today.getFullYear(), today.getMonth() + offset, 1);
+    rcCurrentMonthKey = target.toISOString().slice(0, 7);
+    rcUpdateMonthLabel();
+    if (rcCurrentHotel) rcLoadAndRender();
+  }
+
+  function rcPickMonth(monthVal) {
+    if (!monthVal) return;
+    rcCurrentMonthKey = monthVal;
+    document.querySelectorAll('.rc-month-btn').forEach(b => b.classList.remove('active'));
+    rcUpdateMonthLabel();
+    if (rcCurrentHotel) rcLoadAndRender();
+  }
+
+  function rcUpdateMonthLabel() {
+    const [y, m] = rcCurrentMonthKey.split('-');
+    const months = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+    document.getElementById('rc-month-label').textContent = `${months[parseInt(m)-1]} ${y}`;
+  }
+
+  // ====== LOAD DATA & RENDER ======
+  async function rcLoadAndRender() {
+    if (!rcCurrentHotel || !rcCurrentMonthKey) return;
+    const wrap = document.getElementById('rc-rooms-wrapper');
+    wrap.innerHTML = '<div style="text-align:center;padding:40px;color:#9ca3af;font-size:13px;">Memuat data...</div>';
+
+    try {
+      // Load checks for current hotel + month
+      const { data, error } = await supa
+        .from('room_checks')
+        .select('*')
+        .eq('hotel', rcCurrentHotel)
+        .eq('month_key', rcCurrentMonthKey)
+        .order('checked_at', { ascending: false });
+      if (error) throw error;
+      rcChecks = data || [];
+    } catch (e) {
+      console.error('rcLoadAndRender error:', e);
+      wrap.innerHTML = '<div style="text-align:center;padding:40px;color:#ef4444;font-size:13px;">Gagal memuat: ' + (e.message || e) + '</div>';
+      return;
+    }
+
+    rcRenderGrid();
+    rcRenderProgress();
+  }
+
+  // ====== RENDER GRID ======
+  function rcRenderGrid() {
+    const wrap = document.getElementById('rc-rooms-wrapper');
+    const rooms = RC_ROOMS_BY_HOTEL[rcCurrentHotel] || [];
+    if (rooms.length === 0) {
+      wrap.innerHTML = '<div style="text-align:center;padding:40px;color:#9ca3af;font-size:13px;">Data kamar belum tersedia</div>';
+      return;
+    }
+
+    // Group by floor
+    const byFloor = {};
+    rooms.forEach(rm => {
+      const floor = rcGetFloor(rm.r);
+      if (!byFloor[floor]) byFloor[floor] = [];
+      byFloor[floor].push(rm);
+    });
+
+    const floorOrder = Object.keys(byFloor).sort((a, b) => rcFloorSortKey(a) - rcFloorSortKey(b));
+
+    // Map check counts per room
+    const cntMap = {};
+    rcChecks.forEach(ch => {
+      cntMap[ch.room_no] = (cntMap[ch.room_no] || 0) + 1;
+    });
+
+    let html = '';
+    for (const f of floorOrder) {
+      const rms = byFloor[f].sort((a, b) => a.r.localeCompare(b.r, undefined, {numeric: true}));
+      html += '<div class="rc-floor-block">';
+      html += '<div class="rc-floor-title">' + rcFloorLabel(f) + ' · ' + rms.length + ' kamar</div>';
+      html += '<div class="rc-room-grid">';
+      for (const rm of rms) {
+        const cnt = cntMap[rm.r] || 0;
+        let cls = 'rc-room-cell';
+        if (cnt >= 2) cls += ' multi';
+        else if (cnt >= 1) cls += ' checked';
+        const cntBadge = cnt >= 2 ? '<span class="rc-cnt">' + cnt + '</span>' : '';
+        html += '<div class="' + cls + '" onclick="rcOpenRoom(\'' + rm.r.replace(/'/g, "\\'") + '\')">';
+        html += '<div class="rc-rn">' + rm.r + '</div>';
+        html += '<div class="rc-rt">' + rm.t + '</div>';
+        html += cntBadge;
+        html += '</div>';
+      }
+      html += '</div></div>';
+    }
+    wrap.innerHTML = html;
+  }
+
+  function rcGetFloor(roomNo) {
+    if (roomNo.startsWith('LOFT')) return 'LOFT';
+    if (/^[5789]{3}$/.test(roomNo)) return 'SUITES';
+    if (roomNo.startsWith('G')) return 'G';
+    if (roomNo.startsWith('0')) return 'B';
+    return roomNo.slice(0, -2) || roomNo.slice(0, 1);
+  }
+
+  function rcFloorSortKey(f) {
+    const map = {'LOFT':-1, 'B':0, 'G':1, 'SUITES':99};
+    if (f in map) return map[f];
+    return parseInt(f) || 50;
+  }
+
+  function rcFloorLabel(f) {
+    const map = {'LOFT':'🏠 Loft Rooms', 'B':'Basement', 'G':'Ground Floor', 'SUITES':'🌟 Specialty Suites'};
+    if (f in map) return map[f];
+    return 'Lantai ' + f;
+  }
+
+  // ====== PROGRESS ======
+  function rcRenderProgress() {
+    const rooms = RC_ROOMS_BY_HOTEL[rcCurrentHotel] || [];
+    const total = rooms.length;
+    const checkedRooms = new Set(rcChecks.map(c => c.room_no));
+    const checkedCount = checkedRooms.size;
+    const pct = total > 0 ? Math.round((checkedCount / total) * 100) : 0;
+    document.getElementById('rc-progress-main').textContent = checkedCount + '/' + total + ' kamar dicek (' + pct + '%)';
+    document.getElementById('rc-progress-fill').style.width = pct + '%';
+
+    // Detail by user
+    const byUser = {};
+    rcChecks.forEach(c => {
+      const name = c.checker_name || c.checked_by.split('@')[0];
+      byUser[name] = (byUser[name] || 0) + 1;
+    });
+    const detailText = Object.entries(byUser)
+      .map(([n, c]) => n + ' ' + c)
+      .join(' · ') || 'Belum ada cek';
+    document.getElementById('rc-progress-detail').textContent = detailText;
+  }
+
+  // ====== OPEN ROOM HISTORY MODAL ======
+  function rcOpenRoom(roomNo) {
+    rcCurrentRoom = roomNo;
+    document.getElementById('rc-modal-title').textContent = 'Kamar ' + roomNo;
+    document.getElementById('rc-modal-subtitle').textContent = rcCurrentHotel + ' · ' + document.getElementById('rc-month-label').textContent;
+
+    const matches = rcChecks.filter(c => c.room_no === roomNo).sort((a, b) => new Date(b.checked_at) - new Date(a.checked_at));
+    const listEl = document.getElementById('rc-history-list');
+    if (matches.length === 0) {
+      listEl.innerHTML = '<div style="text-align:center;padding:20px;color:#9ca3af;font-size:13px;">Belum ada pengecekan bulan ini</div>';
+    } else {
+      listEl.innerHTML = matches.map(c => {
+        const dt = new Date(c.checked_at);
+        const dStr = dt.toLocaleDateString('id-ID', {day:'numeric', month:'short'}) + ' ' + dt.toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'});
+        const name = c.checker_name || c.checked_by.split('@')[0];
+        const roleTag = c.user_role ? '<span style="background:#eff6ff;color:#1e40af;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:700;">' + c.user_role + '</span>' : '';
+        const cleanCls = c.cleanliness ? 's-' + c.cleanliness.toLowerCase() : '';
+        const cleanIcon = c.cleanliness === 'Baik' ? '✅' : c.cleanliness === 'Sedang' ? '⚠️' : c.cleanliness === 'Buruk' ? '❌' : '—';
+        let photosHtml = '';
+        if (c.cleanliness_photos && c.cleanliness_photos.length > 0) {
+          photosHtml = '<div class="rc-history-photos">' + c.cleanliness_photos.map(u => '<img src="' + u + '" onclick="window.open(\'' + u + '\',\'_blank\')">').join('') + '</div>';
+        }
+        let defectsHtml = '';
+        if (c.defect_ids && c.defect_ids.length > 0) {
+          defectsHtml = '<div style="margin-top:6px;font-size:11px;color:#92400e;">🔧 ' + c.defect_ids.length + ' defect dilaporkan</div>';
+        }
+        return '<div class="rc-history-item">' +
+          '<div class="rc-history-meta"><span><b>' + name + '</b> ' + roleTag + '</span><span>' + dStr + '</span></div>' +
+          '<div class="rc-history-clean ' + cleanCls + '">' + cleanIcon + ' Cleanliness: <b>' + (c.cleanliness || '-') + '</b></div>' +
+          (c.asset_notes ? '<div class="rc-history-notes">📦 Asset: ' + escapeHtml(c.asset_notes) + '</div>' : '') +
+          (c.followup_notes ? '<div class="rc-history-notes">📌 Follow Up: ' + escapeHtml(c.followup_notes) + '</div>' : '') +
+          defectsHtml +
+          photosHtml +
+        '</div>';
+      }).join('');
+    }
+
+    document.getElementById('rc-modal').classList.add('show');
+  }
+
+  function rcCloseModal() {
+    document.getElementById('rc-modal').classList.remove('show');
+    rcCurrentRoom = null;
+  }
+
+  // ====== OPEN FORM (NEW CHECK) ======
+  function rcOpenForm() {
+    document.getElementById('rc-modal').classList.remove('show');
+    document.getElementById('rc-form-title').textContent = 'Cek Kamar ' + rcCurrentRoom;
+    document.getElementById('rc-form-subtitle').textContent = rcCurrentHotel;
+    // Reset form
+    document.querySelectorAll('#rc-form-clean .rc-seg-opt').forEach(o => o.classList.remove('active'));
+    document.getElementById('rc-form-asset').value = '';
+    document.getElementById('rc-form-followup').value = '';
+    rcFormPhotos = [];
+    rcFormDefects = [];
+    rcRenderFormPhotos();
+    rcRenderFormDefects();
+    document.getElementById('rc-form-modal').classList.add('show');
+  }
+
+  function rcCloseForm() {
+    document.getElementById('rc-form-modal').classList.remove('show');
+    rcFormPhotos = [];
+    rcFormDefects = [];
+  }
+
+  function rcPickClean(el) {
+    el.parentElement.querySelectorAll('.rc-seg-opt').forEach(o => o.classList.remove('active'));
+    el.classList.add('active');
+  }
+
+  // ====== PHOTOS (MULTI) ======
+  async function rcAddPhotos(event) {
+    const files = Array.from(event.target.files || []);
+    event.target.value = ''; // reset input
+    for (const f of files) {
+      try {
+        const compressed = await compressImage(f, 200, 1280);
+        const dataUrl = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onload = (e) => resolve(e.target.result);
+          reader.readAsDataURL(compressed);
+        });
+        rcFormPhotos.push({ file: compressed, dataUrl });
+      } catch (e) {
+        console.error('Photo compress error:', e);
+      }
+    }
+    rcRenderFormPhotos();
+  }
+
+  function rcRemovePhoto(idx) {
+    rcFormPhotos.splice(idx, 1);
+    rcRenderFormPhotos();
+  }
+
+  function rcRenderFormPhotos() {
+    const grid = document.getElementById('rc-form-photos');
+    const addBtn = '<label class="rc-photo-add"><span>+</span>Foto<input type="file" accept="image/*" multiple style="display:none;" onchange="rcAddPhotos(event)"></label>';
+    if (rcFormPhotos.length === 0) {
+      grid.innerHTML = addBtn;
+      return;
+    }
+    grid.innerHTML = rcFormPhotos.map((p, i) =>
+      '<div class="rc-photo-thumb"><img src="' + p.dataUrl + '"><button class="rc-photo-del" onclick="rcRemovePhoto(' + i + ')">×</button></div>'
+    ).join('') + addBtn;
+  }
+
+  // ====== DEFECTS ======
+  function rcAddDefect() {
+    // Reset defect form
+    document.querySelectorAll('#rc-defect-modal .rc-seg-opt').forEach(o => o.classList.remove('active'));
+    document.getElementById('rc-defect-prio').value = 'Medium';
+    document.getElementById('rc-defect-desc').value = '';
+    document.getElementById('rc-defect-modal').style.display = 'flex';
+  }
+
+  function rcCloseDefectForm() {
+    document.getElementById('rc-defect-modal').style.display = 'none';
+  }
+
+  function rcPickDefectCat(el) {
+    el.parentElement.querySelectorAll('.rc-seg-opt').forEach(o => o.classList.remove('active'));
+    el.classList.add('active');
+  }
+
+  function rcSubmitDefect() {
+    const catEl = document.querySelector('#rc-defect-modal .rc-seg-opt.active');
+    if (!catEl) { showToast('Pilih kategori HK/ENG'); return; }
+    const cat = catEl.dataset.cat;
+    const prio = document.getElementById('rc-defect-prio').value;
+    const desc = document.getElementById('rc-defect-desc').value.trim();
+    if (!desc) { showToast('Deskripsi defect wajib diisi'); return; }
+    rcFormDefects.push({
+      category: cat,
+      priority: prio,
+      description: desc,
+      _tempId: 'tmp_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7)
+    });
+    rcCloseDefectForm();
+    rcRenderFormDefects();
+  }
+
+  function rcRemoveFormDefect(tempId) {
+    rcFormDefects = rcFormDefects.filter(d => d._tempId !== tempId);
+    rcRenderFormDefects();
+  }
+
+  function rcRenderFormDefects() {
+    const el = document.getElementById('rc-form-defects-list');
+    if (rcFormDefects.length === 0) {
+      el.innerHTML = '<div style="font-size:12px;color:#9ca3af;font-style:italic;">Belum ada defect</div>';
+      return;
+    }
+    el.innerHTML = rcFormDefects.map(d =>
+      '<div class="rc-defect-item">' +
+      '<div class="rc-defect-desc">' + escapeHtml(d.description) + '</div>' +
+      '<div class="rc-defect-meta">' + (d.category === 'HK' ? '🧹 HK' : '🔧 ENG') + ' · ' + d.priority + ' <button onclick="rcRemoveFormDefect(\'' + d._tempId + '\')" style="float:right;background:none;border:none;color:#b91c1c;cursor:pointer;">× hapus</button></div>' +
+      '</div>'
+    ).join('');
+  }
+
+  // ====== SAVE CHECK ======
+  async function rcSaveCheck() {
+    const cleanEl = document.querySelector('#rc-form-clean .rc-seg-opt.active');
+    if (!cleanEl) { showToast('Pilih kondisi Cleanliness'); return; }
+    const cleanliness = cleanEl.dataset.v;
+    const assetNotes = document.getElementById('rc-form-asset').value.trim();
+    const followupNotes = document.getElementById('rc-form-followup').value.trim();
+
+    const saveBtn = document.getElementById('rc-form-save-btn');
+    saveBtn.disabled = true;
+    saveBtn.textContent = '⏳ Menyimpan...';
+
+    try {
+      // 1. Upload photos to Supabase storage
+      const photoUrls = [];
+      for (let i = 0; i < rcFormPhotos.length; i++) {
+        const p = rcFormPhotos[i];
+        const ext = p.file.name.split('.').pop() || 'jpg';
+        const fname = 'rc_' + Date.now() + '_' + i + '.' + ext;
+        const path = 'room-check/' + rcCurrentHotel.replace(/[^a-zA-Z0-9]/g, '_') + '/' + rcCurrentMonthKey + '/' + fname;
+        const { error: upErr } = await supa.storage.from('defect-photos').upload(path, p.file, {
+          cacheControl: '3600',
+          upsert: false,
+          contentType: p.file.type
+        });
+        if (upErr) throw new Error('Upload foto gagal: ' + upErr.message);
+        const { data: pub } = supa.storage.from('defect-photos').getPublicUrl(path);
+        photoUrls.push(pub.publicUrl);
+      }
+
+      // 2. Insert defects (if any) — each defect masuk ke tabel defects dengan source='room_check'
+      const defectIds = [];
+      const userEmail = rcGetUserEmail();
+      const todayStr = new Date(Date.now() + 7*3600000).toISOString().split('T')[0];
+      for (const d of rcFormDefects) {
+        const defectRow = {
+          hotel: rcCurrentHotel,
+          area: 'Room',
+          category: d.category,
+          location: 'Kamar ' + rcCurrentRoom + ' — dari Room Check',
+          description: d.description,
+          priority: d.priority,
+          status: 'Open',
+          date_report: todayStr,
+          created_by: userEmail,
+          updated_by: userEmail,
+          source: 'room_check'
+        };
+        const { data: defOut, error: defErr } = await supa.from('defects').insert(defectRow).select('id').single();
+        if (defErr) {
+          console.error('Defect insert error:', defErr);
+          // Lanjut, tidak fatal
+        } else if (defOut) {
+          defectIds.push(defOut.id);
+        }
+      }
+
+      // 3. Insert room_check record
+      const row = {
+        hotel: rcCurrentHotel,
+        room_no: rcCurrentRoom,
+        checked_by: userEmail,
+        checker_name: currentRole, // pakai role sebagai nama display sementara
+        user_role: rcUserRoleType,
+        month_key: rcCurrentMonthKey,
+        cleanliness: cleanliness,
+        cleanliness_photos: photoUrls,
+        asset_notes: assetNotes || null,
+        followup_notes: followupNotes || null,
+        defect_ids: defectIds
+      };
+      const { error: insErr } = await supa.from('room_checks').insert(row);
+      if (insErr) throw insErr;
+
+      showToast('✅ Pengecekan tersimpan' + (defectIds.length > 0 ? ' (+ ' + defectIds.length + ' defect)' : ''));
+      rcCloseForm();
+      // Reload data
+      await rcLoadAndRender();
+    } catch (e) {
+      console.error('rcSaveCheck error:', e);
+      showToast('❌ Gagal simpan: ' + (e.message || e));
+    } finally {
+      saveBtn.disabled = false;
+      saveBtn.textContent = '💾 Simpan Pengecekan';
+    }
+  }
+
+  function rcGetUserEmail() {
+    // Coba ambil dari session, fallback ke role-based id
+    const session = loadSessionToday();
+    if (session && session.role) {
+      // Karena Daily Tasklist pakai PIN bukan email, kita synth email dari role
+      return rcRoleToEmail(currentRole);
+    }
+    return rcRoleToEmail(currentRole);
+  }
+
+  function rcRoleToEmail(role) {
+    // Convert role ke pseudo-email yang stabil
+    const safe = role.toLowerCase().replace(/[^a-z0-9]/g, '.').replace(/\.+/g, '.').replace(/^\.|\.$/g, '');
+    return safe + '@versehotels';
+  }
+
+  function escapeHtml(s) {
+    if (s == null) return '';
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  // ====== DASHBOARD COO: ROOM CHECK SECTION ======
+  async function rcLoadCOORoomCheckSummary() {
+    const section = document.getElementById('rc-coo-section');
+    if (!section) return;
+    const today = new Date(Date.now() + 7*3600000);
+    const monthKey = today.toISOString().slice(0, 7);
+    try {
+      const { data, error } = await supa
+        .from('room_checks')
+        .select('hotel, room_no, user_role')
+        .eq('month_key', monthKey);
+      if (error) throw error;
+      const checks = data || [];
+
+      // Aggregate per hotel
+      const hotels = ['Verse Luxe Wahid Hasyim','Verse Lite Gajah Mada','Verse Hotel Cirebon','Oak Tree Mahakam Blok M'];
+      const labels = {'Verse Luxe Wahid Hasyim':'Verse Luxe','Verse Lite Gajah Mada':'Verse Lite','Verse Hotel Cirebon':'Verse Cirebon','Oak Tree Mahakam Blok M':'Oak Tree'};
+      let html = '';
+      for (const h of hotels) {
+        const total = (RC_ROOMS_BY_HOTEL[h] || []).length;
+        const checked = new Set(checks.filter(c => c.hotel === h).map(c => c.room_no)).size;
+        const pct = total > 0 ? Math.round((checked/total)*100) : 0;
+        html += '<div class="rc-coo-hotel-row">' +
+          '<div class="rc-coo-hotel-name">' + labels[h] + '</div>' +
+          '<div class="rc-coo-hotel-progress"><div class="rc-coo-hotel-fill" style="width:' + pct + '%"></div></div>' +
+          '<div class="rc-coo-hotel-pct">' + checked + '/' + total + ' (' + pct + '%)</div>' +
+        '</div>';
+      }
+      // Total summary
+      const totalAll = hotels.reduce((s,h)=>s+(RC_ROOMS_BY_HOTEL[h]||[]).length, 0);
+      const checkedAll = checks.reduce((acc,c)=>{ acc.add(c.hotel+'|'+c.room_no); return acc; }, new Set()).size;
+      const pctAll = totalAll > 0 ? Math.round((checkedAll/totalAll)*100) : 0;
+      html += '<div style="margin-top:10px;padding-top:10px;border-top:2px solid #e5e7eb;font-size:12px;color:#6b7280;text-align:center;">Total Coverage: <b style="color:#1a3a5c;">' + checkedAll + '/' + totalAll + ' kamar (' + pctAll + '%)</b></div>';
+      document.getElementById('rc-coo-section-body').innerHTML = html;
+    } catch (e) {
+      console.error('rcLoadCOORoomCheckSummary:', e);
+      document.getElementById('rc-coo-section-body').innerHTML = '<div style="color:#ef4444;font-size:12px;">Gagal memuat</div>';
+    }
+  }
+
+  // ====== HOME MENU CARD ======
+  function rcMaybeShowHomeMenu() {
+    const card = document.getElementById('rc-home-card');
+    if (!card) return;
+    if (rcIsEligibleRole()) {
+      card.style.display = 'flex';
+      const roleType = rcGetUserRoleType();
+      const subText = roleType === 'HM'
+        ? 'Cek semua kamar unit Anda · target bulanan 100%'
+        : roleType === 'EHK'
+          ? 'Unit Visit · cek kamar di 4 hotel'
+          : 'Unit Visit · target kamar OO';
+      const subEl = card.querySelector('.rc-sub');
+      if (subEl) subEl.textContent = subText;
+    } else {
+      card.style.display = 'none';
+    }
+  }
+
+  // ======================================================
+  // MONTHLY REPORT — Laporan Bulanan Pengecekan Kamar
+  // ======================================================
+  // State penyimpan teks laporan terakhir (untuk WA / Email / Copy)
+  let rcReportText = '';
+  let rcReportMonthKey = '';
+
+  // Helper: get month_key bulan lalu (untuk default laporan)
+  function rcGetLastMonthKey() {
+    const today = new Date(Date.now() + 7*3600000);
+    const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+    return lastMonth.toISOString().slice(0, 7);
+  }
+
+  function rcMonthLabel(monthKey) {
+    const [y, m] = monthKey.split('-');
+    const months = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+    return months[parseInt(m)-1] + ' ' + y;
+  }
+
+  // Buka modal & generate laporan bulan lalu
+  async function rcOpenMonthlyReport() {
+    rcReportMonthKey = rcGetLastMonthKey();
+    document.getElementById('rc-monthly-title').textContent = '📤 Laporan ' + rcMonthLabel(rcReportMonthKey);
+    document.getElementById('rc-monthly-subtitle').textContent = 'Periode: ' + rcMonthLabel(rcReportMonthKey);
+    document.getElementById('rc-monthly-body').innerHTML = '<div style="text-align:center;padding:30px;color:#9ca3af;">Menyiapkan laporan...</div>';
+    document.getElementById('rc-monthly-modal').style.display = 'flex';
+    await rcGenerateMonthlyReport(rcReportMonthKey);
+  }
+
+  function rcCloseMonthlyReport() {
+    document.getElementById('rc-monthly-modal').style.display = 'none';
+  }
+
+  async function rcGenerateMonthlyReport(monthKey) {
+    const body = document.getElementById('rc-monthly-body');
+    try {
+      // 1. Fetch semua room_checks untuk bulan ini
+      const { data: checks, error: chkErr } = await supa
+        .from('room_checks')
+        .select('*')
+        .eq('month_key', monthKey);
+      if (chkErr) throw chkErr;
+
+      // 2. Fetch semua defect dari Room Check yang masih aktif (Open/Progress/Pending)
+      //    Pakai created_at range untuk filter bulan tersebut
+      const [y, m] = monthKey.split('-');
+      const startDate = `${y}-${m}-01`;
+      const endDateObj = new Date(parseInt(y), parseInt(m), 1); // bulan berikutnya tanggal 1
+      const endDate = endDateObj.toISOString().split('T')[0];
+
+      const { data: defects, error: defErr } = await supa
+        .from('defects')
+        .select('id, hotel, area, location, description, priority, status, source, created_at')
+        .eq('source', 'room_check')
+        .gte('created_at', startDate)
+        .lt('created_at', endDate);
+      if (defErr) throw defErr;
+
+      // 3. Aggregate data
+      const hotels = ['Verse Luxe Wahid Hasyim','Verse Lite Gajah Mada','Verse Hotel Cirebon','Oak Tree Mahakam Blok M'];
+      const hotelLabels = {
+        'Verse Luxe Wahid Hasyim':'Verse Luxe Wahid Hasyim',
+        'Verse Lite Gajah Mada':'Verse Lite Gajah Mada',
+        'Verse Hotel Cirebon':'Verse Hotel Cirebon',
+        'Oak Tree Mahakam Blok M':'Oak Tree Mahakam Blok M'
+      };
+
+      let totalRooms = 0, totalChecked = 0;
+      const perHotel = {};
+      for (const h of hotels) {
+        const allRooms = (RC_ROOMS_BY_HOTEL[h] || []).map(r => r.r);
+        const checkedRooms = new Set((checks || []).filter(c => c.hotel === h).map(c => c.room_no));
+        const uncheckedRooms = allRooms.filter(r => !checkedRooms.has(r));
+        const total = allRooms.length;
+        const checked = checkedRooms.size;
+        const pct = total > 0 ? Math.round((checked/total)*100) : 0;
+        perHotel[h] = { total, checked, pct, uncheckedRooms };
+        totalRooms += total;
+        totalChecked += checked;
+      }
+      const totalPct = totalRooms > 0 ? Math.round((totalChecked/totalRooms)*100) : 0;
+
+      // Defects aktif per hotel
+      const activeStatuses = ['Open','In Progress','Pending'];
+      const defectsByHotel = {};
+      for (const h of hotels) defectsByHotel[h] = [];
+      (defects || []).forEach(d => {
+        if (activeStatuses.includes(d.status) && defectsByHotel[d.hotel]) {
+          defectsByHotel[d.hotel].push(d);
+        }
+      });
+
+      // 4. Compose teks laporan (untuk WA / Email)
+      let txt = '*📋 LAPORAN PENGECEKAN KAMAR*\n';
+      txt += '*Periode: ' + rcMonthLabel(monthKey) + '*\n';
+      txt += '━━━━━━━━━━━━━━━━━━━\n\n';
+      txt += '*📊 RINGKASAN COVERAGE*\n';
+      txt += '• Total kamar: ' + totalRooms + '\n';
+      txt += '• Sudah dicek: ' + totalChecked + ' (' + totalPct + '%)\n';
+      txt += '• Belum dicek: ' + (totalRooms - totalChecked) + '\n\n';
+
+      txt += '*🏨 PER HOTEL*\n';
+      for (const h of hotels) {
+        const p = perHotel[h];
+        const emoji = p.pct >= 100 ? '✅' : p.pct >= 70 ? '🟢' : p.pct >= 40 ? '🟡' : '🔴';
+        txt += `${emoji} *${hotelLabels[h]}*: ${p.checked}/${p.total} (${p.pct}%)\n`;
+      }
+      txt += '\n';
+
+      // Kamar belum dicek per hotel
+      txt += '*🚪 KAMAR BELUM DICEK*\n';
+      let anyUnchecked = false;
+      for (const h of hotels) {
+        const u = perHotel[h].uncheckedRooms;
+        if (u.length > 0) {
+          anyUnchecked = true;
+          txt += `\n*${hotelLabels[h]}* (${u.length} kamar):\n`;
+          // Bagi per 8 kamar per baris untuk hemat tempat
+          const chunks = [];
+          for (let i = 0; i < u.length; i += 10) chunks.push(u.slice(i, i+10).join(', '));
+          chunks.forEach(c => { txt += c + '\n'; });
+        }
+      }
+      if (!anyUnchecked) txt += '✅ Semua kamar sudah dicek\n';
+      txt += '\n';
+
+      // Defect dari Room Check yang masih aktif
+      txt += '*🔧 DEFECT BELUM SELESAI (DARI ROOM CHECK)*\n';
+      let anyDefects = false;
+      for (const h of hotels) {
+        const ds = defectsByHotel[h];
+        if (ds.length > 0) {
+          anyDefects = true;
+          txt += `\n*${hotelLabels[h]}* (${ds.length} defect):\n`;
+          ds.forEach((d, i) => {
+            const prio = d.priority === 'Urgent' ? '🔴' : d.priority === 'High' ? '🟠' : d.priority === 'Medium' ? '🟡' : '⚪';
+            const loc = d.location || '-';
+            txt += `${i+1}. ${prio} [${d.status}] ${loc}\n   ${d.description}\n`;
+          });
+        }
+      }
+      if (!anyDefects) txt += '✅ Tidak ada defect aktif dari Room Check\n';
+      txt += '\n━━━━━━━━━━━━━━━━━━━\n';
+      txt += '📤 Verse Hotels Group · Corporate Report';
+
+      rcReportText = txt;
+
+      // 5. Render preview ke modal (HTML)
+      let html = '<div style="background:#f9fafb;padding:12px;border-radius:8px;max-height:400px;overflow-y:auto;white-space:pre-wrap;font-family:monospace;font-size:11px;color:#1f2937;line-height:1.6;">';
+      // Escape HTML tapi pertahankan format
+      html += txt.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      html += '</div>';
+      body.innerHTML = html;
+    } catch (e) {
+      console.error('rcGenerateMonthlyReport error:', e);
+      body.innerHTML = '<div style="color:#ef4444;padding:20px;font-size:13px;">❌ Gagal generate laporan: ' + (e.message || e) + '</div>';
+      rcReportText = '';
+    }
+  }
+
+  function rcSendReportWA() {
+    if (!rcReportText) { showToast('Laporan belum siap'); return; }
+    const url = 'https://wa.me/?text=' + encodeURIComponent(rcReportText);
+    window.open(url, '_blank');
+  }
+
+  function rcSendReportEmail() {
+    if (!rcReportText) { showToast('Laporan belum siap'); return; }
+    const subject = 'Laporan Pengecekan Kamar ' + rcMonthLabel(rcReportMonthKey);
+    const url = 'mailto:?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(rcReportText);
+    window.location.href = url;
+  }
+
+  async function rcCopyReport() {
+    if (!rcReportText) { showToast('Laporan belum siap'); return; }
+    try {
+      await navigator.clipboard.writeText(rcReportText);
+      showToast('✅ Laporan tersalin ke clipboard');
+    } catch(e) {
+      // Fallback untuk browser yang tidak support
+      const ta = document.createElement('textarea');
+      ta.value = rcReportText;
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy'); showToast('✅ Laporan tersalin'); }
+      catch(err) { showToast('❌ Gagal copy: ' + err.message); }
+      document.body.removeChild(ta);
+    }
+  }
+
+  // ======================================================
+  // AUTO-PROMPT awal bulan: COO buka Dashboard
+  // ======================================================
+  function rcMaybePromptMonthlyReport() {
+    if (currentRole !== 'COO') return;
+    const today = new Date(Date.now() + 7*3600000);
+    const dayOfMonth = today.getDate();
+    // Hanya prompt di 7 hari pertama bulan baru
+    if (dayOfMonth > 7) return;
+
+    const lastMonthKey = rcGetLastMonthKey();
+    const promptKey = 'rc_monthly_report_dismissed_' + lastMonthKey;
+    if (localStorage.getItem(promptKey)) return; // sudah pernah dismiss / kirim
+
+    // Confirm prompt
+    setTimeout(() => {
+      const ok = confirm(
+        '📤 Laporan Pengecekan Kamar bulan ' + rcMonthLabel(lastMonthKey) + ' belum dikirim.\n\n' +
+        'Buat laporan sekarang?'
+      );
+      if (ok) {
+        rcOpenMonthlyReport();
+      }
+      // Tandai sudah ditampilkan, jangan tanya lagi di session ini
+      localStorage.setItem(promptKey, 'shown_' + new Date().toISOString().split('T')[0]);
+    }, 1500); // delay supaya dashboard ter-render dulu
+  }
+
 </script>
 
 <!-- Public detail view screen -->
