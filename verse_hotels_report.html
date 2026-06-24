@@ -2690,6 +2690,15 @@
         <label class="rc-label">Deskripsi *</label>
         <textarea class="rc-textarea" id="rc-defect-desc" placeholder="Jelaskan defect..."></textarea>
       </div>
+      <div class="rc-field">
+        <label class="rc-label">Foto Defect * <span style="font-weight:400;color:#6b7280;font-size:11px;">(wajib min. 1, max 5)</span></label>
+        <div class="rc-photo-grid" id="rc-defect-photos">
+          <label class="rc-photo-add">
+            <span>+</span>Foto
+            <input type="file" accept="image/*" multiple style="display:none;" onchange="rcAddDefectPhotos(event)">
+          </label>
+        </div>
+      </div>
       <button class="rc-btn-primary" onclick="rcSubmitDefect()">+ Tambahkan</button>
       <button class="rc-btn-ghost" onclick="rcCloseDefectForm()">Batal</button>
     </div>
@@ -11786,6 +11795,17 @@ window.FB_DETAIL_MAP = {"F&B Manager": {"task_1": "Memastikan Kitchen Area Bersi
       const pct = Math.round((done / totalExpected) * 100);
       const barColor = pct >= 80 ? 'var(--green)' : pct >= 50 ? 'var(--navy)' : 'var(--amber)';
 
+      // Fetch room_checks + defects untuk hari ini
+      const rcItems = await _fetchRoomChecksForDate(roleName, hotelName || '', today);
+      const allDefectIds = [];
+      rcItems.forEach(rc => {
+        try {
+          const dids = Array.isArray(rc.defect_ids) ? rc.defect_ids : (typeof rc.defect_ids === 'string' ? JSON.parse(rc.defect_ids) : []);
+          dids.forEach(d => allDefectIds.push(d));
+        } catch(e) {}
+      });
+      const defectsMap = await _fetchDefectsMap(allDefectIds);
+
       let html = `
         <div style="background:var(--gray-50);border-radius:14px;padding:14px 16px;margin-bottom:16px;border:1.5px solid var(--gray-200);">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
@@ -11808,60 +11828,15 @@ window.FB_DETAIL_MAP = {"F&B Manager": {"task_1": "Memastikan Kitchen Area Bersi
               ${teamLoc.lat && teamLoc.lng ? `<a href="https://www.google.com/maps?q=${teamLoc.lat},${teamLoc.lng}" target="_blank" style="font-size:11px;color:white;background:var(--navy);border-radius:6px;padding:4px 10px;text-decoration:none;font-weight:600;">🗺️ Buka Maps</a>` : ''}
             </div>
           </div>` : '<div style="margin-top:8px;font-size:11px;color:var(--gray-300);font-style:italic;">📍 Lokasi tidak tersedia</div>'}
-        </div>
-        <div style="font-size:11px;font-weight:700;color:var(--gray-400);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">Detail Per Task</div>`;
+        </div>`;
 
-      data.forEach(row => {
-        const statusIcon = row.status === 'done' ? '✅' : row.status === 'in_progress' ? '⏳' : '⬜';
-        const statusColor = row.status === 'done' ? 'var(--green)' : row.status === 'in_progress' ? 'var(--amber)' : 'var(--gray-300)';
-        // Parse file_urls — bisa string JSON, array of strings, atau array of objects
-        let files = [];
-        try {
-          const raw = row.file_urls;
-          if (!raw) { files = []; }
-          else if (Array.isArray(raw)) { files = raw; }
-          else if (typeof raw === 'string') { files = JSON.parse(raw); }
-        } catch(e) { files = []; }
-        // Normalize: extract URL string dari tiap entry
-        const fileUrls = files.map(f => typeof f === 'string' ? f : (f.url || f.name || '')).filter(u => u && u.startsWith('http'));
-
-        html += `
-          <div style="background:white;border-radius:12px;padding:14px;margin-bottom:10px;border:1.5px solid ${row.status === 'done' ? 'var(--green)' : row.status === 'in_progress' ? 'var(--amber)' : 'var(--gray-200)'};">
-            <div style="display:flex;align-items:flex-start;gap:10px;">
-              <div style="font-size:18px;line-height:1;">${statusIcon}</div>
-              <div style="flex:1;">
-                <div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:4px;">
-                  ${(() => {
-                    const taskKey = roleTaskKey[roleName] || roleName;
-                    const labelMap = TASK_LABEL_MAP[taskKey] || {};
-                    const label = labelMap[row.task_id];
-                    if (label) return label;
-                    if (String(row.task_id).startsWith('room_')) return 'Room Inspection — ' + (row.keterangan ? row.keterangan.split('—')[0].trim() : row.task_id);
-                    if (String(row.task_id).startsWith('fu')) return 'Follow Up';
-                    return 'Task ' + row.task_id;
-                  })()}
-                </div>
-                ${row.keterangan ? `<div style="font-size:12px;color:var(--gray-600);background:var(--gray-50);border-radius:8px;padding:8px 10px;margin-bottom:4px;">💬 ${row.keterangan.replace(/^(Kamar [^—]+)—\s*\1\s*$/, '$1').trim()}</div>` : '<div style="font-size:11px;color:var(--gray-300);font-style:italic;margin-bottom:4px;">— Belum ada keterangan —</div>'}
-                ${row.updated_at ? `<div style="font-size:10px;color:var(--gray-400);margin-bottom:6px;">🕐 ${new Date(row.updated_at).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit',timeZone:'Asia/Jakarta'})} WIB</div>` : ''}
-                ${fileUrls.length > 0 ? `
-                  <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;">
-                    ${fileUrls.map((url, i) => {
-                      const isImg = /\.(jpg|jpeg|png|gif|webp|heic)$/i.test(url);
-                      return isImg
-                        ? `<a href="${url}" target="_blank" style="display:block;"><img src="${url}" style="width:72px;height:72px;object-fit:cover;border-radius:8px;border:1px solid var(--gray-200);" onerror="this.parentElement.innerHTML='<span style=\'font-size:11px;color:var(--red);\'>⚠️ Gambar tidak dapat ditampilkan</span>'"/></a>`
-                        : `<a href="${url}" target="_blank" style="font-size:11px;color:var(--navy);background:var(--gray-100);border-radius:6px;padding:6px 10px;font-weight:600;text-decoration:none;display:flex;align-items:center;gap:4px;">📎 File ${i+1}</a>`;
-                    }).join('')}
-                  </div>` : ''}
-              </div>
-            </div>
-          </div>`;
-      });
+      // Render konten unified (sama dengan link WA & Submitted Detail)
+      html += _buildDetailUnifiedHTML(roleName, hotelName || '', data, rcItems, defectsMap);
 
       // Task yang belum disentuh sama sekali
-      const touchedIds = data.map(r => String(r.task_id));
       const remaining = totalExpected - data.length;
       if (remaining > 0) {
-        html += `<div style="background:var(--gray-50);border-radius:12px;padding:12px 14px;border:1.5px dashed var(--gray-200);text-align:center;color:var(--gray-400);font-size:12px;">⬜ ${remaining} task lainnya belum dimulai</div>`;
+        html += `<div style="background:var(--gray-50);border-radius:12px;padding:12px 14px;border:1.5px dashed var(--gray-200);text-align:center;color:var(--gray-400);font-size:12px;margin-top:8px;">⬜ ${remaining} task lainnya belum dimulai</div>`;
       }
 
       document.getElementById('detail-content').innerHTML = html;
@@ -12357,11 +12332,17 @@ window.FB_DETAIL_MAP = {"F&B Manager": {"task_1": "Memastikan Kitchen Area Bersi
           if (d && d.length > 0) { laporan = d[0]; break; }
         }
       } catch(e) {}
-      const laporanData = [laporan];
 
-      const statusIcon = { done: '✅', progress: '⏳', not: '❌', note_only: '📝' };
-      const statusLabel = { done: 'Sudah', progress: 'Dalam Proses', not: 'Belum', note_only: 'Catatan' };
-      const statusColor = { done: 'var(--green)', progress: 'var(--amber)', not: 'var(--red)', note_only: 'var(--navy)' };
+      // Fetch room_checks untuk tanggal sama + defects detail (untuk foto)
+      const rcItems = await _fetchRoomChecksForDate(roleName, hotelName || '', targetDate);
+      const allDefectIds = [];
+      rcItems.forEach(rc => {
+        try {
+          const dids = Array.isArray(rc.defect_ids) ? rc.defect_ids : (typeof rc.defect_ids === 'string' ? JSON.parse(rc.defect_ids) : []);
+          dids.forEach(d => allDefectIds.push(d));
+        } catch(e) {}
+      });
+      const defectsMap = await _fetchDefectsMap(allDefectIds);
 
       let html = '';
 
@@ -12386,123 +12367,8 @@ window.FB_DETAIL_MAP = {"F&B Manager": {"task_1": "Memastikan Kitchen Area Bersi
         </div>`;
       }
 
-      // Detail per task
-      html += '<div style="font-size:11px;font-weight:700;color:var(--gray-400);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">DETAIL PER TUGAS</div>';
-
-      let taskNum = 0;
-      data.forEach(d => {
-        if (!d.status || d.status === 'note_only' && !d.keterangan && !d.file_urls) return;
-        taskNum++;
-
-        const sIcon = statusIcon[d.status] || '—';
-        const sLabel = statusLabel[d.status] || d.status;
-        const sColor = statusColor[d.status] || 'var(--gray-400)';
-
-        html += `<div style="background:white;border-radius:var(--radius);padding:14px;margin-bottom:8px;box-shadow:var(--shadow-card);">`;
-        // Cari nama task dari TASK_LABEL_MAP
-        const _roleTaskKey2 = {
-          'Ops HR Manager': 'Ops HR Manager', 'HR Officer': 'HR Officer',
-          'Chief Engineering Corporate': 'CE Corporate',
-          'EHK Corporate': 'EHK Corporate', 'CRA Corporate': 'CRA Corporate', 'F&B Manager': 'F&B Manager', 'Team Kitchen': 'Team Kitchen', 'F&B Attendant': 'F&B Attendant',
-          'HM Verse Lite': 'HM Verse Lite', 'HM Verse Luxe': 'HM Verse Luxe',
-          'HM Verse Cirebon': 'HM Verse Cirebon', 'HM Oak Tree': 'HM Oak Tree',
-        };
-        const _labelMap2 = TASK_LABEL_MAP[_roleTaskKey2[roleName] || roleName] || {};
-        // Label task: kasih nama yang proper untuk activity-plan, unit-visit-tomorrow, planning-tomorrow
-        // Selain itu pakai TASK_LABEL_MAP, fallback ke room/fu/generic
-        let _taskName;
-        if (d.task_id === 'unit-visit-tomorrow') {
-          _taskName = '🏨 Unit Visit Tomorrow';
-        } else if (d.task_id === 'planning-tomorrow') {
-          _taskName = '📝 Planning for Tomorrow';
-        } else if (d.task_id === 'activity-plan') {
-          // Backward compat untuk data lama
-          _taskName = '📅 Planning for Tomorrow';
-        } else {
-          _taskName = _labelMap2[d.task_id] || (String(d.task_id).startsWith('room_') ? 'Room Inspection' : (String(d.task_id).startsWith('fu') ? 'Follow Up' : 'Task ' + d.task_id));
-        }
-
-        // Untuk Room Inspection (room_*): extract nomor kamar dari keterangan, tampilkan di title
-        // Format keterangan saat save: "Kamar 312 — note" atau "Kamar 312"
-        let _displayKet = d.keterangan || '';
-        if (String(d.task_id).startsWith('room_') && _displayKet) {
-          const _kmMatch = _displayKet.match(/^Kamar\s+([^—\n]+?)\s*(?:—\s*(.*))?$/s);
-          if (_kmMatch) {
-            const _roomNum = _kmMatch[1].trim();
-            _taskName = _taskName + ' — Kamar ' + _roomNum;
-            _displayKet = (_kmMatch[2] || '').trim(); // body tanpa prefix
-          }
-        }
-
-        html += `<div style="margin-bottom:8px;">
-          <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
-            <span style="font-size:16px;">${sIcon}</span>
-            <span style="font-size:12px;font-weight:700;color:${sColor};">${sLabel}</span>
-          </div>
-          <div style="font-size:13px;font-weight:700;color:var(--navy);line-height:1.4;">${_taskName}</div>
-        </div>`;
-
-        // Waktu input task
-        const _taskTime = d.updated_at
-          ? new Date(d.updated_at).toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit', timeZone:'Asia/Jakarta'}) + ' WIB'
-          : null;
-
-        if (d.keterangan) {
-          // Untuk room_*: pakai _displayKet (sudah strip prefix "Kamar XXX — ")
-          // Untuk task lain: tetap pakai logic dedup duplikat lama
-          let _bodyKet;
-          if (String(d.task_id).startsWith('room_')) {
-            _bodyKet = _displayKet; // dari blok extract nomor kamar di atas
-          } else {
-            // Fix tampilan duplikat "Kamar X — Kamar X"
-            _bodyKet = d.keterangan.replace(/^(Kamar [^—]+)—\s*\1\s*$/, '$1').trim();
-          }
-          if (_bodyKet) {
-            html += '<div style="font-size:13px;color:var(--gray-700);background:var(--gray-50);padding:10px 12px;border-radius:8px;margin-bottom:6px;line-height:1.6;">' + _bodyKet + '</div>';
-          }
-        }
-        if (_taskTime) {
-          html += '<div style="font-size:11px;color:var(--gray-400);margin-bottom:6px;">🕐 Diinput ' + _taskTime + '</div>';
-        }
-
-        // Foto/dokumen — parse robust (string URL atau object {url,name,type})
-        if (d.file_urls) {
-          try {
-            let rawFiles = d.file_urls;
-            if (!Array.isArray(rawFiles)) rawFiles = JSON.parse(rawFiles);
-            // Normalize ke {url, name, isImg}
-            const normFiles = rawFiles.map(f => {
-              const url = typeof f === 'string' ? f : (f.url || '');
-              const name = typeof f === 'string' ? f.split('/').pop().substring(0,25) : (f.name || 'File');
-              const isImg = /\.(jpg|jpeg|png|gif|webp|heic)$/i.test(url) || (f.type && f.type.startsWith('image/'));
-              return { url, name, isImg };
-            }).filter(f => f.url && f.url.startsWith('http'));
-            if (normFiles.length > 0) {
-              html += '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;margin-bottom:4px;">';
-              normFiles.forEach(f => {
-                if (f.isImg) {
-                  html += '<a href="' + f.url + '" target="_blank" style="display:block;flex-shrink:0;">' +
-                    '<img src="' + f.url + '" ' +
-                    'style="width:90px;height:90px;object-fit:cover;border-radius:10px;border:1.5px solid var(--gray-200);display:block;" ' +
-                    'loading="lazy" onerror="this.parentElement.innerHTML=\'<span style=fontsize:11px;color:red>⚠️ File tidak tersedia</span>\'">' +
-                    '</a>';
-                } else {
-                  html += '<a href="' + f.url + '" target="_blank" style="display:flex;align-items:center;gap:6px;padding:8px 12px;background:var(--gray-50);border:1.5px solid var(--gray-200);border-radius:10px;font-size:12px;color:var(--navy);text-decoration:none;font-weight:600;">' +
-                    '📄 ' + f.name + '</a>';
-                }
-              });
-              html += '</div>';
-              html += '<div style="font-size:10px;color:var(--green);font-weight:600;margin-bottom:4px;">📎 ' + files.length + ' file — tap foto untuk buka</div>';
-            }
-          } catch(e) {}
-        }
-
-        html += '</div>';
-      });
-
-      if (taskNum === 0) {
-        html += '<div style="text-align:center;padding:24px;color:var(--gray-400);font-size:13px;">Belum ada detail tugas yang tersimpan</div>';
-      }
+      // Render konten unified (sama dengan link WA & Live Detail)
+      html += _buildDetailUnifiedHTML(roleName, hotelName || '', data, rcItems, defectsMap);
 
       document.getElementById('detail-content').innerHTML = html;
     } catch(e) {
@@ -12510,6 +12376,7 @@ window.FB_DETAIL_MAP = {"F&B Manager": {"task_1": "Memastikan Kitchen Area Bersi
       document.getElementById('detail-content').innerHTML = '<div style="text-align:center;padding:40px 0;color:var(--red);">❌ Gagal memuat detail laporan</div>';
     }
   }
+
 
   // FU input handler — tampilkan tombol status jika ada deskripsi
   function onFUInput(event, fuId) {
@@ -12743,17 +12610,52 @@ window.FB_DETAIL_MAP = {"F&B Manager": {"task_1": "Memastikan Kitchen Area Bersi
   }, 30000);
 
   // === PUBLIC DETAIL VIEW ===
-  async function loadPublicDetail(role, hotel, tanggal) {
-    const screen = document.getElementById('screen-public-detail');
-    screen.style.display = 'block';
 
-    const [y, m, d] = tanggal.split('-');
-    const bulan = ['','Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
-    const tglDisplay = `${parseInt(d)} ${bulan[parseInt(m)]} ${y}`;
-    document.getElementById('pub-meta').textContent = `${role} · ${hotel} · ${tglDisplay}`;
+  // Helper: fetch defects detail by id list, return map {id: defect}
+  async function _fetchDefectsMap(defectIds) {
+    if (!defectIds || !defectIds.length) return {};
+    try {
+      const ids = defectIds.filter(x => x !== null && x !== undefined).map(x => String(x));
+      if (!ids.length) return {};
+      const idQ = 'id=in.(' + ids.join(',') + ')';
+      const res = await fetch(SUPA_URL + '/rest/v1/defects?' + idQ + '&select=*',
+        { headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY } });
+      if (!res.ok) return {};
+      const rows = await res.json();
+      const map = {};
+      rows.forEach(r => { map[r.id] = r; });
+      return map;
+    } catch(e) { console.warn('Fetch defects error:', e); return {}; }
+  }
 
-    const content = document.getElementById('pub-content');
-    content.innerHTML = '<div style="text-align:center;padding:40px;color:#aaa;">⏳ Memuat data...</div>';
+  // Helper: fetch room_checks for given role/hotel/date
+  async function _fetchRoomChecksForDate(role, hotel, tanggal) {
+    try {
+      let userRoleFilter = '';
+      let hotelFilter = '';
+      if (role.startsWith('HM ')) {
+        userRoleFilter = '&user_role=eq.HM';
+        hotelFilter = '&hotel=eq.' + encodeURIComponent(hotel);
+      } else if (role === 'EHK Corporate') {
+        userRoleFilter = '&user_role=eq.EHK';
+      } else if (role === 'Chief Engineering Corporate') {
+        userRoleFilter = '&user_role=eq.CE';
+      }
+      if (!userRoleFilter) return [];
+      const rcRes = await fetch(
+        SUPA_URL + '/rest/v1/room_checks?checked_at=gte.' + tanggal + 'T00:00:00' +
+        '&checked_at=lte.' + tanggal + 'T23:59:59.999' +
+        userRoleFilter + hotelFilter +
+        '&select=*&order=checked_at.asc',
+        { headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY } }
+      );
+      return rcRes.ok ? await rcRes.json() : [];
+    } catch(e) { console.warn('Room check fetch failed:', e); return []; }
+  }
+
+  // Helper: build unified HTML untuk 4 section detail (tasklist + FU + planning + room check)
+  // Dipakai oleh loadPublicDetail, openDetailLaporan, dan openLiveDetail agar konsisten
+  function _buildDetailUnifiedHTML(role, hotel, items, rcItems, defectsMap) {
     const escHtml = (str) => String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 
     // Build task name map dari ROLE_TASKS HTML
@@ -12788,7 +12690,7 @@ window.FB_DETAIL_MAP = {"F&B Manager": {"task_1": "Memastikan Kitchen Area Bersi
       return taskId.replace(/_/g,' ').replace(/-/g,' ');
     };
 
-    // Helper: parse file_urls (bisa array of strings atau array of {name,url,type})
+    // Helper: parse file_urls
     const parseFiles = (raw) => {
       let urls = [];
       try {
@@ -12801,8 +12703,6 @@ window.FB_DETAIL_MAP = {"F&B Manager": {"task_1": "Memastikan Kitchen Area Bersi
         return { url: f.url || '', isImg: (f.type && f.type.startsWith('image/')) || /\.(jpg|jpeg|png|gif|webp|heic)/i.test(f.url||'') || /supabase\.co.*storage/i.test(f.url||'') };
       }).filter(f => f.url && f.url.startsWith('http'));
     };
-
-    // Helper: render file thumbnails
     const renderFiles = (fileUrls) => {
       if (!fileUrls.length) return '';
       let s = '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;">';
@@ -12816,16 +12716,332 @@ window.FB_DETAIL_MAP = {"F&B Manager": {"task_1": "Memastikan Kitchen Area Bersi
       return s + '</div>';
     };
 
-    // Helper: status info dari status field
+    // Normalize status: in_progress → progress
+    const normStatus = (s) => s === 'in_progress' ? 'progress' : s;
     const statusInfo = (status) => {
-      if (status === 'done') return { icon: '✅', color: '#27ae60', label: 'Sudah' };
-      if (status === 'progress') return { icon: '⏳', color: '#e67e22', label: 'Dalam Proses' };
-      if (status === 'not') return { icon: '❌', color: '#e74c3c', label: 'Belum' };
+      const s = normStatus(status);
+      if (s === 'done') return { icon: '✅', color: '#27ae60', label: 'Sudah' };
+      if (s === 'progress') return { icon: '⏳', color: '#e67e22', label: 'Dalam Proses' };
+      if (s === 'not') return { icon: '❌', color: '#e74c3c', label: 'Belum' };
       return { icon: '📝', color: '#2980b9', label: 'Catatan' };
     };
 
+    // Dedup & sort items
+    const dedup = (arr) => {
+      const seen = new Set();
+      return arr.filter(i => {
+        const key = i.task_id + '||' + (i.keterangan || '');
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+    };
+    const sortByTaskNum = (a, b) => {
+      const numA = parseInt((a.task_id || '').replace(/[^0-9]/g, '')) || 0;
+      const numB = parseInt((b.task_id || '').replace(/[^0-9]/g, '')) || 0;
+      return numA - numB;
+    };
+
+    const taskItems = dedup(items.filter(i => i.task_id && i.task_id.startsWith('task_'))).sort(sortByTaskNum);
+    const fuItems = dedup(items.filter(i => i.task_id && (i.task_id.startsWith('fu') || i.task_id.startsWith('FU')))).sort(sortByTaskNum);
+    const planItems = dedup(items.filter(i => i.task_id === 'planning-tomorrow' || i.task_id === 'activity-plan' || i.task_id === 'unit-visit-tomorrow'));
+
+    let html = '';
+
+    // Section 1: 📋 Tasklist
+    if (taskItems.length) {
+      html += '<div style="margin-bottom:20px;"><div style="font-weight:700;color:#1a3a5c;margin-bottom:10px;font-size:14px;">📋 Tasklist</div>';
+      taskItems.forEach(item => {
+        const info = statusInfo(item.status);
+        const num = parseInt((item.task_id || '').replace(/[^0-9]/g, '')) || 0;
+        const name = escHtml(getTaskName(item.task_id));
+        const fileUrls = parseFiles(item.file_urls);
+        html += `<div style="background:#f9f9f9;border-radius:12px;padding:12px 14px;margin-bottom:8px;border-left:4px solid ${info.color};">`;
+        html += `<div style="display:flex;align-items:center;gap:8px;margin-bottom:${item.keterangan||fileUrls.length?'6px':'0'};">`;
+        html += `<span style="background:${info.color};color:white;border-radius:50%;width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">${num}</span>`;
+        html += `<span style="font-size:13px;flex-shrink:0;">${info.icon}</span>`;
+        html += `<span style="font-size:14px;font-weight:700;color:#1a1a2e;flex:1;">${name}</span>`;
+        html += `</div>`;
+        if (item.keterangan) html += `<div style="font-size:13px;color:#555;line-height:1.5;white-space:pre-wrap;">${escHtml(item.keterangan)}</div>`;
+        html += renderFiles(fileUrls);
+        html += `</div>`;
+      });
+      html += '</div>';
+    }
+
+    // Section 2: 📌 Follow Up
+    if (fuItems.length) {
+      html += '<div style="margin-bottom:20px;"><div style="font-weight:700;color:#1a3a5c;margin-bottom:10px;font-size:14px;">📌 Follow Up</div>';
+      fuItems.forEach((item, idx) => {
+        const info = statusInfo(item.status);
+        const fileUrls = parseFiles(item.file_urls);
+        html += `<div style="background:#f9f9f9;border-radius:12px;padding:12px 14px;margin-bottom:8px;border-left:4px solid ${info.color};">`;
+        html += `<div style="display:flex;align-items:center;gap:8px;margin-bottom:${item.keterangan||fileUrls.length?'6px':'0'};">`;
+        html += `<span style="font-size:13px;">${info.icon}</span>`;
+        html += `<span style="font-size:14px;font-weight:700;color:#1a1a2e;flex:1;">FU${idx+1}</span>`;
+        html += `</div>`;
+        if (item.keterangan) html += `<div style="font-size:13px;color:#555;line-height:1.5;white-space:pre-wrap;">${escHtml(item.keterangan)}</div>`;
+        html += renderFiles(fileUrls);
+        html += `</div>`;
+      });
+      html += '</div>';
+    }
+
+    // Section 3: 📅 Planning for Tomorrow
+    if (planItems.length) {
+      html += '<div style="margin-bottom:20px;"><div style="font-weight:700;color:#1a3a5c;margin-bottom:10px;font-size:14px;">📅 Planning for Tomorrow</div>';
+      planItems.forEach(item => {
+        const fileUrls = parseFiles(item.file_urls);
+        html += `<div style="background:#f9f9f9;border-radius:12px;padding:12px 14px;margin-bottom:8px;border-left:4px solid #1a3a5c;">`;
+        if (item.keterangan) html += `<div style="font-size:13px;color:#555;line-height:1.5;white-space:pre-wrap;">${escHtml(item.keterangan)}</div>`;
+        html += renderFiles(fileUrls);
+        html += `</div>`;
+      });
+      html += '</div>';
+    }
+
+    // Section 4: 🏨 Pengecekan Kamar (foto group per area + defect detail dengan foto)
+    if (rcItems && rcItems.length) {
+      html += `<div style="margin-bottom:20px;"><div style="font-weight:700;color:#1a3a5c;margin-bottom:10px;font-size:14px;">🏨 Pengecekan Kamar (${rcItems.length} kamar)</div>`;
+      rcItems.forEach(rc => {
+        const cleanColor = rc.cleanliness === 'Baik' ? '#27ae60' : rc.cleanliness === 'Sedang' ? '#f39c12' : '#e74c3c';
+        const cleanIcon = rc.cleanliness === 'Baik' ? '✅' : rc.cleanliness === 'Sedang' ? '⚠️' : '❌';
+
+        // Parse photo URLs grouped by area (support legacy string[] and new {url,area}[])
+        let rawPhotos = [];
+        try {
+          const raw = rc.cleanliness_photos;
+          if (Array.isArray(raw)) rawPhotos = raw;
+          else if (typeof raw === 'string') rawPhotos = JSON.parse(raw);
+        } catch(e) { rawPhotos = []; }
+        const photoByArea = { entrance: [], bedroom: [], bathroom: [], lainnya: [] };
+        rawPhotos.forEach(p => {
+          if (typeof p === 'string' && p.startsWith('http')) {
+            photoByArea.lainnya.push(p);
+          } else if (p && p.url && typeof p.url === 'string' && p.url.startsWith('http')) {
+            const a = p.area || 'lainnya';
+            if (photoByArea[a]) photoByArea[a].push(p.url);
+            else photoByArea.lainnya.push(p.url);
+          }
+        });
+
+        // Time string
+        let timeStr = '';
+        try {
+          const dt = new Date(rc.checked_at);
+          timeStr = String(dt.getHours()).padStart(2,'0') + ':' + String(dt.getMinutes()).padStart(2,'0');
+        } catch(e) {}
+
+        html += `<div style="background:#f9f9f9;border-radius:12px;padding:12px 14px;margin-bottom:8px;border-left:4px solid ${cleanColor};">`;
+        html += `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap;">`;
+        html += `<span style="background:${cleanColor};color:white;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;">Kamar ${escHtml(rc.room_no || '-')}</span>`;
+        // Status kamar badge
+        if (rc.room_status) {
+          const sCol = { 'VCU':{bg:'#f3f4f6',fg:'#374151'},'VCC':{bg:'#dcfce7',fg:'#16a34a'},'VD':{bg:'#fef3c7',fg:'#92400e'},'OD':{bg:'#ffedd5',fg:'#c2410c'},'OO':{bg:'#fee2e2',fg:'#b91c1c'} }[rc.room_status] || {bg:'#f3f4f6',fg:'#374151'};
+          html += `<span style="background:${sCol.bg};color:${sCol.fg};padding:3px 8px;border-radius:4px;font-size:11px;font-weight:700;">${escHtml(rc.room_status)}</span>`;
+        }
+        html += `<span style="font-size:12px;">${cleanIcon} ${escHtml(rc.cleanliness || '-')}</span>`;
+        if (timeStr) html += `<span style="font-size:11px;color:#888;margin-left:auto;">${timeStr} WIB</span>`;
+        html += `</div>`;
+
+        // Nama checker
+        if (rc.checker_name) {
+          html += `<div style="font-size:11px;color:#666;margin-bottom:6px;">👤 ${escHtml(rc.checker_name)}</div>`;
+        }
+        // Hotel info untuk Corporate
+        if (!role.startsWith('HM ') && rc.hotel) {
+          html += `<div style="font-size:11px;color:#888;margin-bottom:6px;">🏨 ${escHtml(rc.hotel)}</div>`;
+        }
+        if (rc.asset_notes) html += `<div style="font-size:13px;color:#555;margin-bottom:4px;"><b>Asset:</b> ${escHtml(rc.asset_notes)}</div>`;
+        if (rc.followup_notes) html += `<div style="font-size:13px;color:#555;margin-bottom:4px;"><b>Follow Up:</b> ${escHtml(rc.followup_notes)}</div>`;
+
+        // Detail Defects (dari defect_ids, fetch dari defectsMap)
+        let defectIdsArr = [];
+        try {
+          defectIdsArr = Array.isArray(rc.defect_ids) ? rc.defect_ids : (typeof rc.defect_ids === 'string' ? JSON.parse(rc.defect_ids) : []);
+        } catch(e) {}
+        if (defectIdsArr.length > 0) {
+          html += `<div style="margin-top:10px;padding-top:8px;border-top:1px dashed #ddd;"><div style="font-size:12px;font-weight:700;color:#e67e22;margin-bottom:6px;">🔧 ${defectIdsArr.length} Defect Tercatat</div>`;
+          defectIdsArr.forEach(did => {
+            const def = defectsMap && defectsMap[did];
+            if (!def) {
+              html += `<div style="font-size:12px;color:#888;padding:4px 0;">• Defect #${did} (detail tidak ditemukan)</div>`;
+              return;
+            }
+            const prioColors = { 'Urgent':'#dc2626','High':'#ea580c','Medium':'#ca8a04','Low':'#16a34a' };
+            const prioCol = prioColors[def.priority] || '#666';
+            const catIcon = def.category === 'HK' ? '🧹' : '🔧';
+            html += `<div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:8px 10px;margin-bottom:6px;">`;
+            html += `<div style="display:flex;gap:6px;align-items:center;margin-bottom:3px;flex-wrap:wrap;">`;
+            html += `<span style="font-size:11px;font-weight:700;color:${prioCol};">${catIcon} ${def.category || '-'} · ${def.priority || '-'}</span>`;
+            if (def.status) html += `<span style="font-size:10px;background:#fef3c7;color:#92400e;padding:1px 6px;border-radius:4px;font-weight:600;">${escHtml(def.status)}</span>`;
+            html += `</div>`;
+            html += `<div style="font-size:12px;color:#7c2d12;">${escHtml(def.description || '-')}</div>`;
+            // Foto defect
+            const defectPhotos = parseFiles(def.photo_urls);
+            if (defectPhotos.length) html += renderFiles(defectPhotos);
+            html += `</div>`;
+          });
+          html += `</div>`;
+        }
+
+        // Photos grouped by area
+        const areaCfg = [
+          { key: 'entrance', label: '🚪 Entrance Room' },
+          { key: 'bedroom', label: '🛏️ Bedroom Area' },
+          { key: 'bathroom', label: '🚿 Bathroom Area' },
+          { key: 'lainnya', label: '📷 Foto Lainnya' }
+        ];
+        areaCfg.forEach(cfg => {
+          const urls = photoByArea[cfg.key];
+          if (!urls || urls.length === 0) return;
+          const photoFiles = urls.map(u => ({url: u, isImg: true}));
+          html += `<div style="margin-top:8px;"><div style="font-size:11px;font-weight:600;color:#1a3a5c;margin-bottom:4px;">${cfg.label}</div>`;
+          html += renderFiles(photoFiles);
+          html += `</div>`;
+        });
+        html += `</div>`;
+      });
+      html += '</div>';
+    }
+
+    return html || '<div style="text-align:center;padding:40px;color:#aaa;">Tidak ada data.</div>';
+  }
+
+  // === PUBLIC DETAIL (link dari WA) ===
+  // ============================================================
+  // SHARED HELPERS: untuk konsistensi tampilan detail laporan
+  // dipakai oleh: openLiveDetail, openDetailLaporan, loadPublicDetail
+  // ============================================================
+
+  // Fetch Room Check items untuk role+hotel+tanggal
+  async function _fetchRoomChecksForReport(role, hotel, tanggal) {
     try {
-      // === 1. FETCH laporan_detail ===
+      let userRoleFilter = '';
+      let hotelFilter = '';
+      if (role && role.startsWith('HM ')) {
+        userRoleFilter = '&user_role=eq.HM';
+        if (hotel) hotelFilter = '&hotel=eq.' + encodeURIComponent(hotel);
+      } else if (role === 'EHK Corporate') {
+        userRoleFilter = '&user_role=eq.EHK';
+      } else if (role === 'Chief Engineering Corporate') {
+        userRoleFilter = '&user_role=eq.CE';
+      } else {
+        return [];
+      }
+      const res = await fetch(
+        SUPA_URL + '/rest/v1/room_checks?checked_at=gte.' + tanggal + 'T00:00:00' +
+        '&checked_at=lte.' + tanggal + 'T23:59:59.999' +
+        userRoleFilter + hotelFilter +
+        '&select=*&order=checked_at.asc',
+        { headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY } }
+      );
+      return res.ok ? await res.json() : [];
+    } catch(e) {
+      console.warn('Fetch room checks failed:', e);
+      return [];
+    }
+  }
+
+  // Render section "🏨 Pengecekan Kamar" - HTML string
+  function _renderRoomCheckSection(rcItems, role) {
+    if (!rcItems || !rcItems.length) return '';
+    const escHtml = (s) => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    let html = `<div style="margin-top:20px;margin-bottom:16px;"><div style="font-size:11px;font-weight:700;color:#1a3a5c;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">🏨 Pengecekan Kamar (${rcItems.length} kamar)</div>`;
+    rcItems.forEach(rc => {
+      const cleanColor = rc.cleanliness === 'Baik' ? '#27ae60' : rc.cleanliness === 'Sedang' ? '#f39c12' : '#e74c3c';
+      const cleanIcon = rc.cleanliness === 'Baik' ? '✅' : rc.cleanliness === 'Sedang' ? '⚠️' : '❌';
+      // Photos grouped by area
+      let rawPhotos = [];
+      try {
+        const raw = rc.cleanliness_photos;
+        if (Array.isArray(raw)) rawPhotos = raw;
+        else if (typeof raw === 'string') rawPhotos = JSON.parse(raw);
+      } catch(e) {}
+      const photoByArea = { entrance: [], bedroom: [], bathroom: [], lainnya: [] };
+      rawPhotos.forEach(p => {
+        if (typeof p === 'string' && p.startsWith('http')) {
+          photoByArea.lainnya.push(p);
+        } else if (p && p.url && typeof p.url === 'string' && p.url.startsWith('http')) {
+          const a = p.area || 'lainnya';
+          if (photoByArea[a]) photoByArea[a].push(p.url);
+          else photoByArea.lainnya.push(p.url);
+        }
+      });
+      // Format time
+      let timeStr = '';
+      try {
+        const dt = new Date(rc.checked_at);
+        timeStr = String(dt.getHours()).padStart(2,'0') + ':' + String(dt.getMinutes()).padStart(2,'0');
+      } catch(e) {}
+
+      html += `<div style="background:#f9f9f9;border-radius:12px;padding:12px 14px;margin-bottom:8px;border-left:4px solid ${cleanColor};">`;
+      html += `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap;">`;
+      html += `<span style="background:${cleanColor};color:white;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;">Kamar ${escHtml(rc.room_no || '-')}</span>`;
+      if (rc.room_status) {
+        const sCol = { 'VCU':{bg:'#f3f4f6',fg:'#374151'},'VCC':{bg:'#dcfce7',fg:'#16a34a'},'VD':{bg:'#fef3c7',fg:'#92400e'},'OD':{bg:'#ffedd5',fg:'#c2410c'},'OO':{bg:'#fee2e2',fg:'#b91c1c'} }[rc.room_status] || {bg:'#f3f4f6',fg:'#374151'};
+        html += `<span style="background:${sCol.bg};color:${sCol.fg};padding:3px 8px;border-radius:4px;font-size:11px;font-weight:700;">${escHtml(rc.room_status)}</span>`;
+      }
+      html += `<span style="font-size:12px;">${cleanIcon} ${escHtml(rc.cleanliness || '-')}</span>`;
+      if (timeStr) html += `<span style="font-size:11px;color:#888;margin-left:auto;">${timeStr} WIB</span>`;
+      html += `</div>`;
+      if (rc.checker_name) {
+        html += `<div style="font-size:11px;color:#666;margin-bottom:6px;">👤 ${escHtml(rc.checker_name)}</div>`;
+      }
+      if (role && !role.startsWith('HM ') && rc.hotel) {
+        html += `<div style="font-size:11px;color:#888;margin-bottom:6px;">🏨 ${escHtml(rc.hotel)}</div>`;
+      }
+      if (rc.asset_notes) {
+        html += `<div style="font-size:13px;color:#555;margin-bottom:4px;"><b>Asset:</b> ${escHtml(rc.asset_notes)}</div>`;
+      }
+      if (rc.followup_notes) {
+        html += `<div style="font-size:13px;color:#555;margin-bottom:4px;"><b>Follow Up:</b> ${escHtml(rc.followup_notes)}</div>`;
+      }
+      let defectCount = 0;
+      try {
+        const defs = Array.isArray(rc.defect_ids) ? rc.defect_ids : (typeof rc.defect_ids === 'string' ? JSON.parse(rc.defect_ids) : []);
+        defectCount = defs.length;
+      } catch(e) {}
+      if (defectCount > 0) {
+        html += `<div style="font-size:12px;color:#e67e22;margin-bottom:4px;">🔧 ${defectCount} defect tercatat</div>`;
+      }
+      // Photos per area
+      const areaCfg = [
+        { key: 'entrance', label: '🚪 Entrance Room' },
+        { key: 'bedroom', label: '🛏️ Bedroom Area' },
+        { key: 'bathroom', label: '🚿 Bathroom Area' },
+        { key: 'lainnya', label: '📷 Foto Lainnya' }
+      ];
+      areaCfg.forEach(cfg => {
+        const urls = photoByArea[cfg.key];
+        if (!urls || urls.length === 0) return;
+        html += `<div style="margin-top:8px;"><div style="font-size:11px;font-weight:600;color:#1a3a5c;margin-bottom:4px;">${cfg.label}</div>`;
+        html += `<div style="display:flex;flex-wrap:wrap;gap:4px;">`;
+        urls.forEach(u => {
+          html += `<a href="${u}" target="_blank" style="display:block;flex-shrink:0;"><img src="${u}" style="width:72px;height:72px;object-fit:cover;border-radius:8px;border:1px solid #e0e0e0;" loading="lazy" onerror="this.parentElement.innerHTML='📷'"></a>`;
+        });
+        html += `</div></div>`;
+      });
+      html += `</div>`;
+    });
+    html += `</div>`;
+    return html;
+  }
+
+  async function loadPublicDetail(role, hotel, tanggal) {
+    const screen = document.getElementById('screen-public-detail');
+    screen.style.display = 'block';
+
+    const [y, m, d] = tanggal.split('-');
+    const bulan = ['','Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+    const tglDisplay = `${parseInt(d)} ${bulan[parseInt(m)]} ${y}`;
+    document.getElementById('pub-meta').textContent = `${role} · ${hotel} · ${tglDisplay}`;
+
+    const content = document.getElementById('pub-content');
+    content.innerHTML = '<div style="text-align:center;padding:40px;color:#aaa;">⏳ Memuat data...</div>';
+
+    try {
+      // Fetch laporan_detail
       const res = await fetch(
         SUPA_URL + '/rest/v1/laporan_detail?tanggal=eq.' + tanggal +
         '&role=eq.' + encodeURIComponent(role) +
@@ -12835,209 +13051,32 @@ window.FB_DETAIL_MAP = {"F&B Manager": {"task_1": "Memastikan Kitchen Area Bersi
       );
       const items = res.ok ? await res.json() : [];
 
-      // === 2. FETCH room_checks (cek kamar di tanggal sama) ===
-      let rcItems = [];
-      try {
-        let userRoleFilter = '';
-        let hotelFilter = '';
-        if (role.startsWith('HM ')) {
-          userRoleFilter = '&user_role=eq.HM';
-          hotelFilter = '&hotel=eq.' + encodeURIComponent(hotel);
-        } else if (role === 'EHK Corporate') {
-          userRoleFilter = '&user_role=eq.EHK';
-        } else if (role === 'Chief Engineering Corporate') {
-          userRoleFilter = '&user_role=eq.CE';
-        }
-        if (userRoleFilter) {
-          // Cek kamar di tanggal yang sama (00:00 - 23:59:59)
-          const rcRes = await fetch(
-            SUPA_URL + '/rest/v1/room_checks?checked_at=gte.' + tanggal + 'T00:00:00' +
-            '&checked_at=lte.' + tanggal + 'T23:59:59.999' +
-            userRoleFilter + hotelFilter +
-            '&select=*&order=checked_at.asc',
-            { headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY } }
-          );
-          rcItems = rcRes.ok ? await rcRes.json() : [];
-        }
-      } catch(e) { console.warn('Room check fetch failed:', e); }
+      // Fetch room_checks
+      const rcItems = await _fetchRoomChecksForDate(role, hotel, tanggal);
+
+      // Fetch defects detail untuk defect_ids di rcItems
+      const allDefectIds = [];
+      rcItems.forEach(rc => {
+        try {
+          const dids = Array.isArray(rc.defect_ids) ? rc.defect_ids : (typeof rc.defect_ids === 'string' ? JSON.parse(rc.defect_ids) : []);
+          dids.forEach(d => allDefectIds.push(d));
+        } catch(e) {}
+      });
+      const defectsMap = await _fetchDefectsMap(allDefectIds);
 
       if ((!items || items.length === 0) && rcItems.length === 0) {
         content.innerHTML = '<div style="text-align:center;padding:40px;color:#aaa;">Tidak ada data dokumentasi.</div>';
         return;
       }
 
-      // === 3. DEDUP & SORT items by task number (numeric) ===
-      const dedup = (arr) => {
-        const seen = new Set();
-        return arr.filter(i => {
-          const key = i.task_id + '||' + (i.keterangan || '');
-          if (seen.has(key)) return false;
-          seen.add(key);
-          return true;
-        });
-      };
-      const sortByTaskNum = (a, b) => {
-        const numA = parseInt((a.task_id || '').replace(/[^0-9]/g, '')) || 0;
-        const numB = parseInt((b.task_id || '').replace(/[^0-9]/g, '')) || 0;
-        return numA - numB;
-      };
-
-      // Kelompokkan: tasklist (task_*), follow up (fu*), planning (planning-tomorrow / activity-plan / unit-visit-tomorrow)
-      const taskItems = dedup(items.filter(i => i.task_id && i.task_id.startsWith('task_'))).sort(sortByTaskNum);
-      const fuItems = dedup(items.filter(i => i.task_id && (i.task_id.startsWith('fu') || i.task_id.startsWith('FU')))).sort(sortByTaskNum);
-      const planItems = dedup(items.filter(i => i.task_id === 'planning-tomorrow' || i.task_id === 'activity-plan' || i.task_id === 'unit-visit-tomorrow'));
-
-      // === 4. RENDER ===
-      let html = '';
-
-      // Section 1: 📋 Tasklist (urutan persis 1-19 dengan icon status per item)
-      if (taskItems.length) {
-        html += '<div style="margin-bottom:20px;"><div style="font-weight:700;color:#1a3a5c;margin-bottom:10px;font-size:14px;">📋 Tasklist</div>';
-        taskItems.forEach(item => {
-          const info = statusInfo(item.status);
-          const num = parseInt((item.task_id || '').replace(/[^0-9]/g, '')) || 0;
-          const name = escHtml(getTaskName(item.task_id));
-          const fileUrls = parseFiles(item.file_urls);
-          html += `<div style="background:#f9f9f9;border-radius:12px;padding:12px 14px;margin-bottom:8px;border-left:4px solid ${info.color};">`;
-          html += `<div style="display:flex;align-items:center;gap:8px;margin-bottom:${item.keterangan||fileUrls.length?'6px':'0'};">`;
-          html += `<span style="background:${info.color};color:white;border-radius:50%;width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">${num}</span>`;
-          html += `<span style="font-size:13px;flex-shrink:0;">${info.icon}</span>`;
-          html += `<span style="font-size:14px;font-weight:700;color:#1a1a2e;flex:1;">${name}</span>`;
-          html += `</div>`;
-          if (item.keterangan) html += `<div style="font-size:13px;color:#555;line-height:1.5;white-space:pre-wrap;">${escHtml(item.keterangan)}</div>`;
-          html += renderFiles(fileUrls);
-          html += `</div>`;
-        });
-        html += '</div>';
-      }
-
-      // Section 2: 📌 Follow Up
-      if (fuItems.length) {
-        html += '<div style="margin-bottom:20px;"><div style="font-weight:700;color:#1a3a5c;margin-bottom:10px;font-size:14px;">📌 Follow Up</div>';
-        fuItems.forEach((item, idx) => {
-          const info = statusInfo(item.status);
-          const fileUrls = parseFiles(item.file_urls);
-          html += `<div style="background:#f9f9f9;border-radius:12px;padding:12px 14px;margin-bottom:8px;border-left:4px solid ${info.color};">`;
-          html += `<div style="display:flex;align-items:center;gap:8px;margin-bottom:${item.keterangan||fileUrls.length?'6px':'0'};">`;
-          html += `<span style="font-size:13px;">${info.icon}</span>`;
-          html += `<span style="font-size:14px;font-weight:700;color:#1a1a2e;flex:1;">FU${idx+1}</span>`;
-          html += `</div>`;
-          if (item.keterangan) html += `<div style="font-size:13px;color:#555;line-height:1.5;white-space:pre-wrap;">${escHtml(item.keterangan)}</div>`;
-          html += renderFiles(fileUrls);
-          html += `</div>`;
-        });
-        html += '</div>';
-      }
-
-      // Section 3: 📅 Planning for Tomorrow
-      if (planItems.length) {
-        html += '<div style="margin-bottom:20px;"><div style="font-weight:700;color:#1a3a5c;margin-bottom:10px;font-size:14px;">📅 Planning for Tomorrow</div>';
-        planItems.forEach(item => {
-          const fileUrls = parseFiles(item.file_urls);
-          html += `<div style="background:#f9f9f9;border-radius:12px;padding:12px 14px;margin-bottom:8px;border-left:4px solid #1a3a5c;">`;
-          if (item.keterangan) html += `<div style="font-size:13px;color:#555;line-height:1.5;white-space:pre-wrap;">${escHtml(item.keterangan)}</div>`;
-          html += renderFiles(fileUrls);
-          html += `</div>`;
-        });
-        html += '</div>';
-      }
-
-      // Section 4: 🏨 Pengecekan Kamar (cek kamar di tanggal sama)
-      if (rcItems.length) {
-        html += `<div style="margin-bottom:20px;"><div style="font-weight:700;color:#1a3a5c;margin-bottom:10px;font-size:14px;">🏨 Pengecekan Kamar (${rcItems.length} kamar)</div>`;
-        rcItems.forEach(rc => {
-          // Cleanliness color
-          const cleanColor = rc.cleanliness === 'Baik' ? '#27ae60' : rc.cleanliness === 'Sedang' ? '#f39c12' : '#e74c3c';
-          const cleanIcon = rc.cleanliness === 'Baik' ? '✅' : rc.cleanliness === 'Sedang' ? '⚠️' : '❌';
-          // Parse photo URLs (support both legacy string[] and new {url,area}[])
-          let rawPhotos = [];
-          try {
-            const raw = rc.cleanliness_photos;
-            if (Array.isArray(raw)) rawPhotos = raw;
-            else if (typeof raw === 'string') rawPhotos = JSON.parse(raw);
-          } catch(e) { rawPhotos = []; }
-          // Group by area
-          const photoByArea = { entrance: [], bedroom: [], bathroom: [], lainnya: [] };
-          rawPhotos.forEach(p => {
-            if (typeof p === 'string' && p.startsWith('http')) {
-              photoByArea.lainnya.push(p); // legacy
-            } else if (p && p.url && typeof p.url === 'string' && p.url.startsWith('http')) {
-              const a = p.area || 'lainnya';
-              if (photoByArea[a]) photoByArea[a].push(p.url);
-              else photoByArea.lainnya.push(p.url);
-            }
-          });
-
-          // Format time
-          let timeStr = '';
-          try {
-            const dt = new Date(rc.checked_at);
-            timeStr = String(dt.getHours()).padStart(2,'0') + ':' + String(dt.getMinutes()).padStart(2,'0');
-          } catch(e) {}
-
-          html += `<div style="background:#f9f9f9;border-radius:12px;padding:12px 14px;margin-bottom:8px;border-left:4px solid ${cleanColor};">`;
-          html += `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap;">`;
-          html += `<span style="background:${cleanColor};color:white;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;">Kamar ${escHtml(rc.room_no || '-')}</span>`;
-          // Status kamar badge (VCU/VCC/VD/OD/OO)
-          if (rc.room_status) {
-            const sCol = { 'VCU':{bg:'#f3f4f6',fg:'#374151'},'VCC':{bg:'#dcfce7',fg:'#16a34a'},'VD':{bg:'#fef3c7',fg:'#92400e'},'OD':{bg:'#ffedd5',fg:'#c2410c'},'OO':{bg:'#fee2e2',fg:'#b91c1c'} }[rc.room_status] || {bg:'#f3f4f6',fg:'#374151'};
-            html += `<span style="background:${sCol.bg};color:${sCol.fg};padding:3px 8px;border-radius:4px;font-size:11px;font-weight:700;">${escHtml(rc.room_status)}</span>`;
-          }
-          html += `<span style="font-size:12px;">${cleanIcon} ${escHtml(rc.cleanliness || '-')}</span>`;
-          if (timeStr) html += `<span style="font-size:11px;color:#888;margin-left:auto;">${timeStr} WIB</span>`;
-          html += `</div>`;
-          // Nama pemegang PIN (kalau ada)
-          if (rc.checker_name) {
-            html += `<div style="font-size:11px;color:#666;margin-bottom:6px;">👤 ${escHtml(rc.checker_name)}</div>`;
-          }
-          // Hotel info (untuk Corporate yang lintas hotel)
-          if (!role.startsWith('HM ') && rc.hotel) {
-            html += `<div style="font-size:11px;color:#888;margin-bottom:6px;">🏨 ${escHtml(rc.hotel)}</div>`;
-          }
-          // Asset notes
-          if (rc.asset_notes) {
-            html += `<div style="font-size:13px;color:#555;margin-bottom:4px;"><b>Asset:</b> ${escHtml(rc.asset_notes)}</div>`;
-          }
-          // Follow up
-          if (rc.followup_notes) {
-            html += `<div style="font-size:13px;color:#555;margin-bottom:4px;"><b>Follow Up:</b> ${escHtml(rc.followup_notes)}</div>`;
-          }
-          // Defect count
-          let defectCount = 0;
-          try {
-            const defs = Array.isArray(rc.defect_ids) ? rc.defect_ids : (typeof rc.defect_ids === 'string' ? JSON.parse(rc.defect_ids) : []);
-            defectCount = defs.length;
-          } catch(e) {}
-          if (defectCount > 0) {
-            html += `<div style="font-size:12px;color:#e67e22;margin-bottom:4px;">🔧 ${defectCount} defect tercatat</div>`;
-          }
-          // Photos grouped by area
-          const areaCfg = [
-            { key: 'entrance', label: '🚪 Entrance Room' },
-            { key: 'bedroom', label: '🛏️ Bedroom Area' },
-            { key: 'bathroom', label: '🚿 Bathroom Area' },
-            { key: 'lainnya', label: '📷 Foto Lainnya' }
-          ];
-          areaCfg.forEach(cfg => {
-            const urls = photoByArea[cfg.key];
-            if (!urls || urls.length === 0) return;
-            const photoFiles = urls.map(u => ({url: u, isImg: true}));
-            html += `<div style="margin-top:8px;"><div style="font-size:11px;font-weight:600;color:#1a3a5c;margin-bottom:4px;">${cfg.label}</div>`;
-            html += renderFiles(photoFiles);
-            html += `</div>`;
-          });
-          html += `</div>`;
-        });
-        html += '</div>';
-      }
-
-      content.innerHTML = html || '<div style="text-align:center;padding:40px;color:#aaa;">Tidak ada data.</div>';
+      content.innerHTML = _buildDetailUnifiedHTML(role, hotel, items, rcItems, defectsMap);
 
     } catch(e) {
       content.innerHTML = '<div style="text-align:center;padding:40px;color:#e74c3c;">Gagal memuat data.</div>';
       console.error(e);
     }
   }
+
 
   // Cek URL parameter saat load
   document.addEventListener('DOMContentLoaded', function checkPublicView() {
@@ -13635,21 +13674,62 @@ window.FB_DETAIL_MAP = {"F&B Manager": {"task_1": "Memastikan Kitchen Area Bersi
   }
 
   // ====== DEFECTS ======
+  let rcDefectFormPhotos = []; // temp photos for defect form
+
   function rcAddDefect() {
     // Reset defect form
     document.querySelectorAll('#rc-defect-modal .rc-seg-opt').forEach(o => o.classList.remove('active'));
     document.getElementById('rc-defect-prio').value = 'Medium';
     document.getElementById('rc-defect-desc').value = '';
+    rcDefectFormPhotos = [];
+    rcRenderDefectFormPhotos();
     document.getElementById('rc-defect-modal').style.display = 'flex';
   }
 
   function rcCloseDefectForm() {
     document.getElementById('rc-defect-modal').style.display = 'none';
+    rcDefectFormPhotos = [];
   }
 
   function rcPickDefectCat(el) {
     el.parentElement.querySelectorAll('.rc-seg-opt').forEach(o => o.classList.remove('active'));
     el.classList.add('active');
+  }
+
+  async function rcAddDefectPhotos(event) {
+    const files = Array.from(event.target.files || []);
+    event.target.value = '';
+    for (const f of files) {
+      if (rcDefectFormPhotos.length >= 5) { showToast('Maksimal 5 foto per defect'); break; }
+      try {
+        const compressed = await compressImage(f, 200, 1280);
+        const dataUrl = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onload = (e) => resolve(e.target.result);
+          reader.readAsDataURL(compressed);
+        });
+        rcDefectFormPhotos.push({ file: compressed, dataUrl });
+      } catch (e) { console.error('Defect photo compress error:', e); }
+    }
+    rcRenderDefectFormPhotos();
+  }
+
+  function rcRemoveDefectPhoto(idx) {
+    rcDefectFormPhotos.splice(idx, 1);
+    rcRenderDefectFormPhotos();
+  }
+
+  function rcRenderDefectFormPhotos() {
+    const grid = document.getElementById('rc-defect-photos');
+    if (!grid) return;
+    const addBtn = '<label class="rc-photo-add"><span>+</span>Foto<input type="file" accept="image/*" multiple style="display:none;" onchange="rcAddDefectPhotos(event)"></label>';
+    if (rcDefectFormPhotos.length === 0) {
+      grid.innerHTML = addBtn;
+      return;
+    }
+    grid.innerHTML = rcDefectFormPhotos.map((p, i) =>
+      '<div class="rc-photo-thumb"><img src="' + p.dataUrl + '"><button class="rc-photo-del" onclick="rcRemoveDefectPhoto(' + i + ')">×</button></div>'
+    ).join('') + addBtn;
   }
 
   function rcSubmitDefect() {
@@ -13659,12 +13739,18 @@ window.FB_DETAIL_MAP = {"F&B Manager": {"task_1": "Memastikan Kitchen Area Bersi
     const prio = document.getElementById('rc-defect-prio').value;
     const desc = document.getElementById('rc-defect-desc').value.trim();
     if (!desc) { showToast('Deskripsi defect wajib diisi'); return; }
+    if (!rcDefectFormPhotos || rcDefectFormPhotos.length === 0) {
+      showToast('⚠️ Foto defect wajib min. 1 foto sebagai bukti');
+      return;
+    }
     rcFormDefects.push({
       category: cat,
       priority: prio,
       description: desc,
+      photos: rcDefectFormPhotos.slice(), // snapshot
       _tempId: 'tmp_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7)
     });
+    rcDefectFormPhotos = [];
     rcCloseDefectForm();
     rcRenderFormDefects();
   }
@@ -13680,12 +13766,15 @@ window.FB_DETAIL_MAP = {"F&B Manager": {"task_1": "Memastikan Kitchen Area Bersi
       el.innerHTML = '<div style="font-size:12px;color:#9ca3af;font-style:italic;">Belum ada defect</div>';
       return;
     }
-    el.innerHTML = rcFormDefects.map(d =>
-      '<div class="rc-defect-item">' +
-      '<div class="rc-defect-desc">' + escapeHtml(d.description) + '</div>' +
-      '<div class="rc-defect-meta">' + (d.category === 'HK' ? '🧹 HK' : '🔧 ENG') + ' · ' + d.priority + ' <button onclick="rcRemoveFormDefect(\'' + d._tempId + '\')" style="float:right;background:none;border:none;color:#b91c1c;cursor:pointer;">× hapus</button></div>' +
-      '</div>'
-    ).join('');
+    el.innerHTML = rcFormDefects.map(d => {
+      const photoCount = (d.photos && d.photos.length) || 0;
+      const photoTag = photoCount > 0 ? ' · 📷 ' + photoCount + ' foto' : '';
+      return '<div class="rc-defect-item">' +
+        '<div class="rc-defect-desc">' + escapeHtml(d.description) + '</div>' +
+        '<div class="rc-defect-meta">' + (d.category === 'HK' ? '🧹 HK' : '🔧 ENG') + ' · ' + d.priority + photoTag +
+        ' <button onclick="rcRemoveFormDefect(\'' + d._tempId + '\')" style="float:right;background:none;border:none;color:#b91c1c;cursor:pointer;">× hapus</button></div>' +
+        '</div>';
+    }).join('');
   }
 
   // ====== SAVE CHECK ======
@@ -13755,6 +13844,26 @@ window.FB_DETAIL_MAP = {"F&B Manager": {"task_1": "Memastikan Kitchen Area Bersi
       const userEmail = rcGetUserEmail();
       const todayStr = new Date(Date.now() + 7*3600000).toISOString().split('T')[0];
       for (const d of rcFormDefects) {
+        // Upload defect photos terlebih dahulu
+        const defectPhotoUrls = [];
+        if (d.photos && d.photos.length > 0) {
+          for (let pi = 0; pi < d.photos.length; pi++) {
+            const ph = d.photos[pi];
+            try {
+              const ext = ph.file.name.split('.').pop() || 'jpg';
+              const fname = 'defect_' + Date.now() + '_' + pi + '.' + ext;
+              const path = 'room-check/' + rcCurrentHotel.replace(/[^a-zA-Z0-9]/g, '_') + '/' + rcCurrentMonthKey + '/' + fname;
+              const { error: dupErr } = await supa.storage.from('defect-photos').upload(path, ph.file, {
+                cacheControl: '3600',
+                upsert: false,
+                contentType: ph.file.type
+              });
+              if (dupErr) { console.error('Defect photo upload error:', dupErr); continue; }
+              const { data: dpub } = supa.storage.from('defect-photos').getPublicUrl(path);
+              defectPhotoUrls.push(dpub.publicUrl);
+            } catch(uperr) { console.error('Defect photo error:', uperr); }
+          }
+        }
         const defectRow = {
           hotel: rcCurrentHotel,
           area: 'Room',
@@ -13766,7 +13875,8 @@ window.FB_DETAIL_MAP = {"F&B Manager": {"task_1": "Memastikan Kitchen Area Bersi
           date_report: todayStr,
           created_by: userEmail,
           updated_by: userEmail,
-          source: 'room_check'
+          source: 'room_check',
+          photo_urls: defectPhotoUrls
         };
         const { data: defOut, error: defErr } = await supa.from('defects').insert(defectRow).select('id').single();
         if (defErr) {
