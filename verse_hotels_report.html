@@ -1683,6 +1683,11 @@
   .rc-seg-opt.active.s-baik { background: #dcfce7; color: #16a34a; border-color: #22c55e; }
   .rc-seg-opt.active.s-sedang { background: #fed7aa; color: #c2410c; border-color: #f59e0b; }
   .rc-seg-opt.active.s-buruk { background: #fee2e2; color: #b91c1c; border-color: #ef4444; }
+  .rc-seg-opt.active.s-vcu { background: #f3f4f6; color: #374151; border-color: #6b7280; }
+  .rc-seg-opt.active.s-vcc { background: #dcfce7; color: #16a34a; border-color: #22c55e; }
+  .rc-seg-opt.active.s-vd { background: #fef3c7; color: #92400e; border-color: #f59e0b; }
+  .rc-seg-opt.active.s-od { background: #ffedd5; color: #c2410c; border-color: #ea580c; }
+  .rc-seg-opt.active.s-oo { background: #fee2e2; color: #b91c1c; border-color: #ef4444; }
 
   .rc-photo-grid { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
   .rc-photo-thumb {
@@ -2581,6 +2586,20 @@
           <div style="font-size:11px;color:#6b7280;" id="rc-form-subtitle">Lengkapi pengecekan</div>
         </div>
         <button class="rc-modal-close" onclick="rcCloseForm()">×</button>
+      </div>
+
+      <div class="rc-field">
+        <label class="rc-label">Status Kamar *</label>
+        <div class="rc-seg" id="rc-form-status" style="grid-template-columns: repeat(5, 1fr);">
+          <div class="rc-seg-opt s-vcu" data-v="VCU" onclick="rcPickStatus(this)">VCU</div>
+          <div class="rc-seg-opt s-vcc" data-v="VCC" onclick="rcPickStatus(this)">VCC</div>
+          <div class="rc-seg-opt s-vd" data-v="VD" onclick="rcPickStatus(this)">VD</div>
+          <div class="rc-seg-opt s-od" data-v="OD" onclick="rcPickStatus(this)">OD</div>
+          <div class="rc-seg-opt s-oo" data-v="OO" onclick="rcPickStatus(this)">OO</div>
+        </div>
+        <div style="font-size:10px;color:#888;margin-top:6px;line-height:1.5;">
+          <b>VCU</b> Vacant Clean Unchecked · <b>VCC</b> Vacant Clean Checked · <b>VD</b> Vacant Dirty · <b>OD</b> Occupied Dirty · <b>OO</b> Out of Order
+        </div>
       </div>
 
       <div class="rc-field">
@@ -12959,6 +12978,11 @@ window.FB_DETAIL_MAP = {"F&B Manager": {"task_1": "Memastikan Kitchen Area Bersi
           html += `<div style="background:#f9f9f9;border-radius:12px;padding:12px 14px;margin-bottom:8px;border-left:4px solid ${cleanColor};">`;
           html += `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap;">`;
           html += `<span style="background:${cleanColor};color:white;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;">Kamar ${escHtml(rc.room_no || '-')}</span>`;
+          // Status kamar badge (VCU/VCC/VD/OD/OO)
+          if (rc.room_status) {
+            const sCol = { 'VCU':{bg:'#f3f4f6',fg:'#374151'},'VCC':{bg:'#dcfce7',fg:'#16a34a'},'VD':{bg:'#fef3c7',fg:'#92400e'},'OD':{bg:'#ffedd5',fg:'#c2410c'},'OO':{bg:'#fee2e2',fg:'#b91c1c'} }[rc.room_status] || {bg:'#f3f4f6',fg:'#374151'};
+            html += `<span style="background:${sCol.bg};color:${sCol.fg};padding:3px 8px;border-radius:4px;font-size:11px;font-weight:700;">${escHtml(rc.room_status)}</span>`;
+          }
           html += `<span style="font-size:12px;">${cleanIcon} ${escHtml(rc.cleanliness || '-')}</span>`;
           if (timeStr) html += `<span style="font-size:11px;color:#888;margin-left:auto;">${timeStr} WIB</span>`;
           html += `</div>`;
@@ -13488,8 +13512,21 @@ window.FB_DETAIL_MAP = {"F&B Manager": {"task_1": "Memastikan Kitchen Area Bersi
         if (c.defect_ids && c.defect_ids.length > 0) {
           defectsHtml = '<div style="margin-top:6px;font-size:11px;color:#92400e;">🔧 ' + c.defect_ids.length + ' defect dilaporkan</div>';
         }
+        // Status kamar badge dengan warna
+        const statusColors = {
+          'VCU': { bg: '#f3f4f6', fg: '#374151' },
+          'VCC': { bg: '#dcfce7', fg: '#16a34a' },
+          'VD':  { bg: '#fef3c7', fg: '#92400e' },
+          'OD':  { bg: '#ffedd5', fg: '#c2410c' },
+          'OO':  { bg: '#fee2e2', fg: '#b91c1c' }
+        };
+        const sc = statusColors[c.room_status] || { bg: '#f3f4f6', fg: '#374151' };
+        const statusBadge = c.room_status
+          ? '<span style="background:' + sc.bg + ';color:' + sc.fg + ';padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700;">' + c.room_status + '</span>'
+          : '';
         return '<div class="rc-history-item">' +
           '<div class="rc-history-meta"><span><b>' + name + '</b> ' + roleTag + '</span><span>' + dStr + '</span></div>' +
+          (statusBadge ? '<div style="margin-top:4px;">📍 Status: ' + statusBadge + '</div>' : '') +
           '<div class="rc-history-clean ' + cleanCls + '">' + cleanIcon + ' Cleanliness: <b>' + (c.cleanliness || '-') + '</b></div>' +
           (c.asset_notes ? '<div class="rc-history-notes">📦 Asset: ' + escapeHtml(c.asset_notes) + '</div>' : '') +
           (c.followup_notes ? '<div class="rc-history-notes">📌 Follow Up: ' + escapeHtml(c.followup_notes) + '</div>' : '') +
@@ -13514,6 +13551,7 @@ window.FB_DETAIL_MAP = {"F&B Manager": {"task_1": "Memastikan Kitchen Area Bersi
     document.getElementById('rc-form-subtitle').textContent = rcCurrentHotel;
     // Reset form
     document.querySelectorAll('#rc-form-clean .rc-seg-opt').forEach(o => o.classList.remove('active'));
+    document.querySelectorAll('#rc-form-status .rc-seg-opt').forEach(o => o.classList.remove('active'));
     document.getElementById('rc-form-asset').value = '';
     document.getElementById('rc-form-followup').value = '';
     // Reset label Follow Up ke kondisi default
@@ -13545,6 +13583,11 @@ window.FB_DETAIL_MAP = {"F&B Manager": {"task_1": "Memastikan Kitchen Area Bersi
         followupLabel.textContent = 'Follow Up / Catatan';
       }
     }
+  }
+
+  function rcPickStatus(el) {
+    el.parentElement.querySelectorAll('.rc-seg-opt').forEach(o => o.classList.remove('active'));
+    el.classList.add('active');
   }
 
   // ====== PHOTOS (MULTI) ======
@@ -13647,6 +13690,10 @@ window.FB_DETAIL_MAP = {"F&B Manager": {"task_1": "Memastikan Kitchen Area Bersi
 
   // ====== SAVE CHECK ======
   async function rcSaveCheck() {
+    const statusEl = document.querySelector('#rc-form-status .rc-seg-opt.active');
+    if (!statusEl) { showToast('Pilih Status Kamar (VCU/VCC/VD/OD/OO)'); return; }
+    const roomStatus = statusEl.dataset.v;
+
     const cleanEl = document.querySelector('#rc-form-clean .rc-seg-opt.active');
     if (!cleanEl) { showToast('Pilih kondisi Cleanliness'); return; }
     const cleanliness = cleanEl.dataset.v;
@@ -13738,6 +13785,7 @@ window.FB_DETAIL_MAP = {"F&B Manager": {"task_1": "Memastikan Kitchen Area Bersi
         checker_name: currentUserName || currentRole, // pakai nama user kalau ada, fallback ke role
         user_role: rcUserRoleType,
         month_key: rcCurrentMonthKey,
+        room_status: roomStatus,
         cleanliness: cleanliness,
         cleanliness_photos: photoUrls,
         asset_notes: assetNotes || null,
