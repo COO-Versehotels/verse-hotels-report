@@ -2593,12 +2593,33 @@
       </div>
 
       <div class="rc-field">
-        <label class="rc-label">Foto Cleanliness * <span style="font-weight:400;color:#6b7280;font-size:11px;">(minimal 3 foto)</span></label>
-        <div class="rc-photo-grid" id="rc-form-photos">
-          <label class="rc-photo-add">
-            <span>+</span>Foto
-            <input type="file" accept="image/*" multiple style="display:none;" onchange="rcAddPhotos(event)">
-          </label>
+        <label class="rc-label">Foto Area Kamar * <span style="font-weight:400;color:#6b7280;font-size:11px;">(min. 1 foto per area)</span></label>
+        <div style="margin-bottom:10px;">
+          <div style="font-size:12px;color:#1a3a5c;font-weight:600;margin-bottom:4px;">🚪 Entrance Room</div>
+          <div class="rc-photo-grid" id="rc-form-photos-entrance">
+            <label class="rc-photo-add">
+              <span>+</span>Foto
+              <input type="file" accept="image/*" multiple style="display:none;" onchange="rcAddPhotos(event,'entrance')">
+            </label>
+          </div>
+        </div>
+        <div style="margin-bottom:10px;">
+          <div style="font-size:12px;color:#1a3a5c;font-weight:600;margin-bottom:4px;">🛏️ Bedroom Area</div>
+          <div class="rc-photo-grid" id="rc-form-photos-bedroom">
+            <label class="rc-photo-add">
+              <span>+</span>Foto
+              <input type="file" accept="image/*" multiple style="display:none;" onchange="rcAddPhotos(event,'bedroom')">
+            </label>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:12px;color:#1a3a5c;font-weight:600;margin-bottom:4px;">🚿 Bathroom Area</div>
+          <div class="rc-photo-grid" id="rc-form-photos-bathroom">
+            <label class="rc-photo-add">
+              <span>+</span>Foto
+              <input type="file" accept="image/*" multiple style="display:none;" onchange="rcAddPhotos(event,'bathroom')">
+            </label>
+          </div>
         </div>
       </div>
 
@@ -3408,6 +3429,7 @@
   // State
   let pin = '';
   let currentRole = '';
+  let currentUserName = ''; // nama pemegang PIN, diisi setelah login sukses
   const COO_PIN = '1986';
   const ROLE_PINS = {
     'Ops HR Manager': '0101',
@@ -3683,16 +3705,25 @@
   // Verifikasi PIN: sumber utama tabel report_users di Supabase.
   // Pengaman: (1) PIN COO 1986 selalu berlaku sebagai kunci cadangan,
   //           (2) bila database tidak terjangkau, fallback ke daftar PIN tertanam.
+  // Side effect: kalau PIN valid, set currentUserName dari tabel report_users.nama
   async function cekPinRole(role, p) {
+    currentUserName = ''; // reset di setiap login attempt
     if (role === 'COO' && p === COO_PIN) return true; // kunci cadangan
     try {
       const res = await fetch(
-        SUPA_URL + '/rest/v1/report_users?role=eq.' + encodeURIComponent(role) + '&select=pin',
+        SUPA_URL + '/rest/v1/report_users?role=eq.' + encodeURIComponent(role) + '&select=pin,nama',
         { headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY } }
       );
       if (res.ok) {
         const rows = await res.json();
-        if (rows.length > 0) return rows.some(r => r.pin === p);
+        if (rows.length > 0) {
+          const match = rows.find(r => r.pin === p);
+          if (match) {
+            currentUserName = match.nama || '';
+            return true;
+          }
+          return false;
+        }
         // role belum ada di tabel (mis. SQL belum dijalankan) -> pakai daftar tertanam
         return p === (ROLE_PINS[role] || '');
       }
@@ -12899,14 +12930,24 @@ window.FB_DETAIL_MAP = {"F&B Manager": {"task_1": "Memastikan Kitchen Area Bersi
           // Cleanliness color
           const cleanColor = rc.cleanliness === 'Baik' ? '#27ae60' : rc.cleanliness === 'Sedang' ? '#f39c12' : '#e74c3c';
           const cleanIcon = rc.cleanliness === 'Baik' ? '✅' : rc.cleanliness === 'Sedang' ? '⚠️' : '❌';
-          // Parse photo URLs
-          let photos = [];
+          // Parse photo URLs (support both legacy string[] and new {url,area}[])
+          let rawPhotos = [];
           try {
             const raw = rc.cleanliness_photos;
-            if (Array.isArray(raw)) photos = raw;
-            else if (typeof raw === 'string') photos = JSON.parse(raw);
-          } catch(e) { photos = []; }
-          const photoFiles = photos.filter(u => u && typeof u === 'string' && u.startsWith('http')).map(u => ({url: u, isImg: true}));
+            if (Array.isArray(raw)) rawPhotos = raw;
+            else if (typeof raw === 'string') rawPhotos = JSON.parse(raw);
+          } catch(e) { rawPhotos = []; }
+          // Group by area
+          const photoByArea = { entrance: [], bedroom: [], bathroom: [], lainnya: [] };
+          rawPhotos.forEach(p => {
+            if (typeof p === 'string' && p.startsWith('http')) {
+              photoByArea.lainnya.push(p); // legacy
+            } else if (p && p.url && typeof p.url === 'string' && p.url.startsWith('http')) {
+              const a = p.area || 'lainnya';
+              if (photoByArea[a]) photoByArea[a].push(p.url);
+              else photoByArea.lainnya.push(p.url);
+            }
+          });
 
           // Format time
           let timeStr = '';
@@ -12921,6 +12962,10 @@ window.FB_DETAIL_MAP = {"F&B Manager": {"task_1": "Memastikan Kitchen Area Bersi
           html += `<span style="font-size:12px;">${cleanIcon} ${escHtml(rc.cleanliness || '-')}</span>`;
           if (timeStr) html += `<span style="font-size:11px;color:#888;margin-left:auto;">${timeStr} WIB</span>`;
           html += `</div>`;
+          // Nama pemegang PIN (kalau ada)
+          if (rc.checker_name) {
+            html += `<div style="font-size:11px;color:#666;margin-bottom:6px;">👤 ${escHtml(rc.checker_name)}</div>`;
+          }
           // Hotel info (untuk Corporate yang lintas hotel)
           if (!role.startsWith('HM ') && rc.hotel) {
             html += `<div style="font-size:11px;color:#888;margin-bottom:6px;">🏨 ${escHtml(rc.hotel)}</div>`;
@@ -12942,8 +12987,21 @@ window.FB_DETAIL_MAP = {"F&B Manager": {"task_1": "Memastikan Kitchen Area Bersi
           if (defectCount > 0) {
             html += `<div style="font-size:12px;color:#e67e22;margin-bottom:4px;">🔧 ${defectCount} defect tercatat</div>`;
           }
-          // Photos
-          html += renderFiles(photoFiles);
+          // Photos grouped by area
+          const areaCfg = [
+            { key: 'entrance', label: '🚪 Entrance Room' },
+            { key: 'bedroom', label: '🛏️ Bedroom Area' },
+            { key: 'bathroom', label: '🚿 Bathroom Area' },
+            { key: 'lainnya', label: '📷 Foto Lainnya' }
+          ];
+          areaCfg.forEach(cfg => {
+            const urls = photoByArea[cfg.key];
+            if (!urls || urls.length === 0) return;
+            const photoFiles = urls.map(u => ({url: u, isImg: true}));
+            html += `<div style="margin-top:8px;"><div style="font-size:11px;font-weight:600;color:#1a3a5c;margin-bottom:4px;">${cfg.label}</div>`;
+            html += renderFiles(photoFiles);
+            html += `</div>`;
+          });
           html += `</div>`;
         });
         html += '</div>';
@@ -13148,7 +13206,7 @@ window.FB_DETAIL_MAP = {"F&B Manager": {"task_1": "Memastikan Kitchen Area Bersi
   let rcCurrentMonthKey = null; // 'YYYY-MM'
   let rcChecks = []; // semua check untuk hotel & month yang aktif
   let rcCurrentRoom = null; // kamar yang sedang dibuka di modal
-  let rcFormPhotos = []; // {file, dataUrl} array
+  let rcFormPhotos = { entrance: [], bedroom: [], bathroom: [] }; // 3 area, each {file, dataUrl}
   let rcFormDefects = []; // {category, priority, description, _tempId} array
   let rcUserRoleType = null; // 'HM' / 'EHK' / 'CE'
 
@@ -13394,7 +13452,37 @@ window.FB_DETAIL_MAP = {"F&B Manager": {"task_1": "Memastikan Kitchen Area Bersi
         const cleanIcon = c.cleanliness === 'Baik' ? '✅' : c.cleanliness === 'Sedang' ? '⚠️' : c.cleanliness === 'Buruk' ? '❌' : '—';
         let photosHtml = '';
         if (c.cleanliness_photos && c.cleanliness_photos.length > 0) {
-          photosHtml = '<div class="rc-history-photos">' + c.cleanliness_photos.map(u => '<img src="' + u + '" onclick="window.open(\'' + u + '\',\'_blank\')">').join('') + '</div>';
+          // Group photos by area (support both legacy string[] and new {url,area}[])
+          const byArea = { entrance: [], bedroom: [], bathroom: [], lainnya: [] };
+          c.cleanliness_photos.forEach(p => {
+            if (typeof p === 'string') {
+              byArea.lainnya.push(p); // legacy format
+            } else if (p && p.url) {
+              const a = p.area || 'lainnya';
+              if (byArea[a]) byArea[a].push(p.url);
+              else byArea.lainnya.push(p.url);
+            }
+          });
+          const areaCfg = [
+            { key: 'entrance', label: '🚪 Entrance' },
+            { key: 'bedroom', label: '🛏️ Bedroom' },
+            { key: 'bathroom', label: '🚿 Bathroom' },
+            { key: 'lainnya', label: '📷 Foto' }
+          ];
+          let parts = [];
+          areaCfg.forEach(cfg => {
+            const urls = byArea[cfg.key];
+            if (!urls || urls.length === 0) return;
+            parts.push(
+              '<div style="margin-top:6px;">' +
+                '<div style="font-size:11px;color:#1a3a5c;font-weight:600;margin-bottom:3px;">' + cfg.label + '</div>' +
+                '<div class="rc-history-photos">' +
+                  urls.map(u => '<img src="' + u + '" onclick="window.open(\'' + u + '\',\'_blank\')">').join('') +
+                '</div>' +
+              '</div>'
+            );
+          });
+          photosHtml = parts.join('');
         }
         let defectsHtml = '';
         if (c.defect_ids && c.defect_ids.length > 0) {
@@ -13431,7 +13519,7 @@ window.FB_DETAIL_MAP = {"F&B Manager": {"task_1": "Memastikan Kitchen Area Bersi
     // Reset label Follow Up ke kondisi default
     const followupLabel = document.getElementById('rc-form-followup-label');
     if (followupLabel) followupLabel.textContent = 'Follow Up / Catatan';
-    rcFormPhotos = [];
+    rcFormPhotos = { entrance: [], bedroom: [], bathroom: [] };
     rcFormDefects = [];
     rcRenderFormPhotos();
     rcRenderFormDefects();
@@ -13440,7 +13528,7 @@ window.FB_DETAIL_MAP = {"F&B Manager": {"task_1": "Memastikan Kitchen Area Bersi
 
   function rcCloseForm() {
     document.getElementById('rc-form-modal').classList.remove('show');
-    rcFormPhotos = [];
+    rcFormPhotos = { entrance: [], bedroom: [], bathroom: [] };
     rcFormDefects = [];
   }
 
@@ -13460,7 +13548,8 @@ window.FB_DETAIL_MAP = {"F&B Manager": {"task_1": "Memastikan Kitchen Area Bersi
   }
 
   // ====== PHOTOS (MULTI) ======
-  async function rcAddPhotos(event) {
+  async function rcAddPhotos(event, area) {
+    if (!area || !rcFormPhotos[area]) return;
     const files = Array.from(event.target.files || []);
     event.target.value = ''; // reset input
     for (const f of files) {
@@ -13471,7 +13560,7 @@ window.FB_DETAIL_MAP = {"F&B Manager": {"task_1": "Memastikan Kitchen Area Bersi
           reader.onload = (e) => resolve(e.target.result);
           reader.readAsDataURL(compressed);
         });
-        rcFormPhotos.push({ file: compressed, dataUrl });
+        rcFormPhotos[area].push({ file: compressed, dataUrl });
       } catch (e) {
         console.error('Photo compress error:', e);
       }
@@ -13479,21 +13568,27 @@ window.FB_DETAIL_MAP = {"F&B Manager": {"task_1": "Memastikan Kitchen Area Bersi
     rcRenderFormPhotos();
   }
 
-  function rcRemovePhoto(idx) {
-    rcFormPhotos.splice(idx, 1);
+  function rcRemovePhoto(area, idx) {
+    if (!rcFormPhotos[area]) return;
+    rcFormPhotos[area].splice(idx, 1);
     rcRenderFormPhotos();
   }
 
   function rcRenderFormPhotos() {
-    const grid = document.getElementById('rc-form-photos');
-    const addBtn = '<label class="rc-photo-add"><span>+</span>Foto<input type="file" accept="image/*" multiple style="display:none;" onchange="rcAddPhotos(event)"></label>';
-    if (rcFormPhotos.length === 0) {
-      grid.innerHTML = addBtn;
-      return;
-    }
-    grid.innerHTML = rcFormPhotos.map((p, i) =>
-      '<div class="rc-photo-thumb"><img src="' + p.dataUrl + '"><button class="rc-photo-del" onclick="rcRemovePhoto(' + i + ')">×</button></div>'
-    ).join('') + addBtn;
+    const areas = ['entrance', 'bedroom', 'bathroom'];
+    areas.forEach(area => {
+      const grid = document.getElementById('rc-form-photos-' + area);
+      if (!grid) return;
+      const addBtn = '<label class="rc-photo-add"><span>+</span>Foto<input type="file" accept="image/*" multiple style="display:none;" onchange="rcAddPhotos(event,\'' + area + '\')"></label>';
+      const photos = rcFormPhotos[area] || [];
+      if (photos.length === 0) {
+        grid.innerHTML = addBtn;
+        return;
+      }
+      grid.innerHTML = photos.map((p, i) =>
+        '<div class="rc-photo-thumb"><img src="' + p.dataUrl + '"><button class="rc-photo-del" onclick="rcRemovePhoto(\'' + area + '\',' + i + ')">×</button></div>'
+      ).join('') + addBtn;
+    });
   }
 
   // ====== DEFECTS ======
@@ -13559,9 +13654,14 @@ window.FB_DETAIL_MAP = {"F&B Manager": {"task_1": "Memastikan Kitchen Area Bersi
     const followupNotes = document.getElementById('rc-form-followup').value.trim();
 
     // === VALIDASI WAJIB ===
-    // 1. Foto Cleanliness wajib minimal 3
-    if (!rcFormPhotos || rcFormPhotos.length < 3) {
-      showToast('⚠️ Foto Cleanliness wajib minimal 3 foto (sekarang: ' + (rcFormPhotos ? rcFormPhotos.length : 0) + ')');
+    // 1. Foto wajib min. 1 per area (Entrance, Bedroom, Bathroom)
+    const areaLabels = { entrance: 'Entrance Room', bedroom: 'Bedroom Area', bathroom: 'Bathroom Area' };
+    const missingAreas = [];
+    ['entrance','bedroom','bathroom'].forEach(a => {
+      if (!rcFormPhotos[a] || rcFormPhotos[a].length === 0) missingAreas.push(areaLabels[a]);
+    });
+    if (missingAreas.length > 0) {
+      showToast('⚠️ Foto belum diupload untuk: ' + missingAreas.join(', '));
       return;
     }
     // 2. Kelengkapan Asset wajib diisi
@@ -13582,21 +13682,25 @@ window.FB_DETAIL_MAP = {"F&B Manager": {"task_1": "Memastikan Kitchen Area Bersi
     saveBtn.textContent = '⏳ Menyimpan...';
 
     try {
-      // 1. Upload photos to Supabase storage
-      const photoUrls = [];
-      for (let i = 0; i < rcFormPhotos.length; i++) {
-        const p = rcFormPhotos[i];
-        const ext = p.file.name.split('.').pop() || 'jpg';
-        const fname = 'rc_' + Date.now() + '_' + i + '.' + ext;
-        const path = 'room-check/' + rcCurrentHotel.replace(/[^a-zA-Z0-9]/g, '_') + '/' + rcCurrentMonthKey + '/' + fname;
-        const { error: upErr } = await supa.storage.from('defect-photos').upload(path, p.file, {
-          cacheControl: '3600',
-          upsert: false,
-          contentType: p.file.type
-        });
-        if (upErr) throw new Error('Upload foto gagal: ' + upErr.message);
-        const { data: pub } = supa.storage.from('defect-photos').getPublicUrl(path);
-        photoUrls.push(pub.publicUrl);
+      // 1. Upload photos to Supabase storage (per area)
+      const photoUrls = []; // array of {url, area}
+      const areas = ['entrance','bedroom','bathroom'];
+      for (const area of areas) {
+        const photos = rcFormPhotos[area] || [];
+        for (let i = 0; i < photos.length; i++) {
+          const p = photos[i];
+          const ext = p.file.name.split('.').pop() || 'jpg';
+          const fname = 'rc_' + area + '_' + Date.now() + '_' + i + '.' + ext;
+          const path = 'room-check/' + rcCurrentHotel.replace(/[^a-zA-Z0-9]/g, '_') + '/' + rcCurrentMonthKey + '/' + fname;
+          const { error: upErr } = await supa.storage.from('defect-photos').upload(path, p.file, {
+            cacheControl: '3600',
+            upsert: false,
+            contentType: p.file.type
+          });
+          if (upErr) throw new Error('Upload foto gagal: ' + upErr.message);
+          const { data: pub } = supa.storage.from('defect-photos').getPublicUrl(path);
+          photoUrls.push({ url: pub.publicUrl, area: area });
+        }
       }
 
       // 2. Insert defects (if any) — each defect masuk ke tabel defects dengan source='room_check'
@@ -13631,7 +13735,7 @@ window.FB_DETAIL_MAP = {"F&B Manager": {"task_1": "Memastikan Kitchen Area Bersi
         hotel: rcCurrentHotel,
         room_no: rcCurrentRoom,
         checked_by: userEmail,
-        checker_name: currentRole, // pakai role sebagai nama display sementara
+        checker_name: currentUserName || currentRole, // pakai nama user kalau ada, fallback ke role
         user_role: rcUserRoleType,
         month_key: rcCurrentMonthKey,
         cleanliness: cleanliness,
