@@ -2066,10 +2066,36 @@
               </div>
               <input type="hidden" id="activity-plan-hotel-val" value="">
             </div>
-            <div style="margin-top:12px;">
+            <div style="margin-top:12px;" id="activity-plan-corp-section">
               <label style="font-size:11px;font-weight:700;color:var(--gray-400);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:6px;">📝 Planning for Tomorrow</label>
               <div class="task-note-wrap show" id="activity-plan-note" style="margin-top:0;">
                 <textarea class="task-note" rows="4" placeholder="Wajib diisi — tuliskan pekerjaan di luar tasklist yang direncanakan esok hari..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+            </div>
+            <!-- 5 sub-section khusus HM -->
+            <div id="activity-plan-hm-section" style="display:none;margin-top:12px;">
+              <div style="background:#dbeafe;border-left:3px solid #2563eb;padding:8px 12px;border-radius:8px;margin-bottom:10px;font-size:12px;color:#1e3a8a;font-weight:600;">
+                ⚠️ Wajib isi planning untuk semua 5 unit di bawah
+              </div>
+              <div style="margin-bottom:10px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">📅 Planning for Tomorrow — HM</label>
+                <textarea class="task-note hm-plan-hm" rows="2" placeholder="Planning HM untuk besok..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:10px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">📅 Planning for Tomorrow — HK</label>
+                <textarea class="task-note hm-plan-hk" rows="2" placeholder="Planning HK untuk besok..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:10px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">📅 Planning for Tomorrow — ENG</label>
+                <textarea class="task-note hm-plan-eng" rows="2" placeholder="Planning ENG untuk besok..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:10px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">📅 Planning for Tomorrow — F&B</label>
+                <textarea class="task-note hm-plan-fnb" rows="2" placeholder="Planning F&B untuk besok..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:6px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">📅 Planning for Tomorrow — SEC</label>
+                <textarea class="task-note hm-plan-sec" rows="2" placeholder="Planning SEC untuk besok..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
               </div>
             </div>
           </div>
@@ -3069,12 +3095,12 @@
     if (status === 'done') {
       if (btns[0]) btns[0].classList.add('selected-green');
       if (num) { num.dataset.origNum = origNum; num.innerHTML = `<span style="font-size:9px;display:block;line-height:1;">${origNum}</span><span style="font-size:10px;">✓</span>`; num.className = 'task-number done'; }
-      if (noteWrap) { noteWrap.classList.add('show'); const n = noteWrap.querySelector('.task-note'); if(n && !n.value) n.placeholder='Keterangan (opsional)...'; }
+      if (noteWrap) { noteWrap.classList.add('show'); const n = noteWrap.querySelector('.task-note:not(.task-q1):not(.task-q2):not(.task-q3):not(.task-q4):not(.task-q5)'); if(n && !n.value) n.placeholder='Keterangan (opsional)...'; }
       if (needUpload || (taskId.startsWith('fu'))) { if(uploadWrap){ uploadWrap.classList.add('show'); } }
     } else if (status === 'not') {
       if (btns[1]) btns[1].classList.add('selected-red');
       if (num) { num.dataset.origNum = origNum; num.innerHTML = `<span style="font-size:9px;display:block;line-height:1;">${origNum}</span><span style="font-size:10px;">✗</span>`; num.className = 'task-number'; num.style.background='var(--red-soft)'; num.style.color='#c0392b'; }
-      if (noteWrap) { noteWrap.classList.add('show'); const n = noteWrap.querySelector('.task-note'); if(n && !n.value) n.placeholder='Wajib diisi — jelaskan alasan tidak dikerjakan...'; }
+      if (noteWrap) { noteWrap.classList.add('show'); const n = noteWrap.querySelector('.task-note:not(.task-q1):not(.task-q2):not(.task-q3):not(.task-q4):not(.task-q5)'); if(n && !n.value) n.placeholder='Wajib diisi — jelaskan alasan tidak dikerjakan...'; }
       if (uploadWrap) { uploadWrap.style.display = ''; uploadWrap.classList.remove('show'); }
     }
   }
@@ -3547,6 +3573,34 @@
       const apHotelSection = document.getElementById('activity-plan-hotel-section');
       if (apHotelSection) {
         apHotelSection.style.display = needsUnitVisitTomorrow(currentRole) ? 'block' : 'none';
+      }
+
+      // Planning for Tomorrow: HM lihat 5 sub-section, lainnya lihat single textarea
+      const apCorpSection = document.getElementById('activity-plan-corp-section');
+      const apHmSection = document.getElementById('activity-plan-hm-section');
+      const isHM = currentRole && currentRole.startsWith('HM ');
+      if (apCorpSection) apCorpSection.style.display = isHM ? 'none' : 'block';
+      if (apHmSection) apHmSection.style.display = isHM ? 'block' : 'none';
+
+      // Sync HM 5 textareas ke activity-plan-note (untuk save & display seragam)
+      if (isHM && apHmSection && !apHmSection.dataset.syncBound) {
+        apHmSection.dataset.syncBound = '1';
+        const units = ['hm','hk','eng','fnb','sec'];
+        const labels = ['HM','HK','ENG','F&B','SEC'];
+        const syncHmPlan = () => {
+          const parts = [];
+          units.forEach((u, i) => {
+            const el = apHmSection.querySelector('.hm-plan-' + u);
+            const v = el ? el.value.trim() : '';
+            if (v) parts.push(labels[i] + ':\n' + v);
+          });
+          const tgt = document.querySelector('#activity-plan-note .task-note');
+          if (tgt) tgt.value = parts.join('\n\n');
+        };
+        units.forEach(u => {
+          const el = apHmSection.querySelector('.hm-plan-' + u);
+          if (el) el.addEventListener('input', syncHmPlan);
+        });
       }
 
       // Load draft setelah DOM ready
@@ -4494,10 +4548,10 @@
       if (needUpload || isFU) {
         uploadWrap.classList.add('show');
       }
-      // Keterangan OPSIONAL — tampilkan dengan placeholder opsional
+      // Keterangan OPSIONAL — tampilkan dengan placeholder opsional (skip pertanyaan terstruktur)
       if (noteWrap) {
         noteWrap.classList.add('show');
-        const note = noteWrap.querySelector('.task-note');
+        const note = noteWrap.querySelector('.task-note:not(.task-q1):not(.task-q2):not(.task-q3):not(.task-q4):not(.task-q5)');
         if (note && !note.value) note.placeholder = 'Keterangan (opsional)...';
       }
     } else {
@@ -4507,10 +4561,10 @@
       num.className = 'task-number';
       num.style.background = 'var(--red-soft)';
       num.style.color = '#c0392b';
-      // Keterangan WAJIB
+      // Keterangan WAJIB (skip pertanyaan terstruktur)
       if (noteWrap) {
         noteWrap.classList.add('show');
-        const note = noteWrap.querySelector('.task-note');
+        const note = noteWrap.querySelector('.task-note:not(.task-q1):not(.task-q2):not(.task-q3):not(.task-q4):not(.task-q5)');
         if (note && !note.value) note.placeholder = 'Wajib diisi — jelaskan alasan tidak dikerjakan...';
       }
       // Sembunyikan upload
@@ -5056,8 +5110,62 @@
     if (needsUnitVisitTomorrow(currentRole) && (!apHotel || !apHotel.value)) {
       requiredItems.push('• <b>Planning for Tomorrow</b> — <i>Unit Visit Tomorrow belum dipilih</i>');
     }
-    if (!apNote || !apNote.value.trim()) {
-      requiredItems.push('• <b>Planning for Tomorrow</b> — <i>Catatan rencana besok belum diisi</i>');
+    // Validasi: HM harus isi 5 sub-section, Corporate isi single textarea
+    const _isHmRole = currentRole && currentRole.startsWith('HM ');
+    if (_isHmRole) {
+      const hmUnits = ['hm','hk','eng','fnb','sec'];
+      const hmLabels = ['HM','HK','ENG','F&B','SEC'];
+      const hmEmpty = [];
+      hmUnits.forEach((u, i) => {
+        const el = document.querySelector('.hm-plan-' + u);
+        if (!el || !el.value.trim()) hmEmpty.push(hmLabels[i]);
+      });
+      if (hmEmpty.length > 0) {
+        requiredItems.push('• <b>Planning for Tomorrow</b> — <i>Belum diisi untuk: ' + hmEmpty.join(', ') + '</i>');
+      }
+    } else {
+      if (!apNote || !apNote.value.trim()) {
+        requiredItems.push('• <b>Planning for Tomorrow</b> — <i>Catatan rencana besok belum diisi</i>');
+      }
+    }
+
+    // Validasi khusus HM: task dengan pertanyaan wajib keterangan
+    if (_isHmRole) {
+      // Map task_id -> {label, num_questions, task_label}
+      const HM_QUESTION_TASKS = [
+        {id: 'task_1',  num: 1,  qCount: 3, label: 'Check Area Parkir, Sampah, Pos Security'},
+        {id: 'task_2',  num: 2,  qCount: 3, label: 'Check Breakfast Menu, Taste & Setup'},
+        {id: 'task_3',  num: 3,  qCount: 2, label: 'Check Night Audit Report'},
+        {id: 'task_4',  num: 4,  qCount: 1, label: 'Morning Briefing'},
+        {id: 'task_6',  num: 6,  qCount: 2, label: 'Talenta Checking'},
+        {id: 'task_7',  num: 7,  qCount: 3, label: 'Standby Review Collection'},
+        {id: 'task_8',  num: 8,  qCount: 4, label: 'Check Closing Breakfast'},
+        {id: 'task_9',  num: 9,  qCount: 1, label: 'Kunjungan FO'},
+        {id: 'task_10', num: 10, qCount: 1, label: 'Kunjungan HK'},
+        {id: 'task_11', num: 11, qCount: 1, label: 'Kunjungan ENG'},
+        {id: 'task_12', num: 12, qCount: 1, label: 'Kunjungan SEC'},
+        {id: 'task_13', num: 13, qCount: 1, label: 'Kunjungan F&B'},
+        {id: 'task_14', num: 14, qCount: 1, label: 'GWT (Grey Water Tank)'},
+        {id: 'task_15', num: 15, qCount: 1, label: 'RWT (Raw Water Tank)'},
+        {id: 'task_16', num: 16, qCount: 1, label: 'Genset'},
+        {id: 'task_18', num: 18, qCount: 1, label: 'Guest Review Check & Reply'},
+        {id: 'task_19', num: 19, qCount: 5, label: 'Closing Briefing (Check MJA vs Actual)'},
+      ];
+      HM_QUESTION_TASKS.forEach(t => {
+        const el = document.getElementById(t.id);
+        if (!el) return;
+        const status = el.dataset.status || '';
+        // Hanya validasi kalau task sudah ditandai 'done'
+        if (status !== 'done') return;
+        const qEmpty = [];
+        for (let i = 1; i <= t.qCount; i++) {
+          const q = el.querySelector('.task-q' + i);
+          if (!q || !q.value.trim()) qEmpty.push(i);
+        }
+        if (qEmpty.length > 0) {
+          requiredItems.push('• No.' + t.num + ' — <b>' + t.label + '</b> <i>(pertanyaan ' + qEmpty.join(', ') + ' belum diisi)</i>');
+        }
+      });
     }
 
     if (requiredItems.length > 0 || optionalItems.length > 0) {
@@ -5395,84 +5503,88 @@ const TASK_LABEL_MAP = {
     "task_15": "Cek Grooming Team sesuai standar (rambut, seragam, kebersihan)",
   },
   "HM Verse Lite": {
-    "task_1": "Cek kebersihan & keamanan area parkir",
-    "task_2": "Cek kelengkapan & variasi menu breakfast",
-    "task_3": "VHP Transaction Check",
-    "task_4": "Cek Grooming Team sesuai standar (rambut, seragam, kebersihan)",
+    "task_1": "Check Area Parkir, Tempat Pembuangan Sampah & Pos Security",
+    "task_2": "Check Breakfast Menu, Taste & Setup",
+    "task_3": "Check Night Audit Report",
+    "task_4": "Morning Briefing — 07.45 WIB",
     "task_5": "Setor seluruh Cash Transaction ke Bank",
-    "task_6": "Pastikan seluruh Team tidak ada yang terlambat, mengikuti Schedule, tidak ada pe",
-    "task_7": "Standby di area FO sebagai Leading untuk memastikan Semua Room ED di Collect. Re",
-    "task_8": "Kunjungan ke FO — cek kebersihan, kerapihan, & progress kerja",
-    "task_9": "Kunjungan ke HK — cek kebersihan, kerapihan, & progress kerja",
-    "task_10": "Kunjungan ke ENG — cek kebersihan, kerapihan, & progress kerja",
-    "task_11": "Kunjungan ke SEC — cek kebersihan, kerapihan, & progress kerja",
-    "task_12": "Kunjungan ke F&B — cek kebersihan, kerapihan, & progress kerja",
-    "task_13": "GWT (Grey Water Tank) — cek kondisi & level",
-    "task_14": "RWT (Raw Water Tank) — cek kondisi & level",
-    "task_15": "Genset — cek kondisi, fuel & fungsi",
-    "task_16": "Cek Grooming Team sesuai standar (rambut, seragam, kebersihan)",
-    "task_17": "Cek & balas semua review dari semua platform (Google, TripAdvisor, Agoda, Travel",
-    "task_18": "Check MJA VS Actual Morning Shift",
+    "task_6": "Pastikan seluruh Team tidak ada yang terlambat, mengikuti Schedule, tidak ada pengajuan tanpa komunikasi",
+    "task_7": "Standby di area FO sebagai Leading untuk memastikan Semua Room ED di Collect. Review OTA, Google & TripAdvisor sesuai target 100% Room ED. Guest Feedback yang masuk sudah ditindak lanjuti dengan segera.",
+    "task_8": "Cek Cleanliness Resto, Kitchen",
+    "task_9": "Kunjungan ke FO — cek kebersihan, kerapihan, & progress kerja",
+    "task_10": "Kunjungan ke HK — cek kebersihan, kerapihan, & progress kerja",
+    "task_11": "Kunjungan ke ENG — cek kebersihan, kerapihan, & progress kerja",
+    "task_12": "Kunjungan ke SEC — cek kebersihan, kerapihan, & progress kerja",
+    "task_13": "Kunjungan ke F&B — cek kebersihan, kerapihan, & progress kerja",
+    "task_14": "GWT (Grey Water Tank) — cek kondisi & level",
+    "task_15": "RWT (Raw Water Tank) — cek kondisi & level",
+    "task_16": "Genset — cek kondisi, fuel & fungsi",
+    "task_17": "Afternoon Briefing — 14.45 WIB",
+    "task_18": "Cek & balas semua review dari semua platform (Google, TripAdvisor, Agoda, Traveloka, Booking.com, Tiket.com, Ctrip) dengan bahasa sopan & profesional. Review buruk: analisa & jelaskan secara rinci.",
+    "task_19": "Closing Briefing — 17.30 WIB",
   },
   "HM Verse Luxe": {
-    "task_1": "Cek kebersihan & keamanan area parkir",
-    "task_2": "Cek kelengkapan & variasi menu breakfast",
-    "task_3": "VHP Transaction Check",
-    "task_4": "Cek Grooming Team sesuai standar (rambut, seragam, kebersihan)",
+    "task_1": "Check Area Parkir, Tempat Pembuangan Sampah & Pos Security",
+    "task_2": "Check Breakfast Menu, Taste & Setup",
+    "task_3": "Check Night Audit Report",
+    "task_4": "Morning Briefing — 07.45 WIB",
     "task_5": "Setor seluruh Cash Transaction ke Bank",
-    "task_6": "Pastikan seluruh Team tidak ada yang terlambat, mengikuti Schedule, tidak ada pe",
-    "task_7": "Standby di area FO sebagai Leading untuk memastikan Semua Room ED di Collect. Re",
-    "task_8": "Kunjungan ke FO — cek kebersihan, kerapihan, & progress kerja",
-    "task_9": "Kunjungan ke HK — cek kebersihan, kerapihan, & progress kerja",
-    "task_10": "Kunjungan ke ENG — cek kebersihan, kerapihan, & progress kerja",
-    "task_11": "Kunjungan ke SEC — cek kebersihan, kerapihan, & progress kerja",
-    "task_12": "Kunjungan ke F&B — cek kebersihan, kerapihan, & progress kerja",
-    "task_13": "GWT (Grey Water Tank) — cek kondisi & level",
-    "task_14": "RWT (Raw Water Tank) — cek kondisi & level",
-    "task_15": "Genset — cek kondisi, fuel & fungsi",
-    "task_16": "Cek Grooming Team sesuai standar (rambut, seragam, kebersihan)",
-    "task_17": "Cek & balas semua review dari semua platform (Google, TripAdvisor, Agoda, Travel",
-    "task_18": "Check MJA VS Actual Morning Shift",
+    "task_6": "Pastikan seluruh Team tidak ada yang terlambat, mengikuti Schedule, tidak ada pengajuan tanpa komunikasi",
+    "task_7": "Standby di area FO sebagai Leading untuk memastikan Semua Room ED di Collect. Review OTA, Google & TripAdvisor sesuai target 100% Room ED. Guest Feedback yang masuk sudah ditindak lanjuti dengan segera.",
+    "task_8": "Cek Cleanliness Resto, Kitchen",
+    "task_9": "Kunjungan ke FO — cek kebersihan, kerapihan, & progress kerja",
+    "task_10": "Kunjungan ke HK — cek kebersihan, kerapihan, & progress kerja",
+    "task_11": "Kunjungan ke ENG — cek kebersihan, kerapihan, & progress kerja",
+    "task_12": "Kunjungan ke SEC — cek kebersihan, kerapihan, & progress kerja",
+    "task_13": "Kunjungan ke F&B — cek kebersihan, kerapihan, & progress kerja",
+    "task_14": "GWT (Grey Water Tank) — cek kondisi & level",
+    "task_15": "RWT (Raw Water Tank) — cek kondisi & level",
+    "task_16": "Genset — cek kondisi, fuel & fungsi",
+    "task_17": "Afternoon Briefing — 14.45 WIB",
+    "task_18": "Cek & balas semua review dari semua platform (Google, TripAdvisor, Agoda, Traveloka, Booking.com, Tiket.com, Ctrip) dengan bahasa sopan & profesional. Review buruk: analisa & jelaskan secara rinci.",
+    "task_19": "Closing Briefing — 17.30 WIB",
   },
   "HM Verse Cirebon": {
-    "task_1": "Cek kebersihan & keamanan area parkir",
-    "task_2": "Cek kelengkapan & variasi menu breakfast",
-    "task_3": "VHP Transaction Check",
-    "task_4": "Cek Grooming Team sesuai standar (rambut, seragam, kebersihan)",
+    "task_1": "Check Area Parkir, Tempat Pembuangan Sampah & Pos Security",
+    "task_2": "Check Breakfast Menu, Taste & Setup",
+    "task_3": "Check Night Audit Report",
+    "task_4": "Morning Briefing — 07.45 WIB",
     "task_5": "Setor seluruh Cash Transaction ke Bank",
-    "task_6": "Pastikan seluruh Team tidak ada yang terlambat, mengikuti Schedule, tidak ada pe",
-    "task_7": "Standby di area FO sebagai Leading untuk memastikan Semua Room ED di Collect. Re",
-    "task_8": "Kunjungan ke FO — cek kebersihan, kerapihan, & progress kerja",
-    "task_9": "Kunjungan ke HK — cek kebersihan, kerapihan, & progress kerja",
-    "task_10": "Kunjungan ke ENG — cek kebersihan, kerapihan, & progress kerja",
-    "task_11": "Kunjungan ke SEC — cek kebersihan, kerapihan, & progress kerja",
-    "task_12": "Kunjungan ke F&B — cek kebersihan, kerapihan, & progress kerja",
-    "task_13": "GWT (Grey Water Tank) — cek kondisi & level",
-    "task_14": "RWT (Raw Water Tank) — cek kondisi & level",
-    "task_15": "Genset — cek kondisi, fuel & fungsi",
-    "task_16": "Cek Grooming Team sesuai standar (rambut, seragam, kebersihan)",
-    "task_17": "Cek & balas semua review dari semua platform (Google, TripAdvisor, Agoda, Travel",
-    "task_18": "Check MJA VS Actual Morning Shift",
+    "task_6": "Pastikan seluruh Team tidak ada yang terlambat, mengikuti Schedule, tidak ada pengajuan tanpa komunikasi",
+    "task_7": "Standby di area FO sebagai Leading untuk memastikan Semua Room ED di Collect. Review OTA, Google & TripAdvisor sesuai target 100% Room ED. Guest Feedback yang masuk sudah ditindak lanjuti dengan segera.",
+    "task_8": "Cek Cleanliness Resto, Kitchen",
+    "task_9": "Kunjungan ke FO — cek kebersihan, kerapihan, & progress kerja",
+    "task_10": "Kunjungan ke HK — cek kebersihan, kerapihan, & progress kerja",
+    "task_11": "Kunjungan ke ENG — cek kebersihan, kerapihan, & progress kerja",
+    "task_12": "Kunjungan ke SEC — cek kebersihan, kerapihan, & progress kerja",
+    "task_13": "Kunjungan ke F&B — cek kebersihan, kerapihan, & progress kerja",
+    "task_14": "GWT (Grey Water Tank) — cek kondisi & level",
+    "task_15": "RWT (Raw Water Tank) — cek kondisi & level",
+    "task_16": "Genset — cek kondisi, fuel & fungsi",
+    "task_17": "Afternoon Briefing — 14.45 WIB",
+    "task_18": "Cek & balas semua review dari semua platform (Google, TripAdvisor, Agoda, Traveloka, Booking.com, Tiket.com, Ctrip) dengan bahasa sopan & profesional. Review buruk: analisa & jelaskan secara rinci.",
+    "task_19": "Closing Briefing — 17.30 WIB",
   },
   "HM Oak Tree": {
-    "task_1": "Cek kebersihan & keamanan area parkir",
-    "task_2": "Cek kelengkapan & variasi menu breakfast",
-    "task_3": "VHP Transaction Check",
-    "task_4": "Cek Grooming Team sesuai standar (rambut, seragam, kebersihan)",
+    "task_1": "Check Area Parkir, Tempat Pembuangan Sampah & Pos Security",
+    "task_2": "Check Breakfast Menu, Taste & Setup",
+    "task_3": "Check Night Audit Report",
+    "task_4": "Morning Briefing — 07.45 WIB",
     "task_5": "Setor seluruh Cash Transaction ke Bank",
-    "task_6": "Pastikan seluruh Team tidak ada yang terlambat, mengikuti Schedule, tidak ada pe",
-    "task_7": "Standby di area FO sebagai Leading untuk memastikan Semua Room ED di Collect. Re",
-    "task_8": "Kunjungan ke FO — cek kebersihan, kerapihan, & progress kerja",
-    "task_9": "Kunjungan ke HK — cek kebersihan, kerapihan, & progress kerja",
-    "task_10": "Kunjungan ke ENG — cek kebersihan, kerapihan, & progress kerja",
-    "task_11": "Kunjungan ke SEC — cek kebersihan, kerapihan, & progress kerja",
-    "task_12": "Kunjungan ke F&B — cek kebersihan, kerapihan, & progress kerja",
-    "task_13": "GWT (Grey Water Tank) — cek kondisi & level",
-    "task_14": "RWT (Raw Water Tank) — cek kondisi & level",
-    "task_15": "Genset — cek kondisi, fuel & fungsi",
-    "task_16": "Cek Grooming Team sesuai standar (rambut, seragam, kebersihan)",
-    "task_17": "Cek & balas semua review dari semua platform (Google, TripAdvisor, Agoda, Travel",
-    "task_18": "Check MJA VS Actual Morning Shift",
+    "task_6": "Pastikan seluruh Team tidak ada yang terlambat, mengikuti Schedule, tidak ada pengajuan tanpa komunikasi",
+    "task_7": "Standby di area FO sebagai Leading untuk memastikan Semua Room ED di Collect. Review OTA, Google & TripAdvisor sesuai target 100% Room ED. Guest Feedback yang masuk sudah ditindak lanjuti dengan segera.",
+    "task_8": "Cek Cleanliness Resto, Kitchen",
+    "task_9": "Kunjungan ke FO — cek kebersihan, kerapihan, & progress kerja",
+    "task_10": "Kunjungan ke HK — cek kebersihan, kerapihan, & progress kerja",
+    "task_11": "Kunjungan ke ENG — cek kebersihan, kerapihan, & progress kerja",
+    "task_12": "Kunjungan ke SEC — cek kebersihan, kerapihan, & progress kerja",
+    "task_13": "Kunjungan ke F&B — cek kebersihan, kerapihan, & progress kerja",
+    "task_14": "GWT (Grey Water Tank) — cek kondisi & level",
+    "task_15": "RWT (Raw Water Tank) — cek kondisi & level",
+    "task_16": "Genset — cek kondisi, fuel & fungsi",
+    "task_17": "Afternoon Briefing — 14.45 WIB",
+    "task_18": "Cek & balas semua review dari semua platform (Google, TripAdvisor, Agoda, Traveloka, Booking.com, Tiket.com, Ctrip) dengan bahasa sopan & profesional. Review buruk: analisa & jelaskan secara rinci.",
+    "task_19": "Closing Briefing — 17.30 WIB",
   },
 };
 
@@ -7046,7 +7158,7 @@ const ROLE_TASKS = {
         </div>`
   },
   'HM Verse Lite': {
-    count: 18,
+    count: 19,
     html: `
         <div class="task-category">
           <div class="task-cat-header">
@@ -7075,7 +7187,19 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_1-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_1-note">
-              <textarea class="task-note" rows="2" placeholder="Keterangan (opsional)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              <div style="background:#fef3c7;border-left:3px solid #f59e0b;padding:8px 12px;border-radius:8px;margin-bottom:8px;font-size:12px;color:#78350f;font-weight:600;">⚠️ Wajib isi semua keterangan</div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">1. Nama Petugas Security Incharge?</label>
+                <textarea class="task-note task-q1" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">2. Kondisi Area Parkir?</label>
+                <textarea class="task-note task-q2" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">3. Kondisi Area Sampah?</label>
+                <textarea class="task-note task-q3" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
             </div>
           </div>
         </div>
@@ -7106,7 +7230,19 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_2-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_2-note">
-              <textarea class="task-note" rows="2" placeholder="Keterangan (opsional)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              <div style="background:#fef3c7;border-left:3px solid #f59e0b;padding:8px 12px;border-radius:8px;margin-bottom:8px;font-size:12px;color:#78350f;font-weight:600;">⚠️ Wajib isi semua keterangan</div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">1. Menu Sold Out / Not Available?</label>
+                <textarea class="task-note task-q1" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">2. Kualitas Penyajian?</label>
+                <textarea class="task-note task-q2" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">3. Rasa Makanan yang perlu di Koreksi?</label>
+                <textarea class="task-note task-q3" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
             </div>
           </div>
         </div>
@@ -7137,7 +7273,15 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_3-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_3-note">
-              <textarea class="task-note" rows="2" placeholder="Keterangan (opsional)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              <div style="background:#fef3c7;border-left:3px solid #f59e0b;padding:8px 12px;border-radius:8px;margin-bottom:8px;font-size:12px;color:#78350f;font-weight:600;">⚠️ Wajib isi semua keterangan</div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">1. Apakah ada Transaksi yang salah?</label>
+                <textarea class="task-note task-q1" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">2. Semua Supporting Dokument apakah sudah lengkap?</label>
+                <textarea class="task-note task-q2" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
             </div>
           </div>
         </div>
@@ -7168,7 +7312,11 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_4-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_4-note">
-              <textarea class="task-note" rows="2" placeholder="Keterangan (opsional)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              <div style="background:#fef3c7;border-left:3px solid #f59e0b;padding:8px 12px;border-radius:8px;margin-bottom:8px;font-size:12px;color:#78350f;font-weight:600;">⚠️ Wajib isi semua keterangan</div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">1. Apakah pekerjaan Afternoon dan Night Shift Kemarin sesuai dengan MJA?</label>
+                <textarea class="task-note task-q1" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
             </div>
           </div>
         </div>
@@ -7230,7 +7378,15 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_6-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_6-note">
-              <textarea class="task-note" rows="2" placeholder="Keterangan (opsional)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              <div style="background:#fef3c7;border-left:3px solid #f59e0b;padding:8px 12px;border-radius:8px;margin-bottom:8px;font-size:12px;color:#78350f;font-weight:600;">⚠️ Wajib isi semua keterangan</div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">1. Total Staff Absen?</label>
+                <textarea class="task-note task-q1" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">2. Total Staff Late In?</label>
+                <textarea class="task-note task-q2" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
             </div>
           </div>
         </div>
@@ -7261,20 +7417,32 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_7-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_7-note">
-              <textarea class="task-note" rows="2" placeholder="Keterangan (opsional)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              <div style="background:#fef3c7;border-left:3px solid #f59e0b;padding:8px 12px;border-radius:8px;margin-bottom:8px;font-size:12px;color:#78350f;font-weight:600;">⚠️ Wajib isi semua keterangan</div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">1. Total Tamu yang di Approach pada saat Collect Review?</label>
+                <textarea class="task-note task-q1" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">2. Total Good Review Collect?</label>
+                <textarea class="task-note task-q2" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">3. Total Guest Feedback Collect?</label>
+                <textarea class="task-note task-q3" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
             </div>
           </div>
         </div>
         <div class="task-category">
           <div class="task-cat-header">
-            <span style="font-size:16px;">🚶</span>
-            <span class="task-cat-title">Department Visit</span>
-            <span class="task-cat-count">0/5</span>
+            <span style="font-size:16px;">🍳</span>
+            <span class="task-cat-title">Check Closing Breakfast</span>
+            <span class="task-cat-count">0/1</span>
           </div>
           <div class="task-item" id="task_8" onclick="toggleTask('task_8')">
             <div class="task-item-top">
               <div class="task-number" id="task_8-num" data-orig-num="8">8</div>
-              <span class="task-text">Kunjungan ke FO — cek kebersihan, kerapihan, & progress kerja</span>
+              <span class="task-text">Cek Cleanliness Resto, Kitchen</span>
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,'task_8','done')">✓ Sudah</button>
@@ -7292,13 +7460,36 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_8-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_8-note">
-              <textarea class="task-note" rows="2" placeholder="Keterangan (opsional)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              <div style="background:#fef3c7;border-left:3px solid #f59e0b;padding:8px 12px;border-radius:8px;margin-bottom:8px;font-size:12px;color:#78350f;font-weight:600;">⚠️ Wajib isi semua keterangan</div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">1. Kondisi Area Resto?</label>
+                <textarea class="task-note task-q1" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">2. Kondisi Area Kitchen?</label>
+                <textarea class="task-note task-q2" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">3. Total Actual Pax Breakfast?</label>
+                <textarea class="task-note task-q3" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">4. Total Actual Pax No Show?</label>
+                <textarea class="task-note task-q4" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
             </div>
+          </div>
+        </div>
+        <div class="task-category">
+          <div class="task-cat-header">
+            <span style="font-size:16px;">🚶</span>
+            <span class="task-cat-title">Department Visit</span>
+            <span class="task-cat-count">0/5</span>
           </div>
           <div class="task-item" id="task_9" onclick="toggleTask('task_9')">
             <div class="task-item-top">
               <div class="task-number" id="task_9-num" data-orig-num="9">9</div>
-              <span class="task-text">Kunjungan ke HK — cek kebersihan, kerapihan, & progress kerja</span>
+              <span class="task-text">Kunjungan ke FO — cek kebersihan, kerapihan, & progress kerja</span>
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,'task_9','done')">✓ Sudah</button>
@@ -7316,13 +7507,17 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_9-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_9-note">
-              <textarea class="task-note" rows="2" placeholder="Keterangan (opsional)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              <div style="background:#fef3c7;border-left:3px solid #f59e0b;padding:8px 12px;border-radius:8px;margin-bottom:8px;font-size:12px;color:#78350f;font-weight:600;">⚠️ Wajib isi semua keterangan</div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">1. Kondisi bersih, rapih atau ada yang perlu diperbaiki?</label>
+                <textarea class="task-note task-q1" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
             </div>
           </div>
           <div class="task-item" id="task_10" onclick="toggleTask('task_10')">
             <div class="task-item-top">
               <div class="task-number" id="task_10-num" data-orig-num="10">10</div>
-              <span class="task-text">Kunjungan ke ENG — cek kebersihan, kerapihan, & progress kerja</span>
+              <span class="task-text">Kunjungan ke HK — cek kebersihan, kerapihan, & progress kerja</span>
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,'task_10','done')">✓ Sudah</button>
@@ -7340,13 +7535,17 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_10-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_10-note">
-              <textarea class="task-note" rows="2" placeholder="Keterangan (opsional)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              <div style="background:#fef3c7;border-left:3px solid #f59e0b;padding:8px 12px;border-radius:8px;margin-bottom:8px;font-size:12px;color:#78350f;font-weight:600;">⚠️ Wajib isi semua keterangan</div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">1. Kondisi bersih, rapih atau ada yang perlu diperbaiki?</label>
+                <textarea class="task-note task-q1" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
             </div>
           </div>
           <div class="task-item" id="task_11" onclick="toggleTask('task_11')">
             <div class="task-item-top">
               <div class="task-number" id="task_11-num" data-orig-num="11">11</div>
-              <span class="task-text">Kunjungan ke SEC — cek kebersihan, kerapihan, & progress kerja</span>
+              <span class="task-text">Kunjungan ke ENG — cek kebersihan, kerapihan, & progress kerja</span>
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,'task_11','done')">✓ Sudah</button>
@@ -7364,13 +7563,17 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_11-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_11-note">
-              <textarea class="task-note" rows="2" placeholder="Keterangan (opsional)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              <div style="background:#fef3c7;border-left:3px solid #f59e0b;padding:8px 12px;border-radius:8px;margin-bottom:8px;font-size:12px;color:#78350f;font-weight:600;">⚠️ Wajib isi semua keterangan</div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">1. Kondisi bersih, rapih atau ada yang perlu diperbaiki?</label>
+                <textarea class="task-note task-q1" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
             </div>
           </div>
           <div class="task-item" id="task_12" onclick="toggleTask('task_12')">
             <div class="task-item-top">
               <div class="task-number" id="task_12-num" data-orig-num="12">12</div>
-              <span class="task-text">Kunjungan ke F&B — cek kebersihan, kerapihan, & progress kerja</span>
+              <span class="task-text">Kunjungan ke SEC — cek kebersihan, kerapihan, & progress kerja</span>
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,'task_12','done')">✓ Sudah</button>
@@ -7388,20 +7591,17 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_12-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_12-note">
-              <textarea class="task-note" rows="2" placeholder="Keterangan (opsional)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              <div style="background:#fef3c7;border-left:3px solid #f59e0b;padding:8px 12px;border-radius:8px;margin-bottom:8px;font-size:12px;color:#78350f;font-weight:600;">⚠️ Wajib isi semua keterangan</div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">1. Kondisi bersih, rapih atau ada yang perlu diperbaiki?</label>
+                <textarea class="task-note task-q1" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
             </div>
-          </div>
-        </div>
-        <div class="task-category">
-          <div class="task-cat-header">
-            <span style="font-size:16px;">⚙️</span>
-            <span class="task-cat-title">Utility Check</span>
-            <span class="task-cat-count">0/3</span>
           </div>
           <div class="task-item" id="task_13" onclick="toggleTask('task_13')">
             <div class="task-item-top">
               <div class="task-number" id="task_13-num" data-orig-num="13">13</div>
-              <span class="task-text">GWT (Grey Water Tank) — cek kondisi & level</span>
+              <span class="task-text">Kunjungan ke F&B — cek kebersihan, kerapihan, & progress kerja</span>
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,'task_13','done')">✓ Sudah</button>
@@ -7419,13 +7619,24 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_13-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_13-note">
-              <textarea class="task-note" rows="2" placeholder="Keterangan (opsional)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              <div style="background:#fef3c7;border-left:3px solid #f59e0b;padding:8px 12px;border-radius:8px;margin-bottom:8px;font-size:12px;color:#78350f;font-weight:600;">⚠️ Wajib isi semua keterangan</div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">1. Kondisi bersih, rapih atau ada yang perlu diperbaiki?</label>
+                <textarea class="task-note task-q1" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
             </div>
+          </div>
+        </div>
+        <div class="task-category">
+          <div class="task-cat-header">
+            <span style="font-size:16px;">⚙️</span>
+            <span class="task-cat-title">Utility Check</span>
+            <span class="task-cat-count">0/3</span>
           </div>
           <div class="task-item" id="task_14" onclick="toggleTask('task_14')">
             <div class="task-item-top">
               <div class="task-number" id="task_14-num" data-orig-num="14">14</div>
-              <span class="task-text">RWT (Raw Water Tank) — cek kondisi & level</span>
+              <span class="task-text">GWT (Grey Water Tank) — cek kondisi & level</span>
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,'task_14','done')">✓ Sudah</button>
@@ -7443,13 +7654,17 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_14-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_14-note">
-              <textarea class="task-note" rows="2" placeholder="Keterangan (opsional)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              <div style="background:#fef3c7;border-left:3px solid #f59e0b;padding:8px 12px;border-radius:8px;margin-bottom:8px;font-size:12px;color:#78350f;font-weight:600;">⚠️ Wajib isi semua keterangan</div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">1. Kondisi bersih, rapih atau ada yang perlu diperbaiki?</label>
+                <textarea class="task-note task-q1" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
             </div>
           </div>
           <div class="task-item" id="task_15" onclick="toggleTask('task_15')">
             <div class="task-item-top">
               <div class="task-number" id="task_15-num" data-orig-num="15">15</div>
-              <span class="task-text">Genset — cek kondisi, fuel & fungsi</span>
+              <span class="task-text">RWT (Raw Water Tank) — cek kondisi & level</span>
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,'task_15','done')">✓ Sudah</button>
@@ -7467,20 +7682,17 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_15-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_15-note">
-              <textarea class="task-note" rows="2" placeholder="Keterangan (opsional)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              <div style="background:#fef3c7;border-left:3px solid #f59e0b;padding:8px 12px;border-radius:8px;margin-bottom:8px;font-size:12px;color:#78350f;font-weight:600;">⚠️ Wajib isi semua keterangan</div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">1. Kondisi bersih, rapih atau ada yang perlu diperbaiki?</label>
+                <textarea class="task-note task-q1" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
             </div>
-          </div>
-        </div>
-                <div class="task-category">
-          <div class="task-cat-header">
-            <span style="font-size:16px;">☀️</span>
-            <span class="task-cat-title">Afternoon Briefing — 14.45 WIB</span>
-            <span class="task-cat-count">0/1</span>
           </div>
           <div class="task-item" id="task_16" onclick="toggleTask('task_16')">
             <div class="task-item-top">
               <div class="task-number" id="task_16-num" data-orig-num="16">16</div>
-              <div style="flex:1;"><ul style="margin:0;padding-left:16px;font-size:13px;color:var(--gray-600);line-height:1.8;"><li>Cek Grooming Team sesuai standar (rambut, seragam, kebersihan)</li><li>Pastikan informasi management tersampaikan dengan baik</li><li>Review & solusi guest complaint dari shift hari sebelumnya</li><li>GRPS Data Check</li></ul></div>
+              <span class="task-text">Genset — cek kondisi, fuel & fungsi</span>
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,'task_16','done')">✓ Sudah</button>
@@ -7498,24 +7710,28 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_16-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_16-note">
-              <textarea class="task-note" rows="2" placeholder="Keterangan (opsional)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              <div style="background:#fef3c7;border-left:3px solid #f59e0b;padding:8px 12px;border-radius:8px;margin-bottom:8px;font-size:12px;color:#78350f;font-weight:600;">⚠️ Wajib isi semua keterangan</div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">1. Kondisi bersih, rapih atau ada yang perlu diperbaiki?</label>
+                <textarea class="task-note task-q1" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
             </div>
           </div>
         </div>
         <div class="task-category">
           <div class="task-cat-header">
-            <span style="font-size:16px;">⭐</span>
-            <span class="task-cat-title">Guest Review Check & Reply</span>
+            <span style="font-size:16px;">☀️</span>
+            <span class="task-cat-title">Afternoon Briefing — 14.45 WIB</span>
             <span class="task-cat-count">0/1</span>
           </div>
           <div class="task-item" id="task_17" onclick="toggleTask('task_17')">
             <div class="task-item-top">
               <div class="task-number" id="task_17-num" data-orig-num="17">17</div>
-              <span class="task-text">Cek & balas semua review dari semua platform (Google, TripAdvisor, Agoda, Traveloka, Booking.com, Tiket.com, Ctrip) dengan bahasa sopan & profesional. Review buruk: analisa & jelaskan secara rinci.</span>
+              <div style="flex:1;"><ul style="margin:0;padding-left:16px;font-size:13px;color:var(--gray-600);line-height:1.8;"><li>Cek Grooming Team sesuai standar (rambut, seragam, kebersihan)</li><li>Pastikan informasi management tersampaikan dengan baik</li><li>Review & solusi guest complaint dari shift hari sebelumnya</li><li>GRPS Data Check</li></ul></div>
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,'task_17','done')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,'task_16','not')">✗ Tidak Dikerjakan</button>
+              <button class="status-btn" onclick="setStatus(event,'task_17','not')">✗ Tidak Dikerjakan</button>
             </div>
             <div class="task-upload-wrap" id="task_17-upload">
               <div class="task-upload-area" id="task_17-upload-area">
@@ -7535,18 +7751,18 @@ const ROLE_TASKS = {
         </div>
         <div class="task-category">
           <div class="task-cat-header">
-            <span style="font-size:16px;">🌆</span>
-            <span class="task-cat-title">Closing Briefing — 17.30 WIB</span>
+            <span style="font-size:16px;">⭐</span>
+            <span class="task-cat-title">Guest Review Check & Reply</span>
             <span class="task-cat-count">0/1</span>
           </div>
           <div class="task-item" id="task_18" onclick="toggleTask('task_18')">
             <div class="task-item-top">
               <div class="task-number" id="task_18-num" data-orig-num="18">18</div>
-              <div style="flex:1;"><ul style="margin:0;padding-left:16px;font-size:13px;color:var(--gray-600);line-height:1.8;"><li>Check MJA VS Actual Morning Shift</li><li>Man Power Planning for tomorrow (siapa yang masuk, siapa yang libur)</li><li>Draft MJA Tomorrow</li></ul></div>
+              <span class="task-text">Cek & balas semua review dari semua platform (Google, TripAdvisor, Agoda, Traveloka, Booking.com, Tiket.com, Ctrip) dengan bahasa sopan & profesional. Review buruk: analisa & jelaskan secara rinci.</span>
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,'task_18','done')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,'task_16','not')">✗ Tidak Dikerjakan</button>
+              <button class="status-btn" onclick="setStatus(event,'task_18','not')">✗ Tidak Dikerjakan</button>
             </div>
             <div class="task-upload-wrap" id="task_18-upload">
               <div class="task-upload-area" id="task_18-upload-area">
@@ -7560,13 +7776,68 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_18-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_18-note">
-              <textarea class="task-note" rows="2" placeholder="Keterangan (opsional)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              <div style="background:#fef3c7;border-left:3px solid #f59e0b;padding:8px 12px;border-radius:8px;margin-bottom:8px;font-size:12px;color:#78350f;font-weight:600;">⚠️ Wajib isi semua keterangan</div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">1. Total Bad Review Today?</label>
+                <textarea class="task-note task-q1" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="task-category">
+          <div class="task-cat-header">
+            <span style="font-size:16px;">🌆</span>
+            <span class="task-cat-title">Closing Briefing — 17.30 WIB</span>
+            <span class="task-cat-count">0/1</span>
+          </div>
+          <div class="task-item" id="task_19" onclick="toggleTask('task_19')">
+            <div class="task-item-top">
+              <div class="task-number" id="task_19-num" data-orig-num="19">19</div>
+              <div style="flex:1;"><ul style="margin:0;padding-left:16px;font-size:13px;color:var(--gray-600);line-height:1.8;"><li>Check MJA VS Actual Morning Shift</li><li>Man Power Planning for tomorrow (siapa yang masuk, siapa yang libur)</li><li>Draft MJA Tomorrow</li></ul></div>
+            </div>
+            <div class="task-status-row">
+              <button class="status-btn" onclick="setStatus(event,'task_19','done')">✓ Sudah</button>
+              <button class="status-btn" onclick="setStatus(event,'task_19','not')">✗ Tidak Dikerjakan</button>
+            </div>
+            <div class="task-upload-wrap" id="task_19-upload">
+              <div class="task-upload-area" id="task_19-upload-area">
+                <input type="file" accept="image/*,.pdf,.doc,.docx" multiple onchange="handleFileUpload(this,'task_19')">
+                <span class="task-upload-icon">📎</span>
+                <div class="task-upload-text">
+                  <strong>Upload Foto / Dokumen</strong>
+                  <span>Wajib diupload</span>
+                </div>
+              </div>
+              <div class="file-preview-list" id="task_19-filelist"></div>
+            </div>
+            <div class="task-note-wrap" id="task_19-note">
+              <div style="background:#fef3c7;border-left:3px solid #f59e0b;padding:8px 12px;border-radius:8px;margin-bottom:8px;font-size:12px;color:#78350f;font-weight:600;">⚠️ Wajib isi semua keterangan</div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">1. Apakah pekerjaan hari shift Pagi sesuai dengan MJA?</label>
+                <textarea class="task-note task-q1" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">2. Hasil Check Worksheet SPV, apakah sesuai dengan Actual dan SOP?</label>
+                <textarea class="task-note task-q2" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">3. Room Sold Tomorrow?</label>
+                <textarea class="task-note task-q3" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">4. Event Tomorrow?</label>
+                <textarea class="task-note task-q4" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">5. Total DW yang diliburkan besok (jika OCC Low)?</label>
+                <textarea class="task-note task-q5" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
             </div>
           </div>
         </div>`
   },
   'HM Verse Luxe': {
-    count: 18,
+    count: 19,
     html: `
         <div class="task-category">
           <div class="task-cat-header">
@@ -7595,7 +7866,19 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_1-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_1-note">
-              <textarea class="task-note" rows="2" placeholder="Keterangan (opsional)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              <div style="background:#fef3c7;border-left:3px solid #f59e0b;padding:8px 12px;border-radius:8px;margin-bottom:8px;font-size:12px;color:#78350f;font-weight:600;">⚠️ Wajib isi semua keterangan</div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">1. Nama Petugas Security Incharge?</label>
+                <textarea class="task-note task-q1" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">2. Kondisi Area Parkir?</label>
+                <textarea class="task-note task-q2" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">3. Kondisi Area Sampah?</label>
+                <textarea class="task-note task-q3" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
             </div>
           </div>
         </div>
@@ -7626,7 +7909,19 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_2-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_2-note">
-              <textarea class="task-note" rows="2" placeholder="Keterangan (opsional)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              <div style="background:#fef3c7;border-left:3px solid #f59e0b;padding:8px 12px;border-radius:8px;margin-bottom:8px;font-size:12px;color:#78350f;font-weight:600;">⚠️ Wajib isi semua keterangan</div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">1. Menu Sold Out / Not Available?</label>
+                <textarea class="task-note task-q1" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">2. Kualitas Penyajian?</label>
+                <textarea class="task-note task-q2" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">3. Rasa Makanan yang perlu di Koreksi?</label>
+                <textarea class="task-note task-q3" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
             </div>
           </div>
         </div>
@@ -7657,7 +7952,15 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_3-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_3-note">
-              <textarea class="task-note" rows="2" placeholder="Keterangan (opsional)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              <div style="background:#fef3c7;border-left:3px solid #f59e0b;padding:8px 12px;border-radius:8px;margin-bottom:8px;font-size:12px;color:#78350f;font-weight:600;">⚠️ Wajib isi semua keterangan</div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">1. Apakah ada Transaksi yang salah?</label>
+                <textarea class="task-note task-q1" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">2. Semua Supporting Dokument apakah sudah lengkap?</label>
+                <textarea class="task-note task-q2" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
             </div>
           </div>
         </div>
@@ -7688,7 +7991,11 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_4-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_4-note">
-              <textarea class="task-note" rows="2" placeholder="Keterangan (opsional)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              <div style="background:#fef3c7;border-left:3px solid #f59e0b;padding:8px 12px;border-radius:8px;margin-bottom:8px;font-size:12px;color:#78350f;font-weight:600;">⚠️ Wajib isi semua keterangan</div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">1. Apakah pekerjaan Afternoon dan Night Shift Kemarin sesuai dengan MJA?</label>
+                <textarea class="task-note task-q1" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
             </div>
           </div>
         </div>
@@ -7750,7 +8057,15 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_6-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_6-note">
-              <textarea class="task-note" rows="2" placeholder="Keterangan (opsional)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              <div style="background:#fef3c7;border-left:3px solid #f59e0b;padding:8px 12px;border-radius:8px;margin-bottom:8px;font-size:12px;color:#78350f;font-weight:600;">⚠️ Wajib isi semua keterangan</div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">1. Total Staff Absen?</label>
+                <textarea class="task-note task-q1" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">2. Total Staff Late In?</label>
+                <textarea class="task-note task-q2" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
             </div>
           </div>
         </div>
@@ -7781,20 +8096,32 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_7-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_7-note">
-              <textarea class="task-note" rows="2" placeholder="Keterangan (opsional)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              <div style="background:#fef3c7;border-left:3px solid #f59e0b;padding:8px 12px;border-radius:8px;margin-bottom:8px;font-size:12px;color:#78350f;font-weight:600;">⚠️ Wajib isi semua keterangan</div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">1. Total Tamu yang di Approach pada saat Collect Review?</label>
+                <textarea class="task-note task-q1" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">2. Total Good Review Collect?</label>
+                <textarea class="task-note task-q2" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">3. Total Guest Feedback Collect?</label>
+                <textarea class="task-note task-q3" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
             </div>
           </div>
         </div>
         <div class="task-category">
           <div class="task-cat-header">
-            <span style="font-size:16px;">🚶</span>
-            <span class="task-cat-title">Department Visit</span>
-            <span class="task-cat-count">0/5</span>
+            <span style="font-size:16px;">🍳</span>
+            <span class="task-cat-title">Check Closing Breakfast</span>
+            <span class="task-cat-count">0/1</span>
           </div>
           <div class="task-item" id="task_8" onclick="toggleTask('task_8')">
             <div class="task-item-top">
               <div class="task-number" id="task_8-num" data-orig-num="8">8</div>
-              <span class="task-text">Kunjungan ke FO — cek kebersihan, kerapihan, & progress kerja</span>
+              <span class="task-text">Cek Cleanliness Resto, Kitchen</span>
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,'task_8','done')">✓ Sudah</button>
@@ -7812,13 +8139,36 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_8-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_8-note">
-              <textarea class="task-note" rows="2" placeholder="Keterangan (opsional)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              <div style="background:#fef3c7;border-left:3px solid #f59e0b;padding:8px 12px;border-radius:8px;margin-bottom:8px;font-size:12px;color:#78350f;font-weight:600;">⚠️ Wajib isi semua keterangan</div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">1. Kondisi Area Resto?</label>
+                <textarea class="task-note task-q1" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">2. Kondisi Area Kitchen?</label>
+                <textarea class="task-note task-q2" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">3. Total Actual Pax Breakfast?</label>
+                <textarea class="task-note task-q3" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">4. Total Actual Pax No Show?</label>
+                <textarea class="task-note task-q4" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
             </div>
+          </div>
+        </div>
+        <div class="task-category">
+          <div class="task-cat-header">
+            <span style="font-size:16px;">🚶</span>
+            <span class="task-cat-title">Department Visit</span>
+            <span class="task-cat-count">0/5</span>
           </div>
           <div class="task-item" id="task_9" onclick="toggleTask('task_9')">
             <div class="task-item-top">
               <div class="task-number" id="task_9-num" data-orig-num="9">9</div>
-              <span class="task-text">Kunjungan ke HK — cek kebersihan, kerapihan, & progress kerja</span>
+              <span class="task-text">Kunjungan ke FO — cek kebersihan, kerapihan, & progress kerja</span>
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,'task_9','done')">✓ Sudah</button>
@@ -7836,13 +8186,17 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_9-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_9-note">
-              <textarea class="task-note" rows="2" placeholder="Keterangan (opsional)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              <div style="background:#fef3c7;border-left:3px solid #f59e0b;padding:8px 12px;border-radius:8px;margin-bottom:8px;font-size:12px;color:#78350f;font-weight:600;">⚠️ Wajib isi semua keterangan</div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">1. Kondisi bersih, rapih atau ada yang perlu diperbaiki?</label>
+                <textarea class="task-note task-q1" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
             </div>
           </div>
           <div class="task-item" id="task_10" onclick="toggleTask('task_10')">
             <div class="task-item-top">
               <div class="task-number" id="task_10-num" data-orig-num="10">10</div>
-              <span class="task-text">Kunjungan ke ENG — cek kebersihan, kerapihan, & progress kerja</span>
+              <span class="task-text">Kunjungan ke HK — cek kebersihan, kerapihan, & progress kerja</span>
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,'task_10','done')">✓ Sudah</button>
@@ -7860,13 +8214,17 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_10-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_10-note">
-              <textarea class="task-note" rows="2" placeholder="Keterangan (opsional)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              <div style="background:#fef3c7;border-left:3px solid #f59e0b;padding:8px 12px;border-radius:8px;margin-bottom:8px;font-size:12px;color:#78350f;font-weight:600;">⚠️ Wajib isi semua keterangan</div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">1. Kondisi bersih, rapih atau ada yang perlu diperbaiki?</label>
+                <textarea class="task-note task-q1" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
             </div>
           </div>
           <div class="task-item" id="task_11" onclick="toggleTask('task_11')">
             <div class="task-item-top">
               <div class="task-number" id="task_11-num" data-orig-num="11">11</div>
-              <span class="task-text">Kunjungan ke SEC — cek kebersihan, kerapihan, & progress kerja</span>
+              <span class="task-text">Kunjungan ke ENG — cek kebersihan, kerapihan, & progress kerja</span>
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,'task_11','done')">✓ Sudah</button>
@@ -7884,13 +8242,17 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_11-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_11-note">
-              <textarea class="task-note" rows="2" placeholder="Keterangan (opsional)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              <div style="background:#fef3c7;border-left:3px solid #f59e0b;padding:8px 12px;border-radius:8px;margin-bottom:8px;font-size:12px;color:#78350f;font-weight:600;">⚠️ Wajib isi semua keterangan</div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">1. Kondisi bersih, rapih atau ada yang perlu diperbaiki?</label>
+                <textarea class="task-note task-q1" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
             </div>
           </div>
           <div class="task-item" id="task_12" onclick="toggleTask('task_12')">
             <div class="task-item-top">
               <div class="task-number" id="task_12-num" data-orig-num="12">12</div>
-              <span class="task-text">Kunjungan ke F&B — cek kebersihan, kerapihan, & progress kerja</span>
+              <span class="task-text">Kunjungan ke SEC — cek kebersihan, kerapihan, & progress kerja</span>
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,'task_12','done')">✓ Sudah</button>
@@ -7908,20 +8270,17 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_12-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_12-note">
-              <textarea class="task-note" rows="2" placeholder="Keterangan (opsional)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              <div style="background:#fef3c7;border-left:3px solid #f59e0b;padding:8px 12px;border-radius:8px;margin-bottom:8px;font-size:12px;color:#78350f;font-weight:600;">⚠️ Wajib isi semua keterangan</div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">1. Kondisi bersih, rapih atau ada yang perlu diperbaiki?</label>
+                <textarea class="task-note task-q1" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
             </div>
-          </div>
-        </div>
-        <div class="task-category">
-          <div class="task-cat-header">
-            <span style="font-size:16px;">⚙️</span>
-            <span class="task-cat-title">Utility Check</span>
-            <span class="task-cat-count">0/3</span>
           </div>
           <div class="task-item" id="task_13" onclick="toggleTask('task_13')">
             <div class="task-item-top">
               <div class="task-number" id="task_13-num" data-orig-num="13">13</div>
-              <span class="task-text">GWT (Grey Water Tank) — cek kondisi & level</span>
+              <span class="task-text">Kunjungan ke F&B — cek kebersihan, kerapihan, & progress kerja</span>
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,'task_13','done')">✓ Sudah</button>
@@ -7939,13 +8298,24 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_13-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_13-note">
-              <textarea class="task-note" rows="2" placeholder="Keterangan (opsional)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              <div style="background:#fef3c7;border-left:3px solid #f59e0b;padding:8px 12px;border-radius:8px;margin-bottom:8px;font-size:12px;color:#78350f;font-weight:600;">⚠️ Wajib isi semua keterangan</div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">1. Kondisi bersih, rapih atau ada yang perlu diperbaiki?</label>
+                <textarea class="task-note task-q1" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
             </div>
+          </div>
+        </div>
+        <div class="task-category">
+          <div class="task-cat-header">
+            <span style="font-size:16px;">⚙️</span>
+            <span class="task-cat-title">Utility Check</span>
+            <span class="task-cat-count">0/3</span>
           </div>
           <div class="task-item" id="task_14" onclick="toggleTask('task_14')">
             <div class="task-item-top">
               <div class="task-number" id="task_14-num" data-orig-num="14">14</div>
-              <span class="task-text">RWT (Raw Water Tank) — cek kondisi & level</span>
+              <span class="task-text">GWT (Grey Water Tank) — cek kondisi & level</span>
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,'task_14','done')">✓ Sudah</button>
@@ -7963,13 +8333,17 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_14-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_14-note">
-              <textarea class="task-note" rows="2" placeholder="Keterangan (opsional)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              <div style="background:#fef3c7;border-left:3px solid #f59e0b;padding:8px 12px;border-radius:8px;margin-bottom:8px;font-size:12px;color:#78350f;font-weight:600;">⚠️ Wajib isi semua keterangan</div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">1. Kondisi bersih, rapih atau ada yang perlu diperbaiki?</label>
+                <textarea class="task-note task-q1" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
             </div>
           </div>
           <div class="task-item" id="task_15" onclick="toggleTask('task_15')">
             <div class="task-item-top">
               <div class="task-number" id="task_15-num" data-orig-num="15">15</div>
-              <span class="task-text">Genset — cek kondisi, fuel & fungsi</span>
+              <span class="task-text">RWT (Raw Water Tank) — cek kondisi & level</span>
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,'task_15','done')">✓ Sudah</button>
@@ -7987,20 +8361,17 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_15-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_15-note">
-              <textarea class="task-note" rows="2" placeholder="Keterangan (opsional)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              <div style="background:#fef3c7;border-left:3px solid #f59e0b;padding:8px 12px;border-radius:8px;margin-bottom:8px;font-size:12px;color:#78350f;font-weight:600;">⚠️ Wajib isi semua keterangan</div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">1. Kondisi bersih, rapih atau ada yang perlu diperbaiki?</label>
+                <textarea class="task-note task-q1" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
             </div>
-          </div>
-        </div>
-                <div class="task-category">
-          <div class="task-cat-header">
-            <span style="font-size:16px;">☀️</span>
-            <span class="task-cat-title">Afternoon Briefing — 14.45 WIB</span>
-            <span class="task-cat-count">0/1</span>
           </div>
           <div class="task-item" id="task_16" onclick="toggleTask('task_16')">
             <div class="task-item-top">
               <div class="task-number" id="task_16-num" data-orig-num="16">16</div>
-              <div style="flex:1;"><ul style="margin:0;padding-left:16px;font-size:13px;color:var(--gray-600);line-height:1.8;"><li>Cek Grooming Team sesuai standar (rambut, seragam, kebersihan)</li><li>Pastikan informasi management tersampaikan dengan baik</li><li>Review & solusi guest complaint dari shift hari sebelumnya</li><li>GRPS Data Check</li></ul></div>
+              <span class="task-text">Genset — cek kondisi, fuel & fungsi</span>
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,'task_16','done')">✓ Sudah</button>
@@ -8018,24 +8389,28 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_16-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_16-note">
-              <textarea class="task-note" rows="2" placeholder="Keterangan (opsional)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              <div style="background:#fef3c7;border-left:3px solid #f59e0b;padding:8px 12px;border-radius:8px;margin-bottom:8px;font-size:12px;color:#78350f;font-weight:600;">⚠️ Wajib isi semua keterangan</div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">1. Kondisi bersih, rapih atau ada yang perlu diperbaiki?</label>
+                <textarea class="task-note task-q1" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
             </div>
           </div>
         </div>
         <div class="task-category">
           <div class="task-cat-header">
-            <span style="font-size:16px;">⭐</span>
-            <span class="task-cat-title">Guest Review Check & Reply</span>
+            <span style="font-size:16px;">☀️</span>
+            <span class="task-cat-title">Afternoon Briefing — 14.45 WIB</span>
             <span class="task-cat-count">0/1</span>
           </div>
           <div class="task-item" id="task_17" onclick="toggleTask('task_17')">
             <div class="task-item-top">
               <div class="task-number" id="task_17-num" data-orig-num="17">17</div>
-              <span class="task-text">Cek & balas semua review dari semua platform (Google, TripAdvisor, Agoda, Traveloka, Booking.com, Tiket.com, Ctrip) dengan bahasa sopan & profesional. Review buruk: analisa & jelaskan secara rinci.</span>
+              <div style="flex:1;"><ul style="margin:0;padding-left:16px;font-size:13px;color:var(--gray-600);line-height:1.8;"><li>Cek Grooming Team sesuai standar (rambut, seragam, kebersihan)</li><li>Pastikan informasi management tersampaikan dengan baik</li><li>Review & solusi guest complaint dari shift hari sebelumnya</li><li>GRPS Data Check</li></ul></div>
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,'task_17','done')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,'task_16','not')">✗ Tidak Dikerjakan</button>
+              <button class="status-btn" onclick="setStatus(event,'task_17','not')">✗ Tidak Dikerjakan</button>
             </div>
             <div class="task-upload-wrap" id="task_17-upload">
               <div class="task-upload-area" id="task_17-upload-area">
@@ -8055,18 +8430,18 @@ const ROLE_TASKS = {
         </div>
         <div class="task-category">
           <div class="task-cat-header">
-            <span style="font-size:16px;">🌆</span>
-            <span class="task-cat-title">Closing Briefing — 17.30 WIB</span>
+            <span style="font-size:16px;">⭐</span>
+            <span class="task-cat-title">Guest Review Check & Reply</span>
             <span class="task-cat-count">0/1</span>
           </div>
           <div class="task-item" id="task_18" onclick="toggleTask('task_18')">
             <div class="task-item-top">
               <div class="task-number" id="task_18-num" data-orig-num="18">18</div>
-              <div style="flex:1;"><ul style="margin:0;padding-left:16px;font-size:13px;color:var(--gray-600);line-height:1.8;"><li>Check MJA VS Actual Morning Shift</li><li>Man Power Planning for tomorrow (siapa yang masuk, siapa yang libur)</li><li>Draft MJA Tomorrow</li></ul></div>
+              <span class="task-text">Cek & balas semua review dari semua platform (Google, TripAdvisor, Agoda, Traveloka, Booking.com, Tiket.com, Ctrip) dengan bahasa sopan & profesional. Review buruk: analisa & jelaskan secara rinci.</span>
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,'task_18','done')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,'task_16','not')">✗ Tidak Dikerjakan</button>
+              <button class="status-btn" onclick="setStatus(event,'task_18','not')">✗ Tidak Dikerjakan</button>
             </div>
             <div class="task-upload-wrap" id="task_18-upload">
               <div class="task-upload-area" id="task_18-upload-area">
@@ -8080,13 +8455,68 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_18-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_18-note">
-              <textarea class="task-note" rows="2" placeholder="Keterangan (opsional)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              <div style="background:#fef3c7;border-left:3px solid #f59e0b;padding:8px 12px;border-radius:8px;margin-bottom:8px;font-size:12px;color:#78350f;font-weight:600;">⚠️ Wajib isi semua keterangan</div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">1. Total Bad Review Today?</label>
+                <textarea class="task-note task-q1" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="task-category">
+          <div class="task-cat-header">
+            <span style="font-size:16px;">🌆</span>
+            <span class="task-cat-title">Closing Briefing — 17.30 WIB</span>
+            <span class="task-cat-count">0/1</span>
+          </div>
+          <div class="task-item" id="task_19" onclick="toggleTask('task_19')">
+            <div class="task-item-top">
+              <div class="task-number" id="task_19-num" data-orig-num="19">19</div>
+              <div style="flex:1;"><ul style="margin:0;padding-left:16px;font-size:13px;color:var(--gray-600);line-height:1.8;"><li>Check MJA VS Actual Morning Shift</li><li>Man Power Planning for tomorrow (siapa yang masuk, siapa yang libur)</li><li>Draft MJA Tomorrow</li></ul></div>
+            </div>
+            <div class="task-status-row">
+              <button class="status-btn" onclick="setStatus(event,'task_19','done')">✓ Sudah</button>
+              <button class="status-btn" onclick="setStatus(event,'task_19','not')">✗ Tidak Dikerjakan</button>
+            </div>
+            <div class="task-upload-wrap" id="task_19-upload">
+              <div class="task-upload-area" id="task_19-upload-area">
+                <input type="file" accept="image/*,.pdf,.doc,.docx" multiple onchange="handleFileUpload(this,'task_19')">
+                <span class="task-upload-icon">📎</span>
+                <div class="task-upload-text">
+                  <strong>Upload Foto / Dokumen</strong>
+                  <span>Wajib diupload</span>
+                </div>
+              </div>
+              <div class="file-preview-list" id="task_19-filelist"></div>
+            </div>
+            <div class="task-note-wrap" id="task_19-note">
+              <div style="background:#fef3c7;border-left:3px solid #f59e0b;padding:8px 12px;border-radius:8px;margin-bottom:8px;font-size:12px;color:#78350f;font-weight:600;">⚠️ Wajib isi semua keterangan</div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">1. Apakah pekerjaan hari shift Pagi sesuai dengan MJA?</label>
+                <textarea class="task-note task-q1" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">2. Hasil Check Worksheet SPV, apakah sesuai dengan Actual dan SOP?</label>
+                <textarea class="task-note task-q2" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">3. Room Sold Tomorrow?</label>
+                <textarea class="task-note task-q3" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">4. Event Tomorrow?</label>
+                <textarea class="task-note task-q4" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">5. Total DW yang diliburkan besok (jika OCC Low)?</label>
+                <textarea class="task-note task-q5" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
             </div>
           </div>
         </div>`
   },
   'HM Verse Cirebon': {
-    count: 18,
+    count: 19,
     html: `
         <div class="task-category">
           <div class="task-cat-header">
@@ -8115,7 +8545,19 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_1-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_1-note">
-              <textarea class="task-note" rows="2" placeholder="Keterangan (opsional)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              <div style="background:#fef3c7;border-left:3px solid #f59e0b;padding:8px 12px;border-radius:8px;margin-bottom:8px;font-size:12px;color:#78350f;font-weight:600;">⚠️ Wajib isi semua keterangan</div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">1. Nama Petugas Security Incharge?</label>
+                <textarea class="task-note task-q1" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">2. Kondisi Area Parkir?</label>
+                <textarea class="task-note task-q2" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">3. Kondisi Area Sampah?</label>
+                <textarea class="task-note task-q3" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
             </div>
           </div>
         </div>
@@ -8146,7 +8588,19 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_2-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_2-note">
-              <textarea class="task-note" rows="2" placeholder="Keterangan (opsional)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              <div style="background:#fef3c7;border-left:3px solid #f59e0b;padding:8px 12px;border-radius:8px;margin-bottom:8px;font-size:12px;color:#78350f;font-weight:600;">⚠️ Wajib isi semua keterangan</div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">1. Menu Sold Out / Not Available?</label>
+                <textarea class="task-note task-q1" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">2. Kualitas Penyajian?</label>
+                <textarea class="task-note task-q2" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">3. Rasa Makanan yang perlu di Koreksi?</label>
+                <textarea class="task-note task-q3" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
             </div>
           </div>
         </div>
@@ -8177,7 +8631,15 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_3-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_3-note">
-              <textarea class="task-note" rows="2" placeholder="Keterangan (opsional)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              <div style="background:#fef3c7;border-left:3px solid #f59e0b;padding:8px 12px;border-radius:8px;margin-bottom:8px;font-size:12px;color:#78350f;font-weight:600;">⚠️ Wajib isi semua keterangan</div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">1. Apakah ada Transaksi yang salah?</label>
+                <textarea class="task-note task-q1" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">2. Semua Supporting Dokument apakah sudah lengkap?</label>
+                <textarea class="task-note task-q2" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
             </div>
           </div>
         </div>
@@ -8208,7 +8670,11 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_4-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_4-note">
-              <textarea class="task-note" rows="2" placeholder="Keterangan (opsional)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              <div style="background:#fef3c7;border-left:3px solid #f59e0b;padding:8px 12px;border-radius:8px;margin-bottom:8px;font-size:12px;color:#78350f;font-weight:600;">⚠️ Wajib isi semua keterangan</div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">1. Apakah pekerjaan Afternoon dan Night Shift Kemarin sesuai dengan MJA?</label>
+                <textarea class="task-note task-q1" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
             </div>
           </div>
         </div>
@@ -8270,7 +8736,15 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_6-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_6-note">
-              <textarea class="task-note" rows="2" placeholder="Keterangan (opsional)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              <div style="background:#fef3c7;border-left:3px solid #f59e0b;padding:8px 12px;border-radius:8px;margin-bottom:8px;font-size:12px;color:#78350f;font-weight:600;">⚠️ Wajib isi semua keterangan</div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">1. Total Staff Absen?</label>
+                <textarea class="task-note task-q1" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">2. Total Staff Late In?</label>
+                <textarea class="task-note task-q2" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
             </div>
           </div>
         </div>
@@ -8301,20 +8775,32 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_7-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_7-note">
-              <textarea class="task-note" rows="2" placeholder="Keterangan (opsional)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              <div style="background:#fef3c7;border-left:3px solid #f59e0b;padding:8px 12px;border-radius:8px;margin-bottom:8px;font-size:12px;color:#78350f;font-weight:600;">⚠️ Wajib isi semua keterangan</div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">1. Total Tamu yang di Approach pada saat Collect Review?</label>
+                <textarea class="task-note task-q1" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">2. Total Good Review Collect?</label>
+                <textarea class="task-note task-q2" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">3. Total Guest Feedback Collect?</label>
+                <textarea class="task-note task-q3" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
             </div>
           </div>
         </div>
         <div class="task-category">
           <div class="task-cat-header">
-            <span style="font-size:16px;">🚶</span>
-            <span class="task-cat-title">Department Visit</span>
-            <span class="task-cat-count">0/5</span>
+            <span style="font-size:16px;">🍳</span>
+            <span class="task-cat-title">Check Closing Breakfast</span>
+            <span class="task-cat-count">0/1</span>
           </div>
           <div class="task-item" id="task_8" onclick="toggleTask('task_8')">
             <div class="task-item-top">
               <div class="task-number" id="task_8-num" data-orig-num="8">8</div>
-              <span class="task-text">Kunjungan ke FO — cek kebersihan, kerapihan, & progress kerja</span>
+              <span class="task-text">Cek Cleanliness Resto, Kitchen</span>
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,'task_8','done')">✓ Sudah</button>
@@ -8332,13 +8818,36 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_8-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_8-note">
-              <textarea class="task-note" rows="2" placeholder="Keterangan (opsional)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              <div style="background:#fef3c7;border-left:3px solid #f59e0b;padding:8px 12px;border-radius:8px;margin-bottom:8px;font-size:12px;color:#78350f;font-weight:600;">⚠️ Wajib isi semua keterangan</div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">1. Kondisi Area Resto?</label>
+                <textarea class="task-note task-q1" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">2. Kondisi Area Kitchen?</label>
+                <textarea class="task-note task-q2" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">3. Total Actual Pax Breakfast?</label>
+                <textarea class="task-note task-q3" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">4. Total Actual Pax No Show?</label>
+                <textarea class="task-note task-q4" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
             </div>
+          </div>
+        </div>
+        <div class="task-category">
+          <div class="task-cat-header">
+            <span style="font-size:16px;">🚶</span>
+            <span class="task-cat-title">Department Visit</span>
+            <span class="task-cat-count">0/5</span>
           </div>
           <div class="task-item" id="task_9" onclick="toggleTask('task_9')">
             <div class="task-item-top">
               <div class="task-number" id="task_9-num" data-orig-num="9">9</div>
-              <span class="task-text">Kunjungan ke HK — cek kebersihan, kerapihan, & progress kerja</span>
+              <span class="task-text">Kunjungan ke FO — cek kebersihan, kerapihan, & progress kerja</span>
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,'task_9','done')">✓ Sudah</button>
@@ -8356,13 +8865,17 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_9-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_9-note">
-              <textarea class="task-note" rows="2" placeholder="Keterangan (opsional)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              <div style="background:#fef3c7;border-left:3px solid #f59e0b;padding:8px 12px;border-radius:8px;margin-bottom:8px;font-size:12px;color:#78350f;font-weight:600;">⚠️ Wajib isi semua keterangan</div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">1. Kondisi bersih, rapih atau ada yang perlu diperbaiki?</label>
+                <textarea class="task-note task-q1" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
             </div>
           </div>
           <div class="task-item" id="task_10" onclick="toggleTask('task_10')">
             <div class="task-item-top">
               <div class="task-number" id="task_10-num" data-orig-num="10">10</div>
-              <span class="task-text">Kunjungan ke ENG — cek kebersihan, kerapihan, & progress kerja</span>
+              <span class="task-text">Kunjungan ke HK — cek kebersihan, kerapihan, & progress kerja</span>
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,'task_10','done')">✓ Sudah</button>
@@ -8380,13 +8893,17 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_10-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_10-note">
-              <textarea class="task-note" rows="2" placeholder="Keterangan (opsional)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              <div style="background:#fef3c7;border-left:3px solid #f59e0b;padding:8px 12px;border-radius:8px;margin-bottom:8px;font-size:12px;color:#78350f;font-weight:600;">⚠️ Wajib isi semua keterangan</div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">1. Kondisi bersih, rapih atau ada yang perlu diperbaiki?</label>
+                <textarea class="task-note task-q1" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
             </div>
           </div>
           <div class="task-item" id="task_11" onclick="toggleTask('task_11')">
             <div class="task-item-top">
               <div class="task-number" id="task_11-num" data-orig-num="11">11</div>
-              <span class="task-text">Kunjungan ke SEC — cek kebersihan, kerapihan, & progress kerja</span>
+              <span class="task-text">Kunjungan ke ENG — cek kebersihan, kerapihan, & progress kerja</span>
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,'task_11','done')">✓ Sudah</button>
@@ -8404,13 +8921,17 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_11-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_11-note">
-              <textarea class="task-note" rows="2" placeholder="Keterangan (opsional)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              <div style="background:#fef3c7;border-left:3px solid #f59e0b;padding:8px 12px;border-radius:8px;margin-bottom:8px;font-size:12px;color:#78350f;font-weight:600;">⚠️ Wajib isi semua keterangan</div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">1. Kondisi bersih, rapih atau ada yang perlu diperbaiki?</label>
+                <textarea class="task-note task-q1" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
             </div>
           </div>
           <div class="task-item" id="task_12" onclick="toggleTask('task_12')">
             <div class="task-item-top">
               <div class="task-number" id="task_12-num" data-orig-num="12">12</div>
-              <span class="task-text">Kunjungan ke F&B — cek kebersihan, kerapihan, & progress kerja</span>
+              <span class="task-text">Kunjungan ke SEC — cek kebersihan, kerapihan, & progress kerja</span>
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,'task_12','done')">✓ Sudah</button>
@@ -8428,20 +8949,17 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_12-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_12-note">
-              <textarea class="task-note" rows="2" placeholder="Keterangan (opsional)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              <div style="background:#fef3c7;border-left:3px solid #f59e0b;padding:8px 12px;border-radius:8px;margin-bottom:8px;font-size:12px;color:#78350f;font-weight:600;">⚠️ Wajib isi semua keterangan</div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">1. Kondisi bersih, rapih atau ada yang perlu diperbaiki?</label>
+                <textarea class="task-note task-q1" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
             </div>
-          </div>
-        </div>
-        <div class="task-category">
-          <div class="task-cat-header">
-            <span style="font-size:16px;">⚙️</span>
-            <span class="task-cat-title">Utility Check</span>
-            <span class="task-cat-count">0/3</span>
           </div>
           <div class="task-item" id="task_13" onclick="toggleTask('task_13')">
             <div class="task-item-top">
               <div class="task-number" id="task_13-num" data-orig-num="13">13</div>
-              <span class="task-text">GWT (Grey Water Tank) — cek kondisi & level</span>
+              <span class="task-text">Kunjungan ke F&B — cek kebersihan, kerapihan, & progress kerja</span>
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,'task_13','done')">✓ Sudah</button>
@@ -8459,13 +8977,24 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_13-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_13-note">
-              <textarea class="task-note" rows="2" placeholder="Keterangan (opsional)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              <div style="background:#fef3c7;border-left:3px solid #f59e0b;padding:8px 12px;border-radius:8px;margin-bottom:8px;font-size:12px;color:#78350f;font-weight:600;">⚠️ Wajib isi semua keterangan</div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">1. Kondisi bersih, rapih atau ada yang perlu diperbaiki?</label>
+                <textarea class="task-note task-q1" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
             </div>
+          </div>
+        </div>
+        <div class="task-category">
+          <div class="task-cat-header">
+            <span style="font-size:16px;">⚙️</span>
+            <span class="task-cat-title">Utility Check</span>
+            <span class="task-cat-count">0/3</span>
           </div>
           <div class="task-item" id="task_14" onclick="toggleTask('task_14')">
             <div class="task-item-top">
               <div class="task-number" id="task_14-num" data-orig-num="14">14</div>
-              <span class="task-text">RWT (Raw Water Tank) — cek kondisi & level</span>
+              <span class="task-text">GWT (Grey Water Tank) — cek kondisi & level</span>
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,'task_14','done')">✓ Sudah</button>
@@ -8483,13 +9012,17 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_14-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_14-note">
-              <textarea class="task-note" rows="2" placeholder="Keterangan (opsional)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              <div style="background:#fef3c7;border-left:3px solid #f59e0b;padding:8px 12px;border-radius:8px;margin-bottom:8px;font-size:12px;color:#78350f;font-weight:600;">⚠️ Wajib isi semua keterangan</div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">1. Kondisi bersih, rapih atau ada yang perlu diperbaiki?</label>
+                <textarea class="task-note task-q1" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
             </div>
           </div>
           <div class="task-item" id="task_15" onclick="toggleTask('task_15')">
             <div class="task-item-top">
               <div class="task-number" id="task_15-num" data-orig-num="15">15</div>
-              <span class="task-text">Genset — cek kondisi, fuel & fungsi</span>
+              <span class="task-text">RWT (Raw Water Tank) — cek kondisi & level</span>
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,'task_15','done')">✓ Sudah</button>
@@ -8507,20 +9040,17 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_15-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_15-note">
-              <textarea class="task-note" rows="2" placeholder="Keterangan (opsional)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              <div style="background:#fef3c7;border-left:3px solid #f59e0b;padding:8px 12px;border-radius:8px;margin-bottom:8px;font-size:12px;color:#78350f;font-weight:600;">⚠️ Wajib isi semua keterangan</div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">1. Kondisi bersih, rapih atau ada yang perlu diperbaiki?</label>
+                <textarea class="task-note task-q1" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
             </div>
-          </div>
-        </div>
-                <div class="task-category">
-          <div class="task-cat-header">
-            <span style="font-size:16px;">☀️</span>
-            <span class="task-cat-title">Afternoon Briefing — 14.45 WIB</span>
-            <span class="task-cat-count">0/1</span>
           </div>
           <div class="task-item" id="task_16" onclick="toggleTask('task_16')">
             <div class="task-item-top">
               <div class="task-number" id="task_16-num" data-orig-num="16">16</div>
-              <div style="flex:1;"><ul style="margin:0;padding-left:16px;font-size:13px;color:var(--gray-600);line-height:1.8;"><li>Cek Grooming Team sesuai standar (rambut, seragam, kebersihan)</li><li>Pastikan informasi management tersampaikan dengan baik</li><li>Review & solusi guest complaint dari shift hari sebelumnya</li><li>GRPS Data Check</li></ul></div>
+              <span class="task-text">Genset — cek kondisi, fuel & fungsi</span>
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,'task_16','done')">✓ Sudah</button>
@@ -8538,24 +9068,28 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_16-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_16-note">
-              <textarea class="task-note" rows="2" placeholder="Keterangan (opsional)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              <div style="background:#fef3c7;border-left:3px solid #f59e0b;padding:8px 12px;border-radius:8px;margin-bottom:8px;font-size:12px;color:#78350f;font-weight:600;">⚠️ Wajib isi semua keterangan</div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">1. Kondisi bersih, rapih atau ada yang perlu diperbaiki?</label>
+                <textarea class="task-note task-q1" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
             </div>
           </div>
         </div>
         <div class="task-category">
           <div class="task-cat-header">
-            <span style="font-size:16px;">⭐</span>
-            <span class="task-cat-title">Guest Review Check & Reply</span>
+            <span style="font-size:16px;">☀️</span>
+            <span class="task-cat-title">Afternoon Briefing — 14.45 WIB</span>
             <span class="task-cat-count">0/1</span>
           </div>
           <div class="task-item" id="task_17" onclick="toggleTask('task_17')">
             <div class="task-item-top">
               <div class="task-number" id="task_17-num" data-orig-num="17">17</div>
-              <span class="task-text">Cek & balas semua review dari semua platform (Google, TripAdvisor, Agoda, Traveloka, Booking.com, Tiket.com, Ctrip) dengan bahasa sopan & profesional. Review buruk: analisa & jelaskan secara rinci.</span>
+              <div style="flex:1;"><ul style="margin:0;padding-left:16px;font-size:13px;color:var(--gray-600);line-height:1.8;"><li>Cek Grooming Team sesuai standar (rambut, seragam, kebersihan)</li><li>Pastikan informasi management tersampaikan dengan baik</li><li>Review & solusi guest complaint dari shift hari sebelumnya</li><li>GRPS Data Check</li></ul></div>
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,'task_17','done')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,'task_16','not')">✗ Tidak Dikerjakan</button>
+              <button class="status-btn" onclick="setStatus(event,'task_17','not')">✗ Tidak Dikerjakan</button>
             </div>
             <div class="task-upload-wrap" id="task_17-upload">
               <div class="task-upload-area" id="task_17-upload-area">
@@ -8575,18 +9109,18 @@ const ROLE_TASKS = {
         </div>
         <div class="task-category">
           <div class="task-cat-header">
-            <span style="font-size:16px;">🌆</span>
-            <span class="task-cat-title">Closing Briefing — 17.30 WIB</span>
+            <span style="font-size:16px;">⭐</span>
+            <span class="task-cat-title">Guest Review Check & Reply</span>
             <span class="task-cat-count">0/1</span>
           </div>
           <div class="task-item" id="task_18" onclick="toggleTask('task_18')">
             <div class="task-item-top">
               <div class="task-number" id="task_18-num" data-orig-num="18">18</div>
-              <div style="flex:1;"><ul style="margin:0;padding-left:16px;font-size:13px;color:var(--gray-600);line-height:1.8;"><li>Check MJA VS Actual Morning Shift</li><li>Man Power Planning for tomorrow (siapa yang masuk, siapa yang libur)</li><li>Draft MJA Tomorrow</li></ul></div>
+              <span class="task-text">Cek & balas semua review dari semua platform (Google, TripAdvisor, Agoda, Traveloka, Booking.com, Tiket.com, Ctrip) dengan bahasa sopan & profesional. Review buruk: analisa & jelaskan secara rinci.</span>
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,'task_18','done')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,'task_16','not')">✗ Tidak Dikerjakan</button>
+              <button class="status-btn" onclick="setStatus(event,'task_18','not')">✗ Tidak Dikerjakan</button>
             </div>
             <div class="task-upload-wrap" id="task_18-upload">
               <div class="task-upload-area" id="task_18-upload-area">
@@ -8600,13 +9134,68 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_18-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_18-note">
-              <textarea class="task-note" rows="2" placeholder="Keterangan (opsional)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              <div style="background:#fef3c7;border-left:3px solid #f59e0b;padding:8px 12px;border-radius:8px;margin-bottom:8px;font-size:12px;color:#78350f;font-weight:600;">⚠️ Wajib isi semua keterangan</div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">1. Total Bad Review Today?</label>
+                <textarea class="task-note task-q1" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="task-category">
+          <div class="task-cat-header">
+            <span style="font-size:16px;">🌆</span>
+            <span class="task-cat-title">Closing Briefing — 17.30 WIB</span>
+            <span class="task-cat-count">0/1</span>
+          </div>
+          <div class="task-item" id="task_19" onclick="toggleTask('task_19')">
+            <div class="task-item-top">
+              <div class="task-number" id="task_19-num" data-orig-num="19">19</div>
+              <div style="flex:1;"><ul style="margin:0;padding-left:16px;font-size:13px;color:var(--gray-600);line-height:1.8;"><li>Check MJA VS Actual Morning Shift</li><li>Man Power Planning for tomorrow (siapa yang masuk, siapa yang libur)</li><li>Draft MJA Tomorrow</li></ul></div>
+            </div>
+            <div class="task-status-row">
+              <button class="status-btn" onclick="setStatus(event,'task_19','done')">✓ Sudah</button>
+              <button class="status-btn" onclick="setStatus(event,'task_19','not')">✗ Tidak Dikerjakan</button>
+            </div>
+            <div class="task-upload-wrap" id="task_19-upload">
+              <div class="task-upload-area" id="task_19-upload-area">
+                <input type="file" accept="image/*,.pdf,.doc,.docx" multiple onchange="handleFileUpload(this,'task_19')">
+                <span class="task-upload-icon">📎</span>
+                <div class="task-upload-text">
+                  <strong>Upload Foto / Dokumen</strong>
+                  <span>Wajib diupload</span>
+                </div>
+              </div>
+              <div class="file-preview-list" id="task_19-filelist"></div>
+            </div>
+            <div class="task-note-wrap" id="task_19-note">
+              <div style="background:#fef3c7;border-left:3px solid #f59e0b;padding:8px 12px;border-radius:8px;margin-bottom:8px;font-size:12px;color:#78350f;font-weight:600;">⚠️ Wajib isi semua keterangan</div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">1. Apakah pekerjaan hari shift Pagi sesuai dengan MJA?</label>
+                <textarea class="task-note task-q1" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">2. Hasil Check Worksheet SPV, apakah sesuai dengan Actual dan SOP?</label>
+                <textarea class="task-note task-q2" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">3. Room Sold Tomorrow?</label>
+                <textarea class="task-note task-q3" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">4. Event Tomorrow?</label>
+                <textarea class="task-note task-q4" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">5. Total DW yang diliburkan besok (jika OCC Low)?</label>
+                <textarea class="task-note task-q5" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
             </div>
           </div>
         </div>`
   },
   'HM Oak Tree': {
-    count: 18,
+    count: 19,
     html: `
         <div class="task-category">
           <div class="task-cat-header">
@@ -8635,7 +9224,19 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_1-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_1-note">
-              <textarea class="task-note" rows="2" placeholder="Keterangan (opsional)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              <div style="background:#fef3c7;border-left:3px solid #f59e0b;padding:8px 12px;border-radius:8px;margin-bottom:8px;font-size:12px;color:#78350f;font-weight:600;">⚠️ Wajib isi semua keterangan</div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">1. Nama Petugas Security Incharge?</label>
+                <textarea class="task-note task-q1" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">2. Kondisi Area Parkir?</label>
+                <textarea class="task-note task-q2" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">3. Kondisi Area Sampah?</label>
+                <textarea class="task-note task-q3" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
             </div>
           </div>
         </div>
@@ -8666,7 +9267,19 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_2-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_2-note">
-              <textarea class="task-note" rows="2" placeholder="Keterangan (opsional)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              <div style="background:#fef3c7;border-left:3px solid #f59e0b;padding:8px 12px;border-radius:8px;margin-bottom:8px;font-size:12px;color:#78350f;font-weight:600;">⚠️ Wajib isi semua keterangan</div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">1. Menu Sold Out / Not Available?</label>
+                <textarea class="task-note task-q1" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">2. Kualitas Penyajian?</label>
+                <textarea class="task-note task-q2" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">3. Rasa Makanan yang perlu di Koreksi?</label>
+                <textarea class="task-note task-q3" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
             </div>
           </div>
         </div>
@@ -8697,7 +9310,15 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_3-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_3-note">
-              <textarea class="task-note" rows="2" placeholder="Keterangan (opsional)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              <div style="background:#fef3c7;border-left:3px solid #f59e0b;padding:8px 12px;border-radius:8px;margin-bottom:8px;font-size:12px;color:#78350f;font-weight:600;">⚠️ Wajib isi semua keterangan</div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">1. Apakah ada Transaksi yang salah?</label>
+                <textarea class="task-note task-q1" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">2. Semua Supporting Dokument apakah sudah lengkap?</label>
+                <textarea class="task-note task-q2" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
             </div>
           </div>
         </div>
@@ -8728,7 +9349,11 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_4-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_4-note">
-              <textarea class="task-note" rows="2" placeholder="Keterangan (opsional)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              <div style="background:#fef3c7;border-left:3px solid #f59e0b;padding:8px 12px;border-radius:8px;margin-bottom:8px;font-size:12px;color:#78350f;font-weight:600;">⚠️ Wajib isi semua keterangan</div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">1. Apakah pekerjaan Afternoon dan Night Shift Kemarin sesuai dengan MJA?</label>
+                <textarea class="task-note task-q1" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
             </div>
           </div>
         </div>
@@ -8790,7 +9415,15 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_6-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_6-note">
-              <textarea class="task-note" rows="2" placeholder="Keterangan (opsional)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              <div style="background:#fef3c7;border-left:3px solid #f59e0b;padding:8px 12px;border-radius:8px;margin-bottom:8px;font-size:12px;color:#78350f;font-weight:600;">⚠️ Wajib isi semua keterangan</div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">1. Total Staff Absen?</label>
+                <textarea class="task-note task-q1" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">2. Total Staff Late In?</label>
+                <textarea class="task-note task-q2" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
             </div>
           </div>
         </div>
@@ -8821,20 +9454,32 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_7-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_7-note">
-              <textarea class="task-note" rows="2" placeholder="Keterangan (opsional)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              <div style="background:#fef3c7;border-left:3px solid #f59e0b;padding:8px 12px;border-radius:8px;margin-bottom:8px;font-size:12px;color:#78350f;font-weight:600;">⚠️ Wajib isi semua keterangan</div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">1. Total Tamu yang di Approach pada saat Collect Review?</label>
+                <textarea class="task-note task-q1" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">2. Total Good Review Collect?</label>
+                <textarea class="task-note task-q2" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">3. Total Guest Feedback Collect?</label>
+                <textarea class="task-note task-q3" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
             </div>
           </div>
         </div>
         <div class="task-category">
           <div class="task-cat-header">
-            <span style="font-size:16px;">🚶</span>
-            <span class="task-cat-title">Department Visit</span>
-            <span class="task-cat-count">0/5</span>
+            <span style="font-size:16px;">🍳</span>
+            <span class="task-cat-title">Check Closing Breakfast</span>
+            <span class="task-cat-count">0/1</span>
           </div>
           <div class="task-item" id="task_8" onclick="toggleTask('task_8')">
             <div class="task-item-top">
               <div class="task-number" id="task_8-num" data-orig-num="8">8</div>
-              <span class="task-text">Kunjungan ke FO — cek kebersihan, kerapihan, & progress kerja</span>
+              <span class="task-text">Cek Cleanliness Resto, Kitchen</span>
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,'task_8','done')">✓ Sudah</button>
@@ -8852,13 +9497,36 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_8-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_8-note">
-              <textarea class="task-note" rows="2" placeholder="Keterangan (opsional)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              <div style="background:#fef3c7;border-left:3px solid #f59e0b;padding:8px 12px;border-radius:8px;margin-bottom:8px;font-size:12px;color:#78350f;font-weight:600;">⚠️ Wajib isi semua keterangan</div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">1. Kondisi Area Resto?</label>
+                <textarea class="task-note task-q1" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">2. Kondisi Area Kitchen?</label>
+                <textarea class="task-note task-q2" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">3. Total Actual Pax Breakfast?</label>
+                <textarea class="task-note task-q3" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">4. Total Actual Pax No Show?</label>
+                <textarea class="task-note task-q4" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
             </div>
+          </div>
+        </div>
+        <div class="task-category">
+          <div class="task-cat-header">
+            <span style="font-size:16px;">🚶</span>
+            <span class="task-cat-title">Department Visit</span>
+            <span class="task-cat-count">0/5</span>
           </div>
           <div class="task-item" id="task_9" onclick="toggleTask('task_9')">
             <div class="task-item-top">
               <div class="task-number" id="task_9-num" data-orig-num="9">9</div>
-              <span class="task-text">Kunjungan ke HK — cek kebersihan, kerapihan, & progress kerja</span>
+              <span class="task-text">Kunjungan ke FO — cek kebersihan, kerapihan, & progress kerja</span>
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,'task_9','done')">✓ Sudah</button>
@@ -8876,13 +9544,17 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_9-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_9-note">
-              <textarea class="task-note" rows="2" placeholder="Keterangan (opsional)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              <div style="background:#fef3c7;border-left:3px solid #f59e0b;padding:8px 12px;border-radius:8px;margin-bottom:8px;font-size:12px;color:#78350f;font-weight:600;">⚠️ Wajib isi semua keterangan</div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">1. Kondisi bersih, rapih atau ada yang perlu diperbaiki?</label>
+                <textarea class="task-note task-q1" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
             </div>
           </div>
           <div class="task-item" id="task_10" onclick="toggleTask('task_10')">
             <div class="task-item-top">
               <div class="task-number" id="task_10-num" data-orig-num="10">10</div>
-              <span class="task-text">Kunjungan ke ENG — cek kebersihan, kerapihan, & progress kerja</span>
+              <span class="task-text">Kunjungan ke HK — cek kebersihan, kerapihan, & progress kerja</span>
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,'task_10','done')">✓ Sudah</button>
@@ -8900,13 +9572,17 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_10-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_10-note">
-              <textarea class="task-note" rows="2" placeholder="Keterangan (opsional)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              <div style="background:#fef3c7;border-left:3px solid #f59e0b;padding:8px 12px;border-radius:8px;margin-bottom:8px;font-size:12px;color:#78350f;font-weight:600;">⚠️ Wajib isi semua keterangan</div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">1. Kondisi bersih, rapih atau ada yang perlu diperbaiki?</label>
+                <textarea class="task-note task-q1" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
             </div>
           </div>
           <div class="task-item" id="task_11" onclick="toggleTask('task_11')">
             <div class="task-item-top">
               <div class="task-number" id="task_11-num" data-orig-num="11">11</div>
-              <span class="task-text">Kunjungan ke SEC — cek kebersihan, kerapihan, & progress kerja</span>
+              <span class="task-text">Kunjungan ke ENG — cek kebersihan, kerapihan, & progress kerja</span>
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,'task_11','done')">✓ Sudah</button>
@@ -8924,13 +9600,17 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_11-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_11-note">
-              <textarea class="task-note" rows="2" placeholder="Keterangan (opsional)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              <div style="background:#fef3c7;border-left:3px solid #f59e0b;padding:8px 12px;border-radius:8px;margin-bottom:8px;font-size:12px;color:#78350f;font-weight:600;">⚠️ Wajib isi semua keterangan</div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">1. Kondisi bersih, rapih atau ada yang perlu diperbaiki?</label>
+                <textarea class="task-note task-q1" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
             </div>
           </div>
           <div class="task-item" id="task_12" onclick="toggleTask('task_12')">
             <div class="task-item-top">
               <div class="task-number" id="task_12-num" data-orig-num="12">12</div>
-              <span class="task-text">Kunjungan ke F&B — cek kebersihan, kerapihan, & progress kerja</span>
+              <span class="task-text">Kunjungan ke SEC — cek kebersihan, kerapihan, & progress kerja</span>
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,'task_12','done')">✓ Sudah</button>
@@ -8948,20 +9628,17 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_12-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_12-note">
-              <textarea class="task-note" rows="2" placeholder="Keterangan (opsional)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              <div style="background:#fef3c7;border-left:3px solid #f59e0b;padding:8px 12px;border-radius:8px;margin-bottom:8px;font-size:12px;color:#78350f;font-weight:600;">⚠️ Wajib isi semua keterangan</div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">1. Kondisi bersih, rapih atau ada yang perlu diperbaiki?</label>
+                <textarea class="task-note task-q1" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
             </div>
-          </div>
-        </div>
-        <div class="task-category">
-          <div class="task-cat-header">
-            <span style="font-size:16px;">⚙️</span>
-            <span class="task-cat-title">Utility Check</span>
-            <span class="task-cat-count">0/3</span>
           </div>
           <div class="task-item" id="task_13" onclick="toggleTask('task_13')">
             <div class="task-item-top">
               <div class="task-number" id="task_13-num" data-orig-num="13">13</div>
-              <span class="task-text">GWT (Grey Water Tank) — cek kondisi & level</span>
+              <span class="task-text">Kunjungan ke F&B — cek kebersihan, kerapihan, & progress kerja</span>
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,'task_13','done')">✓ Sudah</button>
@@ -8979,13 +9656,24 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_13-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_13-note">
-              <textarea class="task-note" rows="2" placeholder="Keterangan (opsional)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              <div style="background:#fef3c7;border-left:3px solid #f59e0b;padding:8px 12px;border-radius:8px;margin-bottom:8px;font-size:12px;color:#78350f;font-weight:600;">⚠️ Wajib isi semua keterangan</div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">1. Kondisi bersih, rapih atau ada yang perlu diperbaiki?</label>
+                <textarea class="task-note task-q1" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
             </div>
+          </div>
+        </div>
+        <div class="task-category">
+          <div class="task-cat-header">
+            <span style="font-size:16px;">⚙️</span>
+            <span class="task-cat-title">Utility Check</span>
+            <span class="task-cat-count">0/3</span>
           </div>
           <div class="task-item" id="task_14" onclick="toggleTask('task_14')">
             <div class="task-item-top">
               <div class="task-number" id="task_14-num" data-orig-num="14">14</div>
-              <span class="task-text">RWT (Raw Water Tank) — cek kondisi & level</span>
+              <span class="task-text">GWT (Grey Water Tank) — cek kondisi & level</span>
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,'task_14','done')">✓ Sudah</button>
@@ -9003,13 +9691,17 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_14-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_14-note">
-              <textarea class="task-note" rows="2" placeholder="Keterangan (opsional)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              <div style="background:#fef3c7;border-left:3px solid #f59e0b;padding:8px 12px;border-radius:8px;margin-bottom:8px;font-size:12px;color:#78350f;font-weight:600;">⚠️ Wajib isi semua keterangan</div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">1. Kondisi bersih, rapih atau ada yang perlu diperbaiki?</label>
+                <textarea class="task-note task-q1" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
             </div>
           </div>
           <div class="task-item" id="task_15" onclick="toggleTask('task_15')">
             <div class="task-item-top">
               <div class="task-number" id="task_15-num" data-orig-num="15">15</div>
-              <span class="task-text">Genset — cek kondisi, fuel & fungsi</span>
+              <span class="task-text">RWT (Raw Water Tank) — cek kondisi & level</span>
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,'task_15','done')">✓ Sudah</button>
@@ -9027,20 +9719,17 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_15-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_15-note">
-              <textarea class="task-note" rows="2" placeholder="Keterangan (opsional)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              <div style="background:#fef3c7;border-left:3px solid #f59e0b;padding:8px 12px;border-radius:8px;margin-bottom:8px;font-size:12px;color:#78350f;font-weight:600;">⚠️ Wajib isi semua keterangan</div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">1. Kondisi bersih, rapih atau ada yang perlu diperbaiki?</label>
+                <textarea class="task-note task-q1" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
             </div>
-          </div>
-        </div>
-                <div class="task-category">
-          <div class="task-cat-header">
-            <span style="font-size:16px;">☀️</span>
-            <span class="task-cat-title">Afternoon Briefing — 14.45 WIB</span>
-            <span class="task-cat-count">0/1</span>
           </div>
           <div class="task-item" id="task_16" onclick="toggleTask('task_16')">
             <div class="task-item-top">
               <div class="task-number" id="task_16-num" data-orig-num="16">16</div>
-              <div style="flex:1;"><ul style="margin:0;padding-left:16px;font-size:13px;color:var(--gray-600);line-height:1.8;"><li>Cek Grooming Team sesuai standar (rambut, seragam, kebersihan)</li><li>Pastikan informasi management tersampaikan dengan baik</li><li>Review & solusi guest complaint dari shift hari sebelumnya</li><li>GRPS Data Check</li></ul></div>
+              <span class="task-text">Genset — cek kondisi, fuel & fungsi</span>
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,'task_16','done')">✓ Sudah</button>
@@ -9058,24 +9747,28 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_16-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_16-note">
-              <textarea class="task-note" rows="2" placeholder="Keterangan (opsional)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              <div style="background:#fef3c7;border-left:3px solid #f59e0b;padding:8px 12px;border-radius:8px;margin-bottom:8px;font-size:12px;color:#78350f;font-weight:600;">⚠️ Wajib isi semua keterangan</div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">1. Kondisi bersih, rapih atau ada yang perlu diperbaiki?</label>
+                <textarea class="task-note task-q1" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
             </div>
           </div>
         </div>
         <div class="task-category">
           <div class="task-cat-header">
-            <span style="font-size:16px;">⭐</span>
-            <span class="task-cat-title">Guest Review Check & Reply</span>
+            <span style="font-size:16px;">☀️</span>
+            <span class="task-cat-title">Afternoon Briefing — 14.45 WIB</span>
             <span class="task-cat-count">0/1</span>
           </div>
           <div class="task-item" id="task_17" onclick="toggleTask('task_17')">
             <div class="task-item-top">
               <div class="task-number" id="task_17-num" data-orig-num="17">17</div>
-              <span class="task-text">Cek & balas semua review dari semua platform (Google, TripAdvisor, Agoda, Traveloka, Booking.com, Tiket.com, Ctrip) dengan bahasa sopan & profesional. Review buruk: analisa & jelaskan secara rinci.</span>
+              <div style="flex:1;"><ul style="margin:0;padding-left:16px;font-size:13px;color:var(--gray-600);line-height:1.8;"><li>Cek Grooming Team sesuai standar (rambut, seragam, kebersihan)</li><li>Pastikan informasi management tersampaikan dengan baik</li><li>Review & solusi guest complaint dari shift hari sebelumnya</li><li>GRPS Data Check</li></ul></div>
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,'task_17','done')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,'task_16','not')">✗ Tidak Dikerjakan</button>
+              <button class="status-btn" onclick="setStatus(event,'task_17','not')">✗ Tidak Dikerjakan</button>
             </div>
             <div class="task-upload-wrap" id="task_17-upload">
               <div class="task-upload-area" id="task_17-upload-area">
@@ -9095,18 +9788,18 @@ const ROLE_TASKS = {
         </div>
         <div class="task-category">
           <div class="task-cat-header">
-            <span style="font-size:16px;">🌆</span>
-            <span class="task-cat-title">Closing Briefing — 17.30 WIB</span>
+            <span style="font-size:16px;">⭐</span>
+            <span class="task-cat-title">Guest Review Check & Reply</span>
             <span class="task-cat-count">0/1</span>
           </div>
           <div class="task-item" id="task_18" onclick="toggleTask('task_18')">
             <div class="task-item-top">
               <div class="task-number" id="task_18-num" data-orig-num="18">18</div>
-              <div style="flex:1;"><ul style="margin:0;padding-left:16px;font-size:13px;color:var(--gray-600);line-height:1.8;"><li>Check MJA VS Actual Morning Shift</li><li>Man Power Planning for tomorrow (siapa yang masuk, siapa yang libur)</li><li>Draft MJA Tomorrow</li></ul></div>
+              <span class="task-text">Cek & balas semua review dari semua platform (Google, TripAdvisor, Agoda, Traveloka, Booking.com, Tiket.com, Ctrip) dengan bahasa sopan & profesional. Review buruk: analisa & jelaskan secara rinci.</span>
             </div>
             <div class="task-status-row">
               <button class="status-btn" onclick="setStatus(event,'task_18','done')">✓ Sudah</button>
-              <button class="status-btn" onclick="setStatus(event,'task_16','not')">✗ Tidak Dikerjakan</button>
+              <button class="status-btn" onclick="setStatus(event,'task_18','not')">✗ Tidak Dikerjakan</button>
             </div>
             <div class="task-upload-wrap" id="task_18-upload">
               <div class="task-upload-area" id="task_18-upload-area">
@@ -9120,7 +9813,62 @@ const ROLE_TASKS = {
               <div class="file-preview-list" id="task_18-filelist"></div>
             </div>
             <div class="task-note-wrap" id="task_18-note">
-              <textarea class="task-note" rows="2" placeholder="Keterangan (opsional)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              <div style="background:#fef3c7;border-left:3px solid #f59e0b;padding:8px 12px;border-radius:8px;margin-bottom:8px;font-size:12px;color:#78350f;font-weight:600;">⚠️ Wajib isi semua keterangan</div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">1. Total Bad Review Today?</label>
+                <textarea class="task-note task-q1" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="task-category">
+          <div class="task-cat-header">
+            <span style="font-size:16px;">🌆</span>
+            <span class="task-cat-title">Closing Briefing — 17.30 WIB</span>
+            <span class="task-cat-count">0/1</span>
+          </div>
+          <div class="task-item" id="task_19" onclick="toggleTask('task_19')">
+            <div class="task-item-top">
+              <div class="task-number" id="task_19-num" data-orig-num="19">19</div>
+              <div style="flex:1;"><ul style="margin:0;padding-left:16px;font-size:13px;color:var(--gray-600);line-height:1.8;"><li>Check MJA VS Actual Morning Shift</li><li>Man Power Planning for tomorrow (siapa yang masuk, siapa yang libur)</li><li>Draft MJA Tomorrow</li></ul></div>
+            </div>
+            <div class="task-status-row">
+              <button class="status-btn" onclick="setStatus(event,'task_19','done')">✓ Sudah</button>
+              <button class="status-btn" onclick="setStatus(event,'task_19','not')">✗ Tidak Dikerjakan</button>
+            </div>
+            <div class="task-upload-wrap" id="task_19-upload">
+              <div class="task-upload-area" id="task_19-upload-area">
+                <input type="file" accept="image/*,.pdf,.doc,.docx" multiple onchange="handleFileUpload(this,'task_19')">
+                <span class="task-upload-icon">📎</span>
+                <div class="task-upload-text">
+                  <strong>Upload Foto / Dokumen</strong>
+                  <span>Wajib diupload</span>
+                </div>
+              </div>
+              <div class="file-preview-list" id="task_19-filelist"></div>
+            </div>
+            <div class="task-note-wrap" id="task_19-note">
+              <div style="background:#fef3c7;border-left:3px solid #f59e0b;padding:8px 12px;border-radius:8px;margin-bottom:8px;font-size:12px;color:#78350f;font-weight:600;">⚠️ Wajib isi semua keterangan</div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">1. Apakah pekerjaan hari shift Pagi sesuai dengan MJA?</label>
+                <textarea class="task-note task-q1" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">2. Hasil Check Worksheet SPV, apakah sesuai dengan Actual dan SOP?</label>
+                <textarea class="task-note task-q2" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">3. Room Sold Tomorrow?</label>
+                <textarea class="task-note task-q3" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">4. Event Tomorrow?</label>
+                <textarea class="task-note task-q4" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">5. Total DW yang diliburkan besok (jika OCC Low)?</label>
+                <textarea class="task-note task-q5" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
             </div>
           </div>
         </div>`
@@ -11990,22 +12738,85 @@ window.FB_DETAIL_MAP = {"F&B Manager": {"task_1": "Memastikan Kitchen Area Bersi
       return taskId.replace(/_/g,' ').replace(/-/g,' ');
     };
 
+    // Helper: parse file_urls (bisa array of strings atau array of {name,url,type})
+    const parseFiles = (raw) => {
+      let urls = [];
+      try {
+        if (!raw) urls = [];
+        else if (Array.isArray(raw)) urls = raw;
+        else if (typeof raw === 'string') urls = JSON.parse(raw);
+      } catch(e) { urls = []; }
+      return urls.map(f => {
+        if (typeof f === 'string') return { url: f, isImg: /\.(jpg|jpeg|png|gif|webp|heic)/i.test(f) };
+        return { url: f.url || '', isImg: (f.type && f.type.startsWith('image/')) || /\.(jpg|jpeg|png|gif|webp|heic)/i.test(f.url||'') || /supabase\.co.*storage/i.test(f.url||'') };
+      }).filter(f => f.url && f.url.startsWith('http'));
+    };
+
+    // Helper: render file thumbnails
+    const renderFiles = (fileUrls) => {
+      if (!fileUrls.length) return '';
+      let s = '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;">';
+      fileUrls.forEach(({url, isImg}) => {
+        if (isImg) {
+          s += `<a href="${url}" target="_blank" style="display:block;flex-shrink:0;"><img src="${url}" style="width:90px;height:90px;object-fit:cover;border-radius:8px;border:1px solid #e0e0e0;" loading="lazy" onerror="this.parentElement.innerHTML='📷'"></a>`;
+        } else {
+          s += `<a href="${url}" target="_blank" style="display:inline-flex;align-items:center;gap:4px;background:#e8f4fd;color:#2980b9;padding:6px 10px;border-radius:8px;font-size:12px;text-decoration:none;">📎 Lihat File</a>`;
+        }
+      });
+      return s + '</div>';
+    };
+
+    // Helper: status info dari status field
+    const statusInfo = (status) => {
+      if (status === 'done') return { icon: '✅', color: '#27ae60', label: 'Sudah' };
+      if (status === 'progress') return { icon: '⏳', color: '#e67e22', label: 'Dalam Proses' };
+      if (status === 'not') return { icon: '❌', color: '#e74c3c', label: 'Belum' };
+      return { icon: '📝', color: '#2980b9', label: 'Catatan' };
+    };
+
     try {
+      // === 1. FETCH laporan_detail ===
       const res = await fetch(
         SUPA_URL + '/rest/v1/laporan_detail?tanggal=eq.' + tanggal +
         '&role=eq.' + encodeURIComponent(role) +
         '&hotel=eq.' + encodeURIComponent(hotel) +
-        '&order=task_id.asc&select=*',
+        '&select=*',
         { headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY } }
       );
       const items = res.ok ? await res.json() : [];
 
-      if (!items || items.length === 0) {
+      // === 2. FETCH room_checks (cek kamar di tanggal sama) ===
+      let rcItems = [];
+      try {
+        let userRoleFilter = '';
+        let hotelFilter = '';
+        if (role.startsWith('HM ')) {
+          userRoleFilter = '&user_role=eq.HM';
+          hotelFilter = '&hotel=eq.' + encodeURIComponent(hotel);
+        } else if (role === 'EHK Corporate') {
+          userRoleFilter = '&user_role=eq.EHK';
+        } else if (role === 'Chief Engineering Corporate') {
+          userRoleFilter = '&user_role=eq.CE';
+        }
+        if (userRoleFilter) {
+          // Cek kamar di tanggal yang sama (00:00 - 23:59:59)
+          const rcRes = await fetch(
+            SUPA_URL + '/rest/v1/room_checks?checked_at=gte.' + tanggal + 'T00:00:00' +
+            '&checked_at=lte.' + tanggal + 'T23:59:59.999' +
+            userRoleFilter + hotelFilter +
+            '&select=*&order=checked_at.asc',
+            { headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY } }
+          );
+          rcItems = rcRes.ok ? await rcRes.json() : [];
+        }
+      } catch(e) { console.warn('Room check fetch failed:', e); }
+
+      if ((!items || items.length === 0) && rcItems.length === 0) {
         content.innerHTML = '<div style="text-align:center;padding:40px;color:#aaa;">Tidak ada data dokumentasi.</div>';
         return;
       }
 
-      // Deduplikasi: untuk fu items, hapus duplikat berdasarkan keterangan
+      // === 3. DEDUP & SORT items by task number (numeric) ===
       const dedup = (arr) => {
         const seen = new Set();
         return arr.filter(i => {
@@ -12015,53 +12826,129 @@ window.FB_DETAIL_MAP = {"F&B Manager": {"task_1": "Memastikan Kitchen Area Bersi
           return true;
         });
       };
-      const done = dedup(items.filter(i => i.status === 'done'));
-      const prog = dedup(items.filter(i => i.status === 'progress'));
-      const not  = dedup(items.filter(i => i.status === 'not'));
-      const note = dedup(items.filter(i => i.status === 'note_only'));
-
-      const renderSection = (list, icon, label, color) => {
-        if (!list.length) return '';
-        let s = `<div style="margin-bottom:20px;"><div style="font-weight:700;color:${color};margin-bottom:10px;font-size:14px;">${icon} ${label}</div>`;
-        list.forEach(item => {
-          // Parse file_urls — bisa array of strings atau array of {name,url,type}
-          let urls = [];
-          try {
-            const raw = item.file_urls;
-            if (!raw) { urls = []; }
-            else if (Array.isArray(raw)) { urls = raw; }
-            else if (typeof raw === 'string') { urls = JSON.parse(raw); }
-          } catch(e) { urls = []; }
-          // Normalize: extract {url, isImg} dari tiap entry
-          const fileUrls = urls.map(f => {
-            if (typeof f === 'string') return { url: f, isImg: /\.(jpg|jpeg|png|gif|webp|heic)/i.test(f) };
-            return { url: f.url || '', isImg: (f.type && f.type.startsWith('image/')) || /\.(jpg|jpeg|png|gif|webp|heic)/i.test(f.url||'') || /supabase\.co.*storage/i.test(f.url||'') };
-          }).filter(f => f.url && f.url.startsWith('http'));
-
-          const name = escHtml(getTaskName(item.task_id));
-          s += `<div style="background:#f9f9f9;border-radius:12px;padding:12px 14px;margin-bottom:8px;border-left:4px solid ${color};">`;
-          s += `<div style="font-size:14px;font-weight:700;color:#1a1a2e;margin-bottom:${item.keterangan||fileUrls.length?'6px':'0'};">${name}</div>`;
-          if (item.keterangan) s += `<div style="font-size:13px;color:#555;line-height:1.5;">${escHtml(item.keterangan)}</div>`;
-          if (fileUrls.length) {
-            s += `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;">`;
-            fileUrls.forEach(({url, isImg}) => {
-              if (isImg) {
-                s += `<a href="${url}" target="_blank" style="display:block;flex-shrink:0;"><img src="${url}" style="width:90px;height:90px;object-fit:cover;border-radius:8px;border:1px solid #e0e0e0;" loading="lazy" onerror="this.parentElement.innerHTML='📷'"></a>`;
-              } else {
-                s += `<a href="${url}" target="_blank" style="display:inline-flex;align-items:center;gap:4px;background:#e8f4fd;color:#2980b9;padding:6px 10px;border-radius:8px;font-size:12px;text-decoration:none;">📎 Lihat File</a>`;
-              }
-            });
-            s += `</div>`;
-          }
-          s += `</div>`;
-        });
-        return s + `</div>`;
+      const sortByTaskNum = (a, b) => {
+        const numA = parseInt((a.task_id || '').replace(/[^0-9]/g, '')) || 0;
+        const numB = parseInt((b.task_id || '').replace(/[^0-9]/g, '')) || 0;
+        return numA - numB;
       };
 
-      let html = renderSection(done,'✅','Sudah Dilakukan','#27ae60');
-      html += renderSection(prog,'⏳','Dalam Proses','#e67e22');
-      html += renderSection(not,'❌','Belum Dilakukan','#e74c3c');
-      html += renderSection(note,'📝','Catatan','#2980b9');
+      // Kelompokkan: tasklist (task_*), follow up (fu*), planning (planning-tomorrow / activity-plan / unit-visit-tomorrow)
+      const taskItems = dedup(items.filter(i => i.task_id && i.task_id.startsWith('task_'))).sort(sortByTaskNum);
+      const fuItems = dedup(items.filter(i => i.task_id && (i.task_id.startsWith('fu') || i.task_id.startsWith('FU')))).sort(sortByTaskNum);
+      const planItems = dedup(items.filter(i => i.task_id === 'planning-tomorrow' || i.task_id === 'activity-plan' || i.task_id === 'unit-visit-tomorrow'));
+
+      // === 4. RENDER ===
+      let html = '';
+
+      // Section 1: 📋 Tasklist (urutan persis 1-19 dengan icon status per item)
+      if (taskItems.length) {
+        html += '<div style="margin-bottom:20px;"><div style="font-weight:700;color:#1a3a5c;margin-bottom:10px;font-size:14px;">📋 Tasklist</div>';
+        taskItems.forEach(item => {
+          const info = statusInfo(item.status);
+          const num = parseInt((item.task_id || '').replace(/[^0-9]/g, '')) || 0;
+          const name = escHtml(getTaskName(item.task_id));
+          const fileUrls = parseFiles(item.file_urls);
+          html += `<div style="background:#f9f9f9;border-radius:12px;padding:12px 14px;margin-bottom:8px;border-left:4px solid ${info.color};">`;
+          html += `<div style="display:flex;align-items:center;gap:8px;margin-bottom:${item.keterangan||fileUrls.length?'6px':'0'};">`;
+          html += `<span style="background:${info.color};color:white;border-radius:50%;width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">${num}</span>`;
+          html += `<span style="font-size:13px;flex-shrink:0;">${info.icon}</span>`;
+          html += `<span style="font-size:14px;font-weight:700;color:#1a1a2e;flex:1;">${name}</span>`;
+          html += `</div>`;
+          if (item.keterangan) html += `<div style="font-size:13px;color:#555;line-height:1.5;white-space:pre-wrap;">${escHtml(item.keterangan)}</div>`;
+          html += renderFiles(fileUrls);
+          html += `</div>`;
+        });
+        html += '</div>';
+      }
+
+      // Section 2: 📌 Follow Up
+      if (fuItems.length) {
+        html += '<div style="margin-bottom:20px;"><div style="font-weight:700;color:#1a3a5c;margin-bottom:10px;font-size:14px;">📌 Follow Up</div>';
+        fuItems.forEach((item, idx) => {
+          const info = statusInfo(item.status);
+          const fileUrls = parseFiles(item.file_urls);
+          html += `<div style="background:#f9f9f9;border-radius:12px;padding:12px 14px;margin-bottom:8px;border-left:4px solid ${info.color};">`;
+          html += `<div style="display:flex;align-items:center;gap:8px;margin-bottom:${item.keterangan||fileUrls.length?'6px':'0'};">`;
+          html += `<span style="font-size:13px;">${info.icon}</span>`;
+          html += `<span style="font-size:14px;font-weight:700;color:#1a1a2e;flex:1;">FU${idx+1}</span>`;
+          html += `</div>`;
+          if (item.keterangan) html += `<div style="font-size:13px;color:#555;line-height:1.5;white-space:pre-wrap;">${escHtml(item.keterangan)}</div>`;
+          html += renderFiles(fileUrls);
+          html += `</div>`;
+        });
+        html += '</div>';
+      }
+
+      // Section 3: 📅 Planning for Tomorrow
+      if (planItems.length) {
+        html += '<div style="margin-bottom:20px;"><div style="font-weight:700;color:#1a3a5c;margin-bottom:10px;font-size:14px;">📅 Planning for Tomorrow</div>';
+        planItems.forEach(item => {
+          const fileUrls = parseFiles(item.file_urls);
+          html += `<div style="background:#f9f9f9;border-radius:12px;padding:12px 14px;margin-bottom:8px;border-left:4px solid #1a3a5c;">`;
+          if (item.keterangan) html += `<div style="font-size:13px;color:#555;line-height:1.5;white-space:pre-wrap;">${escHtml(item.keterangan)}</div>`;
+          html += renderFiles(fileUrls);
+          html += `</div>`;
+        });
+        html += '</div>';
+      }
+
+      // Section 4: 🏨 Pengecekan Kamar (cek kamar di tanggal sama)
+      if (rcItems.length) {
+        html += `<div style="margin-bottom:20px;"><div style="font-weight:700;color:#1a3a5c;margin-bottom:10px;font-size:14px;">🏨 Pengecekan Kamar (${rcItems.length} kamar)</div>`;
+        rcItems.forEach(rc => {
+          // Cleanliness color
+          const cleanColor = rc.cleanliness === 'Baik' ? '#27ae60' : rc.cleanliness === 'Sedang' ? '#f39c12' : '#e74c3c';
+          const cleanIcon = rc.cleanliness === 'Baik' ? '✅' : rc.cleanliness === 'Sedang' ? '⚠️' : '❌';
+          // Parse photo URLs
+          let photos = [];
+          try {
+            const raw = rc.cleanliness_photos;
+            if (Array.isArray(raw)) photos = raw;
+            else if (typeof raw === 'string') photos = JSON.parse(raw);
+          } catch(e) { photos = []; }
+          const photoFiles = photos.filter(u => u && typeof u === 'string' && u.startsWith('http')).map(u => ({url: u, isImg: true}));
+
+          // Format time
+          let timeStr = '';
+          try {
+            const dt = new Date(rc.checked_at);
+            timeStr = String(dt.getHours()).padStart(2,'0') + ':' + String(dt.getMinutes()).padStart(2,'0');
+          } catch(e) {}
+
+          html += `<div style="background:#f9f9f9;border-radius:12px;padding:12px 14px;margin-bottom:8px;border-left:4px solid ${cleanColor};">`;
+          html += `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap;">`;
+          html += `<span style="background:${cleanColor};color:white;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;">Kamar ${escHtml(rc.room_no || '-')}</span>`;
+          html += `<span style="font-size:12px;">${cleanIcon} ${escHtml(rc.cleanliness || '-')}</span>`;
+          if (timeStr) html += `<span style="font-size:11px;color:#888;margin-left:auto;">${timeStr} WIB</span>`;
+          html += `</div>`;
+          // Hotel info (untuk Corporate yang lintas hotel)
+          if (!role.startsWith('HM ') && rc.hotel) {
+            html += `<div style="font-size:11px;color:#888;margin-bottom:6px;">🏨 ${escHtml(rc.hotel)}</div>`;
+          }
+          // Asset notes
+          if (rc.asset_notes) {
+            html += `<div style="font-size:13px;color:#555;margin-bottom:4px;"><b>Asset:</b> ${escHtml(rc.asset_notes)}</div>`;
+          }
+          // Follow up
+          if (rc.followup_notes) {
+            html += `<div style="font-size:13px;color:#555;margin-bottom:4px;"><b>Follow Up:</b> ${escHtml(rc.followup_notes)}</div>`;
+          }
+          // Defect count
+          let defectCount = 0;
+          try {
+            const defs = Array.isArray(rc.defect_ids) ? rc.defect_ids : (typeof rc.defect_ids === 'string' ? JSON.parse(rc.defect_ids) : []);
+            defectCount = defs.length;
+          } catch(e) {}
+          if (defectCount > 0) {
+            html += `<div style="font-size:12px;color:#e67e22;margin-bottom:4px;">🔧 ${defectCount} defect tercatat</div>`;
+          }
+          // Photos
+          html += renderFiles(photoFiles);
+          html += `</div>`;
+        });
+        html += '</div>';
+      }
+
       content.innerHTML = html || '<div style="text-align:center;padding:40px;color:#aaa;">Tidak ada data.</div>';
 
     } catch(e) {
