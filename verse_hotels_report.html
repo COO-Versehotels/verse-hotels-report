@@ -2878,6 +2878,128 @@
   let autoSaveTimer = null;
 
   // Simpan satu task ke Supabase (debounced 1.5 detik)
+  // ============================================================
+  // HELPERS: Structured Questions (task-q1 .. task-q5)
+  // Untuk task yang punya 5 pertanyaan terstruktur, jawaban disimpan
+  // sebagai JSON di field keterangan, lalu di-format readable saat display.
+  // ============================================================
+  // Format keterangan untuk display di Dashboard/Link (tanpa akses DOM item).
+  // Parse JSON dan render multi-line readable. taskNameMap & taskId opsional.
+  function _formatKeteranganForDisplay(keterangan, taskNameMap, taskId) {
+    if (!keterangan || typeof keterangan !== 'string') return keterangan || '';
+    if (keterangan.charAt(0) !== '{' || keterangan.indexOf('"q1"') < 0) return keterangan;
+    try {
+      const data = JSON.parse(keterangan);
+      // Coba ambil label pertanyaan dari ROLE_TASKS template kalau ada
+      const labels = {};
+      try {
+        if (taskId && typeof window !== 'undefined') {
+          // Render ulang template task untuk extract label pertanyaan
+          let tempDiv = document.getElementById('_pub_render');
+          if (tempDiv) {
+            const item = tempDiv.querySelector('#' + taskId);
+            if (item) {
+              for (let i = 1; i <= 5; i++) {
+                const el = item.querySelector('.task-q' + i);
+                if (el && el.parentElement) {
+                  const labelEl = el.parentElement.querySelector('label');
+                  if (labelEl) labels['q' + i] = labelEl.textContent.trim();
+                }
+              }
+            }
+          }
+        }
+      } catch(e) {}
+      const parts = [];
+      for (let i = 1; i <= 5; i++) {
+        const v = data['q' + i];
+        if (v && typeof v === 'string' && v.trim()) {
+          const label = labels['q' + i] || (i + '. Pertanyaan ' + i);
+          parts.push(label + '\n→ ' + v.trim());
+        }
+      }
+      return parts.length > 0 ? parts.join('\n\n') : keterangan;
+    } catch(e) {
+      return keterangan;
+    }
+  }
+
+  function _getTaskKeterangan(item) {
+    if (!item) return '';
+    // Cek apakah ada pertanyaan terstruktur
+    const q1 = item.querySelector('.task-q1');
+    if (q1) {
+      const answers = {};
+      let hasAny = false;
+      for (let i = 1; i <= 5; i++) {
+        const el = item.querySelector('.task-q' + i);
+        if (el) {
+          const v = el.value.trim();
+          answers['q' + i] = v;
+          if (v) hasAny = true;
+        }
+      }
+      return hasAny ? JSON.stringify(answers) : '';
+    }
+    // Textarea tunggal (task lain)
+    const noteEl = item.querySelector('.task-note');
+    return noteEl ? noteEl.value.trim() : '';
+  }
+
+  function _setTaskKeterangan(item, keterangan) {
+    if (!item || !keterangan) return;
+    const q1 = item.querySelector('.task-q1');
+    // Format JSON terstruktur?
+    if (q1 && typeof keterangan === 'string' && keterangan.charAt(0) === '{' && keterangan.indexOf('"q1"') >= 0) {
+      try {
+        const data = JSON.parse(keterangan);
+        for (let i = 1; i <= 5; i++) {
+          const el = item.querySelector('.task-q' + i);
+          if (el && typeof data['q' + i] === 'string') {
+            el.value = data['q' + i];
+          }
+        }
+        return;
+      } catch(e) { /* fallback ke restore single */ }
+    }
+    // Restore ke textarea pertama (data lama / task non-terstruktur)
+    const noteEl = item.querySelector('.task-note');
+    if (noteEl) noteEl.value = keterangan;
+  }
+
+  // Format keterangan untuk display (WA, link Dokumentasi, Dashboard)
+  // Kalau JSON → format readable dengan label pertanyaan.
+  // Untuk display, kita kirim juga "labels" array kalau punya akses ke item.
+  function _formatKeterangan(keterangan, item) {
+    if (!keterangan || typeof keterangan !== 'string') return keterangan || '';
+    if (keterangan.charAt(0) !== '{' || keterangan.indexOf('"q1"') < 0) return keterangan;
+    try {
+      const data = JSON.parse(keterangan);
+      // Coba ambil label pertanyaan dari item (kalau tersedia)
+      const labels = {};
+      if (item) {
+        for (let i = 1; i <= 5; i++) {
+          const el = item.querySelector('.task-q' + i);
+          if (el && el.parentElement) {
+            const labelEl = el.parentElement.querySelector('label');
+            if (labelEl) labels['q' + i] = labelEl.textContent.trim();
+          }
+        }
+      }
+      const parts = [];
+      for (let i = 1; i <= 5; i++) {
+        const v = data['q' + i];
+        if (v && typeof v === 'string' && v.trim()) {
+          const label = labels['q' + i] || (i + '. Pertanyaan ' + i);
+          parts.push(label + '\n→ ' + v.trim());
+        }
+      }
+      return parts.length > 0 ? parts.join('\n\n') : keterangan;
+    } catch(e) {
+      return keterangan;
+    }
+  }
+
   function autoSaveDraft(taskId) {
     if (window._isRestoringDraft) return; // jangan save saat restore
     clearTimeout(autoSaveTimer);
@@ -2896,7 +3018,8 @@
     const fuInput = item.querySelector('.fu-input');
     // Untuk room tasks — gabungkan nomor kamar ke keterangan
     const roomNumEl = document.getElementById(taskId + '-room-num');
-    let keterangan = fuInput ? fuInput.value.trim() : (noteEl ? noteEl.value.trim() : '');
+    // Pakai helper agar pertanyaan terstruktur (task-q1..q5) juga ter-save
+    let keterangan = fuInput ? fuInput.value.trim() : _getTaskKeterangan(item);
     if (roomNumEl && roomNumEl.value.trim()) {
       const roomNum = roomNumEl.value.trim();
       const noteText = noteEl ? noteEl.value.trim() : '';
@@ -3027,9 +3150,10 @@
 
         // ── RESTORE KETERANGAN ───────────────────────────────
         if (draft.keterangan) {
+          // Pakai helper agar pertanyaan terstruktur ter-restore ke 5 textareas
+          _setTaskKeterangan(item, draft.keterangan);
           const note = item.querySelector('.task-note');
           if (note) {
-            note.value = draft.keterangan;
             // Tampilkan note-wrap hanya jika ada status
             if (draft.status && draft.status !== 'note_only') {
               const noteWrap = document.getElementById(draft.task_id + '-note');
@@ -3171,7 +3295,8 @@
         const status = item.dataset.status || null;
         if (!status) return;
         const noteEl = item.querySelector('.task-note');
-        let keterangan = noteEl ? noteEl.value.trim() : '';
+        // Pakai helper agar pertanyaan terstruktur (task-q1..q5) ter-include
+        let keterangan = _getTaskKeterangan(item);
         // Untuk room tasks — gabungkan nomor kamar ke keterangan (sama seperti saveDraftNow)
         if (taskId.startsWith('room_')) {
           const roomNumEl = document.getElementById(taskId + '-room-num');
@@ -5361,8 +5486,9 @@
       } else if (status === 'progress') {
         progressList += `\n  ${progressIdx++}. ${taskName}`;
       } else if (status === 'not') {
-        const note = item.querySelector('.task-note');
-        const keterangan = note && note.value.trim() ? ` → _${note.value.trim()}_` : '';
+        const rawKet = _getTaskKeterangan(item);
+        const ketDisplay = _formatKeterangan(rawKet, item);
+        const keterangan = ketDisplay ? ` → _${ketDisplay}_` : '';
         notList += `\n  ${notIdx++}. ${taskName}${keterangan}`;
       }
     });
@@ -12762,7 +12888,7 @@ window.FB_DETAIL_MAP = {"F&B Manager": {"task_1": "Memastikan Kitchen Area Bersi
         html += `<span style="font-size:13px;flex-shrink:0;">${info.icon}</span>`;
         html += `<span style="font-size:14px;font-weight:700;color:#1a1a2e;flex:1;">${name}</span>`;
         html += `</div>`;
-        if (item.keterangan) html += `<div style="font-size:13px;color:#555;line-height:1.5;white-space:pre-wrap;">${escHtml(item.keterangan)}</div>`;
+        if (item.keterangan) html += `<div style="font-size:13px;color:#555;line-height:1.5;white-space:pre-wrap;">${escHtml(_formatKeteranganForDisplay(item.keterangan, taskNameMap, item.task_id))}</div>`;
         html += renderFiles(fileUrls);
         html += `</div>`;
       });
@@ -12780,7 +12906,7 @@ window.FB_DETAIL_MAP = {"F&B Manager": {"task_1": "Memastikan Kitchen Area Bersi
         html += `<span style="font-size:13px;">${info.icon}</span>`;
         html += `<span style="font-size:14px;font-weight:700;color:#1a1a2e;flex:1;">FU${idx+1}</span>`;
         html += `</div>`;
-        if (item.keterangan) html += `<div style="font-size:13px;color:#555;line-height:1.5;white-space:pre-wrap;">${escHtml(item.keterangan)}</div>`;
+        if (item.keterangan) html += `<div style="font-size:13px;color:#555;line-height:1.5;white-space:pre-wrap;">${escHtml(_formatKeteranganForDisplay(item.keterangan, taskNameMap, item.task_id))}</div>`;
         html += renderFiles(fileUrls);
         html += `</div>`;
       });
@@ -12793,7 +12919,7 @@ window.FB_DETAIL_MAP = {"F&B Manager": {"task_1": "Memastikan Kitchen Area Bersi
       planItems.forEach(item => {
         const fileUrls = parseFiles(item.file_urls);
         html += `<div style="background:#f9f9f9;border-radius:12px;padding:12px 14px;margin-bottom:8px;border-left:4px solid #1a3a5c;">`;
-        if (item.keterangan) html += `<div style="font-size:13px;color:#555;line-height:1.5;white-space:pre-wrap;">${escHtml(item.keterangan)}</div>`;
+        if (item.keterangan) html += `<div style="font-size:13px;color:#555;line-height:1.5;white-space:pre-wrap;">${escHtml(_formatKeteranganForDisplay(item.keterangan, taskNameMap, item.task_id))}</div>`;
         html += renderFiles(fileUrls);
         html += `</div>`;
       });
