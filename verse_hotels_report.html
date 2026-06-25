@@ -2,6 +2,9 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -2707,6 +2710,62 @@
 
 <div class="toast" id="toast"></div>
 <script>
+
+  // =============================================================
+  // VERSION CHECKER — auto-reload kalau JS outdated (anti cache)
+  // =============================================================
+  // Update angka di bawah setiap kali deploy file baru yang penting.
+  // Format: YYYY.MM.DD-NN (NN = increment harian)
+  const APP_VERSION = '2026.06.25-01';
+  const APP_VERSION_KEY = 'verse_app_version';
+
+  (function _checkAppVersion() {
+    try {
+      const stored = localStorage.getItem(APP_VERSION_KEY);
+      if (!stored) {
+        // First time pakai → simpan versi sekarang, jangan reload
+        localStorage.setItem(APP_VERSION_KEY, APP_VERSION);
+        return;
+      }
+      if (stored === APP_VERSION) return; // sudah versi terbaru
+      
+      // Versi outdated — paksa reload (clear cache dulu)
+      console.log('[VersionCheck] Outdated:', stored, '→', APP_VERSION);
+      localStorage.setItem(APP_VERSION_KEY, APP_VERSION);
+      
+      // Clear browser cache lewat Cache API (kalau supported)
+      if (typeof caches !== 'undefined' && caches.keys) {
+        caches.keys().then(keys => keys.forEach(k => caches.delete(k))).catch(()=>{});
+      }
+      
+      // Tampilkan banner notifikasi + countdown reload
+      const showBanner = () => {
+        // Hindari double banner
+        if (document.getElementById('_version_banner')) return;
+        const banner = document.createElement('div');
+        banner.id = '_version_banner';
+        banner.style.cssText = 'position:fixed;top:0;left:0;right:0;background:linear-gradient(135deg,#1a3a5c 0%,#2c5282 100%);color:white;padding:16px 20px;text-align:center;z-index:999999;font-family:system-ui,sans-serif;font-size:14px;font-weight:600;box-shadow:0 4px 12px rgba(0,0,0,0.3);';
+        banner.innerHTML = '🔄 Versi aplikasi diperbarui — memuat ulang dalam <span id="_vc_countdown">5</span> detik...<br><span style="font-size:11px;font-weight:400;opacity:0.85;">Pastikan input terakhir sudah ter-save (tunggu titik hijau "✓")</span>';
+        document.body.appendChild(banner);
+        let n = 5;
+        const tick = setInterval(() => {
+          n--;
+          const c = document.getElementById('_vc_countdown');
+          if (c) c.textContent = n;
+          if (n <= 0) {
+            clearInterval(tick);
+            // Hard reload: tambah cache buster param
+            const url = new URL(window.location.href);
+            url.searchParams.set('_v', Date.now());
+            window.location.replace(url.toString());
+          }
+        }, 1000);
+      };
+      
+      if (document.body) showBanner();
+      else document.addEventListener('DOMContentLoaded', showBanner);
+    } catch(e) { console.warn('Version check failed:', e); }
+  })();
 
   // ===== AUTO CLEANUP DRAFT LAMA =====
   async function autoCleanupOldDrafts() {
