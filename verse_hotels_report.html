@@ -2716,7 +2716,7 @@
   // =============================================================
   // Update angka di bawah setiap kali deploy file baru yang penting.
   // Format: YYYY.MM.DD-NN (NN = increment harian)
-  const APP_VERSION = '2026.06.25-01';
+  const APP_VERSION = '2026.06.25-02';
   const APP_VERSION_KEY = 'verse_app_version';
 
   (function _checkAppVersion() {
@@ -13007,13 +13007,18 @@ window.FB_DETAIL_MAP = {"F&B Manager": {"task_1": "Memastikan Kitchen Area Bersi
     } catch(e) { console.warn('Room check fetch failed:', e); return []; }
   }
 
-  // Helper: build unified HTML untuk 4 section detail (tasklist + FU + planning + room check)
-  // Dipakai oleh loadPublicDetail, openDetailLaporan, dan openLiveDetail agar konsisten
+  // ============================================================
+  // _buildDetailUnifiedHTML — Render report detail dengan format
+  // sama persis dengan Tasklist HM (section header + number badge
+  // + sub-points + status indicator). Dipakai oleh:
+  // - openLiveDetail (Live di Dashboard COO)
+  // - openDetailLaporan (Submitted di Dashboard / Arsip)
+  // - loadPublicDetail (Link WA Dokumentasi)
+  // ============================================================
   function _buildDetailUnifiedHTML(role, hotel, items, rcItems, defectsMap) {
     const escHtml = (str) => String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 
-    // Build task name map dari ROLE_TASKS HTML
-    const taskNameMap = {};
+    // 1. Parse template ROLE_TASKS untuk dapat section structure
     const taskData = ROLE_TASKS[role] || ROLE_TASKS['Ops HR Manager'];
     let tempDiv = document.getElementById('_pub_render');
     if (!tempDiv) {
@@ -13022,188 +13027,238 @@ window.FB_DETAIL_MAP = {"F&B Manager": {"task_1": "Memastikan Kitchen Area Bersi
       tempDiv.style.cssText = 'display:none;position:absolute;left:-9999px;';
       document.body.appendChild(tempDiv);
     }
-    if (taskData) {
-      tempDiv.innerHTML = taskData.html;
-      tempDiv.querySelectorAll('.task-item[id]').forEach(item => {
-        const id = item.id;
-        if (!id) return;
-        const textEl = item.querySelector('.task-text');
-        if (textEl) { taskNameMap[id] = textEl.textContent.trim(); return; }
-        const catTitle = (item.closest('.task-category')||{}).querySelector && item.closest('.task-category').querySelector('.task-cat-title');
-        if (catTitle) { taskNameMap[id] = catTitle.textContent.trim(); return; }
-      });
-    }
-    taskNameMap['activity-plan'] = 'Activity Plan';
-    taskNameMap['unit-visit-tomorrow'] = 'Unit Visit Tomorrow';
-    taskNameMap['planning-tomorrow'] = 'Planning for Tomorrow';
+    tempDiv.innerHTML = taskData ? taskData.html : '';
 
-    const getTaskName = (taskId) => {
-      if (taskNameMap[taskId]) return taskNameMap[taskId];
-      if (taskId.startsWith('fu')) return 'Follow Up';
-      if (taskId.startsWith('room_')) return 'Room Inspection';
-      return taskId.replace(/_/g,' ').replace(/-/g,' ');
-    };
+    // 2. Build map data per task_id (dedupe)
+    const dataById = {};
+    items.forEach(it => {
+      if (it.task_id && !dataById[it.task_id]) dataById[it.task_id] = it;
+    });
 
-    // Helper: parse file_urls
-    const parseFiles = (raw) => {
-      let urls = [];
-      try {
-        if (!raw) urls = [];
-        else if (Array.isArray(raw)) urls = raw;
-        else if (typeof raw === 'string') urls = JSON.parse(raw);
-      } catch(e) { urls = []; }
-      return urls.map(f => {
-        if (typeof f === 'string') return { url: f, isImg: /\.(jpg|jpeg|png|gif|webp|heic)/i.test(f) };
-        return { url: f.url || '', isImg: (f.type && f.type.startsWith('image/')) || /\.(jpg|jpeg|png|gif|webp|heic)/i.test(f.url||'') || /supabase\.co.*storage/i.test(f.url||'') };
-      }).filter(f => f.url && f.url.startsWith('http'));
-    };
-    const renderFiles = (fileUrls) => {
-      if (!fileUrls.length) return '';
-      let s = '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;">';
-      fileUrls.forEach(({url, isImg}) => {
-        if (isImg) {
-          s += `<a href="${url}" target="_blank" style="display:block;flex-shrink:0;"><img src="${url}" style="width:90px;height:90px;object-fit:cover;border-radius:8px;border:1px solid #e0e0e0;" loading="lazy" onerror="this.parentElement.innerHTML='📷'"></a>`;
-        } else {
-          s += `<a href="${url}" target="_blank" style="display:inline-flex;align-items:center;gap:4px;background:#e8f4fd;color:#2980b9;padding:6px 10px;border-radius:8px;font-size:12px;text-decoration:none;">📎 Lihat File</a>`;
-        }
-      });
-      return s + '</div>';
-    };
+    // 3. Extract sections + tasks dari template
+    const sections = [];
+    tempDiv.querySelectorAll('.task-category').forEach(cat => {
+      const headerEl = cat.querySelector('.task-cat-header');
+      if (!headerEl) return;
+      const allSpans = headerEl.querySelectorAll('span');
+      const icon = allSpans[0] ? allSpans[0].textContent.trim() : '';
+      const titleEl = headerEl.querySelector('.task-cat-title');
+      const title = titleEl ? titleEl.textContent.trim() : '';
 
-    // Normalize status: in_progress → progress
-    const normStatus = (s) => s === 'in_progress' ? 'progress' : s;
-    const statusInfo = (status) => {
-      const s = normStatus(status);
-      if (s === 'done') return { icon: '✅', color: '#27ae60', label: 'Sudah' };
-      if (s === 'progress') return { icon: '⏳', color: '#e67e22', label: 'Dalam Proses' };
-      if (s === 'not') return { icon: '❌', color: '#e74c3c', label: 'Belum' };
-      return { icon: '📝', color: '#2980b9', label: 'Catatan' };
-    };
-
-    // Dedup & sort items
-    const dedup = (arr) => {
-      const seen = new Set();
-      return arr.filter(i => {
-        const key = i.task_id + '||' + (i.keterangan || '');
-        if (seen.has(key)) return false;
-        seen.add(key);
-        return true;
-      });
-    };
-    const sortByTaskNum = (a, b) => {
-      const numA = parseInt((a.task_id || '').replace(/[^0-9]/g, '')) || 0;
-      const numB = parseInt((b.task_id || '').replace(/[^0-9]/g, '')) || 0;
-      return numA - numB;
-    };
-
-    const taskItems = dedup(items.filter(i => i.task_id && i.task_id.startsWith('task_'))).sort(sortByTaskNum);
-    const fuItems = dedup(items.filter(i => i.task_id && (i.task_id.startsWith('fu') || i.task_id.startsWith('FU')))).sort(sortByTaskNum);
-    const planItems = dedup(items.filter(i => i.task_id === 'planning-tomorrow' || i.task_id === 'activity-plan' || i.task_id === 'unit-visit-tomorrow'));
-
-    let html = '';
-
-    // Section 1: 📋 Tasklist
-    if (taskItems.length) {
-      html += '<div style="margin-bottom:20px;"><div style="font-weight:700;color:#1a3a5c;margin-bottom:10px;font-size:14px;">📋 Tasklist</div>';
-      taskItems.forEach(item => {
-        const info = statusInfo(item.status);
-        const num = parseInt((item.task_id || '').replace(/[^0-9]/g, '')) || 0;
-        const name = escHtml(getTaskName(item.task_id));
-        const fileUrls = parseFiles(item.file_urls);
-        html += `<div style="background:#f9f9f9;border-radius:12px;padding:12px 14px;margin-bottom:8px;border-left:4px solid ${info.color};">`;
-        html += `<div style="display:flex;align-items:center;gap:8px;margin-bottom:${item.keterangan||fileUrls.length?'6px':'0'};">`;
-        html += `<span style="background:${info.color};color:white;border-radius:50%;width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">${num}</span>`;
-        html += `<span style="font-size:13px;flex-shrink:0;">${info.icon}</span>`;
-        html += `<span style="font-size:14px;font-weight:700;color:#1a1a2e;flex:1;">${name}</span>`;
-        html += `</div>`;
-        if (item.keterangan) html += `<div style="font-size:13px;color:#555;line-height:1.5;white-space:pre-wrap;">${escHtml(_formatKeteranganForDisplay(item.keterangan, taskNameMap, item.task_id))}</div>`;
-        html += renderFiles(fileUrls);
-        html += `</div>`;
-      });
-      html += '</div>';
-    }
-
-    // Section 2: 📌 Follow Up
-    if (fuItems.length) {
-      html += '<div style="margin-bottom:20px;"><div style="font-weight:700;color:#1a3a5c;margin-bottom:10px;font-size:14px;">📌 Follow Up</div>';
-      fuItems.forEach((item, idx) => {
-        const info = statusInfo(item.status);
-        const fileUrls = parseFiles(item.file_urls);
-        html += `<div style="background:#f9f9f9;border-radius:12px;padding:12px 14px;margin-bottom:8px;border-left:4px solid ${info.color};">`;
-        html += `<div style="display:flex;align-items:center;gap:8px;margin-bottom:${item.keterangan||fileUrls.length?'6px':'0'};">`;
-        html += `<span style="font-size:13px;">${info.icon}</span>`;
-        html += `<span style="font-size:14px;font-weight:700;color:#1a1a2e;flex:1;">FU${idx+1}</span>`;
-        html += `</div>`;
-        if (item.keterangan) html += `<div style="font-size:13px;color:#555;line-height:1.5;white-space:pre-wrap;">${escHtml(_formatKeteranganForDisplay(item.keterangan, taskNameMap, item.task_id))}</div>`;
-        html += renderFiles(fileUrls);
-        html += `</div>`;
-      });
-      html += '</div>';
-    }
-
-    // Section 3: 🏨 Pengecekan Kamar (BEFORE Planning) (foto group per area + defect detail dengan foto)
-    if (rcItems && rcItems.length) {
-      html += `<div style="margin-bottom:20px;"><div style="font-weight:700;color:#1a3a5c;margin-bottom:10px;font-size:14px;">🏨 Pengecekan Kamar (${rcItems.length} kamar)</div>`;
-      rcItems.forEach(rc => {
-        const cleanColor = rc.cleanliness === 'Baik' ? '#27ae60' : rc.cleanliness === 'Sedang' ? '#f39c12' : '#e74c3c';
-        const cleanIcon = rc.cleanliness === 'Baik' ? '✅' : rc.cleanliness === 'Sedang' ? '⚠️' : '❌';
-
-        // Parse photo URLs grouped by area (support legacy string[] and new {url,area}[])
-        let rawPhotos = [];
-        try {
-          const raw = rc.cleanliness_photos;
-          if (Array.isArray(raw)) rawPhotos = raw;
-          else if (typeof raw === 'string') rawPhotos = JSON.parse(raw);
-        } catch(e) { rawPhotos = []; }
-        const photoByArea = { entrance: [], bedroom: [], bathroom: [], lainnya: [] };
-        rawPhotos.forEach(p => {
-          if (typeof p === 'string' && p.startsWith('http')) {
-            photoByArea.lainnya.push(p);
-          } else if (p && p.url && typeof p.url === 'string' && p.url.startsWith('http')) {
-            const a = p.area || 'lainnya';
-            if (photoByArea[a]) photoByArea[a].push(p.url);
-            else photoByArea.lainnya.push(p.url);
+      const tasks = [];
+      cat.querySelectorAll('.task-item[id]').forEach(taskItem => {
+        const id = taskItem.id;
+        const numEl = taskItem.querySelector('.task-number');
+        const num = numEl ? (numEl.dataset.origNum || numEl.textContent.trim()) : '';
+        const textEl = taskItem.querySelector('.task-text');
+        const ulEl = taskItem.querySelector('ul');
+        let text = '';
+        const subPoints = [];
+        if (textEl) text = textEl.textContent.trim();
+        else if (ulEl) ulEl.querySelectorAll('li').forEach(li => subPoints.push(li.textContent.trim()));
+        // Pertanyaan terstruktur
+        const questions = [];
+        for (let i = 1; i <= 5; i++) {
+          const q = taskItem.querySelector('.task-q' + i);
+          if (q && q.parentElement) {
+            const labelEl = q.parentElement.querySelector('label');
+            if (labelEl) questions.push(labelEl.textContent.trim());
           }
-        });
+        }
+        tasks.push({ id, num, text, subPoints, questions });
+      });
+      sections.push({ icon, title, tasks });
+    });
 
-        // Time string
+    // 4. Render Section TASKLIST dengan format Tasklist HM
+    let html = '';
+    sections.forEach(section => {
+      let doneCount = 0;
+      section.tasks.forEach(t => {
+        const d = dataById[t.id];
+        if (d && d.status === 'done') doneCount++;
+      });
+
+      // Section header card
+      html += `<div style="background:white;border-radius:14px;margin-bottom:14px;overflow:hidden;border:1px solid #e0e0e0;box-shadow:0 1px 3px rgba(0,0,0,0.04);">`;
+      html += `<div style="background:#f8f9fa;padding:14px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid #e0e0e0;">`;
+      html += `<span style="font-size:18px;">${section.icon}</span>`;
+      html += `<span style="font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;color:#1a3a5c;flex:1;line-height:1.4;">${escHtml(section.title)}</span>`;
+      html += `<span style="background:#fef3c7;color:#92400e;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;white-space:nowrap;">${doneCount}/${section.tasks.length}</span>`;
+      html += `</div>`;
+
+      // Tasks
+      section.tasks.forEach((t, idx) => {
+        const d = dataById[t.id];
+        const status = d ? d.status : null;
+        let bgColor = '#fff', numBg = '#e5e7eb', numColor = '#374151', statusBadge = '';
+        if (status === 'done') {
+          bgColor = '#f0fdf4'; numBg = '#22c55e'; numColor = 'white';
+          statusBadge = '<span style="background:#22c55e;color:white;padding:3px 10px;border-radius:6px;font-size:11px;font-weight:700;margin-left:auto;">✓ Sudah</span>';
+        } else if (status === 'not') {
+          bgColor = '#fef2f2'; numBg = '#ef4444'; numColor = 'white';
+          statusBadge = '<span style="background:#ef4444;color:white;padding:3px 10px;border-radius:6px;font-size:11px;font-weight:700;margin-left:auto;">✗ Tidak Dikerjakan</span>';
+        } else if (status === 'progress') {
+          bgColor = '#fff7ed'; numBg = '#f59e0b'; numColor = 'white';
+          statusBadge = '<span style="background:#f59e0b;color:white;padding:3px 10px;border-radius:6px;font-size:11px;font-weight:700;margin-left:auto;">⏳ Proses</span>';
+        }
+
+        html += `<div style="padding:14px 16px;background:${bgColor};${idx > 0 ? 'border-top:1px solid #e0e0e0;' : ''}">`;
+        // Top row: number + content + status badge
+        html += `<div style="display:flex;gap:10px;align-items:flex-start;">`;
+        html += `<div style="background:${numBg};color:${numColor};border-radius:8px;padding:6px 10px;font-size:13px;font-weight:700;min-width:28px;text-align:center;flex-shrink:0;">${escHtml(t.num)}</div>`;
+        html += `<div style="flex:1;min-width:0;">`;
+        if (t.subPoints.length > 0) {
+          html += `<ul style="margin:0;padding-left:16px;font-size:13px;color:#4b5563;line-height:1.7;">`;
+          t.subPoints.forEach(sp => html += `<li>${escHtml(sp)}</li>`);
+          html += `</ul>`;
+        } else if (t.text) {
+          html += `<div style="font-size:13px;color:#374151;line-height:1.5;">${escHtml(t.text)}</div>`;
+        }
+        html += `</div>`;
+        if (statusBadge) html += statusBadge;
+        html += `</div>`;
+
+        // Keterangan + foto (kalau ada data)
+        if (d) {
+          // Keterangan
+          if (d.keterangan) {
+            const ket = String(d.keterangan);
+            let parsed = null;
+            if (ket.charAt(0) === '{' && ket.indexOf('"q1"') >= 0) {
+              try { parsed = JSON.parse(ket); } catch(e) {}
+            }
+            if (parsed && t.questions.length > 0) {
+              html += `<div style="margin-top:10px;margin-left:38px;padding:12px;background:white;border-radius:8px;border:1px solid #e0e0e0;">`;
+              t.questions.forEach((qLabel, qi) => {
+                const v = parsed['q' + (qi+1)];
+                if (v && v.trim()) {
+                  html += `<div style="margin-bottom:10px;">`;
+                  html += `<div style="font-size:11px;font-weight:700;color:#1a3a5c;margin-bottom:4px;">${escHtml(qLabel)}</div>`;
+                  html += `<div style="font-size:13px;color:#374151;line-height:1.5;padding-left:6px;border-left:2px solid #22c55e;padding:4px 0 4px 10px;">${escHtml(v)}</div>`;
+                  html += `</div>`;
+                }
+              });
+              html += `</div>`;
+            } else if (ket.trim()) {
+              html += `<div style="margin-top:10px;margin-left:38px;padding:10px 12px;background:white;border-radius:8px;border:1px solid #e0e0e0;font-size:13px;color:#374151;line-height:1.5;white-space:pre-wrap;">${escHtml(ket)}</div>`;
+            }
+          }
+          // Foto thumbnail
+          if (d.file_urls) {
+            let urls = [];
+            try {
+              if (Array.isArray(d.file_urls)) urls = d.file_urls;
+              else if (typeof d.file_urls === 'string') urls = JSON.parse(d.file_urls);
+            } catch(e) {}
+            const valid = urls.filter(f => {
+              const url = typeof f === 'string' ? f : (f && f.url);
+              return url && typeof url === 'string' && url.startsWith('http');
+            });
+            if (valid.length > 0) {
+              html += `<div style="margin-top:10px;margin-left:38px;display:flex;flex-wrap:wrap;gap:6px;">`;
+              valid.forEach(f => {
+                const url = typeof f === 'string' ? f : f.url;
+                const isImg = (typeof f === 'object' && f.type && f.type.startsWith('image/')) || /\.(jpg|jpeg|png|gif|webp|heic)/i.test(url) || /supabase\.co.*storage/i.test(url);
+                if (isImg) {
+                  html += `<a href="${url}" target="_blank" style="display:block;"><img src="${url}" style="width:80px;height:80px;object-fit:cover;border-radius:8px;border:1px solid #e0e0e0;" loading="lazy" onerror="this.style.display='none'"></a>`;
+                } else {
+                  html += `<a href="${url}" target="_blank" style="display:inline-flex;align-items:center;gap:4px;background:#e8f4fd;color:#2980b9;padding:8px 12px;border-radius:8px;font-size:12px;text-decoration:none;">📎 File</a>`;
+                }
+              });
+              html += `</div>`;
+            }
+          }
+        }
+        html += `</div>`;
+      });
+      html += `</div>`; // close section card
+    });
+
+    // 5. Section FOLLOW UP
+    const fuItems = items.filter(it => it.task_id && (it.task_id.startsWith('fu') || it.task_id.startsWith('FU')));
+    if (fuItems.length > 0) {
+      fuItems.sort((a,b) => {
+        const na = parseInt((a.task_id || '').replace(/[^0-9]/g, '')) || 0;
+        const nb = parseInt((b.task_id || '').replace(/[^0-9]/g, '')) || 0;
+        return na - nb;
+      });
+      html += `<div style="background:white;border-radius:14px;margin-bottom:14px;overflow:hidden;border:1px solid #e0e0e0;box-shadow:0 1px 3px rgba(0,0,0,0.04);">`;
+      html += `<div style="background:#f8f9fa;padding:14px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid #e0e0e0;">`;
+      html += `<span style="font-size:18px;">📌</span>`;
+      html += `<span style="font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;color:#1a3a5c;flex:1;">Follow Up — Pekerjaan Hari Ini</span>`;
+      html += `<span style="background:#dbeafe;color:#1e40af;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;">${fuItems.length}</span>`;
+      html += `</div>`;
+      fuItems.forEach((fu, idx) => {
+        const status = fu.status;
+        let bg = '#fff', badge = '';
+        if (status === 'done') { bg = '#f0fdf4'; badge = '<span style="background:#22c55e;color:white;padding:3px 10px;border-radius:6px;font-size:11px;font-weight:700;">✓</span>'; }
+        else if (status === 'not') { bg = '#fef2f2'; badge = '<span style="background:#ef4444;color:white;padding:3px 10px;border-radius:6px;font-size:11px;font-weight:700;">✗</span>'; }
+        else if (status === 'progress') { bg = '#fff7ed'; badge = '<span style="background:#f59e0b;color:white;padding:3px 10px;border-radius:6px;font-size:11px;font-weight:700;">⏳</span>'; }
+        html += `<div style="padding:12px 16px;background:${bg};${idx > 0 ? 'border-top:1px solid #e0e0e0;' : ''}">`;
+        html += `<div style="display:flex;gap:10px;align-items:flex-start;">`;
+        html += `<div style="background:#dbeafe;color:#1e40af;border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700;min-width:42px;text-align:center;flex-shrink:0;">FU${idx+1}</div>`;
+        html += `<div style="flex:1;font-size:13px;color:#374151;line-height:1.5;white-space:pre-wrap;">${escHtml(fu.keterangan || '')}</div>`;
+        if (badge) html += badge;
+        html += `</div>`;
+        // Foto FU
+        if (fu.file_urls) {
+          let urls = [];
+          try { urls = Array.isArray(fu.file_urls) ? fu.file_urls : JSON.parse(fu.file_urls); } catch(e) {}
+          const valid = urls.filter(f => { const u = typeof f === 'string' ? f : (f && f.url); return u && u.startsWith('http'); });
+          if (valid.length) {
+            html += `<div style="margin-top:8px;margin-left:52px;display:flex;flex-wrap:wrap;gap:6px;">`;
+            valid.forEach(f => {
+              const url = typeof f === 'string' ? f : f.url;
+              const isImg = (typeof f === 'object' && f.type && f.type.startsWith('image/')) || /\.(jpg|jpeg|png|gif|webp)/i.test(url) || /supabase\.co.*storage/i.test(url);
+              if (isImg) html += `<a href="${url}" target="_blank"><img src="${url}" style="width:70px;height:70px;object-fit:cover;border-radius:6px;border:1px solid #e0e0e0;" loading="lazy"></a>`;
+              else html += `<a href="${url}" target="_blank" style="display:inline-flex;align-items:center;gap:4px;background:#e8f4fd;color:#2980b9;padding:6px 10px;border-radius:8px;font-size:12px;text-decoration:none;">📎 File</a>`;
+            });
+            html += `</div>`;
+          }
+        }
+        html += `</div>`;
+      });
+      html += `</div>`;
+    }
+
+    // 6. Section PENGECEKAN KAMAR (sebelum Planning)
+    if (rcItems && rcItems.length > 0) {
+      html += `<div style="background:white;border-radius:14px;margin-bottom:14px;overflow:hidden;border:1px solid #e0e0e0;box-shadow:0 1px 3px rgba(0,0,0,0.04);">`;
+      html += `<div style="background:#f8f9fa;padding:14px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid #e0e0e0;">`;
+      html += `<span style="font-size:18px;">🏨</span>`;
+      html += `<span style="font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;color:#1a3a5c;flex:1;">Pengecekan Kamar</span>`;
+      html += `<span style="background:#dbeafe;color:#1e40af;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;">${rcItems.length} kamar</span>`;
+      html += `</div>`;
+      rcItems.forEach((rc, idx) => {
+        const cleanColor = rc.cleanliness === 'Baik' ? '#22c55e' : rc.cleanliness === 'Sedang' ? '#f59e0b' : '#ef4444';
+        const cleanIcon = rc.cleanliness === 'Baik' ? '✅' : rc.cleanliness === 'Sedang' ? '⚠️' : '❌';
         let timeStr = '';
-        try {
-          const dt = new Date(rc.checked_at);
-          timeStr = String(dt.getHours()).padStart(2,'0') + ':' + String(dt.getMinutes()).padStart(2,'0');
-        } catch(e) {}
+        try { const dt = new Date(rc.checked_at); timeStr = String(dt.getHours()).padStart(2,'0') + ':' + String(dt.getMinutes()).padStart(2,'0'); } catch(e) {}
 
-        html += `<div style="background:#f9f9f9;border-radius:12px;padding:12px 14px;margin-bottom:8px;border-left:4px solid ${cleanColor};">`;
-        html += `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap;">`;
-        html += `<span style="background:${cleanColor};color:white;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;">Kamar ${escHtml(rc.room_no || '-')}</span>`;
-        // Status kamar badge
+        html += `<div style="padding:14px 16px;${idx > 0 ? 'border-top:1px solid #e0e0e0;' : ''}">`;
+        // Header row
+        html += `<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px;">`;
+        html += `<span style="background:${cleanColor};color:white;border-radius:8px;padding:5px 10px;font-size:12px;font-weight:700;">Kamar ${escHtml(rc.room_no || '-')}</span>`;
         if (rc.room_status) {
           const sCol = { 'VCU':{bg:'#f3f4f6',fg:'#374151'},'VCC':{bg:'#dcfce7',fg:'#16a34a'},'VD':{bg:'#fef3c7',fg:'#92400e'},'OD':{bg:'#ffedd5',fg:'#c2410c'},'OO':{bg:'#fee2e2',fg:'#b91c1c'} }[rc.room_status] || {bg:'#f3f4f6',fg:'#374151'};
-          html += `<span style="background:${sCol.bg};color:${sCol.fg};padding:3px 8px;border-radius:4px;font-size:11px;font-weight:700;">${escHtml(rc.room_status)}</span>`;
+          html += `<span style="background:${sCol.bg};color:${sCol.fg};padding:4px 10px;border-radius:6px;font-size:11px;font-weight:700;">${escHtml(rc.room_status)}</span>`;
         }
-        html += `<span style="font-size:12px;">${cleanIcon} ${escHtml(rc.cleanliness || '-')}</span>`;
+        html += `<span style="font-size:12px;color:#374151;">${cleanIcon} ${escHtml(rc.cleanliness || '-')}</span>`;
         if (timeStr) html += `<span style="font-size:11px;color:#888;margin-left:auto;">${timeStr} WIB</span>`;
         html += `</div>`;
+        if (rc.checker_name) html += `<div style="font-size:12px;color:#666;margin-bottom:6px;">👤 ${escHtml(rc.checker_name)}</div>`;
+        if (!role.startsWith('HM ') && rc.hotel) html += `<div style="font-size:11px;color:#888;margin-bottom:6px;">🏨 ${escHtml(rc.hotel)}</div>`;
+        if (rc.asset_notes) html += `<div style="font-size:13px;color:#374151;margin-bottom:4px;line-height:1.5;"><b style="color:#1a3a5c;">📦 Asset:</b> ${escHtml(rc.asset_notes)}</div>`;
+        if (rc.followup_notes) html += `<div style="font-size:13px;color:#374151;margin-bottom:4px;line-height:1.5;"><b style="color:#1a3a5c;">📌 Follow Up:</b> ${escHtml(rc.followup_notes)}</div>`;
 
-        // Nama checker
-        if (rc.checker_name) {
-          html += `<div style="font-size:11px;color:#666;margin-bottom:6px;">👤 ${escHtml(rc.checker_name)}</div>`;
-        }
-        // Hotel info untuk Corporate
-        if (!role.startsWith('HM ') && rc.hotel) {
-          html += `<div style="font-size:11px;color:#888;margin-bottom:6px;">🏨 ${escHtml(rc.hotel)}</div>`;
-        }
-        if (rc.asset_notes) html += `<div style="font-size:13px;color:#555;margin-bottom:4px;"><b>Asset:</b> ${escHtml(rc.asset_notes)}</div>`;
-        if (rc.followup_notes) html += `<div style="font-size:13px;color:#555;margin-bottom:4px;"><b>Follow Up:</b> ${escHtml(rc.followup_notes)}</div>`;
-
-        // Detail Defects (dari defect_ids, fetch dari defectsMap)
-        let defectIdsArr = [];
-        try {
-          defectIdsArr = Array.isArray(rc.defect_ids) ? rc.defect_ids : (typeof rc.defect_ids === 'string' ? JSON.parse(rc.defect_ids) : []);
-        } catch(e) {}
-        if (defectIdsArr.length > 0) {
-          html += `<div style="margin-top:10px;padding-top:8px;border-top:1px dashed #ddd;"><div style="font-size:12px;font-weight:700;color:#e67e22;margin-bottom:6px;">🔧 ${defectIdsArr.length} Defect Tercatat</div>`;
-          defectIdsArr.forEach(did => {
+        // Defects
+        let defectIds = [];
+        try { defectIds = Array.isArray(rc.defect_ids) ? rc.defect_ids : (typeof rc.defect_ids === 'string' ? JSON.parse(rc.defect_ids) : []); } catch(e) {}
+        if (defectIds.length > 0) {
+          html += `<div style="margin-top:10px;padding:10px;background:#fff7ed;border-radius:8px;border:1px solid #fed7aa;">`;
+          html += `<div style="font-size:11px;font-weight:700;color:#c2410c;margin-bottom:8px;">🔧 ${defectIds.length} DEFECT TERCATAT</div>`;
+          defectIds.forEach(did => {
             const def = defectsMap && defectsMap[did];
             if (!def) {
               html += `<div style="font-size:12px;color:#888;padding:4px 0;">• Defect #${did} (detail tidak ditemukan)</div>`;
@@ -13212,21 +13267,37 @@ window.FB_DETAIL_MAP = {"F&B Manager": {"task_1": "Memastikan Kitchen Area Bersi
             const prioColors = { 'Urgent':'#dc2626','High':'#ea580c','Medium':'#ca8a04','Low':'#16a34a' };
             const prioCol = prioColors[def.priority] || '#666';
             const catIcon = def.category === 'HK' ? '🧹' : '🔧';
-            html += `<div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:8px 10px;margin-bottom:6px;">`;
-            html += `<div style="display:flex;gap:6px;align-items:center;margin-bottom:3px;flex-wrap:wrap;">`;
-            html += `<span style="font-size:11px;font-weight:700;color:${prioCol};">${catIcon} ${def.category || '-'} · ${def.priority || '-'}</span>`;
-            if (def.status) html += `<span style="font-size:10px;background:#fef3c7;color:#92400e;padding:1px 6px;border-radius:4px;font-weight:600;">${escHtml(def.status)}</span>`;
+            html += `<div style="background:white;border-radius:6px;padding:8px 10px;margin-bottom:6px;border:1px solid #fed7aa;">`;
+            html += `<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:4px;">`;
+            html += `<span style="font-size:11px;font-weight:700;color:${prioCol};">${catIcon} ${escHtml(def.category || '-')} · ${escHtml(def.priority || '-')}</span>`;
+            if (def.status) html += `<span style="font-size:10px;background:#f3f4f6;color:#374151;padding:1px 6px;border-radius:4px;font-weight:600;">${escHtml(def.status)}</span>`;
             html += `</div>`;
-            html += `<div style="font-size:12px;color:#7c2d12;">${escHtml(def.description || '-')}</div>`;
-            // Foto defect
-            const defectPhotos = parseFiles(def.photo_urls);
-            if (defectPhotos.length) html += renderFiles(defectPhotos);
+            html += `<div style="font-size:12px;color:#374151;line-height:1.5;">${escHtml(def.description || '-')}</div>`;
+            // Defect photos
+            let dPhotos = [];
+            try { dPhotos = Array.isArray(def.photo_urls) ? def.photo_urls : (typeof def.photo_urls === 'string' ? JSON.parse(def.photo_urls) : []); } catch(e) {}
+            const validDp = dPhotos.filter(u => u && typeof u === 'string' && u.startsWith('http'));
+            if (validDp.length > 0) {
+              html += `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;">`;
+              validDp.forEach(url => html += `<a href="${url}" target="_blank"><img src="${url}" style="width:60px;height:60px;object-fit:cover;border-radius:6px;border:1px solid #e0e0e0;" loading="lazy"></a>`);
+              html += `</div>`;
+            }
             html += `</div>`;
           });
           html += `</div>`;
         }
 
-        // Photos grouped by area
+        // Foto per area
+        let rawPhotos = [];
+        try { rawPhotos = Array.isArray(rc.cleanliness_photos) ? rc.cleanliness_photos : (typeof rc.cleanliness_photos === 'string' ? JSON.parse(rc.cleanliness_photos) : []); } catch(e) {}
+        const photoByArea = { entrance: [], bedroom: [], bathroom: [], lainnya: [] };
+        rawPhotos.forEach(p => {
+          if (typeof p === 'string' && p.startsWith('http')) photoByArea.lainnya.push(p);
+          else if (p && p.url && typeof p.url === 'string' && p.url.startsWith('http')) {
+            const a = p.area || 'lainnya';
+            (photoByArea[a] || photoByArea.lainnya).push(p.url);
+          }
+        });
         const areaCfg = [
           { key: 'entrance', label: '🚪 Entrance Room' },
           { key: 'bedroom', label: '🛏️ Bedroom Area' },
@@ -13236,27 +13307,34 @@ window.FB_DETAIL_MAP = {"F&B Manager": {"task_1": "Memastikan Kitchen Area Bersi
         areaCfg.forEach(cfg => {
           const urls = photoByArea[cfg.key];
           if (!urls || urls.length === 0) return;
-          const photoFiles = urls.map(u => ({url: u, isImg: true}));
-          html += `<div style="margin-top:8px;"><div style="font-size:11px;font-weight:600;color:#1a3a5c;margin-bottom:4px;">${cfg.label}</div>`;
-          html += renderFiles(photoFiles);
-          html += `</div>`;
+          html += `<div style="margin-top:10px;"><div style="font-size:11px;font-weight:600;color:#1a3a5c;margin-bottom:5px;">${cfg.label}</div>`;
+          html += `<div style="display:flex;flex-wrap:wrap;gap:6px;">`;
+          urls.forEach(u => html += `<a href="${u}" target="_blank"><img src="${u}" style="width:80px;height:80px;object-fit:cover;border-radius:8px;border:1px solid #e0e0e0;" loading="lazy"></a>`);
+          html += `</div></div>`;
         });
         html += `</div>`;
       });
-      html += '</div>';
+      html += `</div>`;
     }
 
-    // Section 4: 📅 Planning for Tomorrow (AFTER Pengecekan Kamar)
-    if (planItems.length) {
-      html += '<div style="margin-bottom:20px;"><div style="font-weight:700;color:#1a3a5c;margin-bottom:10px;font-size:14px;">📅 Planning for Tomorrow</div>';
-      planItems.forEach(item => {
-        const fileUrls = parseFiles(item.file_urls);
-        html += `<div style="background:#f9f9f9;border-radius:12px;padding:12px 14px;margin-bottom:8px;border-left:4px solid #1a3a5c;">`;
-        if (item.keterangan) html += `<div style="font-size:13px;color:#555;line-height:1.5;white-space:pre-wrap;">${escHtml(_formatKeteranganForDisplay(item.keterangan, taskNameMap, item.task_id))}</div>`;
-        html += renderFiles(fileUrls);
+    // 7. Section PLANNING FOR TOMORROW
+    const planItems = items.filter(it => it.task_id === 'planning-tomorrow' || it.task_id === 'unit-visit-tomorrow' || it.task_id === 'activity-plan');
+    if (planItems.length > 0) {
+      html += `<div style="background:white;border-radius:14px;margin-bottom:14px;overflow:hidden;border:1px solid #e0e0e0;box-shadow:0 1px 3px rgba(0,0,0,0.04);">`;
+      html += `<div style="background:#f8f9fa;padding:14px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid #e0e0e0;">`;
+      html += `<span style="font-size:18px;">📅</span>`;
+      html += `<span style="font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;color:#1a3a5c;flex:1;">Planning for Tomorrow</span>`;
+      html += `</div>`;
+      planItems.forEach(it => {
+        let label = '📝 Planning';
+        if (it.task_id === 'unit-visit-tomorrow') label = '🏨 Unit Visit Tomorrow';
+        else if (it.task_id === 'planning-tomorrow') label = '📝 Rencana Pekerjaan Besok';
+        html += `<div style="padding:14px 16px;">`;
+        html += `<div style="font-size:11px;font-weight:700;color:#1a3a5c;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">${label}</div>`;
+        html += `<div style="font-size:13px;color:#374151;line-height:1.6;white-space:pre-wrap;">${escHtml(it.keterangan || '-')}</div>`;
         html += `</div>`;
       });
-      html += '</div>';
+      html += `</div>`;
     }
 
     return html || '<div style="text-align:center;padding:40px;color:#aaa;">Tidak ada data.</div>';
