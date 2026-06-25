@@ -3006,6 +3006,122 @@
     autoSaveTimer = setTimeout(() => saveDraftNow(taskId), 1500);
   }
 
+  // ============================================================
+  // AUTO-SAVE PLANNING FOR TOMORROW & UNIT VISIT TOMORROW
+  // ============================================================
+  let _planSaveTimer;
+  function autoSavePlanning() {
+    if (window._isRestoringDraft) return;
+    clearTimeout(_planSaveTimer);
+    _planSaveTimer = setTimeout(() => savePlanningDraft(), 1500);
+  }
+
+  async function savePlanningDraft() {
+    if (!currentRole || !currentHotel) return;
+    const today = new Date(Date.now() + 7*3600000).toISOString().split('T')[0];
+
+    // Build keterangan: HM combine 5 sub-section, Corporate ambil single textarea
+    const isHM = currentRole && currentRole.startsWith('HM ');
+    let keterangan = '';
+    if (isHM) {
+      const units = ['hm','hk','eng','fnb','sec'];
+      const labels = ['HM','HK','ENG','F&B','SEC'];
+      const parts = [];
+      units.forEach((u, i) => {
+        const el = document.querySelector('.hm-plan-' + u);
+        const v = el ? el.value.trim() : '';
+        if (v) parts.push(labels[i] + ':\n' + v);
+      });
+      keterangan = parts.join('\n\n');
+    } else {
+      const apNote = document.querySelector('#activity-plan-note .task-note');
+      keterangan = apNote ? apNote.value.trim() : '';
+    }
+
+    await _upsertDraft('planning-tomorrow', 'note_only', keterangan, null);
+
+    // Sync ke single textarea untuk submit/WA compatibility
+    if (isHM) {
+      const apNote = document.querySelector('#activity-plan-note .task-note');
+      if (apNote) apNote.value = keterangan;
+    }
+  }
+
+  async function saveUnitVisitDraft() {
+    if (!currentRole || !currentHotel) return;
+    const apHotelVal = document.getElementById('activity-plan-hotel-val');
+    const value = apHotelVal ? apHotelVal.value : '';
+    if (!value) return; // Skip kalau belum dipilih
+    await _upsertDraft('unit-visit-tomorrow', 'note_only', value, null);
+  }
+
+  // Generic upsert helper untuk draft_tasklist
+  async function _upsertDraft(taskId, status, keterangan, fileUrls) {
+    const today = new Date(Date.now() + 7*3600000).toISOString().split('T')[0];
+    try {
+      const checkRes = await fetch(
+        SUPA_URL + '/rest/v1/draft_tasklist?tanggal=eq.' + today +
+        '&role=eq.' + encodeURIComponent(currentRole) +
+        '&hotel=eq.' + encodeURIComponent(currentHotel) +
+        '&task_id=eq.' + encodeURIComponent(taskId) +
+        '&select=id',
+        { headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY } }
+      );
+      const existing = checkRes.ok ? await checkRes.json() : [];
+      const payload = {
+        tanggal: today,
+        role: currentRole,
+        hotel: currentHotel,
+        task_id: taskId,
+        status: status,
+        keterangan: keterangan || null,
+        file_urls: fileUrls,
+        updated_at: new Date().toISOString()
+      };
+      if (existing && existing.length > 0) {
+        await fetch(
+          SUPA_URL + '/rest/v1/draft_tasklist?tanggal=eq.' + today +
+          '&role=eq.' + encodeURIComponent(currentRole) +
+          '&hotel=eq.' + encodeURIComponent(currentHotel) +
+          '&task_id=eq.' + encodeURIComponent(taskId),
+          {
+            method: 'PATCH',
+            headers: { 'Content-Type':'application/json','apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY },
+            body: JSON.stringify({ status, keterangan: keterangan || null, file_urls: fileUrls, updated_at: new Date().toISOString() })
+          }
+        );
+      } else {
+        await fetch(SUPA_URL + '/rest/v1/draft_tasklist', {
+          method: 'POST',
+          headers: { 'Content-Type':'application/json','apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY },
+          body: JSON.stringify(payload)
+        });
+      }
+    } catch(e) { console.error('Planning draft save error:', e); }
+  }
+
+  // Pasang listener saat DOM ready
+  function _wirePlanningAutoSave() {
+    // Corporate single textarea
+    const apNote = document.querySelector('#activity-plan-note .task-note');
+    if (apNote && !apNote.dataset.planAutoSave) {
+      apNote.dataset.planAutoSave = '1';
+      apNote.addEventListener('input', autoSavePlanning);
+    }
+    // HM 5 sub-section textareas
+    ['hm','hk','eng','fnb','sec'].forEach(u => {
+      const el = document.querySelector('.hm-plan-' + u);
+      if (el && !el.dataset.planAutoSave) {
+        el.dataset.planAutoSave = '1';
+        el.addEventListener('input', autoSavePlanning);
+      }
+    });
+  }
+  if (typeof document !== 'undefined') {
+    document.addEventListener('DOMContentLoaded', _wirePlanningAutoSave);
+    // Juga panggil ulang setelah role berubah (selectRole) — handled di go('tasklist')
+  }
+
   // Simpan semua task sekarang
   async function saveDraftNow(taskId) {
     if (!currentRole || !currentHotel) return;
@@ -3121,6 +3237,53 @@
       window._isRestoringDraft = true;
 
       data.forEach(draft => {
+        // ── RESTORE PLANNING FOR TOMORROW ─────────────────────
+        if (draft.task_id === 'planning-tomorrow') {
+          const ket = draft.keterangan || '';
+          if (!ket) return;
+          const isHM = currentRole && currentRole.startsWith('HM ');
+          if (isHM) {
+            // Parse "HM:\n...\n\nHK:\n...\n\n..." format
+            const sections = { HM:'', HK:'', ENG:'', 'F&B':'', SEC:'' };
+            // Split per label header
+            const re = /(^|\n\n)(HM|HK|ENG|F&B|SEC):\n([\s\S]*?)(?=(\n\n(?:HM|HK|ENG|F&B|SEC):)|$)/g;
+            let m;
+            while ((m = re.exec(ket)) !== null) {
+              sections[m[2]] = m[3].trim();
+            }
+            const map = { HM:'hm-plan-hm', HK:'hm-plan-hk', ENG:'hm-plan-eng', 'F&B':'hm-plan-fnb', SEC:'hm-plan-sec' };
+            Object.keys(map).forEach(k => {
+              const el = document.querySelector('.' + map[k]);
+              if (el) el.value = sections[k];
+            });
+            // Sync ke single textarea juga
+            const apNote = document.querySelector('#activity-plan-note .task-note');
+            if (apNote) apNote.value = ket;
+          } else {
+            const apNote = document.querySelector('#activity-plan-note .task-note');
+            if (apNote) apNote.value = ket;
+          }
+          restoredCount++;
+          return;
+        }
+
+        // ── RESTORE UNIT VISIT TOMORROW ───────────────────────
+        if (draft.task_id === 'unit-visit-tomorrow') {
+          const val = draft.keterangan;
+          if (!val) return;
+          const hotelInput = document.getElementById('activity-plan-hotel-val');
+          const container = document.getElementById('activity-plan-hotel-select');
+          if (hotelInput) hotelInput.value = val;
+          if (container) {
+            container.querySelectorAll('.activity-hotel-btn').forEach(b => {
+              if (b.dataset.hotel === val) b.classList.add('selected');
+              else b.classList.remove('selected');
+            });
+          }
+          restoredCount++;
+          return;
+        }
+
         const item = document.getElementById(draft.task_id);
         if (!item) return;
         restoredCount++;
@@ -3785,6 +3948,8 @@
       setTimeout(() => {
         if (currentRole && currentHotel) {
           loadDraft(currentRole, currentHotel);
+          // Wire ulang planning auto-save listeners (untuk role baru)
+          _wirePlanningAutoSave();
         }
       }, 800);
     }
@@ -12574,8 +12739,12 @@ window.FB_DETAIL_MAP = {"F&B Manager": {"task_1": "Memastikan Kitchen Area Bersi
     btn.classList.add('selected');
     const hotelInput = document.getElementById(taskId + '-hotel-val');
     if (hotelInput) hotelInput.value = btn.dataset.hotel;
-    // Auto-save
-    autoSaveDraft(taskId);
+    // Auto-save draft (untuk Unit Visit Tomorrow)
+    if (taskId === 'activity-plan') {
+      saveUnitVisitDraft();
+    } else {
+      autoSaveDraft(taskId);
+    }
   }
 
   // Update visit list di home berdasarkan tasklist yang sudah diisi
@@ -12913,20 +13082,7 @@ window.FB_DETAIL_MAP = {"F&B Manager": {"task_1": "Memastikan Kitchen Area Bersi
       html += '</div>';
     }
 
-    // Section 3: 📅 Planning for Tomorrow
-    if (planItems.length) {
-      html += '<div style="margin-bottom:20px;"><div style="font-weight:700;color:#1a3a5c;margin-bottom:10px;font-size:14px;">📅 Planning for Tomorrow</div>';
-      planItems.forEach(item => {
-        const fileUrls = parseFiles(item.file_urls);
-        html += `<div style="background:#f9f9f9;border-radius:12px;padding:12px 14px;margin-bottom:8px;border-left:4px solid #1a3a5c;">`;
-        if (item.keterangan) html += `<div style="font-size:13px;color:#555;line-height:1.5;white-space:pre-wrap;">${escHtml(_formatKeteranganForDisplay(item.keterangan, taskNameMap, item.task_id))}</div>`;
-        html += renderFiles(fileUrls);
-        html += `</div>`;
-      });
-      html += '</div>';
-    }
-
-    // Section 4: 🏨 Pengecekan Kamar (foto group per area + defect detail dengan foto)
+    // Section 3: 🏨 Pengecekan Kamar (BEFORE Planning) (foto group per area + defect detail dengan foto)
     if (rcItems && rcItems.length) {
       html += `<div style="margin-bottom:20px;"><div style="font-weight:700;color:#1a3a5c;margin-bottom:10px;font-size:14px;">🏨 Pengecekan Kamar (${rcItems.length} kamar)</div>`;
       rcItems.forEach(rc => {
@@ -13026,6 +13182,19 @@ window.FB_DETAIL_MAP = {"F&B Manager": {"task_1": "Memastikan Kitchen Area Bersi
           html += renderFiles(photoFiles);
           html += `</div>`;
         });
+        html += `</div>`;
+      });
+      html += '</div>';
+    }
+
+    // Section 4: 📅 Planning for Tomorrow (AFTER Pengecekan Kamar)
+    if (planItems.length) {
+      html += '<div style="margin-bottom:20px;"><div style="font-weight:700;color:#1a3a5c;margin-bottom:10px;font-size:14px;">📅 Planning for Tomorrow</div>';
+      planItems.forEach(item => {
+        const fileUrls = parseFiles(item.file_urls);
+        html += `<div style="background:#f9f9f9;border-radius:12px;padding:12px 14px;margin-bottom:8px;border-left:4px solid #1a3a5c;">`;
+        if (item.keterangan) html += `<div style="font-size:13px;color:#555;line-height:1.5;white-space:pre-wrap;">${escHtml(_formatKeteranganForDisplay(item.keterangan, taskNameMap, item.task_id))}</div>`;
+        html += renderFiles(fileUrls);
         html += `</div>`;
       });
       html += '</div>';
