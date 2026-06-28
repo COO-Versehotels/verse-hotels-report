@@ -1951,6 +1951,7 @@
           <p class="home-greeting" id="greeting-text">Selamat pagi</p>
           <h2 class="home-name" id="role-display">Chief Engineering</h2>
           <span class="home-role-badge" id="home-role-badge">CORPORATE</span>
+          <div id="home-fbm-visit" style="display:none;margin-top:6px;font-size:11px;color:rgba(255,255,255,0.7);font-weight:500;">🏨 <span id="home-fbm-visit-hotel"></span></div>
         </div>
         <div>
           <div class="home-avatar">👤</div>
@@ -2817,7 +2818,7 @@
   // =============================================================
   // Update angka di bawah setiap kali deploy file baru yang penting.
   // Format: YYYY.MM.DD-NN (NN = increment harian)
-  const APP_VERSION = '2026.06.25-05';
+  const APP_VERSION = '2026.06.25-06';
   const APP_VERSION_KEY = 'verse_app_version';
 
   (function _checkAppVersion() {
@@ -2928,8 +2929,8 @@
     // Restore session tanpa PIN
     currentRole = session.role;
     currentHotel = session.hotel;
-    document.getElementById('role-display').textContent = currentRole;
-    document.getElementById('profile-role-name').textContent = currentRole;
+    document.getElementById('role-display').textContent = getDisplayRole(currentRole);
+    document.getElementById('profile-role-name').textContent = getDisplayRole(currentRole);
     tasklistRendered = false;
     lastRenderedRole = '';
     Object.keys(taskFiles).forEach(k => delete taskFiles[k]);
@@ -3906,6 +3907,23 @@
   let pin = '';
   let currentRole = '';
   let currentUserName = ''; // nama pemegang PIN, diisi setelah login sukses
+
+  // Helper: Display role tanpa hotel suffix (F&B Manager pseudo-roles)
+  // Pak Ian: "FBM itu 1 orang, Verse Luxe/Oak Tree itu nama hotel visit bukan jabatan"
+  function getDisplayRole(role) {
+    if (!role) return '';
+    if (role === 'F&B Manager Verse Luxe' || role === 'F&B Manager Oak Tree') {
+      return 'F&B Manager';
+    }
+    return role;
+  }
+  // Helper: Hotel visit suffix untuk F&B Manager (jadi label info, bukan nama jabatan)
+  function getFBMVisitHotel(role) {
+    if (role === 'F&B Manager Verse Luxe') return 'Verse Luxe Wahid Hasyim';
+    if (role === 'F&B Manager Oak Tree') return 'Oak Tree Mahakam Blok M';
+    return '';
+  }
+
   const COO_PIN = '1986';
   const ROLE_PINS = {
     'Ops HR Manager': '0101',
@@ -4144,6 +4162,17 @@
       if (badge) {
         const isHM = currentRole && currentRole.startsWith('HM ');
         badge.textContent = isHM ? 'UNIT HEAD' : 'CORPORATE';
+      }
+      // F&B Manager: tampilkan hotel kunjungan sebagai info (bukan suffix di nama jabatan)
+      const fbmVisitEl = document.getElementById('home-fbm-visit');
+      const fbmVisitHotel = getFBMVisitHotel(currentRole);
+      if (fbmVisitEl) {
+        if (fbmVisitHotel) {
+          document.getElementById('home-fbm-visit-hotel').textContent = 'Hotel Kunjungan: ' + fbmVisitHotel;
+          fbmVisitEl.style.display = 'block';
+        } else {
+          fbmVisitEl.style.display = 'none';
+        }
       }
       // Update home avatar with hotel logo
       const avatarEl = document.querySelector('.home-avatar');
@@ -4481,8 +4510,8 @@
       // Langsung masuk tanpa PIN
       currentRole = session.role;
       currentHotel = session.hotel;
-      document.getElementById('role-display').textContent = currentRole;
-      document.getElementById('profile-role-name').textContent = currentRole;
+      document.getElementById('role-display').textContent = getDisplayRole(currentRole);
+      document.getElementById('profile-role-name').textContent = getDisplayRole(currentRole);
       // Update badge
       const badge = document.getElementById('home-role-badge');
       if (badge) badge.textContent = currentRole.startsWith('HM ') ? 'UNIT HEAD' : 'CORPORATE';
@@ -4928,8 +4957,8 @@
   function doLogin() {
     if (!currentRole) { showToast('Pilih jabatan dulu!'); return; }
     // Catatan: PIN sudah diverifikasi di autoLogin() lewat tabel report_users.
-    document.getElementById('role-display').textContent = currentRole;
-    document.getElementById('profile-role-name').textContent = currentRole;
+    document.getElementById('role-display').textContent = getDisplayRole(currentRole);
+    document.getElementById('profile-role-name').textContent = getDisplayRole(currentRole);
     pin = '';
     updatePinDots();
     // Reset tasklist state saat login baru
@@ -5110,8 +5139,8 @@
     // Login langsung tanpa cek PIN (dipanggil setelah biometric berhasil)
     currentRole = role;
     pin = ''; updatePinDots();
-    document.getElementById('role-display').textContent = role;
-    document.getElementById('profile-role-name').textContent = role;
+    document.getElementById('role-display').textContent = getDisplayRole(role);
+    document.getElementById('profile-role-name').textContent = getDisplayRole(role);
     tasklistRendered = false;
     lastRenderedRole = '';
     const hmHotels = {
@@ -12707,16 +12736,23 @@ ROLE_TASKS["F&B Attendant Oak Tree"] = {
       'F&B Attendant Verse Luxe': 'Verse Luxe Wahid Hasyim',
       'F&B Attendant Oak Tree': 'Oak Tree Mahakam Blok M',
     };
-    if (hmHotelMap[role]) {
+    if (role === 'F&B Manager') {
+      // F&B Manager BASE — belum pilih hotel, hide chip & reset hotel display
+      const chipRow = document.querySelector('.hotel-chips-row');
+      if (chipRow) chipRow.style.display = 'none';
+      const hotelEl = document.getElementById('tasklist-hotel');
+      if (hotelEl) hotelEl.textContent = '— Pilih Hotel —';
+      currentHotel = '';
+    } else if (hmHotelMap[role]) {
       currentHotel = hmHotelMap[role];
       const hotelEl = document.getElementById('tasklist-hotel');
       if (hotelEl) hotelEl.textContent = currentHotel;
-      // Sembunyikan hotel chips untuk HM (hotel sudah fixed)
+      // Sembunyikan hotel chips untuk HM/F&B fixed-hotel (hotel sudah fixed)
       const chipRow = document.querySelector('.hotel-chips-row');
       if (chipRow) chipRow.style.display = 'none';
     } else {
-      // Corporate roles — set hotel ke 'Corporate', sembunyikan chip
-      const CORP_ROLES3 = ['Ops HR Manager','HR Officer','Chief Engineering Corporate','EHK Corporate','CRA Corporate','F&B Manager','Team Kitchen','F&B Attendant','COO'];
+      // Corporate roles — set hotel ke 'Corporate', tampilkan chip
+      const CORP_ROLES3 = ['Ops HR Manager','HR Officer','Chief Engineering Corporate','EHK Corporate','CRA Corporate','COO'];
       if (CORP_ROLES3.includes(role)) {
         const activeHotelBtn = document.querySelector('.hotel-chip.active');
         currentHotel = activeHotelBtn ? activeHotelBtn.textContent.trim() : 'Verse Lite Gajah Mada';
