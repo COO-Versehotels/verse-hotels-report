@@ -2119,7 +2119,7 @@
         </div>
       </div>
 
-      <div style="padding:8px 16px 16px;">
+      <div style="padding:8px 16px 16px;" id="tasklist-submit-wrap">
         <button class="submit-big-btn primary" onclick="go('submit')" style="margin:0;width:100%;">
           Lihat Ringkasan & Submit →
         </button>
@@ -2818,7 +2818,7 @@
   // =============================================================
   // Update angka di bawah setiap kali deploy file baru yang penting.
   // Format: YYYY.MM.DD-NN (NN = increment harian)
-  const APP_VERSION = '2026.06.25-09';
+  const APP_VERSION = '2026.06.25-10';
   const APP_VERSION_KEY = 'verse_app_version';
 
   (function _checkAppVersion() {
@@ -12777,11 +12777,13 @@ ROLE_TASKS["F&B Attendant Oak Tree"] = {
     if (key === 'F&B Manager') {
       document.getElementById('tasklist-content').innerHTML = '<div style="padding:40px 20px;text-align:center;color:var(--gray-500);"><div style="font-size:48px;margin-bottom:12px;">🍽️</div><div style="font-weight:700;margin-bottom:8px;">Pilih Hotel Kunjungan Dulu</div><div style="font-size:12px;color:var(--gray-400);margin-bottom:16px;">F&amp;B Manager perlu pilih hotel untuk hari ini</div><button onclick="showFBMHotelPicker()" style="padding:12px 24px;background:var(--navy);color:white;border:none;border-radius:10px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;">🏨 Pilih Hotel</button></div>';
       document.getElementById('tasklist-progress').textContent = '—';
-      // Sembunyikan section Follow Up & Planning sampai hotel dipilih
+      // Sembunyikan section Follow Up, Planning & Submit sampai hotel dipilih
       const fuSection = document.getElementById('followup-section');
       if (fuSection) fuSection.style.display = 'none';
       const apSection = document.getElementById('activity-plan-section');
       if (apSection) apSection.style.display = 'none';
+      const submitWrap = document.getElementById('tasklist-submit-wrap');
+      if (submitWrap) submitWrap.style.display = 'none';
       return;
     }
     // Restore display untuk semua section (default: show)
@@ -12789,6 +12791,8 @@ ROLE_TASKS["F&B Attendant Oak Tree"] = {
     if (fuSection) fuSection.style.display = '';
     const apSection = document.getElementById('activity-plan-section');
     if (apSection) apSection.style.display = '';
+    const submitWrap = document.getElementById('tasklist-submit-wrap');
+    if (submitWrap) submitWrap.style.display = '';
 
     const data = ROLE_TASKS[key];
     if (!data) {
