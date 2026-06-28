@@ -2818,7 +2818,7 @@
   // =============================================================
   // Update angka di bawah setiap kali deploy file baru yang penting.
   // Format: YYYY.MM.DD-NN (NN = increment harian)
-  const APP_VERSION = '2026.06.25-06';
+  const APP_VERSION = '2026.06.25-08';
   const APP_VERSION_KEY = 'verse_app_version';
 
   (function _checkAppVersion() {
@@ -4081,6 +4081,10 @@
       const CORP_ROLES2 = ['Ops HR Manager','HR Officer','Chief Engineering Corporate','EHK Corporate','CRA Corporate','F&B Manager','F&B Manager Verse Luxe','F&B Manager Oak Tree','Team Kitchen Verse Luxe','Team Kitchen Oak Tree','F&B Attendant Verse Luxe','F&B Attendant Oak Tree','COO'];
       if (hmHotelMap2[currentRole]) {
         currentHotel = hmHotelMap2[currentRole];
+      } else if (currentRole === 'F&B Manager') {
+        // F&B Manager BASE — biarkan kosong, akan dipilih via modal hotel picker
+        currentHotel = '';
+        document.getElementById('tasklist-hotel').textContent = '— Pilih Hotel —';
       } else if (CORP_ROLES2.includes(currentRole)) {
         // Corporate roles: default ke hotel dari chip aktif (bukan "Corporate")
         // supaya WA report dan laporan detail tampil unit yang dikunjungi, bukan literal "Corporate"
@@ -4093,7 +4097,10 @@
       } else if (!currentHotel) {
         currentHotel = 'Verse Lite Gajah Mada';
       }
-      document.getElementById('tasklist-hotel').textContent = currentHotel;
+      // Set tasklist-hotel display HANYA kalau bukan F&B Manager base (sudah di-handle di atas)
+      if (currentRole !== 'F&B Manager') {
+        document.getElementById('tasklist-hotel').textContent = currentHotel;
+      }
 
       // Unit Visit Tomorrow hanya untuk Team Corporate
       const apHotelSection = document.getElementById('activity-plan-hotel-section');
@@ -12720,7 +12727,10 @@ ROLE_TASKS["F&B Attendant Oak Tree"] = {
   function renderTasklist() {
     const role = currentRole;
     if (!role) return;
-    const keyMap = {};
+    // Alias mapping: nama role di PIN → key di ROLE_TASKS (kalau berbeda)
+    const keyMap = {
+      'Chief Engineering Corporate': 'CE Corporate',
+    };
 
     // HM roles — set default hotel otomatis
     const hmHotelMap = {
@@ -14237,8 +14247,13 @@ ROLE_TASKS["F&B Attendant Oak Tree"] = {
   function _buildDetailUnifiedHTML(role, hotel, items, rcItems, defectsMap) {
     const escHtml = (str) => String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 
+    // Alias mapping: nama role saat disimpan → key di ROLE_TASKS
+    const detailKeyMap = {
+      'Chief Engineering Corporate': 'CE Corporate',
+    };
+    const lookupRole = detailKeyMap[role] || role;
     // 1. Parse template ROLE_TASKS untuk dapat section structure
-    const taskData = ROLE_TASKS[role];
+    const taskData = ROLE_TASKS[lookupRole];
     if (!taskData) {
       return '<div style="padding:20px;text-align:center;color:var(--gray-500);font-size:13px;">⚠️ Template tasklist tidak ditemukan untuk role: <strong>' + role + '</strong></div>';
     }
