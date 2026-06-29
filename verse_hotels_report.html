@@ -2818,7 +2818,7 @@
   // =============================================================
   // Update angka di bawah setiap kali deploy file baru yang penting.
   // Format: YYYY.MM.DD-NN (NN = increment harian)
-  const APP_VERSION = '2026.06.25-10';
+  const APP_VERSION = '2026.06.25-12';
   const APP_VERSION_KEY = 'verse_app_version';
 
   (function _checkAppVersion() {
@@ -6293,6 +6293,7 @@ const TASK_LABEL_MAP = {
     "task_17": "Afternoon Briefing — 14.45 WIB",
     "task_18": "Cek & balas semua review dari semua platform (Google, TripAdvisor, Agoda, Traveloka, Booking.com, Tiket.com, Ctrip) dengan bahasa sopan & profesional. Review buruk: analisa & jelaskan secara rinci.",
     "task_19": "Closing Briefing — 17.30 WIB",
+    "task_20": "Pembahasan Defect Tracker (Sub Tasklist Closing Briefing)",
   },
   "HM Verse Luxe": {
     "task_1": "Check Area Parkir, Tempat Pembuangan Sampah & Pos Security",
@@ -6314,6 +6315,7 @@ const TASK_LABEL_MAP = {
     "task_17": "Afternoon Briefing — 14.45 WIB",
     "task_18": "Cek & balas semua review dari semua platform (Google, TripAdvisor, Agoda, Traveloka, Booking.com, Tiket.com, Ctrip) dengan bahasa sopan & profesional. Review buruk: analisa & jelaskan secara rinci.",
     "task_19": "Closing Briefing — 17.30 WIB",
+    "task_20": "Pembahasan Defect Tracker (Sub Tasklist Closing Briefing)",
   },
   "HM Verse Cirebon": {
     "task_1": "Check Area Parkir, Tempat Pembuangan Sampah & Pos Security",
@@ -6335,6 +6337,7 @@ const TASK_LABEL_MAP = {
     "task_17": "Afternoon Briefing — 14.45 WIB",
     "task_18": "Cek & balas semua review dari semua platform (Google, TripAdvisor, Agoda, Traveloka, Booking.com, Tiket.com, Ctrip) dengan bahasa sopan & profesional. Review buruk: analisa & jelaskan secara rinci.",
     "task_19": "Closing Briefing — 17.30 WIB",
+    "task_20": "Pembahasan Defect Tracker (Sub Tasklist Closing Briefing)",
   },
   "HM Oak Tree": {
     "task_1": "Check Area Parkir, Tempat Pembuangan Sampah & Pos Security",
@@ -6356,6 +6359,7 @@ const TASK_LABEL_MAP = {
     "task_17": "Afternoon Briefing — 14.45 WIB",
     "task_18": "Cek & balas semua review dari semua platform (Google, TripAdvisor, Agoda, Traveloka, Booking.com, Tiket.com, Ctrip) dengan bahasa sopan & profesional. Review buruk: analisa & jelaskan secara rinci.",
     "task_19": "Closing Briefing — 17.30 WIB",
+    "task_20": "Pembahasan Defect Tracker (Sub Tasklist Closing Briefing)",
   },
 };
 
@@ -7929,7 +7933,7 @@ const ROLE_TASKS = {
         </div>`
   },
   'HM Verse Lite': {
-    count: 19,
+    count: 20,
     html: `
         <div class="task-category">
           <div class="task-cat-header">
@@ -8559,7 +8563,7 @@ const ROLE_TASKS = {
           <div class="task-cat-header">
             <span style="font-size:16px;">🌆</span>
             <span class="task-cat-title">Closing Briefing — 17.30 WIB</span>
-            <span class="task-cat-count">0/1</span>
+            <span class="task-cat-count">0/2</span>
           </div>
           <div class="task-item" id="task_19" onclick="toggleTask('task_19')">
             <div class="task-item-top">
@@ -8602,13 +8606,54 @@ const ROLE_TASKS = {
               <div style="margin-bottom:8px;">
                 <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">5. Total DW yang diliburkan besok (jika OCC Low)?</label>
                 <textarea class="task-note task-q5" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+            </div>
+          </div>
+          <div class="task-item" id="task_20" onclick="toggleTask('task_20')">
+            <div class="task-item-top">
+              <div class="task-number" id="task_20-num" data-orig-num="20">20</div>
+              <div style="flex:1;">
+                <ul style="margin:0;padding-left:16px;font-size:13px;color:var(--gray-600);line-height:1.8;">
+                  <li>Pembahasan Defect Tracker — pastikan Defect Open tanpa kendala barang dikerjakan</li>
+                  <li>Pastikan Defect Pending terkait barang sudah ada PR di VHP</li>
+                </ul>
+              </div>
+            </div>
+            <div class="task-status-row">
+              <button class="status-btn" onclick="setStatus(event,'task_20','done')">✓ Sudah</button>
+              <button class="status-btn" onclick="setStatus(event,'task_20','not')">✗ Tidak Dikerjakan</button>
+            </div>
+            <div class="task-upload-wrap" id="task_20-upload">
+              <div class="task-upload-area" id="task_20-upload-area">
+                <input type="file" accept="image/*,.pdf,.doc,.docx" multiple onchange="handleFileUpload(this,'task_20')">
+                <span class="task-upload-icon">📎</span>
+                <div class="task-upload-text">
+                  <strong>Upload Screenshot Defect Tracker</strong>
+                  <span>Wajib diupload</span>
+                </div>
+              </div>
+              <div class="file-preview-list" id="task_20-filelist"></div>
+            </div>
+            <div class="task-note-wrap" id="task_20-note">
+              <div style="background:#fef3c7;border-left:3px solid #f59e0b;padding:8px 12px;border-radius:8px;margin-bottom:8px;font-size:12px;color:#78350f;font-weight:600;">⚠️ Wajib isi semua keterangan</div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">1. Total Defect Open?</label>
+                <textarea class="task-note task-q1" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">2. Total Defect Pending?</label>
+                <textarea class="task-note task-q2" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">3. Total Defect Done?</label>
+                <textarea class="task-note task-q3" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
               </div>
             </div>
           </div>
         </div>`
   },
   'HM Verse Luxe': {
-    count: 19,
+    count: 20,
     html: `
         <div class="task-category">
           <div class="task-cat-header">
@@ -9238,7 +9283,7 @@ const ROLE_TASKS = {
           <div class="task-cat-header">
             <span style="font-size:16px;">🌆</span>
             <span class="task-cat-title">Closing Briefing — 17.30 WIB</span>
-            <span class="task-cat-count">0/1</span>
+            <span class="task-cat-count">0/2</span>
           </div>
           <div class="task-item" id="task_19" onclick="toggleTask('task_19')">
             <div class="task-item-top">
@@ -9281,13 +9326,54 @@ const ROLE_TASKS = {
               <div style="margin-bottom:8px;">
                 <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">5. Total DW yang diliburkan besok (jika OCC Low)?</label>
                 <textarea class="task-note task-q5" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+            </div>
+          </div>
+          <div class="task-item" id="task_20" onclick="toggleTask('task_20')">
+            <div class="task-item-top">
+              <div class="task-number" id="task_20-num" data-orig-num="20">20</div>
+              <div style="flex:1;">
+                <ul style="margin:0;padding-left:16px;font-size:13px;color:var(--gray-600);line-height:1.8;">
+                  <li>Pembahasan Defect Tracker — pastikan Defect Open tanpa kendala barang dikerjakan</li>
+                  <li>Pastikan Defect Pending terkait barang sudah ada PR di VHP</li>
+                </ul>
+              </div>
+            </div>
+            <div class="task-status-row">
+              <button class="status-btn" onclick="setStatus(event,'task_20','done')">✓ Sudah</button>
+              <button class="status-btn" onclick="setStatus(event,'task_20','not')">✗ Tidak Dikerjakan</button>
+            </div>
+            <div class="task-upload-wrap" id="task_20-upload">
+              <div class="task-upload-area" id="task_20-upload-area">
+                <input type="file" accept="image/*,.pdf,.doc,.docx" multiple onchange="handleFileUpload(this,'task_20')">
+                <span class="task-upload-icon">📎</span>
+                <div class="task-upload-text">
+                  <strong>Upload Screenshot Defect Tracker</strong>
+                  <span>Wajib diupload</span>
+                </div>
+              </div>
+              <div class="file-preview-list" id="task_20-filelist"></div>
+            </div>
+            <div class="task-note-wrap" id="task_20-note">
+              <div style="background:#fef3c7;border-left:3px solid #f59e0b;padding:8px 12px;border-radius:8px;margin-bottom:8px;font-size:12px;color:#78350f;font-weight:600;">⚠️ Wajib isi semua keterangan</div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">1. Total Defect Open?</label>
+                <textarea class="task-note task-q1" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">2. Total Defect Pending?</label>
+                <textarea class="task-note task-q2" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">3. Total Defect Done?</label>
+                <textarea class="task-note task-q3" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
               </div>
             </div>
           </div>
         </div>`
   },
   'HM Verse Cirebon': {
-    count: 19,
+    count: 20,
     html: `
         <div class="task-category">
           <div class="task-cat-header">
@@ -9917,7 +10003,7 @@ const ROLE_TASKS = {
           <div class="task-cat-header">
             <span style="font-size:16px;">🌆</span>
             <span class="task-cat-title">Closing Briefing — 17.30 WIB</span>
-            <span class="task-cat-count">0/1</span>
+            <span class="task-cat-count">0/2</span>
           </div>
           <div class="task-item" id="task_19" onclick="toggleTask('task_19')">
             <div class="task-item-top">
@@ -9960,13 +10046,54 @@ const ROLE_TASKS = {
               <div style="margin-bottom:8px;">
                 <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">5. Total DW yang diliburkan besok (jika OCC Low)?</label>
                 <textarea class="task-note task-q5" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+            </div>
+          </div>
+          <div class="task-item" id="task_20" onclick="toggleTask('task_20')">
+            <div class="task-item-top">
+              <div class="task-number" id="task_20-num" data-orig-num="20">20</div>
+              <div style="flex:1;">
+                <ul style="margin:0;padding-left:16px;font-size:13px;color:var(--gray-600);line-height:1.8;">
+                  <li>Pembahasan Defect Tracker — pastikan Defect Open tanpa kendala barang dikerjakan</li>
+                  <li>Pastikan Defect Pending terkait barang sudah ada PR di VHP</li>
+                </ul>
+              </div>
+            </div>
+            <div class="task-status-row">
+              <button class="status-btn" onclick="setStatus(event,'task_20','done')">✓ Sudah</button>
+              <button class="status-btn" onclick="setStatus(event,'task_20','not')">✗ Tidak Dikerjakan</button>
+            </div>
+            <div class="task-upload-wrap" id="task_20-upload">
+              <div class="task-upload-area" id="task_20-upload-area">
+                <input type="file" accept="image/*,.pdf,.doc,.docx" multiple onchange="handleFileUpload(this,'task_20')">
+                <span class="task-upload-icon">📎</span>
+                <div class="task-upload-text">
+                  <strong>Upload Screenshot Defect Tracker</strong>
+                  <span>Wajib diupload</span>
+                </div>
+              </div>
+              <div class="file-preview-list" id="task_20-filelist"></div>
+            </div>
+            <div class="task-note-wrap" id="task_20-note">
+              <div style="background:#fef3c7;border-left:3px solid #f59e0b;padding:8px 12px;border-radius:8px;margin-bottom:8px;font-size:12px;color:#78350f;font-weight:600;">⚠️ Wajib isi semua keterangan</div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">1. Total Defect Open?</label>
+                <textarea class="task-note task-q1" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">2. Total Defect Pending?</label>
+                <textarea class="task-note task-q2" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">3. Total Defect Done?</label>
+                <textarea class="task-note task-q3" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
               </div>
             </div>
           </div>
         </div>`
   },
   'HM Oak Tree': {
-    count: 19,
+    count: 20,
     html: `
         <div class="task-category">
           <div class="task-cat-header">
@@ -10596,7 +10723,7 @@ const ROLE_TASKS = {
           <div class="task-cat-header">
             <span style="font-size:16px;">🌆</span>
             <span class="task-cat-title">Closing Briefing — 17.30 WIB</span>
-            <span class="task-cat-count">0/1</span>
+            <span class="task-cat-count">0/2</span>
           </div>
           <div class="task-item" id="task_19" onclick="toggleTask('task_19')">
             <div class="task-item-top">
@@ -10639,6 +10766,47 @@ const ROLE_TASKS = {
               <div style="margin-bottom:8px;">
                 <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">5. Total DW yang diliburkan besok (jika OCC Low)?</label>
                 <textarea class="task-note task-q5" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+            </div>
+          </div>
+          <div class="task-item" id="task_20" onclick="toggleTask('task_20')">
+            <div class="task-item-top">
+              <div class="task-number" id="task_20-num" data-orig-num="20">20</div>
+              <div style="flex:1;">
+                <ul style="margin:0;padding-left:16px;font-size:13px;color:var(--gray-600);line-height:1.8;">
+                  <li>Pembahasan Defect Tracker — pastikan Defect Open tanpa kendala barang dikerjakan</li>
+                  <li>Pastikan Defect Pending terkait barang sudah ada PR di VHP</li>
+                </ul>
+              </div>
+            </div>
+            <div class="task-status-row">
+              <button class="status-btn" onclick="setStatus(event,'task_20','done')">✓ Sudah</button>
+              <button class="status-btn" onclick="setStatus(event,'task_20','not')">✗ Tidak Dikerjakan</button>
+            </div>
+            <div class="task-upload-wrap" id="task_20-upload">
+              <div class="task-upload-area" id="task_20-upload-area">
+                <input type="file" accept="image/*,.pdf,.doc,.docx" multiple onchange="handleFileUpload(this,'task_20')">
+                <span class="task-upload-icon">📎</span>
+                <div class="task-upload-text">
+                  <strong>Upload Screenshot Defect Tracker</strong>
+                  <span>Wajib diupload</span>
+                </div>
+              </div>
+              <div class="file-preview-list" id="task_20-filelist"></div>
+            </div>
+            <div class="task-note-wrap" id="task_20-note">
+              <div style="background:#fef3c7;border-left:3px solid #f59e0b;padding:8px 12px;border-radius:8px;margin-bottom:8px;font-size:12px;color:#78350f;font-weight:600;">⚠️ Wajib isi semua keterangan</div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">1. Total Defect Open?</label>
+                <textarea class="task-note task-q1" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">2. Total Defect Pending?</label>
+                <textarea class="task-note task-q2" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">3. Total Defect Done?</label>
+                <textarea class="task-note task-q3" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
               </div>
             </div>
           </div>
