@@ -2214,6 +2214,14 @@
         <div id="submit-optional-list" style="margin:0 16px 12px;background:#fffbeb;border:1.5px solid #f59e0b;border-radius:var(--radius);padding:12px 14px;font-size:12px;color:#92400e;line-height:1.9;"></div>
       </div>
 
+      <!-- Room Check Override (HM only, tampil kalau check < 5 kamar) -->
+      <div id="submit-rc-override-section" style="display:none;margin:0 16px 12px;background:#fff7ed;border:1.5px solid #f59e0b;border-radius:var(--radius);padding:12px 14px;">
+        <div style="font-size:12px;color:#92400e;font-weight:700;margin-bottom:6px;">🏨 Alasan tidak bisa check 5 kamar hari ini</div>
+        <div style="font-size:11px;color:#78350f;margin-bottom:8px;">Isi alasan minimal 30 karakter (contoh: event besar, hotel penuh, dst). Alasan akan ditampilkan di WA report.</div>
+        <textarea id="submit-rc-override-reason" rows="3" style="width:100%;padding:10px;border:1px solid #fcd34d;border-radius:8px;font-family:inherit;font-size:13px;resize:vertical;box-sizing:border-box;" placeholder="Jelaskan alasan kenapa tidak bisa check minimum 5 kamar hari ini..."></textarea>
+        <div style="font-size:11px;color:#78350f;margin-top:6px;" id="submit-rc-override-counter">0 / 30 karakter</div>
+      </div>
+
       <!-- Tombol -->
       <div style="padding:0 16px 6px;margin-top:4px;font-size:11px;color:var(--gray-400);font-weight:700;text-transform:uppercase;letter-spacing:1px;">Kirim Laporan</div>
       <button class="submit-big-btn wa" onclick="doSubmitAndSendWA()" style="background:linear-gradient(135deg,#1a4a1a,#2d6a2d);font-size:15px;padding:16px;">
@@ -2818,7 +2826,7 @@
   // =============================================================
   // Update angka di bawah setiap kali deploy file baru yang penting.
   // Format: YYYY.MM.DD-NN (NN = increment harian)
-  const APP_VERSION = '2026.06.25-13';
+  const APP_VERSION = '2026.06.25-15';
   const APP_VERSION_KEY = 'verse_app_version';
 
   (function _checkAppVersion() {
@@ -3087,44 +3095,78 @@
 
   function _getTaskKeterangan(item) {
     if (!item) return '';
-    // Cek apakah ada pertanyaan terstruktur
-    const q1 = item.querySelector('.task-q1');
-    if (q1) {
-      const answers = {};
-      let hasAny = false;
-      for (let i = 1; i <= 5; i++) {
-        const el = item.querySelector('.task-q' + i);
-        if (el) {
-          const v = el.value.trim();
-          answers['q' + i] = v;
-          if (v) hasAny = true;
-        }
+    const data = {};
+    let hasAny = false;
+    const status = item.dataset.status || '';
+
+    // STATUS = 'not' (Tidak Dikerjakan): hanya simpan alasan, IGNORE Q1-Q5
+    // Karena Q1-Q5 = pertanyaan saat task DIKERJAKAN, tidak relevan kalau tidak dikerjakan
+    if (status === 'not') {
+      const reasonTa = item.querySelector('.task-not-reason');
+      if (reasonTa && reasonTa.value.trim()) {
+        data._alasan_tidak = reasonTa.value.trim();
+        return JSON.stringify(data);
       }
-      return hasAny ? JSON.stringify(answers) : '';
+      // Fallback single textarea untuk corporate role
+      const noteEl = item.querySelector('.task-note:not(.task-q1):not(.task-q2):not(.task-q3):not(.task-q4):not(.task-q5):not(.task-not-reason)');
+      return noteEl ? noteEl.value.trim() : '';
     }
-    // Textarea tunggal (task lain)
-    const noteEl = item.querySelector('.task-note');
+
+    // STATUS = 'done' / 'progress' / other: collect Q1-Q5 normally
+    for (let i = 1; i <= 5; i++) {
+      const el = item.querySelector('.task-q' + i);
+      if (el) {
+        const v = el.value.trim();
+        data['q' + i] = v;
+        if (v) hasAny = true;
+      }
+    }
+
+    if (hasAny) {
+      return JSON.stringify(data);
+    }
+
+    // Fallback: single textarea (task corporate tanpa Q1-Q5)
+    const noteEl = item.querySelector('.task-note:not(.task-q1):not(.task-q2):not(.task-q3):not(.task-q4):not(.task-q5):not(.task-not-reason)');
     return noteEl ? noteEl.value.trim() : '';
   }
 
   function _setTaskKeterangan(item, keterangan) {
     if (!item || !keterangan) return;
     const q1 = item.querySelector('.task-q1');
+    const reasonTa = item.querySelector('.task-not-reason');
     // Format JSON terstruktur?
-    if (q1 && typeof keterangan === 'string' && keterangan.charAt(0) === '{' && keterangan.indexOf('"q1"') >= 0) {
+    if (typeof keterangan === 'string' && keterangan.charAt(0) === '{') {
       try {
         const data = JSON.parse(keterangan);
-        for (let i = 1; i <= 5; i++) {
-          const el = item.querySelector('.task-q' + i);
-          if (el && typeof data['q' + i] === 'string') {
-            el.value = data['q' + i];
+        let restored = false;
+        // Restore Q1-Q5 (kalau task punya & data ada)
+        if (q1) {
+          for (let i = 1; i <= 5; i++) {
+            const el = item.querySelector('.task-q' + i);
+            if (el && typeof data['q' + i] === 'string') {
+              el.value = data['q' + i];
+              restored = true;
+            }
           }
         }
-        return;
+        // Restore alasan tidak dikerjakan
+        if (typeof data._alasan_tidak === 'string') {
+          // Pastikan task-not-reason wrap sudah ada (kalau belum, akan dibuat oleh setStatus('not'))
+          let r = item.querySelector('.task-not-reason');
+          if (r) {
+            r.value = data._alasan_tidak;
+            restored = true;
+          } else {
+            // Belum ada — simpan sementara via data attribute supaya setStatus bisa restore
+            item.dataset.pendingReason = data._alasan_tidak;
+          }
+        }
+        if (restored) return;
       } catch(e) { /* fallback ke restore single */ }
     }
     // Restore ke textarea pertama (data lama / task non-terstruktur)
-    const noteEl = item.querySelector('.task-note');
+    const noteEl = item.querySelector('.task-note:not(.task-q1):not(.task-q2):not(.task-q3):not(.task-q4):not(.task-q5):not(.task-not-reason)');
     if (noteEl) noteEl.value = keterangan;
   }
 
@@ -3133,9 +3175,15 @@
   // Untuk display, kita kirim juga "labels" array kalau punya akses ke item.
   function _formatKeterangan(keterangan, item) {
     if (!keterangan || typeof keterangan !== 'string') return keterangan || '';
-    if (keterangan.charAt(0) !== '{' || keterangan.indexOf('"q1"') < 0) return keterangan;
+    if (keterangan.charAt(0) !== '{') return keterangan;
+    // Skip kalau tidak ada q1 atau _alasan_tidak (bukan JSON terstruktur)
+    if (keterangan.indexOf('"q1"') < 0 && keterangan.indexOf('"_alasan_tidak"') < 0) return keterangan;
     try {
       const data = JSON.parse(keterangan);
+      // Kalau ada _alasan_tidak (status='not'), prioritize tampilkan sebagai alasan
+      if (typeof data._alasan_tidak === 'string' && data._alasan_tidak.trim()) {
+        return '❌ Alasan tidak dikerjakan:\n→ ' + data._alasan_tidak.trim();
+      }
       // Coba ambil label pertanyaan dari item (kalau tersedia)
       const labels = {};
       if (item) {
@@ -5321,20 +5369,56 @@
       // Keterangan OPSIONAL — tampilkan dengan placeholder opsional (skip pertanyaan terstruktur)
       if (noteWrap) {
         noteWrap.classList.add('show');
-        const note = noteWrap.querySelector('.task-note:not(.task-q1):not(.task-q2):not(.task-q3):not(.task-q4):not(.task-q5)');
+        const note = noteWrap.querySelector('.task-note:not(.task-q1):not(.task-q2):not(.task-q3):not(.task-q4):not(.task-q5):not(.task-not-reason)');
         if (note && !note.value) note.placeholder = 'Keterangan (opsional)...';
+        // Show Q1-Q5 wrappers (parent div of .task-qN) + banner, hide alasan-tidak-dikerjakan
+        const qElems = noteWrap.querySelectorAll('.task-q1, .task-q2, .task-q3, .task-q4, .task-q5');
+        qElems.forEach(ta => { if (ta.parentElement) ta.parentElement.style.display = ''; });
+        // Banner pertanyaan (yellow #fef3c7 background)
+        const banner = noteWrap.querySelector('div[style*="fef3c7"]');
+        if (banner) banner.style.display = '';
+        const reasonWrap = noteWrap.querySelector('.task-not-reason-wrap');
+        if (reasonWrap) reasonWrap.style.display = 'none';
       }
     } else {
-      // Belum
+      // Tidak Dikerjakan (status === 'not')
       btns[1].classList.add('selected-red');
       num.innerHTML = `<span style="font-size:9px;display:block;line-height:1;">${origNum}</span><span style="font-size:10px;">✗</span>`;
       num.className = 'task-number';
       num.style.background = 'var(--red-soft)';
       num.style.color = '#c0392b';
-      // Keterangan WAJIB (skip pertanyaan terstruktur)
+      // Tampilkan textarea alasan tidak dikerjakan (WAJIB, min 30 chars)
       if (noteWrap) {
         noteWrap.classList.add('show');
-        const note = noteWrap.querySelector('.task-note:not(.task-q1):not(.task-q2):not(.task-q3):not(.task-q4):not(.task-q5)');
+        // Hide Q1-Q5 wrappers (parent div of .task-qN) + banner (tidak relevan kalau tidak dikerjakan)
+        const qElems = noteWrap.querySelectorAll('.task-q1, .task-q2, .task-q3, .task-q4, .task-q5');
+        qElems.forEach(ta => { if (ta.parentElement) ta.parentElement.style.display = 'none'; });
+        // Banner pertanyaan (yellow #fef3c7 background)
+        const banner = noteWrap.querySelector('div[style*="fef3c7"]');
+        if (banner) banner.style.display = 'none';
+        // Show or create alasan textarea
+        let reasonWrap = noteWrap.querySelector('.task-not-reason-wrap');
+        if (!reasonWrap) {
+          reasonWrap = document.createElement('div');
+          reasonWrap.className = 'task-not-reason-wrap';
+          reasonWrap.style.marginBottom = '8px';
+          reasonWrap.innerHTML = '<div style="background:#fee2e2;border-left:3px solid #dc2626;padding:8px 12px;border-radius:8px;margin-bottom:8px;font-size:12px;color:#991b1b;font-weight:600;">⚠️ Wajib isi alasan tidak dikerjakan (minimum 30 karakter)</div><textarea class="task-note task-not-reason" rows="3" placeholder="Jelaskan alasan kenapa task ini tidak dikerjakan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>';
+          noteWrap.insertBefore(reasonWrap, noteWrap.firstChild);
+          // Auto-save listener for alasan textarea
+          const reasonTa = reasonWrap.querySelector('.task-not-reason');
+          if (reasonTa) {
+            reasonTa.addEventListener('input', () => { saveDraftNow(taskId); });
+            // Restore pending reason kalau ada (dari load draft)
+            if (item.dataset.pendingReason) {
+              reasonTa.value = item.dataset.pendingReason;
+              delete item.dataset.pendingReason;
+            }
+          }
+        } else {
+          reasonWrap.style.display = '';
+        }
+        // Untuk task non-Q1-Q5 (single textarea), set placeholder
+        const note = noteWrap.querySelector('.task-note:not(.task-q1):not(.task-q2):not(.task-q3):not(.task-q4):not(.task-q5):not(.task-not-reason)');
         if (note && !note.value) note.placeholder = 'Wajib diisi — jelaskan alasan tidak dikerjakan...';
       }
       // Sembunyikan upload
@@ -5739,7 +5823,7 @@
   }
 
   // Populate submit screen dengan data dinamis
-  function populateSubmit() {
+  async function populateSubmit() {
     const d = new Date();
     const days = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
     const months = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
@@ -5861,15 +5945,35 @@
       const uploadWrap = document.getElementById(item.id + '-upload');
       const isNoUpload = uploadWrap && uploadWrap.dataset.noUpload === '1';
       const hasUpload = taskFiles[item.id] && taskFiles[item.id].length > 0;
-      const note = item.querySelector('.task-note');
+      const note = item.querySelector('.task-note:not(.task-q1):not(.task-q2):not(.task-q3):not(.task-q4):not(.task-q5):not(.task-not-reason)');
       const hasNote = note && note.value.trim();
 
       // Lampiran wajib jika Sudah/Proses dan task butuh upload
       if ((status === 'done' || status === 'progress') && !isNoUpload && !hasUpload) {
         requiredItems.push('• No.' + taskNum + ' — <b>' + taskName + '</b> <i>(lampiran wajib diupload)</i>');
-      } else if (isNoUpload && !hasNote) {
+      } else if (isNoUpload && !hasNote && status !== 'not') {
         // Task no-upload → keterangan wajib
         requiredItems.push('• No.' + taskNum + ' — <b>' + taskName + '</b> <i>(keterangan wajib diisi)</i>');
+      }
+
+      // Validasi alasan TIDAK DIKERJAKAN — wajib min 30 chars
+      if (status === 'not') {
+        const reasonTa = item.querySelector('.task-not-reason');
+        if (reasonTa) {
+          // Task dengan Q1-Q5: pakai task-not-reason
+          const reason = reasonTa.value.trim();
+          if (reason.length < 30) {
+            const need = 30 - reason.length;
+            requiredItems.push('• No.' + taskNum + ' — <b>' + taskName + '</b> <i>(alasan tidak dikerjakan kurang ' + need + ' karakter, min 30)</i>');
+          }
+        } else {
+          // Task tanpa Q1-Q5 (corporate single textarea): pakai task-note plain
+          const reason = note ? note.value.trim() : '';
+          if (reason.length < 30) {
+            const need = 30 - reason.length;
+            requiredItems.push('• No.' + taskNum + ' — <b>' + taskName + '</b> <i>(alasan tidak dikerjakan kurang ' + need + ' karakter, min 30)</i>');
+          }
+        }
       }
     });
 
@@ -5920,6 +6024,7 @@
         {id: 'task_16', num: 16, qCount: 1, label: 'Genset'},
         {id: 'task_18', num: 18, qCount: 1, label: 'Guest Review Check & Reply'},
         {id: 'task_19', num: 19, qCount: 5, label: 'Closing Briefing (Check MJA vs Actual)'},
+        {id: 'task_20', num: 20, qCount: 3, label: 'Pembahasan Defect Tracker'},
       ];
       HM_QUESTION_TASKS.forEach(t => {
         const el = document.getElementById(t.id);
@@ -5936,6 +6041,72 @@
           requiredItems.push('• No.' + t.num + ' — <b>' + t.label + '</b> <i>(pertanyaan ' + qEmpty.join(', ') + ' belum diisi)</i>');
         }
       });
+
+      // Validasi Room Check: HM wajib check minimal 5 kamar per hari
+      // ATAU isi alasan minimum 30 karakter kalau kurang
+      const MIN_ROOM_CHECKS = 5;
+      const MIN_REASON_CHARS = 30;
+      const rcOverrideSection = document.getElementById('submit-rc-override-section');
+      const rcOverrideTa = document.getElementById('submit-rc-override-reason');
+      const rcOverrideCounter = document.getElementById('submit-rc-override-counter');
+      try {
+        const today = new Date(Date.now() + 7*3600000).toISOString().split('T')[0];
+        const rcRes = await fetch(
+          SUPA_URL + '/rest/v1/room_checks?checked_at=gte.' + today + 'T00:00:00' +
+          '&checked_at=lt.' + today + 'T23:59:59' +
+          '&hotel=eq.' + encodeURIComponent(hotel) +
+          '&user_role=eq.HM' +
+          '&select=id',
+          { headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY } }
+        );
+        if (rcRes.ok) {
+          const rcRows = await rcRes.json();
+          const rcCount = rcRows.length;
+          if (rcCount < MIN_ROOM_CHECKS) {
+            // Show override textarea section
+            if (rcOverrideSection) rcOverrideSection.style.display = '';
+            // Setup counter listener (only once)
+            if (rcOverrideTa && !rcOverrideTa.dataset.listenerAttached) {
+              rcOverrideTa.dataset.listenerAttached = '1';
+              rcOverrideTa.addEventListener('input', () => {
+                const len = rcOverrideTa.value.trim().length;
+                if (rcOverrideCounter) {
+                  rcOverrideCounter.textContent = len + ' / ' + MIN_REASON_CHARS + ' karakter';
+                  rcOverrideCounter.style.color = len >= MIN_REASON_CHARS ? '#059669' : '#78350f';
+                }
+                // Auto re-validate on input (debounced)
+                if (rcOverrideTa._debounceTimer) clearTimeout(rcOverrideTa._debounceTimer);
+                rcOverrideTa._debounceTimer = setTimeout(() => populateSubmit(), 400);
+              });
+            }
+            // Update counter on initial render
+            if (rcOverrideTa && rcOverrideCounter) {
+              const len = rcOverrideTa.value.trim().length;
+              rcOverrideCounter.textContent = len + ' / ' + MIN_REASON_CHARS + ' karakter';
+              rcOverrideCounter.style.color = len >= MIN_REASON_CHARS ? '#059669' : '#78350f';
+            }
+            // Validate: alasan diisi DAN >= 30 chars
+            const reasonText = rcOverrideTa ? rcOverrideTa.value.trim() : '';
+            if (reasonText.length < MIN_REASON_CHARS) {
+              const needRoomsOrChars = reasonText.length === 0
+                ? '<i>baru ' + rcCount + '/' + MIN_ROOM_CHECKS + ' kamar — isi alasan di kotak kuning di bawah</i>'
+                : '<i>alasan kurang ' + (MIN_REASON_CHARS - reasonText.length) + ' karakter (min ' + MIN_REASON_CHARS + ')</i>';
+              requiredItems.push('• <b>🏨 Pengecekan Kamar</b> — ' + needRoomsOrChars);
+            }
+          } else {
+            // Kamar mencukupi, hide override section
+            if (rcOverrideSection) rcOverrideSection.style.display = 'none';
+          }
+        } else {
+          console.error('Room check fetch failed:', rcRes.status);
+        }
+      } catch(e) {
+        console.error('Room check validation error:', e);
+      }
+    } else {
+      // Non-HM role: hide override section
+      const rcOverrideSection = document.getElementById('submit-rc-override-section');
+      if (rcOverrideSection) rcOverrideSection.style.display = 'none';
     }
 
     if (requiredItems.length > 0 || optionalItems.length > 0) {
