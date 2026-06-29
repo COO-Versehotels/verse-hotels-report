@@ -2818,7 +2818,7 @@
   // =============================================================
   // Update angka di bawah setiap kali deploy file baru yang penting.
   // Format: YYYY.MM.DD-NN (NN = increment harian)
-  const APP_VERSION = '2026.06.25-12';
+  const APP_VERSION = '2026.06.25-13';
   const APP_VERSION_KEY = 'verse_app_version';
 
   (function _checkAppVersion() {
@@ -13383,7 +13383,7 @@ ROLE_TASKS["F&B Attendant Oak Tree"] = {
   async function loadLiveProgress() {
     try {
       const today = new Date(Date.now() + 7*3600000).toISOString().split('T')[0];
-      const res = await fetch(SUPA_URL + '/rest/v1/draft_tasklist?tanggal=eq.' + today + '&select=role,hotel,status&order=role.asc', {
+      const res = await fetch(SUPA_URL + '/rest/v1/draft_tasklist?tanggal=eq.' + today + '&select=role,hotel,status,task_id&order=role.asc', {
         headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY }
       });
       if (!res.ok) return;
@@ -13422,11 +13422,17 @@ ROLE_TASKS["F&B Attendant Oak Tree"] = {
         if (roleRows.length === 0) return; // belum mulai sama sekali
 
         anyActive = true;
-        const done = roleRows.filter(r => r.status === 'done').length;
-        const inProgress = roleRows.filter(r => r.status === 'in_progress').length;
+        // Hitung DISTINCT task_id (handle duplicate rows kalau ada race condition)
+        const doneTaskIds = new Set(roleRows.filter(r => r.status === 'done').map(r => r.task_id));
+        const inProgressTaskIds = new Set(roleRows.filter(r => r.status === 'in_progress').map(r => r.task_id));
+        // Inprogress: exclude task yang sudah done (kalau sempat in_progress dulu lalu done, hitung sebagai done saja)
+        doneTaskIds.forEach(id => inProgressTaskIds.delete(id));
+        const done = doneTaskIds.size;
+        const inProgress = inProgressTaskIds.size;
         // Gunakan total dari ROLE_TASKS (angka sesungguhnya), bukan jumlah rows di DB
         const total = (ROLE_TASKS[role.taskKey] && ROLE_TASKS[role.taskKey].count) || roleRows.length;
-        const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+        // Cap pct max 100% (defensif kalau ada anomali data)
+        const pct = total > 0 ? Math.min(100, Math.round((done / total) * 100)) : 0;
         const barColor = pct >= 80 ? 'var(--green)' : pct >= 50 ? 'var(--navy)' : 'var(--amber)';
         const hotelLabel = role.hotel === 'Corporate' ? 'Tim Corporate' : role.hotel.replace('Verse ','').replace(' Gajah Mada','').replace(' Wahid Hasyim','');
 
