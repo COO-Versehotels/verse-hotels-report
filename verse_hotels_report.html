@@ -2217,9 +2217,9 @@
       <!-- Room Check Override (HM only, tampil kalau check < 5 kamar) -->
       <div id="submit-rc-override-section" style="display:none;margin:0 16px 12px;background:#fff7ed;border:1.5px solid #f59e0b;border-radius:var(--radius);padding:12px 14px;">
         <div style="font-size:12px;color:#92400e;font-weight:700;margin-bottom:6px;">🏨 Alasan tidak bisa check 5 kamar hari ini</div>
-        <div style="font-size:11px;color:#78350f;margin-bottom:8px;">Isi alasan minimal 30 karakter (contoh: event besar, hotel penuh, dst). Alasan akan ditampilkan di WA report.</div>
+        <div style="font-size:11px;color:#78350f;margin-bottom:8px;">Isi alasan minimal 10 karakter (contoh: event besar, hotel penuh, dst). Alasan akan ditampilkan di WA report.</div>
         <textarea id="submit-rc-override-reason" rows="3" style="width:100%;padding:10px;border:1px solid #fcd34d;border-radius:8px;font-family:inherit;font-size:13px;resize:vertical;box-sizing:border-box;" placeholder="Jelaskan alasan kenapa tidak bisa check minimum 5 kamar hari ini..."></textarea>
-        <div style="font-size:11px;color:#78350f;margin-top:6px;" id="submit-rc-override-counter">0 / 30 karakter</div>
+        <div style="font-size:11px;color:#78350f;margin-top:6px;" id="submit-rc-override-counter">0 / 10 karakter</div>
       </div>
 
       <!-- Tombol -->
@@ -2826,7 +2826,7 @@
   // =============================================================
   // Update angka di bawah setiap kali deploy file baru yang penting.
   // Format: YYYY.MM.DD-NN (NN = increment harian)
-  const APP_VERSION = '2026.06.25-15';
+  const APP_VERSION = '2026.06.25-18';
   const APP_VERSION_KEY = 'verse_app_version';
 
   (function _checkAppVersion() {
@@ -5387,7 +5387,7 @@
       num.className = 'task-number';
       num.style.background = 'var(--red-soft)';
       num.style.color = '#c0392b';
-      // Tampilkan textarea alasan tidak dikerjakan (WAJIB, min 30 chars)
+      // Tampilkan textarea alasan tidak dikerjakan (WAJIB, min 10 chars)
       if (noteWrap) {
         noteWrap.classList.add('show');
         // Hide Q1-Q5 wrappers (parent div of .task-qN) + banner (tidak relevan kalau tidak dikerjakan)
@@ -5402,7 +5402,7 @@
           reasonWrap = document.createElement('div');
           reasonWrap.className = 'task-not-reason-wrap';
           reasonWrap.style.marginBottom = '8px';
-          reasonWrap.innerHTML = '<div style="background:#fee2e2;border-left:3px solid #dc2626;padding:8px 12px;border-radius:8px;margin-bottom:8px;font-size:12px;color:#991b1b;font-weight:600;">⚠️ Wajib isi alasan tidak dikerjakan (minimum 30 karakter)</div><textarea class="task-note task-not-reason" rows="3" placeholder="Jelaskan alasan kenapa task ini tidak dikerjakan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>';
+          reasonWrap.innerHTML = '<div style="background:#fee2e2;border-left:3px solid #dc2626;padding:8px 12px;border-radius:8px;margin-bottom:8px;font-size:12px;color:#991b1b;font-weight:600;">⚠️ Wajib isi alasan tidak dikerjakan (minimum 10 karakter)</div><textarea class="task-note task-not-reason" rows="3" placeholder="Jelaskan alasan kenapa task ini tidak dikerjakan..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>';
           noteWrap.insertBefore(reasonWrap, noteWrap.firstChild);
           // Auto-save listener for alasan textarea
           const reasonTa = reasonWrap.querySelector('.task-not-reason');
@@ -5956,22 +5956,22 @@
         requiredItems.push('• No.' + taskNum + ' — <b>' + taskName + '</b> <i>(keterangan wajib diisi)</i>');
       }
 
-      // Validasi alasan TIDAK DIKERJAKAN — wajib min 30 chars
+      // Validasi alasan TIDAK DIKERJAKAN — wajib min 10 chars
       if (status === 'not') {
         const reasonTa = item.querySelector('.task-not-reason');
         if (reasonTa) {
           // Task dengan Q1-Q5: pakai task-not-reason
           const reason = reasonTa.value.trim();
-          if (reason.length < 30) {
-            const need = 30 - reason.length;
-            requiredItems.push('• No.' + taskNum + ' — <b>' + taskName + '</b> <i>(alasan tidak dikerjakan kurang ' + need + ' karakter, min 30)</i>');
+          if (reason.length < 10) {
+            const need = 10 - reason.length;
+            requiredItems.push('• No.' + taskNum + ' — <b>' + taskName + '</b> <i>(alasan tidak dikerjakan kurang ' + need + ' karakter, min 10)</i>');
           }
         } else {
           // Task tanpa Q1-Q5 (corporate single textarea): pakai task-note plain
           const reason = note ? note.value.trim() : '';
-          if (reason.length < 30) {
-            const need = 30 - reason.length;
-            requiredItems.push('• No.' + taskNum + ' — <b>' + taskName + '</b> <i>(alasan tidak dikerjakan kurang ' + need + ' karakter, min 30)</i>');
+          if (reason.length < 10) {
+            const need = 10 - reason.length;
+            requiredItems.push('• No.' + taskNum + ' — <b>' + taskName + '</b> <i>(alasan tidak dikerjakan kurang ' + need + ' karakter, min 10)</i>');
           }
         }
       }
@@ -6003,49 +6003,49 @@
       }
     }
 
-    // Validasi khusus HM: task dengan pertanyaan wajib keterangan
-    if (_isHmRole) {
-      // Map task_id -> {label, num_questions, task_label}
-      const HM_QUESTION_TASKS = [
-        {id: 'task_1',  num: 1,  qCount: 3, label: 'Check Area Parkir, Sampah, Pos Security'},
-        {id: 'task_2',  num: 2,  qCount: 3, label: 'Check Breakfast Menu, Taste & Setup'},
-        {id: 'task_3',  num: 3,  qCount: 2, label: 'Check Night Audit Report'},
-        {id: 'task_4',  num: 4,  qCount: 1, label: 'Morning Briefing'},
-        {id: 'task_6',  num: 6,  qCount: 2, label: 'Talenta Checking'},
-        {id: 'task_7',  num: 7,  qCount: 3, label: 'Standby Review Collection'},
-        {id: 'task_8',  num: 8,  qCount: 4, label: 'Check Closing Breakfast'},
-        {id: 'task_9',  num: 9,  qCount: 1, label: 'Kunjungan FO'},
-        {id: 'task_10', num: 10, qCount: 1, label: 'Kunjungan HK'},
-        {id: 'task_11', num: 11, qCount: 1, label: 'Kunjungan ENG'},
-        {id: 'task_12', num: 12, qCount: 1, label: 'Kunjungan SEC'},
-        {id: 'task_13', num: 13, qCount: 1, label: 'Kunjungan F&B'},
-        {id: 'task_14', num: 14, qCount: 1, label: 'GWT (Grey Water Tank)'},
-        {id: 'task_15', num: 15, qCount: 1, label: 'RWT (Raw Water Tank)'},
-        {id: 'task_16', num: 16, qCount: 1, label: 'Genset'},
-        {id: 'task_18', num: 18, qCount: 1, label: 'Guest Review Check & Reply'},
-        {id: 'task_19', num: 19, qCount: 5, label: 'Closing Briefing (Check MJA vs Actual)'},
-        {id: 'task_20', num: 20, qCount: 3, label: 'Pembahasan Defect Tracker'},
-      ];
-      HM_QUESTION_TASKS.forEach(t => {
-        const el = document.getElementById(t.id);
-        if (!el) return;
-        const status = el.dataset.status || '';
-        // Hanya validasi kalau task sudah ditandai 'done'
-        if (status !== 'done') return;
-        const qEmpty = [];
-        for (let i = 1; i <= t.qCount; i++) {
-          const q = el.querySelector('.task-q' + i);
-          if (!q || !q.value.trim()) qEmpty.push(i);
+    // Validasi GENERIC Q1-Q5: berlaku untuk SEMUA role yang punya pertanyaan terstruktur
+    // (HM, F&B Manager, Team Kitchen, F&B Attendant — kalau task punya .task-q1 elements)
+    document.querySelectorAll('#tasklist-content .task-item').forEach(item => {
+      const status = item.dataset.status || '';
+      // Hanya validasi kalau task sudah ditandai 'done'
+      if (status !== 'done') return;
+      // Cek apakah task punya pertanyaan terstruktur (minimum .task-q1)
+      if (!item.querySelector('.task-q1')) return;
+      // Hitung Q yang ada (1-5) dan yang kosong
+      const qEmpty = [];
+      for (let i = 1; i <= 5; i++) {
+        const q = item.querySelector('.task-q' + i);
+        if (q && !q.value.trim()) qEmpty.push(i);
+      }
+      if (qEmpty.length > 0) {
+        // Ambil task number & name dari DOM
+        let taskNum = item.id ? item.id.replace('task_','') : '?';
+        const taskNumEl = item.querySelector('.task-number');
+        if (taskNum === '?' && taskNumEl) {
+          taskNum = taskNumEl.dataset.origNum || taskNumEl.textContent.replace(/[^0-9]/g,'').trim() || '?';
         }
-        if (qEmpty.length > 0) {
-          requiredItems.push('• No.' + t.num + ' — <b>' + t.label + '</b> <i>(pertanyaan ' + qEmpty.join(', ') + ' belum diisi)</i>');
+        // Ambil nama task: prefer task-text, fallback ke sub-points UL list, fallback ke section title
+        let taskName = '';
+        const taskTextEl = item.querySelector('.task-text');
+        const taskUlLi = item.querySelector('ul li');
+        if (taskTextEl) {
+          taskName = taskTextEl.textContent.trim().substring(0, 60);
+        } else if (taskUlLi) {
+          taskName = taskUlLi.textContent.trim().substring(0, 60);
+        } else {
+          const cat = item.closest('.task-category');
+          const hdr = cat ? cat.querySelector('.task-cat-title') : null;
+          taskName = hdr ? hdr.textContent.trim().substring(0, 60) : 'Task ' + taskNum;
         }
-      });
+        requiredItems.push('• No.' + taskNum + ' — <b>' + taskName + '</b> <i>(pertanyaan ' + qEmpty.join(', ') + ' belum diisi)</i>');
+      }
+    });
 
-      // Validasi Room Check: HM wajib check minimal 5 kamar per hari
-      // ATAU isi alasan minimum 30 karakter kalau kurang
+    // Validasi khusus HM: Room Check minimum 5 kamar per hari
+    if (_isHmRole) {
+      // ATAU isi alasan minimum 10 karakter kalau kurang
       const MIN_ROOM_CHECKS = 5;
-      const MIN_REASON_CHARS = 30;
+      const MIN_REASON_CHARS = 10;
       const rcOverrideSection = document.getElementById('submit-rc-override-section');
       const rcOverrideTa = document.getElementById('submit-rc-override-reason');
       const rcOverrideCounter = document.getElementById('submit-rc-override-counter');
@@ -13566,9 +13566,12 @@ ROLE_TASKS["F&B Attendant Oak Tree"] = {
         {name:'Chief Engineering Corporate', icon:'⚙️', hotel:'Corporate', taskKey:'CE Corporate'},
         {name:'EHK Corporate', icon:'🛏️', hotel:'Corporate', taskKey:'EHK Corporate'},
         {name:'CRA Corporate', icon:'🌐', hotel:'Corporate', taskKey:'CRA Corporate'},
-        {name:'F&B Manager', icon:'🍽️', hotel:'Corporate', taskKey:'F&B Manager'},
-        {name:'Team Kitchen', icon:'👨‍🍳', hotel:'Corporate', taskKey:'Team Kitchen'},
-        {name:'F&B Attendant', icon:'🥂', hotel:'Corporate', taskKey:'F&B Attendant'},
+        {name:'F&B Manager Verse Luxe', icon:'🍽️', hotel:'Verse Luxe Wahid Hasyim', taskKey:'F&B Manager Verse Luxe'},
+        {name:'F&B Manager Oak Tree', icon:'🍽️', hotel:'Oak Tree Mahakam Blok M', taskKey:'F&B Manager Oak Tree'},
+        {name:'Team Kitchen Verse Luxe', icon:'👨‍🍳', hotel:'Verse Luxe Wahid Hasyim', taskKey:'Team Kitchen Verse Luxe'},
+        {name:'Team Kitchen Oak Tree', icon:'👨‍🍳', hotel:'Oak Tree Mahakam Blok M', taskKey:'Team Kitchen Oak Tree'},
+        {name:'F&B Attendant Verse Luxe', icon:'🥂', hotel:'Verse Luxe Wahid Hasyim', taskKey:'F&B Attendant Verse Luxe'},
+        {name:'F&B Attendant Oak Tree', icon:'🥂', hotel:'Oak Tree Mahakam Blok M', taskKey:'F&B Attendant Oak Tree'},
         {name:'HM Verse Lite', icon:'🏨', hotel:'Verse Lite Gajah Mada', taskKey:'HM Verse Lite'},
         {name:'HM Verse Luxe', icon:'🏨', hotel:'Verse Luxe Wahid Hasyim', taskKey:'HM Verse Luxe'},
         {name:'HM Verse Cirebon', icon:'🏨', hotel:'Verse Hotel Cirebon', taskKey:'HM Verse Cirebon'},
@@ -13723,7 +13726,13 @@ ROLE_TASKS["F&B Attendant Oak Tree"] = {
       const roleTaskKey = {
         'Ops HR Manager': 'Ops HR Manager', 'HR Officer': 'HR Officer',
         'Chief Engineering Corporate': 'CE Corporate',
-        'EHK Corporate': 'EHK Corporate', 'CRA Corporate': 'CRA Corporate', 'F&B Manager': 'F&B Manager', 'Team Kitchen': 'Team Kitchen', 'F&B Attendant': 'F&B Attendant',
+        'EHK Corporate': 'EHK Corporate', 'CRA Corporate': 'CRA Corporate',
+        'F&B Manager Verse Luxe': 'F&B Manager Verse Luxe',
+        'F&B Manager Oak Tree': 'F&B Manager Oak Tree',
+        'Team Kitchen Verse Luxe': 'Team Kitchen Verse Luxe',
+        'Team Kitchen Oak Tree': 'Team Kitchen Oak Tree',
+        'F&B Attendant Verse Luxe': 'F&B Attendant Verse Luxe',
+        'F&B Attendant Oak Tree': 'F&B Attendant Oak Tree',
         'HM Verse Lite': 'HM Verse Lite', 'HM Verse Luxe': 'HM Verse Luxe',
         'HM Verse Cirebon': 'HM Verse Cirebon', 'HM Oak Tree': 'HM Oak Tree',
       };
@@ -14611,7 +14620,24 @@ ROLE_TASKS["F&B Attendant Oak Tree"] = {
     const detailKeyMap = {
       'Chief Engineering Corporate': 'CE Corporate',
     };
-    const lookupRole = detailKeyMap[role] || role;
+    let lookupRole = detailKeyMap[role] || role;
+    // Kalau role base F&B/Team Kitchen/F&B Attendant (tanpa suffix hotel), tentukan dari parameter hotel
+    if (lookupRole === 'F&B Manager' || lookupRole === 'Team Kitchen' || lookupRole === 'F&B Attendant') {
+      const hLower = (hotel || '').toLowerCase();
+      // Multiple keyword detection untuk Verse Luxe: Luxe / Wahid / Hasyim
+      if (hLower.indexOf('luxe') !== -1 || hLower.indexOf('wahid') !== -1 || hLower.indexOf('hasyim') !== -1) {
+        lookupRole = lookupRole + ' Verse Luxe';
+      }
+      // Multiple keyword untuk Oak Tree: Oak / Mahakam / Blok M
+      else if (hLower.indexOf('oak') !== -1 || hLower.indexOf('mahakam') !== -1) {
+        lookupRole = lookupRole + ' Oak Tree';
+      }
+      // Fallback: kalau detection gagal, pakai Verse Luxe sebagai default (lebih banyak task)
+      else if (!ROLE_TASKS[lookupRole]) {
+        console.warn('F&B role: hotel "' + hotel + '" tidak terdeteksi, fallback ke Verse Luxe');
+        lookupRole = lookupRole + ' Verse Luxe';
+      }
+    }
     // 1. Parse template ROLE_TASKS untuk dapat section structure
     const taskData = ROLE_TASKS[lookupRole];
     if (!taskData) {
@@ -14915,7 +14941,20 @@ ROLE_TASKS["F&B Attendant Oak Tree"] = {
     }
 
     // 7. Section PLANNING FOR TOMORROW
-    const planItems = items.filter(it => it.task_id === 'planning-tomorrow' || it.task_id === 'unit-visit-tomorrow' || it.task_id === 'activity-plan');
+    // NOTE: 'activity-plan' adalah task_id UI element (auto-save), TIDAK ditampilkan di laporan
+    // Hanya 'planning-tomorrow' (semua role) dan 'unit-visit-tomorrow' (corporate) yang muncul
+    // DEDUPE: kalau ada duplikat row untuk task_id yang sama, keep yang updated_at terbaru
+    const planSeen = new Map();
+    items.filter(it => it.task_id === 'planning-tomorrow' || it.task_id === 'unit-visit-tomorrow')
+      .forEach(it => {
+        const existing = planSeen.get(it.task_id);
+        if (!existing || (it.updated_at && existing.updated_at && it.updated_at > existing.updated_at)) {
+          planSeen.set(it.task_id, it);
+        } else if (!existing) {
+          planSeen.set(it.task_id, it);
+        }
+      });
+    const planItems = Array.from(planSeen.values());
     if (planItems.length > 0) {
       html += `<div style="background:white;border-radius:14px;margin-bottom:14px;overflow:hidden;border:1px solid #e0e0e0;box-shadow:0 1px 3px rgba(0,0,0,0.04);">`;
       html += `<div style="background:#f8f9fa;padding:14px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid #e0e0e0;">`;
