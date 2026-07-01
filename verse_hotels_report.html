@@ -2826,7 +2826,7 @@
   // =============================================================
   // Update angka di bawah setiap kali deploy file baru yang penting.
   // Format: YYYY.MM.DD-NN (NN = increment harian)
-  const APP_VERSION = '2026.06.25-18';
+  const APP_VERSION = '2026.06.25-20';
   const APP_VERSION_KEY = 'verse_app_version';
 
   (function _checkAppVersion() {
@@ -3087,6 +3087,19 @@
           parts.push(label + '\n→ ' + v.trim());
         }
       }
+      // Format menu_sisa (FBM Closing Breakfast Per Unit)
+      if (typeof data.menu_sisa_status === 'string' && data.menu_sisa_status) {
+        parts.push('3. Apakah ada menu sisa?\n→ ' + data.menu_sisa_status);
+        if (data.menu_sisa_status === 'Ada' && Array.isArray(data.menu_sisa_list) && data.menu_sisa_list.length > 0) {
+          const menuLines = ['Daftar Menu Sisa:'];
+          data.menu_sisa_list.forEach((m, idx) => {
+            const nama = (m && m.nama) ? m.nama : '-';
+            const gram = (m && m.gram) ? m.gram : '-';
+            menuLines.push('  • Menu ' + (idx+1) + ': ' + nama + ' — ' + gram + 'g');
+          });
+          parts.push(menuLines.join('\n'));
+        }
+      }
       return parts.length > 0 ? parts.join('\n\n') : keterangan;
     } catch(e) {
       return keterangan;
@@ -3119,6 +3132,23 @@
         const v = el.value.trim();
         data['q' + i] = v;
         if (v) hasAny = true;
+      }
+    }
+
+    // Collect menu_sisa data (radio + dynamic list) — untuk FBM Closing Breakfast Per Unit
+    const menuSisaRadio = item.querySelector('.task-menu-sisa-radio:checked');
+    if (menuSisaRadio) {
+      data.menu_sisa_status = menuSisaRadio.value;
+      hasAny = true;
+      if (menuSisaRadio.value === 'Ada') {
+        const rows = item.querySelectorAll('.task-menu-list .menu-sisa-row');
+        const menuList = [];
+        rows.forEach(row => {
+          const nama = row.querySelector('.menu-sisa-nama')?.value.trim() || '';
+          const gram = row.querySelector('.menu-sisa-gram')?.value.trim() || '';
+          if (nama || gram) menuList.push({ nama, gram });
+        });
+        if (menuList.length > 0) data.menu_sisa_list = menuList;
       }
     }
 
@@ -3162,6 +3192,28 @@
             item.dataset.pendingReason = data._alasan_tidak;
           }
         }
+        // Restore menu_sisa (radio + dynamic list) — untuk FBM Closing Breakfast Per Unit
+        if (typeof data.menu_sisa_status === 'string' && data.menu_sisa_status) {
+          const radios = item.querySelectorAll('.task-menu-sisa-radio');
+          radios.forEach(r => {
+            if (r.value === data.menu_sisa_status) r.checked = true;
+          });
+          const listWrap = item.querySelector('.menu-sisa-list-wrap');
+          if (listWrap) {
+            listWrap.style.display = (data.menu_sisa_status === 'Ada') ? '' : 'none';
+          }
+          const rowsContainer = item.querySelector('.task-menu-list');
+          if (rowsContainer && data.menu_sisa_status === 'Ada' && Array.isArray(data.menu_sisa_list)) {
+            rowsContainer.innerHTML = '';
+            data.menu_sisa_list.forEach(m => {
+              // Panggil addMenuSisaRow untuk build row baru + isi value
+              if (typeof addMenuSisaRow === 'function') {
+                addMenuSisaRow(item.id, m.nama || '', m.gram || '');
+              }
+            });
+          }
+          restored = true;
+        }
         if (restored) return;
       } catch(e) { /* fallback ke restore single */ }
     }
@@ -3203,9 +3255,76 @@
           parts.push(label + '\n→ ' + v.trim());
         }
       }
+      // Format menu_sisa (FBM Closing Breakfast Per Unit)
+      if (typeof data.menu_sisa_status === 'string' && data.menu_sisa_status) {
+        parts.push('3. Apakah ada menu sisa?\n→ ' + data.menu_sisa_status);
+        if (data.menu_sisa_status === 'Ada' && Array.isArray(data.menu_sisa_list) && data.menu_sisa_list.length > 0) {
+          const menuLines = ['Daftar Menu Sisa:'];
+          data.menu_sisa_list.forEach((m, idx) => {
+            const nama = (m && m.nama) ? m.nama : '-';
+            const gram = (m && m.gram) ? m.gram : '-';
+            menuLines.push('  • Menu ' + (idx+1) + ': ' + nama + ' — ' + gram + 'g');
+          });
+          parts.push(menuLines.join('\n'));
+        }
+      }
       return parts.length > 0 ? parts.join('\n\n') : keterangan;
     } catch(e) {
       return keterangan;
+    }
+  }
+
+  // ============================================================
+  // MENU SISA (FBM Closing Breakfast Per Unit) — Radio + Dynamic List
+  // ============================================================
+  function onMenuSisaChange(event, taskId, value) {
+    if (event) event.stopPropagation();
+    const item = document.getElementById(taskId);
+    if (!item) return;
+    const listWrap = item.querySelector('.menu-sisa-list-wrap');
+    if (!listWrap) return;
+    if (value === 'Ada') {
+      listWrap.style.display = '';
+      // Kalau belum ada row, add 1 default
+      const rows = item.querySelectorAll('.menu-sisa-row');
+      if (rows.length === 0) addMenuSisaRow(taskId);
+    } else {
+      listWrap.style.display = 'none';
+      // Tidak clear rows — user bisa switch balik ke Ada tanpa kehilangan data
+    }
+    autoSaveDraft(taskId);
+  }
+
+  function addMenuSisaRow(taskId, nama, gram) {
+    const item = document.getElementById(taskId);
+    if (!item) return;
+    const rowsContainer = item.querySelector('.task-menu-list');
+    if (!rowsContainer) return;
+    const rowIdx = rowsContainer.querySelectorAll('.menu-sisa-row').length + 1;
+    const row = document.createElement('div');
+    row.className = 'menu-sisa-row';
+    row.style.cssText = 'display:flex;gap:6px;margin-bottom:6px;align-items:center;';
+    row.innerHTML = `
+      <span class="menu-sisa-label" style="font-size:11px;font-weight:600;color:var(--gray-600);min-width:52px;">Menu ${rowIdx}:</span>
+      <input type="text" class="menu-sisa-nama" placeholder="Nama menu" value="${nama ? String(nama).replace(/"/g,'&quot;') : ''}" onclick="event.stopPropagation()" oninput="autoSaveDraft('${taskId}')" style="flex:2;padding:6px 8px;border:1px solid var(--gray-200);border-radius:6px;font-size:12px;font-family:inherit;">
+      <input type="text" class="menu-sisa-gram" placeholder="Gram" value="${gram ? String(gram).replace(/"/g,'&quot;') : ''}" onclick="event.stopPropagation()" oninput="autoSaveDraft('${taskId}')" style="flex:1;padding:6px 8px;border:1px solid var(--gray-200);border-radius:6px;font-size:12px;font-family:inherit;">
+      <button type="button" onclick="event.stopPropagation();removeMenuSisaRow(this,'${taskId}')" style="padding:6px 10px;background:var(--red-soft);color:#c0392b;border:none;border-radius:6px;font-size:14px;cursor:pointer;font-weight:700;">×</button>
+    `;
+    rowsContainer.appendChild(row);
+  }
+
+  function removeMenuSisaRow(btn, taskId) {
+    const row = btn.closest('.menu-sisa-row');
+    if (row) row.remove();
+    // Renumber remaining rows
+    const item = document.getElementById(taskId);
+    if (item) {
+      const rows = item.querySelectorAll('.menu-sisa-row');
+      rows.forEach((r, i) => {
+        const label = r.querySelector('.menu-sisa-label');
+        if (label) label.textContent = 'Menu ' + (i+1) + ':';
+      });
+      autoSaveDraft(taskId);
     }
   }
 
@@ -6038,6 +6157,39 @@
           taskName = hdr ? hdr.textContent.trim().substring(0, 60) : 'Task ' + taskNum;
         }
         requiredItems.push('• No.' + taskNum + ' — <b>' + taskName + '</b> <i>(pertanyaan ' + qEmpty.join(', ') + ' belum diisi)</i>');
+      }
+    });
+
+    // Validasi Menu Sisa (FBM Closing Breakfast Per Unit) — task dengan .task-menu-sisa-radio
+    document.querySelectorAll('#tasklist-content .task-item').forEach(item => {
+      const status = item.dataset.status || '';
+      if (status !== 'done') return;
+      const radios = item.querySelectorAll('.task-menu-sisa-radio');
+      if (radios.length === 0) return; // task tidak punya menu sisa structure
+      // Ambil task number & name
+      let taskNum = '?';
+      const taskNumEl = item.querySelector('.task-number');
+      if (taskNumEl) taskNum = taskNumEl.dataset.origNum || taskNumEl.textContent.replace(/[^0-9]/g,'').trim() || '?';
+      const taskTextEl = item.querySelector('.task-text');
+      const taskName = taskTextEl ? taskTextEl.textContent.trim().substring(0, 60) : ('Task ' + taskNum);
+      // Cek radio Q3 checked
+      const checked = item.querySelector('.task-menu-sisa-radio:checked');
+      if (!checked) {
+        requiredItems.push('• No.' + taskNum + ' — <b>' + taskName + '</b> <i>(pertanyaan 3 menu sisa belum dipilih)</i>');
+        return;
+      }
+      // Kalau checked = "Ada", validasi minimum 1 menu dengan nama + gram
+      if (checked.value === 'Ada') {
+        const rows = item.querySelectorAll('.menu-sisa-row');
+        let validCount = 0;
+        rows.forEach(row => {
+          const nama = row.querySelector('.menu-sisa-nama')?.value.trim() || '';
+          const gram = row.querySelector('.menu-sisa-gram')?.value.trim() || '';
+          if (nama && gram) validCount++;
+        });
+        if (validCount === 0) {
+          requiredItems.push('• No.' + taskNum + ' — <b>' + taskName + '</b> <i>(daftar menu sisa belum diisi, min. 1 menu dengan Nama + Gram)</i>');
+        }
       }
     });
 
@@ -10986,15 +11138,15 @@ const ROLE_TASKS = {
 };
 
 // ===== EXTENSION: F&B Department + CEO =====
-TASK_LABEL_MAP["F&B Manager Verse Luxe"] = {"task_1": "Briefing Pagi F&B Team", "task_2": "Check Breakfast Setup", "task_3": "Check Resto Area", "task_4": "Oversight Kitchen Area Lantai M", "task_5": "Check Closing Breakfast", "task_6": "Check Meeting Room Attap Utara", "task_7": "Check Meeting Room Attap Selatan", "task_8": "Check Meeting Room Attap Langit", "task_9": "Check Bar Area Lantai T", "task_10": "Check Bar Area Lobby", "task_11": "Check Clearup Koridor / Emergency Staircase", "task_12": "Check Total Stock Kebutuhan F&B", "task_13": "Briefing Siang F&B Team", "task_14": "Closing Briefing F&B"};
-TASK_LABEL_MAP["F&B Manager Oak Tree"] = {"task_1": "Briefing Pagi F&B Team", "task_2": "Check Breakfast Setup", "task_3": "Check Resto Area", "task_4": "Check Bar Area", "task_5": "Check Kitchen Back Area", "task_6": "Check Total Stock Kebutuhan F&B", "task_7": "Closing Briefing F&B"};
+TASK_LABEL_MAP["F&B Manager Verse Luxe"] = {"task_1": "Briefing Pagi F&B Team", "task_2": "Check Breakfast Setup", "task_3": "Check Resto Area", "task_4": "Oversight Kitchen Area Lantai M", "task_5": "Check Closing Breakfast", "task_6": "Check Meeting Room Attap Utara", "task_7": "Check Meeting Room Attap Selatan", "task_8": "Check Meeting Room Attap Langit", "task_9": "Check Bar Area Lantai T", "task_10": "Check Bar Area Lobby", "task_11": "Check Clearup Koridor / Emergency Staircase", "task_12": "Check Total Stock Kebutuhan F&B", "task_13": "Briefing Siang F&B Team", "task_14": "Closing Briefing F&B", "task_15": "Closing Breakfast Unit Verse Luxe", "task_16": "Closing Breakfast Unit Verse Lite", "task_17": "Closing Breakfast Unit Oak Tree"};
+TASK_LABEL_MAP["F&B Manager Oak Tree"] = {"task_1": "Briefing Pagi F&B Team", "task_2": "Check Breakfast Setup", "task_3": "Check Resto Area", "task_4": "Check Bar Area", "task_5": "Check Kitchen Back Area", "task_6": "Check Total Stock Kebutuhan F&B", "task_7": "Closing Briefing F&B", "task_8": "Closing Breakfast Unit Verse Luxe", "task_9": "Closing Breakfast Unit Verse Lite", "task_10": "Closing Breakfast Unit Oak Tree"};
 TASK_LABEL_MAP["Team Kitchen Verse Luxe"] = {"task_1": "Check Kitchen Equipment & Tools", "task_2": "Cleanliness Kitchen Area Lantai M", "task_3": "Check Stock & Storage (Cold/Dry)", "task_4": "Prep Breakfast Items", "task_5": "Check Breakfast Quality & Taste", "task_6": "Closing Breakfast Kitchen", "task_7": "Prep Lunch / Dinner / A-la-carte", "task_8": "Check Closing Kitchen"};
 TASK_LABEL_MAP["Team Kitchen Oak Tree"] = {"task_1": "Check Kitchen Equipment & Tools", "task_2": "Cleanliness Kitchen Area Lantai M", "task_3": "Check Stock & Storage (Cold/Dry)", "task_4": "Prep Breakfast Items", "task_5": "Check Breakfast Quality & Taste", "task_6": "Closing Breakfast Kitchen", "task_7": "Prep Lunch / Dinner / A-la-carte", "task_8": "Check Closing Kitchen"};
 TASK_LABEL_MAP["F&B Attendant Verse Luxe"] = {"task_1": "Setup Cleanliness Resto Area", "task_2": "Setup Breakfast Buffet", "task_3": "Welcome & Serve Guests Breakfast", "task_4": "Refill & Clearing Breakfast", "task_5": "Closing Breakfast Area", "task_6": "Setup Bar Service"};
 TASK_LABEL_MAP["F&B Attendant Oak Tree"] = {"task_1": "Setup Cleanliness Resto Area", "task_2": "Setup Breakfast Buffet", "task_3": "Welcome & Serve Guests Breakfast", "task_4": "Refill & Clearing Breakfast", "task_5": "Closing Breakfast Area", "task_6": "Setup Bar Service"};
 
 ROLE_TASKS["F&B Manager Verse Luxe"] = {
-  count: 14,
+  count: 17,
   html: `
         <div class="task-category">
           <div class="task-cat-header">
@@ -11584,11 +11736,152 @@ ROLE_TASKS["F&B Manager Verse Luxe"] = {
             </div>
           </div>
         </div>
+        <div class="task-category"><div class="task-cat-title" style="font-size:14px;font-weight:700;color:var(--navy);padding:14px 16px;background:#eef2ff;border-radius:10px;margin-bottom:10px;">🍽️ Closing Breakfast Per Unit Monitoring</div><div class="task-item" id="task_15" onclick="toggleTask('task_15')">
+            <div class="task-item-top">
+              <div class="task-number" id="task_15-num" data-orig-num="15">15</div>
+              <div style="flex:1;"><span class="task-text" style="font-size:13px;font-weight:700;color:var(--navy);">Closing Breakfast Unit Verse Luxe</span></div>
+            </div>
+            <div class="task-status-row">
+              <button class="status-btn" onclick="setStatus(event,'task_15','done')">✓ Sudah</button>
+              <button class="status-btn" onclick="setStatus(event,'task_15','not')">✗ Tidak Dikerjakan</button>
+            </div>
+            <div class="task-upload-wrap" id="task_15-upload">
+              <div class="task-upload-area" id="task_15-upload-area">
+                <input type="file" accept="image/*,.pdf,.doc,.docx" multiple onchange="handleFileUpload(this,'task_15')">
+                <span class="task-upload-icon">📎</span>
+                <div class="task-upload-text">
+                  <strong>Upload Foto / Dokumen</strong>
+                  <span>Wajib diupload</span>
+                </div>
+              </div>
+              <div class="file-preview-list" id="task_15-filelist"></div>
+            </div>
+            <div class="task-note-wrap" id="task_15-note"><div style="background:#fef3c7;border-left:3px solid #f59e0b;padding:8px 12px;border-radius:8px;margin-bottom:8px;font-size:12px;color:#78350f;font-weight:600;">⚠️ Wajib isi semua keterangan</div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">1. Total Actual Pax Breakfast?</label>
+                <textarea class="task-note task-q1" rows="1" placeholder="Contoh: 50" onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">2. Total Pax No Show?</label>
+                <textarea class="task-note task-q2" rows="1" placeholder="Contoh: 5" onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">3. Apakah ada menu sisa?</label>
+                <div style="display:flex;gap:8px;margin-top:6px;" onclick="event.stopPropagation()">
+                  <label style="flex:1;display:flex;align-items:center;gap:6px;padding:8px 12px;border:1px solid var(--gray-200);border-radius:8px;cursor:pointer;font-size:13px;background:white;" onclick="event.stopPropagation()">
+                    <input type="radio" name="task_15_menu_sisa" value="Ada" class="task-menu-sisa-radio" onclick="event.stopPropagation()" onchange="onMenuSisaChange(event, 'task_15', 'Ada')" style="margin:0;"> Ada
+                  </label>
+                  <label style="flex:1;display:flex;align-items:center;gap:6px;padding:8px 12px;border:1px solid var(--gray-200);border-radius:8px;cursor:pointer;font-size:13px;background:white;" onclick="event.stopPropagation()">
+                    <input type="radio" name="task_15_menu_sisa" value="Tidak Ada" class="task-menu-sisa-radio" onclick="event.stopPropagation()" onchange="onMenuSisaChange(event, 'task_15', 'Tidak Ada')" style="margin:0;"> Tidak Ada
+                  </label>
+                </div>
+              </div>
+              <div class="menu-sisa-list-wrap" id="task_15-menu-list-wrap" style="display:none;margin-top:10px;padding:10px;background:#f9fafb;border-radius:8px;border:1px dashed var(--gray-300);" onclick="event.stopPropagation()">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:6px;">Daftar Menu Sisa (min. 1 menu):</label>
+                <div class="menu-sisa-rows task-menu-list" id="task_15-menu-rows"></div>
+                <button type="button" onclick="event.stopPropagation();addMenuSisaRow('task_15')" style="margin-top:8px;width:100%;padding:8px;background:white;border:1px dashed var(--navy);border-radius:8px;color:var(--navy);font-size:12px;font-weight:600;cursor:pointer;">+ Tambah Menu</button>
+              </div>
+            </div>
+          </div>
+<div class="task-item" id="task_16" onclick="toggleTask('task_16')">
+            <div class="task-item-top">
+              <div class="task-number" id="task_16-num" data-orig-num="16">16</div>
+              <div style="flex:1;"><span class="task-text" style="font-size:13px;font-weight:700;color:var(--navy);">Closing Breakfast Unit Verse Lite</span></div>
+            </div>
+            <div class="task-status-row">
+              <button class="status-btn" onclick="setStatus(event,'task_16','done')">✓ Sudah</button>
+              <button class="status-btn" onclick="setStatus(event,'task_16','not')">✗ Tidak Dikerjakan</button>
+            </div>
+            <div class="task-upload-wrap" id="task_16-upload">
+              <div class="task-upload-area" id="task_16-upload-area">
+                <input type="file" accept="image/*,.pdf,.doc,.docx" multiple onchange="handleFileUpload(this,'task_16')">
+                <span class="task-upload-icon">📎</span>
+                <div class="task-upload-text">
+                  <strong>Upload Foto / Dokumen</strong>
+                  <span>Wajib diupload</span>
+                </div>
+              </div>
+              <div class="file-preview-list" id="task_16-filelist"></div>
+            </div>
+            <div class="task-note-wrap" id="task_16-note"><div style="background:#fef3c7;border-left:3px solid #f59e0b;padding:8px 12px;border-radius:8px;margin-bottom:8px;font-size:12px;color:#78350f;font-weight:600;">⚠️ Wajib isi semua keterangan</div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">1. Total Actual Pax Breakfast?</label>
+                <textarea class="task-note task-q1" rows="1" placeholder="Contoh: 50" onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">2. Total Pax No Show?</label>
+                <textarea class="task-note task-q2" rows="1" placeholder="Contoh: 5" onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">3. Apakah ada menu sisa?</label>
+                <div style="display:flex;gap:8px;margin-top:6px;" onclick="event.stopPropagation()">
+                  <label style="flex:1;display:flex;align-items:center;gap:6px;padding:8px 12px;border:1px solid var(--gray-200);border-radius:8px;cursor:pointer;font-size:13px;background:white;" onclick="event.stopPropagation()">
+                    <input type="radio" name="task_16_menu_sisa" value="Ada" class="task-menu-sisa-radio" onclick="event.stopPropagation()" onchange="onMenuSisaChange(event, 'task_16', 'Ada')" style="margin:0;"> Ada
+                  </label>
+                  <label style="flex:1;display:flex;align-items:center;gap:6px;padding:8px 12px;border:1px solid var(--gray-200);border-radius:8px;cursor:pointer;font-size:13px;background:white;" onclick="event.stopPropagation()">
+                    <input type="radio" name="task_16_menu_sisa" value="Tidak Ada" class="task-menu-sisa-radio" onclick="event.stopPropagation()" onchange="onMenuSisaChange(event, 'task_16', 'Tidak Ada')" style="margin:0;"> Tidak Ada
+                  </label>
+                </div>
+              </div>
+              <div class="menu-sisa-list-wrap" id="task_16-menu-list-wrap" style="display:none;margin-top:10px;padding:10px;background:#f9fafb;border-radius:8px;border:1px dashed var(--gray-300);" onclick="event.stopPropagation()">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:6px;">Daftar Menu Sisa (min. 1 menu):</label>
+                <div class="menu-sisa-rows task-menu-list" id="task_16-menu-rows"></div>
+                <button type="button" onclick="event.stopPropagation();addMenuSisaRow('task_16')" style="margin-top:8px;width:100%;padding:8px;background:white;border:1px dashed var(--navy);border-radius:8px;color:var(--navy);font-size:12px;font-weight:600;cursor:pointer;">+ Tambah Menu</button>
+              </div>
+            </div>
+          </div>
+<div class="task-item" id="task_17" onclick="toggleTask('task_17')">
+            <div class="task-item-top">
+              <div class="task-number" id="task_17-num" data-orig-num="17">17</div>
+              <div style="flex:1;"><span class="task-text" style="font-size:13px;font-weight:700;color:var(--navy);">Closing Breakfast Unit Oak Tree</span></div>
+            </div>
+            <div class="task-status-row">
+              <button class="status-btn" onclick="setStatus(event,'task_17','done')">✓ Sudah</button>
+              <button class="status-btn" onclick="setStatus(event,'task_17','not')">✗ Tidak Dikerjakan</button>
+            </div>
+            <div class="task-upload-wrap" id="task_17-upload">
+              <div class="task-upload-area" id="task_17-upload-area">
+                <input type="file" accept="image/*,.pdf,.doc,.docx" multiple onchange="handleFileUpload(this,'task_17')">
+                <span class="task-upload-icon">📎</span>
+                <div class="task-upload-text">
+                  <strong>Upload Foto / Dokumen</strong>
+                  <span>Wajib diupload</span>
+                </div>
+              </div>
+              <div class="file-preview-list" id="task_17-filelist"></div>
+            </div>
+            <div class="task-note-wrap" id="task_17-note"><div style="background:#fef3c7;border-left:3px solid #f59e0b;padding:8px 12px;border-radius:8px;margin-bottom:8px;font-size:12px;color:#78350f;font-weight:600;">⚠️ Wajib isi semua keterangan</div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">1. Total Actual Pax Breakfast?</label>
+                <textarea class="task-note task-q1" rows="1" placeholder="Contoh: 50" onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">2. Total Pax No Show?</label>
+                <textarea class="task-note task-q2" rows="1" placeholder="Contoh: 5" onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">3. Apakah ada menu sisa?</label>
+                <div style="display:flex;gap:8px;margin-top:6px;" onclick="event.stopPropagation()">
+                  <label style="flex:1;display:flex;align-items:center;gap:6px;padding:8px 12px;border:1px solid var(--gray-200);border-radius:8px;cursor:pointer;font-size:13px;background:white;" onclick="event.stopPropagation()">
+                    <input type="radio" name="task_17_menu_sisa" value="Ada" class="task-menu-sisa-radio" onclick="event.stopPropagation()" onchange="onMenuSisaChange(event, 'task_17', 'Ada')" style="margin:0;"> Ada
+                  </label>
+                  <label style="flex:1;display:flex;align-items:center;gap:6px;padding:8px 12px;border:1px solid var(--gray-200);border-radius:8px;cursor:pointer;font-size:13px;background:white;" onclick="event.stopPropagation()">
+                    <input type="radio" name="task_17_menu_sisa" value="Tidak Ada" class="task-menu-sisa-radio" onclick="event.stopPropagation()" onchange="onMenuSisaChange(event, 'task_17', 'Tidak Ada')" style="margin:0;"> Tidak Ada
+                  </label>
+                </div>
+              </div>
+              <div class="menu-sisa-list-wrap" id="task_17-menu-list-wrap" style="display:none;margin-top:10px;padding:10px;background:#f9fafb;border-radius:8px;border:1px dashed var(--gray-300);" onclick="event.stopPropagation()">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:6px;">Daftar Menu Sisa (min. 1 menu):</label>
+                <div class="menu-sisa-rows task-menu-list" id="task_17-menu-rows"></div>
+                <button type="button" onclick="event.stopPropagation();addMenuSisaRow('task_17')" style="margin-top:8px;width:100%;padding:8px;background:white;border:1px dashed var(--navy);border-radius:8px;color:var(--navy);font-size:12px;font-weight:600;cursor:pointer;">+ Tambah Menu</button>
+              </div>
+            </div>
+          </div></div>
         `
 };
 
 ROLE_TASKS["F&B Manager Oak Tree"] = {
-  count: 7,
+  count: 10,
   html: `
         <div class="task-category">
           <div class="task-cat-header">
@@ -11884,6 +12177,147 @@ ROLE_TASKS["F&B Manager Oak Tree"] = {
             </div>
           </div>
         </div>
+        <div class="task-category"><div class="task-cat-title" style="font-size:14px;font-weight:700;color:var(--navy);padding:14px 16px;background:#eef2ff;border-radius:10px;margin-bottom:10px;">🍽️ Closing Breakfast Per Unit Monitoring</div><div class="task-item" id="task_8" onclick="toggleTask('task_8')">
+            <div class="task-item-top">
+              <div class="task-number" id="task_8-num" data-orig-num="8">8</div>
+              <div style="flex:1;"><span class="task-text" style="font-size:13px;font-weight:700;color:var(--navy);">Closing Breakfast Unit Verse Luxe</span></div>
+            </div>
+            <div class="task-status-row">
+              <button class="status-btn" onclick="setStatus(event,'task_8','done')">✓ Sudah</button>
+              <button class="status-btn" onclick="setStatus(event,'task_8','not')">✗ Tidak Dikerjakan</button>
+            </div>
+            <div class="task-upload-wrap" id="task_8-upload">
+              <div class="task-upload-area" id="task_8-upload-area">
+                <input type="file" accept="image/*,.pdf,.doc,.docx" multiple onchange="handleFileUpload(this,'task_8')">
+                <span class="task-upload-icon">📎</span>
+                <div class="task-upload-text">
+                  <strong>Upload Foto / Dokumen</strong>
+                  <span>Wajib diupload</span>
+                </div>
+              </div>
+              <div class="file-preview-list" id="task_8-filelist"></div>
+            </div>
+            <div class="task-note-wrap" id="task_8-note"><div style="background:#fef3c7;border-left:3px solid #f59e0b;padding:8px 12px;border-radius:8px;margin-bottom:8px;font-size:12px;color:#78350f;font-weight:600;">⚠️ Wajib isi semua keterangan</div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">1. Total Actual Pax Breakfast?</label>
+                <textarea class="task-note task-q1" rows="1" placeholder="Contoh: 50" onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">2. Total Pax No Show?</label>
+                <textarea class="task-note task-q2" rows="1" placeholder="Contoh: 5" onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">3. Apakah ada menu sisa?</label>
+                <div style="display:flex;gap:8px;margin-top:6px;" onclick="event.stopPropagation()">
+                  <label style="flex:1;display:flex;align-items:center;gap:6px;padding:8px 12px;border:1px solid var(--gray-200);border-radius:8px;cursor:pointer;font-size:13px;background:white;" onclick="event.stopPropagation()">
+                    <input type="radio" name="task_8_menu_sisa" value="Ada" class="task-menu-sisa-radio" onclick="event.stopPropagation()" onchange="onMenuSisaChange(event, 'task_8', 'Ada')" style="margin:0;"> Ada
+                  </label>
+                  <label style="flex:1;display:flex;align-items:center;gap:6px;padding:8px 12px;border:1px solid var(--gray-200);border-radius:8px;cursor:pointer;font-size:13px;background:white;" onclick="event.stopPropagation()">
+                    <input type="radio" name="task_8_menu_sisa" value="Tidak Ada" class="task-menu-sisa-radio" onclick="event.stopPropagation()" onchange="onMenuSisaChange(event, 'task_8', 'Tidak Ada')" style="margin:0;"> Tidak Ada
+                  </label>
+                </div>
+              </div>
+              <div class="menu-sisa-list-wrap" id="task_8-menu-list-wrap" style="display:none;margin-top:10px;padding:10px;background:#f9fafb;border-radius:8px;border:1px dashed var(--gray-300);" onclick="event.stopPropagation()">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:6px;">Daftar Menu Sisa (min. 1 menu):</label>
+                <div class="menu-sisa-rows task-menu-list" id="task_8-menu-rows"></div>
+                <button type="button" onclick="event.stopPropagation();addMenuSisaRow('task_8')" style="margin-top:8px;width:100%;padding:8px;background:white;border:1px dashed var(--navy);border-radius:8px;color:var(--navy);font-size:12px;font-weight:600;cursor:pointer;">+ Tambah Menu</button>
+              </div>
+            </div>
+          </div>
+<div class="task-item" id="task_9" onclick="toggleTask('task_9')">
+            <div class="task-item-top">
+              <div class="task-number" id="task_9-num" data-orig-num="9">9</div>
+              <div style="flex:1;"><span class="task-text" style="font-size:13px;font-weight:700;color:var(--navy);">Closing Breakfast Unit Verse Lite</span></div>
+            </div>
+            <div class="task-status-row">
+              <button class="status-btn" onclick="setStatus(event,'task_9','done')">✓ Sudah</button>
+              <button class="status-btn" onclick="setStatus(event,'task_9','not')">✗ Tidak Dikerjakan</button>
+            </div>
+            <div class="task-upload-wrap" id="task_9-upload">
+              <div class="task-upload-area" id="task_9-upload-area">
+                <input type="file" accept="image/*,.pdf,.doc,.docx" multiple onchange="handleFileUpload(this,'task_9')">
+                <span class="task-upload-icon">📎</span>
+                <div class="task-upload-text">
+                  <strong>Upload Foto / Dokumen</strong>
+                  <span>Wajib diupload</span>
+                </div>
+              </div>
+              <div class="file-preview-list" id="task_9-filelist"></div>
+            </div>
+            <div class="task-note-wrap" id="task_9-note"><div style="background:#fef3c7;border-left:3px solid #f59e0b;padding:8px 12px;border-radius:8px;margin-bottom:8px;font-size:12px;color:#78350f;font-weight:600;">⚠️ Wajib isi semua keterangan</div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">1. Total Actual Pax Breakfast?</label>
+                <textarea class="task-note task-q1" rows="1" placeholder="Contoh: 50" onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">2. Total Pax No Show?</label>
+                <textarea class="task-note task-q2" rows="1" placeholder="Contoh: 5" onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">3. Apakah ada menu sisa?</label>
+                <div style="display:flex;gap:8px;margin-top:6px;" onclick="event.stopPropagation()">
+                  <label style="flex:1;display:flex;align-items:center;gap:6px;padding:8px 12px;border:1px solid var(--gray-200);border-radius:8px;cursor:pointer;font-size:13px;background:white;" onclick="event.stopPropagation()">
+                    <input type="radio" name="task_9_menu_sisa" value="Ada" class="task-menu-sisa-radio" onclick="event.stopPropagation()" onchange="onMenuSisaChange(event, 'task_9', 'Ada')" style="margin:0;"> Ada
+                  </label>
+                  <label style="flex:1;display:flex;align-items:center;gap:6px;padding:8px 12px;border:1px solid var(--gray-200);border-radius:8px;cursor:pointer;font-size:13px;background:white;" onclick="event.stopPropagation()">
+                    <input type="radio" name="task_9_menu_sisa" value="Tidak Ada" class="task-menu-sisa-radio" onclick="event.stopPropagation()" onchange="onMenuSisaChange(event, 'task_9', 'Tidak Ada')" style="margin:0;"> Tidak Ada
+                  </label>
+                </div>
+              </div>
+              <div class="menu-sisa-list-wrap" id="task_9-menu-list-wrap" style="display:none;margin-top:10px;padding:10px;background:#f9fafb;border-radius:8px;border:1px dashed var(--gray-300);" onclick="event.stopPropagation()">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:6px;">Daftar Menu Sisa (min. 1 menu):</label>
+                <div class="menu-sisa-rows task-menu-list" id="task_9-menu-rows"></div>
+                <button type="button" onclick="event.stopPropagation();addMenuSisaRow('task_9')" style="margin-top:8px;width:100%;padding:8px;background:white;border:1px dashed var(--navy);border-radius:8px;color:var(--navy);font-size:12px;font-weight:600;cursor:pointer;">+ Tambah Menu</button>
+              </div>
+            </div>
+          </div>
+<div class="task-item" id="task_10" onclick="toggleTask('task_10')">
+            <div class="task-item-top">
+              <div class="task-number" id="task_10-num" data-orig-num="10">10</div>
+              <div style="flex:1;"><span class="task-text" style="font-size:13px;font-weight:700;color:var(--navy);">Closing Breakfast Unit Oak Tree</span></div>
+            </div>
+            <div class="task-status-row">
+              <button class="status-btn" onclick="setStatus(event,'task_10','done')">✓ Sudah</button>
+              <button class="status-btn" onclick="setStatus(event,'task_10','not')">✗ Tidak Dikerjakan</button>
+            </div>
+            <div class="task-upload-wrap" id="task_10-upload">
+              <div class="task-upload-area" id="task_10-upload-area">
+                <input type="file" accept="image/*,.pdf,.doc,.docx" multiple onchange="handleFileUpload(this,'task_10')">
+                <span class="task-upload-icon">📎</span>
+                <div class="task-upload-text">
+                  <strong>Upload Foto / Dokumen</strong>
+                  <span>Wajib diupload</span>
+                </div>
+              </div>
+              <div class="file-preview-list" id="task_10-filelist"></div>
+            </div>
+            <div class="task-note-wrap" id="task_10-note"><div style="background:#fef3c7;border-left:3px solid #f59e0b;padding:8px 12px;border-radius:8px;margin-bottom:8px;font-size:12px;color:#78350f;font-weight:600;">⚠️ Wajib isi semua keterangan</div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">1. Total Actual Pax Breakfast?</label>
+                <textarea class="task-note task-q1" rows="1" placeholder="Contoh: 50" onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">2. Total Pax No Show?</label>
+                <textarea class="task-note task-q2" rows="1" placeholder="Contoh: 5" onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">3. Apakah ada menu sisa?</label>
+                <div style="display:flex;gap:8px;margin-top:6px;" onclick="event.stopPropagation()">
+                  <label style="flex:1;display:flex;align-items:center;gap:6px;padding:8px 12px;border:1px solid var(--gray-200);border-radius:8px;cursor:pointer;font-size:13px;background:white;" onclick="event.stopPropagation()">
+                    <input type="radio" name="task_10_menu_sisa" value="Ada" class="task-menu-sisa-radio" onclick="event.stopPropagation()" onchange="onMenuSisaChange(event, 'task_10', 'Ada')" style="margin:0;"> Ada
+                  </label>
+                  <label style="flex:1;display:flex;align-items:center;gap:6px;padding:8px 12px;border:1px solid var(--gray-200);border-radius:8px;cursor:pointer;font-size:13px;background:white;" onclick="event.stopPropagation()">
+                    <input type="radio" name="task_10_menu_sisa" value="Tidak Ada" class="task-menu-sisa-radio" onclick="event.stopPropagation()" onchange="onMenuSisaChange(event, 'task_10', 'Tidak Ada')" style="margin:0;"> Tidak Ada
+                  </label>
+                </div>
+              </div>
+              <div class="menu-sisa-list-wrap" id="task_10-menu-list-wrap" style="display:none;margin-top:10px;padding:10px;background:#f9fafb;border-radius:8px;border:1px dashed var(--gray-300);" onclick="event.stopPropagation()">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:6px;">Daftar Menu Sisa (min. 1 menu):</label>
+                <div class="menu-sisa-rows task-menu-list" id="task_10-menu-rows"></div>
+                <button type="button" onclick="event.stopPropagation();addMenuSisaRow('task_10')" style="margin-top:8px;width:100%;padding:8px;background:white;border:1px dashed var(--navy);border-radius:8px;color:var(--navy);font-size:12px;font-weight:600;cursor:pointer;">+ Tambah Menu</button>
+              </div>
+            </div>
+          </div></div>
         `
 };
 
@@ -14762,6 +15196,24 @@ ROLE_TASKS["F&B Attendant Oak Tree"] = {
                   html += `</div>`;
                 }
               });
+              // Render menu_sisa (FBM Closing Breakfast Per Unit)
+              if (parsed.menu_sisa_status) {
+                html += `<div style="margin-bottom:10px;">`;
+                html += `<div style="font-size:11px;font-weight:700;color:#1a3a5c;margin-bottom:4px;">3. Apakah ada menu sisa?</div>`;
+                html += `<div style="font-size:13px;color:#374151;line-height:1.5;padding:4px 0 4px 10px;border-left:2px solid #22c55e;">${escHtml(parsed.menu_sisa_status)}</div>`;
+                html += `</div>`;
+                if (parsed.menu_sisa_status === 'Ada' && Array.isArray(parsed.menu_sisa_list) && parsed.menu_sisa_list.length > 0) {
+                  html += `<div style="margin-bottom:6px;">`;
+                  html += `<div style="font-size:11px;font-weight:700;color:#1a3a5c;margin-bottom:4px;">Daftar Menu Sisa</div>`;
+                  html += `<div style="font-size:13px;color:#374151;padding:4px 0 4px 10px;border-left:2px solid #f59e0b;">`;
+                  parsed.menu_sisa_list.forEach((m, idx) => {
+                    const nama = (m && m.nama) ? m.nama : '-';
+                    const gram = (m && m.gram) ? m.gram : '-';
+                    html += `<div style="margin-bottom:3px;">• Menu ${idx+1}: <b>${escHtml(nama)}</b> — ${escHtml(gram)}g</div>`;
+                  });
+                  html += `</div></div>`;
+                }
+              }
               html += `</div>`;
             } else if (ket.trim()) {
               html += `<div style="margin-top:10px;margin-left:38px;padding:10px 12px;background:white;border-radius:8px;border:1px solid #e0e0e0;font-size:13px;color:#374151;line-height:1.5;white-space:pre-wrap;">${escHtml(ket)}</div>`;
