@@ -2826,7 +2826,7 @@
   // =============================================================
   // Update angka di bawah setiap kali deploy file baru yang penting.
   // Format: YYYY.MM.DD-NN (NN = increment harian)
-  const APP_VERSION = '2026.06.25-20';
+  const APP_VERSION = '2026.07.02-21';
   const APP_VERSION_KEY = 'verse_app_version';
 
   (function _checkAppVersion() {
@@ -15182,7 +15182,7 @@ ROLE_TASKS["F&B Attendant Oak Tree"] = {
           if (d.keterangan) {
             const ket = String(d.keterangan);
             let parsed = null;
-            if (ket.charAt(0) === '{' && ket.indexOf('"q1"') >= 0) {
+            if (ket.charAt(0) === '{') {  // v21 fix: accept semua JSON, tidak require q1
               try { parsed = JSON.parse(ket); } catch(e) {}
             }
             if (parsed && t.questions.length > 0) {
