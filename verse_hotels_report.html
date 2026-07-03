@@ -2826,7 +2826,7 @@
   // =============================================================
   // Update angka di bawah setiap kali deploy file baru yang penting.
   // Format: YYYY.MM.DD-NN (NN = increment harian)
-  const APP_VERSION = '2026.07.03-22';
+  const APP_VERSION = '2026.07.03-24';
   const APP_VERSION_KEY = 'verse_app_version';
 
   (function _checkAppVersion() {
@@ -15249,7 +15249,9 @@ ROLE_TASKS["F&B Attendant Oak Tree"] = {
             if (ket.charAt(0) === '{') {  // v21 fix: accept semua JSON, tidak require q1
               try { parsed = JSON.parse(ket); } catch(e) {}
             }
-            if (parsed && t.questions.length > 0) {
+            if (parsed && typeof parsed._alasan_tidak === 'string' && parsed._alasan_tidak.trim()) {
+              html += `<div style="margin-top:10px;margin-left:38px;padding:10px 12px;background:#fef2f2;border-radius:8px;border:1px solid #fecaca;font-size:13px;color:#991b1b;line-height:1.5;white-space:pre-wrap;">❌ <b>Alasan tidak dikerjakan:</b><br>${escHtml(parsed._alasan_tidak.trim())}</div>`;
+            } else if (parsed && t.questions.length > 0) {
               html += `<div style="margin-top:10px;margin-left:38px;padding:12px;background:white;border-radius:8px;border:1px solid #e0e0e0;">`;
               t.questions.forEach((qLabel, qi) => {
                 const v = parsed['q' + (qi+1)];
@@ -16461,8 +16463,8 @@ ROLE_TASKS["F&B Attendant Oak Tree"] = {
           date_report: todayStr,
           date_target: todayStr,
           photo_defect: JSON.stringify(defectPhotoUrls),
-          created_by: userEmail,
-          updated_by: userEmail,
+          created_by: currentUserName || currentRole,
+          updated_by: currentUserName || currentRole,
           source: 'room_check'
         };
         const { data: defOut, error: defErr } = await supa.from('defects').insert(defectRow).select('id').single();
