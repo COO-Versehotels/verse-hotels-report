@@ -2826,7 +2826,7 @@
   // =============================================================
   // Update angka di bawah setiap kali deploy file baru yang penting.
   // Format: YYYY.MM.DD-NN (NN = increment harian)
-  const APP_VERSION = '2026.07.02-21';
+  const APP_VERSION = '2026.07.03-22';
   const APP_VERSION_KEY = 'verse_app_version';
 
   (function _checkAppVersion() {
@@ -3068,7 +3068,7 @@
           if (tempDiv) {
             const item = tempDiv.querySelector('#' + taskId);
             if (item) {
-              for (let i = 1; i <= 5; i++) {
+              for (let i = 1; i <= 6; i++) {
                 const el = item.querySelector('.task-q' + i);
                 if (el && el.parentElement) {
                   const labelEl = el.parentElement.querySelector('label');
@@ -3080,7 +3080,7 @@
         }
       } catch(e) {}
       const parts = [];
-      for (let i = 1; i <= 5; i++) {
+      for (let i = 1; i <= 6; i++) {
         const v = data['q' + i];
         if (v && typeof v === 'string' && v.trim()) {
           const label = labels['q' + i] || (i + '. Pertanyaan ' + i);
@@ -3121,12 +3121,12 @@
         return JSON.stringify(data);
       }
       // Fallback single textarea untuk corporate role
-      const noteEl = item.querySelector('.task-note:not(.task-q1):not(.task-q2):not(.task-q3):not(.task-q4):not(.task-q5):not(.task-not-reason)');
+      const noteEl = item.querySelector('.task-note:not(.task-q1):not(.task-q2):not(.task-q3):not(.task-q4):not(.task-q5):not(.task-q6):not(.task-not-reason)');
       return noteEl ? noteEl.value.trim() : '';
     }
 
     // STATUS = 'done' / 'progress' / other: collect Q1-Q5 normally
-    for (let i = 1; i <= 5; i++) {
+    for (let i = 1; i <= 6; i++) {
       const el = item.querySelector('.task-q' + i);
       if (el) {
         const v = el.value.trim();
@@ -3157,7 +3157,7 @@
     }
 
     // Fallback: single textarea (task corporate tanpa Q1-Q5)
-    const noteEl = item.querySelector('.task-note:not(.task-q1):not(.task-q2):not(.task-q3):not(.task-q4):not(.task-q5):not(.task-not-reason)');
+    const noteEl = item.querySelector('.task-note:not(.task-q1):not(.task-q2):not(.task-q3):not(.task-q4):not(.task-q5):not(.task-q6):not(.task-not-reason)');
     return noteEl ? noteEl.value.trim() : '';
   }
 
@@ -3172,7 +3172,7 @@
         let restored = false;
         // Restore Q1-Q5 (kalau task punya & data ada)
         if (q1) {
-          for (let i = 1; i <= 5; i++) {
+          for (let i = 1; i <= 6; i++) {
             const el = item.querySelector('.task-q' + i);
             if (el && typeof data['q' + i] === 'string') {
               el.value = data['q' + i];
@@ -3218,7 +3218,7 @@
       } catch(e) { /* fallback ke restore single */ }
     }
     // Restore ke textarea pertama (data lama / task non-terstruktur)
-    const noteEl = item.querySelector('.task-note:not(.task-q1):not(.task-q2):not(.task-q3):not(.task-q4):not(.task-q5):not(.task-not-reason)');
+    const noteEl = item.querySelector('.task-note:not(.task-q1):not(.task-q2):not(.task-q3):not(.task-q4):not(.task-q5):not(.task-q6):not(.task-not-reason)');
     if (noteEl) noteEl.value = keterangan;
   }
 
@@ -3239,7 +3239,7 @@
       // Coba ambil label pertanyaan dari item (kalau tersedia)
       const labels = {};
       if (item) {
-        for (let i = 1; i <= 5; i++) {
+        for (let i = 1; i <= 6; i++) {
           const el = item.querySelector('.task-q' + i);
           if (el && el.parentElement) {
             const labelEl = el.parentElement.querySelector('label');
@@ -3248,7 +3248,7 @@
         }
       }
       const parts = [];
-      for (let i = 1; i <= 5; i++) {
+      for (let i = 1; i <= 6; i++) {
         const v = data['q' + i];
         if (v && typeof v === 'string' && v.trim()) {
           const label = labels['q' + i] || (i + '. Pertanyaan ' + i);
@@ -3759,12 +3759,12 @@
     if (status === 'done') {
       if (btns[0]) btns[0].classList.add('selected-green');
       if (num) { num.dataset.origNum = origNum; num.innerHTML = `<span style="font-size:9px;display:block;line-height:1;">${origNum}</span><span style="font-size:10px;">✓</span>`; num.className = 'task-number done'; }
-      if (noteWrap) { noteWrap.classList.add('show'); const n = noteWrap.querySelector('.task-note:not(.task-q1):not(.task-q2):not(.task-q3):not(.task-q4):not(.task-q5)'); if(n && !n.value) n.placeholder='Keterangan (opsional)...'; }
+      if (noteWrap) { noteWrap.classList.add('show'); const n = noteWrap.querySelector('.task-note:not(.task-q1):not(.task-q2):not(.task-q3):not(.task-q4):not(.task-q5):not(.task-q6)'); if(n && !n.value) n.placeholder='Keterangan (opsional)...'; }
       if (needUpload || (taskId.startsWith('fu'))) { if(uploadWrap){ uploadWrap.classList.add('show'); } }
     } else if (status === 'not') {
       if (btns[1]) btns[1].classList.add('selected-red');
       if (num) { num.dataset.origNum = origNum; num.innerHTML = `<span style="font-size:9px;display:block;line-height:1;">${origNum}</span><span style="font-size:10px;">✗</span>`; num.className = 'task-number'; num.style.background='var(--red-soft)'; num.style.color='#c0392b'; }
-      if (noteWrap) { noteWrap.classList.add('show'); const n = noteWrap.querySelector('.task-note:not(.task-q1):not(.task-q2):not(.task-q3):not(.task-q4):not(.task-q5)'); if(n && !n.value) n.placeholder='Wajib diisi — jelaskan alasan tidak dikerjakan...'; }
+      if (noteWrap) { noteWrap.classList.add('show'); const n = noteWrap.querySelector('.task-note:not(.task-q1):not(.task-q2):not(.task-q3):not(.task-q4):not(.task-q5):not(.task-q6)'); if(n && !n.value) n.placeholder='Wajib diisi — jelaskan alasan tidak dikerjakan...'; }
       if (uploadWrap) { uploadWrap.style.display = ''; uploadWrap.classList.remove('show'); }
     }
   }
@@ -5488,10 +5488,10 @@
       // Keterangan OPSIONAL — tampilkan dengan placeholder opsional (skip pertanyaan terstruktur)
       if (noteWrap) {
         noteWrap.classList.add('show');
-        const note = noteWrap.querySelector('.task-note:not(.task-q1):not(.task-q2):not(.task-q3):not(.task-q4):not(.task-q5):not(.task-not-reason)');
+        const note = noteWrap.querySelector('.task-note:not(.task-q1):not(.task-q2):not(.task-q3):not(.task-q4):not(.task-q5):not(.task-q6):not(.task-not-reason)');
         if (note && !note.value) note.placeholder = 'Keterangan (opsional)...';
         // Show Q1-Q5 wrappers (parent div of .task-qN) + banner, hide alasan-tidak-dikerjakan
-        const qElems = noteWrap.querySelectorAll('.task-q1, .task-q2, .task-q3, .task-q4, .task-q5');
+        const qElems = noteWrap.querySelectorAll('.task-q1, .task-q2, .task-q3, .task-q4, .task-q5, .task-q6');
         qElems.forEach(ta => { if (ta.parentElement) ta.parentElement.style.display = ''; });
         // Banner pertanyaan (yellow #fef3c7 background)
         const banner = noteWrap.querySelector('div[style*="fef3c7"]');
@@ -5510,7 +5510,7 @@
       if (noteWrap) {
         noteWrap.classList.add('show');
         // Hide Q1-Q5 wrappers (parent div of .task-qN) + banner (tidak relevan kalau tidak dikerjakan)
-        const qElems = noteWrap.querySelectorAll('.task-q1, .task-q2, .task-q3, .task-q4, .task-q5');
+        const qElems = noteWrap.querySelectorAll('.task-q1, .task-q2, .task-q3, .task-q4, .task-q5, .task-q6');
         qElems.forEach(ta => { if (ta.parentElement) ta.parentElement.style.display = 'none'; });
         // Banner pertanyaan (yellow #fef3c7 background)
         const banner = noteWrap.querySelector('div[style*="fef3c7"]');
@@ -5537,7 +5537,7 @@
           reasonWrap.style.display = '';
         }
         // Untuk task non-Q1-Q5 (single textarea), set placeholder
-        const note = noteWrap.querySelector('.task-note:not(.task-q1):not(.task-q2):not(.task-q3):not(.task-q4):not(.task-q5):not(.task-not-reason)');
+        const note = noteWrap.querySelector('.task-note:not(.task-q1):not(.task-q2):not(.task-q3):not(.task-q4):not(.task-q5):not(.task-q6):not(.task-not-reason)');
         if (note && !note.value) note.placeholder = 'Wajib diisi — jelaskan alasan tidak dikerjakan...';
       }
       // Sembunyikan upload
@@ -6064,7 +6064,7 @@
       const uploadWrap = document.getElementById(item.id + '-upload');
       const isNoUpload = uploadWrap && uploadWrap.dataset.noUpload === '1';
       const hasUpload = taskFiles[item.id] && taskFiles[item.id].length > 0;
-      const note = item.querySelector('.task-note:not(.task-q1):not(.task-q2):not(.task-q3):not(.task-q4):not(.task-q5):not(.task-not-reason)');
+      const note = item.querySelector('.task-note:not(.task-q1):not(.task-q2):not(.task-q3):not(.task-q4):not(.task-q5):not(.task-q6):not(.task-not-reason)');
       const hasNote = note && note.value.trim();
 
       // Lampiran wajib jika Sudah/Proses dan task butuh upload
@@ -6132,7 +6132,7 @@
       if (!item.querySelector('.task-q1')) return;
       // Hitung Q yang ada (1-5) dan yang kosong
       const qEmpty = [];
-      for (let i = 1; i <= 5; i++) {
+      for (let i = 1; i <= 6; i++) {
         const q = item.querySelector('.task-q' + i);
         if (q && !q.value.trim()) qEmpty.push(i);
       }
@@ -8380,6 +8380,22 @@ const ROLE_TASKS = {
                 <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">2. Semua Supporting Dokument apakah sudah lengkap?</label>
                 <textarea class="task-note task-q2" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
               </div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">3. Total Room Inhouse Guest (Saat pengecekkan Night Audit)?</label>
+                <textarea class="task-note task-q3" rows="1" placeholder="Contoh: 50" onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">4. Total Guest Keycard di FO?</label>
+                <textarea class="task-note task-q4" rows="1" placeholder="Contoh: 50" onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">5. Total Stock Guest Keycard (kalau ada)?</label>
+                <textarea class="task-note task-q5" rows="1" placeholder="Contoh: 20 (isi 0 kalau tidak ada)" onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">6. Total Room Deposit Cash?</label>
+                <textarea class="task-note task-q6" rows="1" placeholder="Contoh: 500000" onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
             </div>
           </div>
         </div>
@@ -9099,6 +9115,22 @@ const ROLE_TASKS = {
               <div style="margin-bottom:8px;">
                 <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">2. Semua Supporting Dokument apakah sudah lengkap?</label>
                 <textarea class="task-note task-q2" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">3. Total Room Inhouse Guest (Saat pengecekkan Night Audit)?</label>
+                <textarea class="task-note task-q3" rows="1" placeholder="Contoh: 50" onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">4. Total Guest Keycard di FO?</label>
+                <textarea class="task-note task-q4" rows="1" placeholder="Contoh: 50" onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">5. Total Stock Guest Keycard (kalau ada)?</label>
+                <textarea class="task-note task-q5" rows="1" placeholder="Contoh: 20 (isi 0 kalau tidak ada)" onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">6. Total Room Deposit Cash?</label>
+                <textarea class="task-note task-q6" rows="1" placeholder="Contoh: 500000" onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
               </div>
             </div>
           </div>
@@ -9820,6 +9852,22 @@ const ROLE_TASKS = {
                 <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">2. Semua Supporting Dokument apakah sudah lengkap?</label>
                 <textarea class="task-note task-q2" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
               </div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">3. Total Room Inhouse Guest (Saat pengecekkan Night Audit)?</label>
+                <textarea class="task-note task-q3" rows="1" placeholder="Contoh: 50" onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">4. Total Guest Keycard di FO?</label>
+                <textarea class="task-note task-q4" rows="1" placeholder="Contoh: 50" onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">5. Total Stock Guest Keycard (kalau ada)?</label>
+                <textarea class="task-note task-q5" rows="1" placeholder="Contoh: 20 (isi 0 kalau tidak ada)" onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">6. Total Room Deposit Cash?</label>
+                <textarea class="task-note task-q6" rows="1" placeholder="Contoh: 500000" onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
             </div>
           </div>
         </div>
@@ -10539,6 +10587,22 @@ const ROLE_TASKS = {
               <div style="margin-bottom:8px;">
                 <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">2. Semua Supporting Dokument apakah sudah lengkap?</label>
                 <textarea class="task-note task-q2" rows="2" placeholder="Wajib jawab..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">3. Total Room Inhouse Guest (Saat pengecekkan Night Audit)?</label>
+                <textarea class="task-note task-q3" rows="1" placeholder="Contoh: 50" onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">4. Total Guest Keycard di FO?</label>
+                <textarea class="task-note task-q4" rows="1" placeholder="Contoh: 50" onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">5. Total Stock Guest Keycard (kalau ada)?</label>
+                <textarea class="task-note task-q5" rows="1" placeholder="Contoh: 20 (isi 0 kalau tidak ada)" onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
+              </div>
+              <div style="margin-bottom:8px;">
+                <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">6. Total Room Deposit Cash?</label>
+                <textarea class="task-note task-q6" rows="1" placeholder="Contoh: 500000" onclick="event.stopPropagation()" onfocus="event.stopPropagation()"></textarea>
               </div>
             </div>
           </div>
@@ -15115,7 +15179,7 @@ ROLE_TASKS["F&B Attendant Oak Tree"] = {
         else if (ulEl) ulEl.querySelectorAll('li').forEach(li => subPoints.push(li.textContent.trim()));
         // Pertanyaan terstruktur
         const questions = [];
-        for (let i = 1; i <= 5; i++) {
+        for (let i = 1; i <= 6; i++) {
           const q = taskItem.querySelector('.task-q' + i);
           if (q && q.parentElement) {
             const labelEl = q.parentElement.querySelector('label');
@@ -15350,7 +15414,7 @@ ROLE_TASKS["F&B Attendant Oak Tree"] = {
             html += `<div style="font-size:12px;color:#374151;line-height:1.5;">${escHtml(def.description || '-')}</div>`;
             // Defect photos
             let dPhotos = [];
-            try { dPhotos = Array.isArray(def.photo_urls) ? def.photo_urls : (typeof def.photo_urls === 'string' ? JSON.parse(def.photo_urls) : []); } catch(e) {}
+            try { dPhotos = Array.isArray(def.photo_defect) ? def.photo_defect : (typeof def.photo_defect === 'string' ? JSON.parse(def.photo_defect) : []); } catch(e) {}
             const validDp = dPhotos.filter(u => u && typeof u === 'string' && u.startsWith('http'));
             if (validDp.length > 0) {
               html += `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;">`;
@@ -16385,18 +16449,21 @@ ROLE_TASKS["F&B Attendant Oak Tree"] = {
           }
         }
         const defectRow = {
+          id: 'def_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
           hotel: rcCurrentHotel,
           area: 'Room',
           category: d.category,
           location: 'Kamar ' + rcCurrentRoom + ' — dari Room Check',
           description: d.description,
+          pic: currentUserName || currentRole,
           priority: d.priority,
           status: 'Open',
           date_report: todayStr,
+          date_target: todayStr,
+          photo_defect: JSON.stringify(defectPhotoUrls),
           created_by: userEmail,
           updated_by: userEmail,
-          source: 'room_check',
-          photo_urls: defectPhotoUrls
+          source: 'room_check'
         };
         const { data: defOut, error: defErr } = await supa.from('defects').insert(defectRow).select('id').single();
         if (defErr) {
