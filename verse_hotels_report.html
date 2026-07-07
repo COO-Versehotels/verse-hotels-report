@@ -5820,7 +5820,7 @@
         return;
       }
 
-      // Sudah → upload WAJIB, keterangan opsional
+      // Sudah → upload WAJIB
       if (status === 'done' && needsUpload) {
         const files = taskFiles[id];
         if (!files || files.length === 0) {
@@ -5834,6 +5834,24 @@
             setTimeout(() => area.classList.remove('required-alert'), 2500);
           }
           markError(item);
+        }
+      }
+
+      // Sudah → pertanyaan terstruktur (task-q1..q6) WAJIB diisi
+      if (status === 'done') {
+        const qFields = item.querySelectorAll('.task-q1, .task-q2, .task-q3, .task-q4, .task-q5, .task-q6');
+        if (qFields.length > 0) {
+          let qHasError = false;
+          qFields.forEach(qEl => {
+            if (!qEl.value || !qEl.value.trim()) {
+              qEl.classList.add('required-alert');
+              setTimeout(() => qEl.classList.remove('required-alert'), 2500);
+              const parentWrap = qEl.closest('.task-note-wrap');
+              if (parentWrap) parentWrap.classList.add('show');
+              qHasError = true;
+            }
+          });
+          if (qHasError) markError(item);
         }
       }
 
