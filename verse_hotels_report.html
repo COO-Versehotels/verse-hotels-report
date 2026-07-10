@@ -2844,7 +2844,7 @@
   // =============================================================
   // Update angka di bawah setiap kali deploy file baru yang penting.
   // Format: YYYY.MM.DD-NN (NN = increment harian)
-  const APP_VERSION = '2026.07.10-28';
+  const APP_VERSION = '2026.07.10-30';
   const APP_VERSION_KEY = 'verse_app_version';
 
   (function _checkAppVersion() {
@@ -2989,6 +2989,24 @@
 
   // ===== KOMPRESI FOTO =====
   // Cap tanggal+jam+hotel/role permanen ke pojok foto (bukti waktu pengambilan)
+  // Otomatis simpan foto (yang sudah ada timestamp) ke HP, tanpa perlu tap apapun.
+  // Browser tidak bisa langsung tulis ke folder Galeri, jadi ini trigger "download"
+  // yang di kebanyakan HP Android otomatis muncul juga di app Galeri/Photos.
+  function triggerAutoDownload(file) {
+    try {
+      const url = URL.createObjectURL(file);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = file.name;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 3000);
+    } catch (e) {
+      console.error('Auto-download error:', e);
+    }
+  }
+
   async function stampImageTimestamp(file) {
     if (!file.type || !file.type.startsWith('image/')) return file;
     try {
@@ -5648,9 +5666,15 @@
 
     for (const file of toAdd) {
       // Foto (dari kamera maupun galeri) → cap timestamp+hotel/role dulu, baru kompres
-      // (stampImageTimestamp otomatis skip file non-gambar, misal PDF/Word)
+      // (stampImageTimestamp otomatis skip file non-gambar, misal PDF/Word/Video)
       const stamped = await stampImageTimestamp(file);
-      // Kompres foto sebelum upload
+      // Auto-simpan ke HP (tanpa perlu tap apapun) — foto ber-timestamp, atau video apa adanya
+      if (stamped !== file) {
+        triggerAutoDownload(stamped);
+      } else if (file.type && file.type.startsWith('video/')) {
+        triggerAutoDownload(file);
+      }
+      // Kompres foto sebelum upload (video dilewati apa adanya)
       const processedFile = await compressImage(stamped, 150, 1024);
       const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
       const path = today + '/' + currentRole.replace(/ /g,'_') + '/' + currentHotel.replace(/ /g,'_') + '/' + taskId + '/' + Date.now() + '_' + safeName;
@@ -8516,11 +8540,11 @@ const ROLE_TASKS = {
             <div class="task-upload-wrap" id="task_2-upload">
               <div class="task-upload-area" id="task_2-upload-area">
                 <label class="task-upload-btn">
-                  <input type="file" accept="image/*" capture="environment" multiple onchange="handleFileUpload(this,'task_2',true)">
-                  <span class="task-upload-icon">📷</span>
+                  <input type="file" accept="image/*,video/*" multiple onchange="handleFileUpload(this,'task_2',true)">
+                  <span class="task-upload-icon">🎥</span>
                   <div class="task-upload-text">
-                    <strong>Ambil Foto</strong>
-                    <span>Wajib diupload</span>
+                    <strong>Upload Foto/Video</strong>
+                    <span>Boleh foto/video, kamera atau galeri</span>
                   </div>
                 </label>
               </div>
@@ -8774,11 +8798,11 @@ const ROLE_TASKS = {
             <div class="task-upload-wrap" id="task_8-upload">
               <div class="task-upload-area" id="task_8-upload-area">
                 <label class="task-upload-btn">
-                  <input type="file" accept="image/*" capture="environment" multiple onchange="handleFileUpload(this,'task_8',true)">
-                  <span class="task-upload-icon">📷</span>
+                  <input type="file" accept="image/*,video/*" multiple onchange="handleFileUpload(this,'task_8',true)">
+                  <span class="task-upload-icon">🎥</span>
                   <div class="task-upload-text">
-                    <strong>Ambil Foto</strong>
-                    <span>Wajib diupload</span>
+                    <strong>Upload Foto/Video</strong>
+                    <span>Boleh foto/video, kamera atau galeri</span>
                   </div>
                 </label>
               </div>
@@ -9292,11 +9316,11 @@ const ROLE_TASKS = {
             <div class="task-upload-wrap" id="task_2-upload">
               <div class="task-upload-area" id="task_2-upload-area">
                 <label class="task-upload-btn">
-                  <input type="file" accept="image/*" capture="environment" multiple onchange="handleFileUpload(this,'task_2',true)">
-                  <span class="task-upload-icon">📷</span>
+                  <input type="file" accept="image/*,video/*" multiple onchange="handleFileUpload(this,'task_2',true)">
+                  <span class="task-upload-icon">🎥</span>
                   <div class="task-upload-text">
-                    <strong>Ambil Foto</strong>
-                    <span>Wajib diupload</span>
+                    <strong>Upload Foto/Video</strong>
+                    <span>Boleh foto/video, kamera atau galeri</span>
                   </div>
                 </label>
               </div>
@@ -9550,11 +9574,11 @@ const ROLE_TASKS = {
             <div class="task-upload-wrap" id="task_8-upload">
               <div class="task-upload-area" id="task_8-upload-area">
                 <label class="task-upload-btn">
-                  <input type="file" accept="image/*" capture="environment" multiple onchange="handleFileUpload(this,'task_8',true)">
-                  <span class="task-upload-icon">📷</span>
+                  <input type="file" accept="image/*,video/*" multiple onchange="handleFileUpload(this,'task_8',true)">
+                  <span class="task-upload-icon">🎥</span>
                   <div class="task-upload-text">
-                    <strong>Ambil Foto</strong>
-                    <span>Wajib diupload</span>
+                    <strong>Upload Foto/Video</strong>
+                    <span>Boleh foto/video, kamera atau galeri</span>
                   </div>
                 </label>
               </div>
@@ -10068,11 +10092,11 @@ const ROLE_TASKS = {
             <div class="task-upload-wrap" id="task_2-upload">
               <div class="task-upload-area" id="task_2-upload-area">
                 <label class="task-upload-btn">
-                  <input type="file" accept="image/*" capture="environment" multiple onchange="handleFileUpload(this,'task_2',true)">
-                  <span class="task-upload-icon">📷</span>
+                  <input type="file" accept="image/*,video/*" multiple onchange="handleFileUpload(this,'task_2',true)">
+                  <span class="task-upload-icon">🎥</span>
                   <div class="task-upload-text">
-                    <strong>Ambil Foto</strong>
-                    <span>Wajib diupload</span>
+                    <strong>Upload Foto/Video</strong>
+                    <span>Boleh foto/video, kamera atau galeri</span>
                   </div>
                 </label>
               </div>
@@ -10326,11 +10350,11 @@ const ROLE_TASKS = {
             <div class="task-upload-wrap" id="task_8-upload">
               <div class="task-upload-area" id="task_8-upload-area">
                 <label class="task-upload-btn">
-                  <input type="file" accept="image/*" capture="environment" multiple onchange="handleFileUpload(this,'task_8',true)">
-                  <span class="task-upload-icon">📷</span>
+                  <input type="file" accept="image/*,video/*" multiple onchange="handleFileUpload(this,'task_8',true)">
+                  <span class="task-upload-icon">🎥</span>
                   <div class="task-upload-text">
-                    <strong>Ambil Foto</strong>
-                    <span>Wajib diupload</span>
+                    <strong>Upload Foto/Video</strong>
+                    <span>Boleh foto/video, kamera atau galeri</span>
                   </div>
                 </label>
               </div>
@@ -10844,11 +10868,11 @@ const ROLE_TASKS = {
             <div class="task-upload-wrap" id="task_2-upload">
               <div class="task-upload-area" id="task_2-upload-area">
                 <label class="task-upload-btn">
-                  <input type="file" accept="image/*" capture="environment" multiple onchange="handleFileUpload(this,'task_2',true)">
-                  <span class="task-upload-icon">📷</span>
+                  <input type="file" accept="image/*,video/*" multiple onchange="handleFileUpload(this,'task_2',true)">
+                  <span class="task-upload-icon">🎥</span>
                   <div class="task-upload-text">
-                    <strong>Ambil Foto</strong>
-                    <span>Wajib diupload</span>
+                    <strong>Upload Foto/Video</strong>
+                    <span>Boleh foto/video, kamera atau galeri</span>
                   </div>
                 </label>
               </div>
@@ -11102,11 +11126,11 @@ const ROLE_TASKS = {
             <div class="task-upload-wrap" id="task_8-upload">
               <div class="task-upload-area" id="task_8-upload-area">
                 <label class="task-upload-btn">
-                  <input type="file" accept="image/*" capture="environment" multiple onchange="handleFileUpload(this,'task_8',true)">
-                  <span class="task-upload-icon">📷</span>
+                  <input type="file" accept="image/*,video/*" multiple onchange="handleFileUpload(this,'task_8',true)">
+                  <span class="task-upload-icon">🎥</span>
                   <div class="task-upload-text">
-                    <strong>Ambil Foto</strong>
-                    <span>Wajib diupload</span>
+                    <strong>Upload Foto/Video</strong>
+                    <span>Boleh foto/video, kamera atau galeri</span>
                   </div>
                 </label>
               </div>
@@ -11629,11 +11653,11 @@ ROLE_TASKS["F&B Manager Verse Luxe"] = {
             <div class="task-upload-wrap" id="task_2-upload">
               <div class="task-upload-area" id="task_2-upload-area">
                 <label class="task-upload-btn">
-                  <input type="file" accept="image/*" capture="environment" multiple onchange="handleFileUpload(this,'task_2',true)">
-                  <span class="task-upload-icon">📷</span>
+                  <input type="file" accept="image/*,video/*" multiple onchange="handleFileUpload(this,'task_2',true)">
+                  <span class="task-upload-icon">🎥</span>
                   <div class="task-upload-text">
-                    <strong>Ambil Foto</strong>
-                    <span>Wajib diupload</span>
+                    <strong>Upload Foto/Video</strong>
+                    <span>Boleh foto/video, kamera atau galeri</span>
                   </div>
                 </label>
               </div>
@@ -11761,11 +11785,11 @@ ROLE_TASKS["F&B Manager Verse Luxe"] = {
             <div class="task-upload-wrap" id="task_5-upload">
               <div class="task-upload-area" id="task_5-upload-area">
                 <label class="task-upload-btn">
-                  <input type="file" accept="image/*" capture="environment" multiple onchange="handleFileUpload(this,'task_5',true)">
-                  <span class="task-upload-icon">📷</span>
+                  <input type="file" accept="image/*,video/*" multiple onchange="handleFileUpload(this,'task_5',true)">
+                  <span class="task-upload-icon">🎥</span>
                   <div class="task-upload-text">
-                    <strong>Ambil Foto</strong>
-                    <span>Wajib diupload</span>
+                    <strong>Upload Foto/Video</strong>
+                    <span>Boleh foto/video, kamera atau galeri</span>
                   </div>
                 </label>
               </div>
@@ -12195,11 +12219,11 @@ ROLE_TASKS["F&B Manager Verse Luxe"] = {
             <div class="task-upload-wrap" id="task_15-upload">
               <div class="task-upload-area" id="task_15-upload-area">
                 <label class="task-upload-btn">
-                  <input type="file" accept="image/*" capture="environment" multiple onchange="handleFileUpload(this,'task_15',true)">
-                  <span class="task-upload-icon">📷</span>
+                  <input type="file" accept="image/*,video/*" multiple onchange="handleFileUpload(this,'task_15',true)">
+                  <span class="task-upload-icon">🎥</span>
                   <div class="task-upload-text">
-                    <strong>Ambil Foto</strong>
-                    <span>Wajib diupload</span>
+                    <strong>Upload Foto/Video</strong>
+                    <span>Boleh foto/video, kamera atau galeri</span>
                   </div>
                 </label>
               </div>
@@ -12244,11 +12268,11 @@ ROLE_TASKS["F&B Manager Verse Luxe"] = {
             <div class="task-upload-wrap" id="task_16-upload">
               <div class="task-upload-area" id="task_16-upload-area">
                 <label class="task-upload-btn">
-                  <input type="file" accept="image/*" capture="environment" multiple onchange="handleFileUpload(this,'task_16',true)">
-                  <span class="task-upload-icon">📷</span>
+                  <input type="file" accept="image/*,video/*" multiple onchange="handleFileUpload(this,'task_16',true)">
+                  <span class="task-upload-icon">🎥</span>
                   <div class="task-upload-text">
-                    <strong>Ambil Foto</strong>
-                    <span>Wajib diupload</span>
+                    <strong>Upload Foto/Video</strong>
+                    <span>Boleh foto/video, kamera atau galeri</span>
                   </div>
                 </label>
               </div>
@@ -12293,11 +12317,11 @@ ROLE_TASKS["F&B Manager Verse Luxe"] = {
             <div class="task-upload-wrap" id="task_17-upload">
               <div class="task-upload-area" id="task_17-upload-area">
                 <label class="task-upload-btn">
-                  <input type="file" accept="image/*" capture="environment" multiple onchange="handleFileUpload(this,'task_17',true)">
-                  <span class="task-upload-icon">📷</span>
+                  <input type="file" accept="image/*,video/*" multiple onchange="handleFileUpload(this,'task_17',true)">
+                  <span class="task-upload-icon">🎥</span>
                   <div class="task-upload-text">
-                    <strong>Ambil Foto</strong>
-                    <span>Wajib diupload</span>
+                    <strong>Upload Foto/Video</strong>
+                    <span>Boleh foto/video, kamera atau galeri</span>
                   </div>
                 </label>
               </div>
@@ -12398,11 +12422,11 @@ ROLE_TASKS["F&B Manager Oak Tree"] = {
             <div class="task-upload-wrap" id="task_2-upload">
               <div class="task-upload-area" id="task_2-upload-area">
                 <label class="task-upload-btn">
-                  <input type="file" accept="image/*" capture="environment" multiple onchange="handleFileUpload(this,'task_2',true)">
-                  <span class="task-upload-icon">📷</span>
+                  <input type="file" accept="image/*,video/*" multiple onchange="handleFileUpload(this,'task_2',true)">
+                  <span class="task-upload-icon">🎥</span>
                   <div class="task-upload-text">
-                    <strong>Ambil Foto</strong>
-                    <span>Wajib diupload</span>
+                    <strong>Upload Foto/Video</strong>
+                    <span>Boleh foto/video, kamera atau galeri</span>
                   </div>
                 </label>
               </div>
@@ -12656,11 +12680,11 @@ ROLE_TASKS["F&B Manager Oak Tree"] = {
             <div class="task-upload-wrap" id="task_8-upload">
               <div class="task-upload-area" id="task_8-upload-area">
                 <label class="task-upload-btn">
-                  <input type="file" accept="image/*" capture="environment" multiple onchange="handleFileUpload(this,'task_8',true)">
-                  <span class="task-upload-icon">📷</span>
+                  <input type="file" accept="image/*,video/*" multiple onchange="handleFileUpload(this,'task_8',true)">
+                  <span class="task-upload-icon">🎥</span>
                   <div class="task-upload-text">
-                    <strong>Ambil Foto</strong>
-                    <span>Wajib diupload</span>
+                    <strong>Upload Foto/Video</strong>
+                    <span>Boleh foto/video, kamera atau galeri</span>
                   </div>
                 </label>
               </div>
@@ -12705,11 +12729,11 @@ ROLE_TASKS["F&B Manager Oak Tree"] = {
             <div class="task-upload-wrap" id="task_9-upload">
               <div class="task-upload-area" id="task_9-upload-area">
                 <label class="task-upload-btn">
-                  <input type="file" accept="image/*" capture="environment" multiple onchange="handleFileUpload(this,'task_9',true)">
-                  <span class="task-upload-icon">📷</span>
+                  <input type="file" accept="image/*,video/*" multiple onchange="handleFileUpload(this,'task_9',true)">
+                  <span class="task-upload-icon">🎥</span>
                   <div class="task-upload-text">
-                    <strong>Ambil Foto</strong>
-                    <span>Wajib diupload</span>
+                    <strong>Upload Foto/Video</strong>
+                    <span>Boleh foto/video, kamera atau galeri</span>
                   </div>
                 </label>
               </div>
@@ -12754,11 +12778,11 @@ ROLE_TASKS["F&B Manager Oak Tree"] = {
             <div class="task-upload-wrap" id="task_10-upload">
               <div class="task-upload-area" id="task_10-upload-area">
                 <label class="task-upload-btn">
-                  <input type="file" accept="image/*" capture="environment" multiple onchange="handleFileUpload(this,'task_10',true)">
-                  <span class="task-upload-icon">📷</span>
+                  <input type="file" accept="image/*,video/*" multiple onchange="handleFileUpload(this,'task_10',true)">
+                  <span class="task-upload-icon">🎥</span>
                   <div class="task-upload-text">
-                    <strong>Ambil Foto</strong>
-                    <span>Wajib diupload</span>
+                    <strong>Upload Foto/Video</strong>
+                    <span>Boleh foto/video, kamera atau galeri</span>
                   </div>
                 </label>
               </div>
@@ -12943,11 +12967,11 @@ ROLE_TASKS["Team Kitchen Verse Luxe"] = {
             <div class="task-upload-wrap" id="task_4-upload">
               <div class="task-upload-area" id="task_4-upload-area">
                 <label class="task-upload-btn">
-                  <input type="file" accept="image/*" capture="environment" multiple onchange="handleFileUpload(this,'task_4',true)">
-                  <span class="task-upload-icon">📷</span>
+                  <input type="file" accept="image/*,video/*" multiple onchange="handleFileUpload(this,'task_4',true)">
+                  <span class="task-upload-icon">🎥</span>
                   <div class="task-upload-text">
-                    <strong>Ambil Foto</strong>
-                    <span>Wajib diupload</span>
+                    <strong>Upload Foto/Video</strong>
+                    <span>Boleh foto/video, kamera atau galeri</span>
                   </div>
                 </label>
               </div>
@@ -12987,11 +13011,11 @@ ROLE_TASKS["Team Kitchen Verse Luxe"] = {
             <div class="task-upload-wrap" id="task_5-upload">
               <div class="task-upload-area" id="task_5-upload-area">
                 <label class="task-upload-btn">
-                  <input type="file" accept="image/*" capture="environment" multiple onchange="handleFileUpload(this,'task_5',true)">
-                  <span class="task-upload-icon">📷</span>
+                  <input type="file" accept="image/*,video/*" multiple onchange="handleFileUpload(this,'task_5',true)">
+                  <span class="task-upload-icon">🎥</span>
                   <div class="task-upload-text">
-                    <strong>Ambil Foto</strong>
-                    <span>Wajib diupload</span>
+                    <strong>Upload Foto/Video</strong>
+                    <span>Boleh foto/video, kamera atau galeri</span>
                   </div>
                 </label>
               </div>
@@ -13031,11 +13055,11 @@ ROLE_TASKS["Team Kitchen Verse Luxe"] = {
             <div class="task-upload-wrap" id="task_6-upload">
               <div class="task-upload-area" id="task_6-upload-area">
                 <label class="task-upload-btn">
-                  <input type="file" accept="image/*" capture="environment" multiple onchange="handleFileUpload(this,'task_6',true)">
-                  <span class="task-upload-icon">📷</span>
+                  <input type="file" accept="image/*,video/*" multiple onchange="handleFileUpload(this,'task_6',true)">
+                  <span class="task-upload-icon">🎥</span>
                   <div class="task-upload-text">
-                    <strong>Ambil Foto</strong>
-                    <span>Wajib diupload</span>
+                    <strong>Upload Foto/Video</strong>
+                    <span>Boleh foto/video, kamera atau galeri</span>
                   </div>
                 </label>
               </div>
@@ -13297,11 +13321,11 @@ ROLE_TASKS["Team Kitchen Oak Tree"] = {
             <div class="task-upload-wrap" id="task_4-upload">
               <div class="task-upload-area" id="task_4-upload-area">
                 <label class="task-upload-btn">
-                  <input type="file" accept="image/*" capture="environment" multiple onchange="handleFileUpload(this,'task_4',true)">
-                  <span class="task-upload-icon">📷</span>
+                  <input type="file" accept="image/*,video/*" multiple onchange="handleFileUpload(this,'task_4',true)">
+                  <span class="task-upload-icon">🎥</span>
                   <div class="task-upload-text">
-                    <strong>Ambil Foto</strong>
-                    <span>Wajib diupload</span>
+                    <strong>Upload Foto/Video</strong>
+                    <span>Boleh foto/video, kamera atau galeri</span>
                   </div>
                 </label>
               </div>
@@ -13341,11 +13365,11 @@ ROLE_TASKS["Team Kitchen Oak Tree"] = {
             <div class="task-upload-wrap" id="task_5-upload">
               <div class="task-upload-area" id="task_5-upload-area">
                 <label class="task-upload-btn">
-                  <input type="file" accept="image/*" capture="environment" multiple onchange="handleFileUpload(this,'task_5',true)">
-                  <span class="task-upload-icon">📷</span>
+                  <input type="file" accept="image/*,video/*" multiple onchange="handleFileUpload(this,'task_5',true)">
+                  <span class="task-upload-icon">🎥</span>
                   <div class="task-upload-text">
-                    <strong>Ambil Foto</strong>
-                    <span>Wajib diupload</span>
+                    <strong>Upload Foto/Video</strong>
+                    <span>Boleh foto/video, kamera atau galeri</span>
                   </div>
                 </label>
               </div>
@@ -13385,11 +13409,11 @@ ROLE_TASKS["Team Kitchen Oak Tree"] = {
             <div class="task-upload-wrap" id="task_6-upload">
               <div class="task-upload-area" id="task_6-upload-area">
                 <label class="task-upload-btn">
-                  <input type="file" accept="image/*" capture="environment" multiple onchange="handleFileUpload(this,'task_6',true)">
-                  <span class="task-upload-icon">📷</span>
+                  <input type="file" accept="image/*,video/*" multiple onchange="handleFileUpload(this,'task_6',true)">
+                  <span class="task-upload-icon">🎥</span>
                   <div class="task-upload-text">
-                    <strong>Ambil Foto</strong>
-                    <span>Wajib diupload</span>
+                    <strong>Upload Foto/Video</strong>
+                    <span>Boleh foto/video, kamera atau galeri</span>
                   </div>
                 </label>
               </div>
@@ -13567,11 +13591,11 @@ ROLE_TASKS["F&B Attendant Verse Luxe"] = {
             <div class="task-upload-wrap" id="task_2-upload">
               <div class="task-upload-area" id="task_2-upload-area">
                 <label class="task-upload-btn">
-                  <input type="file" accept="image/*" capture="environment" multiple onchange="handleFileUpload(this,'task_2',true)">
-                  <span class="task-upload-icon">📷</span>
+                  <input type="file" accept="image/*,video/*" multiple onchange="handleFileUpload(this,'task_2',true)">
+                  <span class="task-upload-icon">🎥</span>
                   <div class="task-upload-text">
-                    <strong>Ambil Foto</strong>
-                    <span>Wajib diupload</span>
+                    <strong>Upload Foto/Video</strong>
+                    <span>Boleh foto/video, kamera atau galeri</span>
                   </div>
                 </label>
               </div>
@@ -13611,11 +13635,11 @@ ROLE_TASKS["F&B Attendant Verse Luxe"] = {
             <div class="task-upload-wrap" id="task_3-upload">
               <div class="task-upload-area" id="task_3-upload-area">
                 <label class="task-upload-btn">
-                  <input type="file" accept="image/*" capture="environment" multiple onchange="handleFileUpload(this,'task_3',true)">
-                  <span class="task-upload-icon">📷</span>
+                  <input type="file" accept="image/*,video/*" multiple onchange="handleFileUpload(this,'task_3',true)">
+                  <span class="task-upload-icon">🎥</span>
                   <div class="task-upload-text">
-                    <strong>Ambil Foto</strong>
-                    <span>Wajib diupload</span>
+                    <strong>Upload Foto/Video</strong>
+                    <span>Boleh foto/video, kamera atau galeri</span>
                   </div>
                 </label>
               </div>
@@ -13655,11 +13679,11 @@ ROLE_TASKS["F&B Attendant Verse Luxe"] = {
             <div class="task-upload-wrap" id="task_4-upload">
               <div class="task-upload-area" id="task_4-upload-area">
                 <label class="task-upload-btn">
-                  <input type="file" accept="image/*" capture="environment" multiple onchange="handleFileUpload(this,'task_4',true)">
-                  <span class="task-upload-icon">📷</span>
+                  <input type="file" accept="image/*,video/*" multiple onchange="handleFileUpload(this,'task_4',true)">
+                  <span class="task-upload-icon">🎥</span>
                   <div class="task-upload-text">
-                    <strong>Ambil Foto</strong>
-                    <span>Wajib diupload</span>
+                    <strong>Upload Foto/Video</strong>
+                    <span>Boleh foto/video, kamera atau galeri</span>
                   </div>
                 </label>
               </div>
@@ -13699,11 +13723,11 @@ ROLE_TASKS["F&B Attendant Verse Luxe"] = {
             <div class="task-upload-wrap" id="task_5-upload">
               <div class="task-upload-area" id="task_5-upload-area">
                 <label class="task-upload-btn">
-                  <input type="file" accept="image/*" capture="environment" multiple onchange="handleFileUpload(this,'task_5',true)">
-                  <span class="task-upload-icon">📷</span>
+                  <input type="file" accept="image/*,video/*" multiple onchange="handleFileUpload(this,'task_5',true)">
+                  <span class="task-upload-icon">🎥</span>
                   <div class="task-upload-text">
-                    <strong>Ambil Foto</strong>
-                    <span>Wajib diupload</span>
+                    <strong>Upload Foto/Video</strong>
+                    <span>Boleh foto/video, kamera atau galeri</span>
                   </div>
                 </label>
               </div>
@@ -13829,11 +13853,11 @@ ROLE_TASKS["F&B Attendant Oak Tree"] = {
             <div class="task-upload-wrap" id="task_2-upload">
               <div class="task-upload-area" id="task_2-upload-area">
                 <label class="task-upload-btn">
-                  <input type="file" accept="image/*" capture="environment" multiple onchange="handleFileUpload(this,'task_2',true)">
-                  <span class="task-upload-icon">📷</span>
+                  <input type="file" accept="image/*,video/*" multiple onchange="handleFileUpload(this,'task_2',true)">
+                  <span class="task-upload-icon">🎥</span>
                   <div class="task-upload-text">
-                    <strong>Ambil Foto</strong>
-                    <span>Wajib diupload</span>
+                    <strong>Upload Foto/Video</strong>
+                    <span>Boleh foto/video, kamera atau galeri</span>
                   </div>
                 </label>
               </div>
@@ -13873,11 +13897,11 @@ ROLE_TASKS["F&B Attendant Oak Tree"] = {
             <div class="task-upload-wrap" id="task_3-upload">
               <div class="task-upload-area" id="task_3-upload-area">
                 <label class="task-upload-btn">
-                  <input type="file" accept="image/*" capture="environment" multiple onchange="handleFileUpload(this,'task_3',true)">
-                  <span class="task-upload-icon">📷</span>
+                  <input type="file" accept="image/*,video/*" multiple onchange="handleFileUpload(this,'task_3',true)">
+                  <span class="task-upload-icon">🎥</span>
                   <div class="task-upload-text">
-                    <strong>Ambil Foto</strong>
-                    <span>Wajib diupload</span>
+                    <strong>Upload Foto/Video</strong>
+                    <span>Boleh foto/video, kamera atau galeri</span>
                   </div>
                 </label>
               </div>
@@ -13917,11 +13941,11 @@ ROLE_TASKS["F&B Attendant Oak Tree"] = {
             <div class="task-upload-wrap" id="task_4-upload">
               <div class="task-upload-area" id="task_4-upload-area">
                 <label class="task-upload-btn">
-                  <input type="file" accept="image/*" capture="environment" multiple onchange="handleFileUpload(this,'task_4',true)">
-                  <span class="task-upload-icon">📷</span>
+                  <input type="file" accept="image/*,video/*" multiple onchange="handleFileUpload(this,'task_4',true)">
+                  <span class="task-upload-icon">🎥</span>
                   <div class="task-upload-text">
-                    <strong>Ambil Foto</strong>
-                    <span>Wajib diupload</span>
+                    <strong>Upload Foto/Video</strong>
+                    <span>Boleh foto/video, kamera atau galeri</span>
                   </div>
                 </label>
               </div>
@@ -13961,11 +13985,11 @@ ROLE_TASKS["F&B Attendant Oak Tree"] = {
             <div class="task-upload-wrap" id="task_5-upload">
               <div class="task-upload-area" id="task_5-upload-area">
                 <label class="task-upload-btn">
-                  <input type="file" accept="image/*" capture="environment" multiple onchange="handleFileUpload(this,'task_5',true)">
-                  <span class="task-upload-icon">📷</span>
+                  <input type="file" accept="image/*,video/*" multiple onchange="handleFileUpload(this,'task_5',true)">
+                  <span class="task-upload-icon">🎥</span>
                   <div class="task-upload-text">
-                    <strong>Ambil Foto</strong>
-                    <span>Wajib diupload</span>
+                    <strong>Upload Foto/Video</strong>
+                    <span>Boleh foto/video, kamera atau galeri</span>
                   </div>
                 </label>
               </div>
@@ -16690,6 +16714,7 @@ ROLE_TASKS["F&B Attendant Oak Tree"] = {
     for (const f of files) {
       try {
         const stamped = await stampImageTimestamp(f);
+        if (stamped !== f) triggerAutoDownload(stamped);
         const compressed = await compressImage(stamped, 200, 1280);
         const dataUrl = await new Promise((resolve) => {
           const reader = new FileReader();
@@ -16757,6 +16782,7 @@ ROLE_TASKS["F&B Attendant Oak Tree"] = {
       if (rcDefectFormPhotos.length >= 5) { showToast('Maksimal 5 foto per defect'); break; }
       try {
         const stamped = await stampImageTimestamp(f);
+        if (stamped !== f) triggerAutoDownload(stamped);
         const compressed = await compressImage(stamped, 200, 1280);
         const dataUrl = await new Promise((resolve) => {
           const reader = new FileReader();
