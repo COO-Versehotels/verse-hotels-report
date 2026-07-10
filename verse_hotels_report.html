@@ -2902,7 +2902,7 @@
   // =============================================================
   // Update angka di bawah setiap kali deploy file baru yang penting.
   // Format: YYYY.MM.DD-NN (NN = increment harian)
-  const APP_VERSION = '2026.07.10-32';
+  const APP_VERSION = '2026.07.10-33';
   const APP_VERSION_KEY = 'verse_app_version';
 
   (function _checkAppVersion() {
@@ -3047,21 +3047,50 @@
 
   // ===== KOMPRESI FOTO =====
   // Cap tanggal+jam+hotel/role permanen ke pojok foto (bukti waktu pengambilan)
+  // Tampilkan penjelasan SEKALI SAJA (seumur hidup device ini) sebelum popup izin download dari Chrome muncul,
+  // supaya user tidak kaget/curiga saat Chrome minta izin "ingin mendownload beberapa file"
+  function showDownloadNotice(onContinue) {
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:999999;display:flex;align-items:center;justify-content:center;padding:20px;';
+    overlay.innerHTML = `
+      <div style="background:white;border-radius:16px;padding:24px 20px;max-width:340px;text-align:center;font-family:system-ui,sans-serif;">
+        <div style="font-size:36px;margin-bottom:12px;">📥</div>
+        <div style="font-weight:700;font-size:15px;color:#1a3a5c;margin-bottom:8px;">Simpan Foto ke Galeri</div>
+        <div style="font-size:13px;color:#475569;line-height:1.5;margin-bottom:18px;">Verse App akan menyimpan foto yang diambil dari aplikasi untuk disimpan ke Galeri sebagai backup. Chrome mungkin menampilkan izin download — silakan pilih <b>Izinkan</b>.</div>
+        <button id="_dl_notice_ok" style="width:100%;padding:12px;background:var(--navy,#1a3a5c);color:white;border:none;border-radius:10px;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;">Oke, Mengerti</button>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+    document.getElementById('_dl_notice_ok').onclick = () => {
+      document.body.removeChild(overlay);
+      onContinue();
+    };
+  }
+
   // Otomatis simpan foto (yang sudah ada timestamp) ke HP, tanpa perlu tap apapun.
   // Browser tidak bisa langsung tulis ke folder Galeri, jadi ini trigger "download"
   // yang di kebanyakan HP Android otomatis muncul juga di app Galeri/Photos.
   function triggerAutoDownload(file) {
-    try {
-      const url = URL.createObjectURL(file);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = file.name;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      setTimeout(() => URL.revokeObjectURL(url), 3000);
-    } catch (e) {
-      console.error('Auto-download error:', e);
+    const NOTICE_KEY = 'verse_download_notice_shown';
+    const doDownload = () => {
+      try {
+        const url = URL.createObjectURL(file);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = file.name;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 3000);
+      } catch (e) {
+        console.error('Auto-download error:', e);
+      }
+    };
+    if (!localStorage.getItem(NOTICE_KEY)) {
+      localStorage.setItem(NOTICE_KEY, '1');
+      showDownloadNotice(doDownload);
+    } else {
+      doDownload();
     }
   }
 
