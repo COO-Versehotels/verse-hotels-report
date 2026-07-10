@@ -2902,7 +2902,7 @@
   // =============================================================
   // Update angka di bawah setiap kali deploy file baru yang penting.
   // Format: YYYY.MM.DD-NN (NN = increment harian)
-  const APP_VERSION = '2026.07.10-33';
+  const APP_VERSION = '2026.07.10-34';
   const APP_VERSION_KEY = 'verse_app_version';
 
   (function _checkAppVersion() {
@@ -3102,11 +3102,26 @@
         reader.onload = (e) => {
           const img = new Image();
           img.onload = () => {
+            // Batasi ukuran kanvas — HP tertentu gagal render kanvas raksasa
+            // (foto asli kamera bisa 4000x3000+) sehingga sebagian gambar jadi hitam.
+            const MAX_DIM = 1600;
+            let width = img.width;
+            let height = img.height;
+            if (width > MAX_DIM || height > MAX_DIM) {
+              if (width >= height) {
+                height = Math.round((height * MAX_DIM) / width);
+                width = MAX_DIM;
+              } else {
+                width = Math.round((width * MAX_DIM) / height);
+                height = MAX_DIM;
+              }
+            }
+
             const canvas = document.createElement('canvas');
-            canvas.width = img.width;
-            canvas.height = img.height;
+            canvas.width = width;
+            canvas.height = height;
             const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0);
+            ctx.drawImage(img, 0, 0, width, height);
 
             const now = new Date(Date.now() + 7 * 3600000); // WIB
             const pad = n => String(n).padStart(2, '0');
