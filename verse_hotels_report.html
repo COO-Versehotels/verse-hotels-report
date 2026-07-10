@@ -2359,6 +2359,63 @@
     </div>
   </div>
 
+  <!-- ===== LOCATION TRACKING (COO Only) ===== -->
+  <div class="screen" id="screen-location-tracking">
+    <div class="topbar" style="padding:48px 16px 12px;background:linear-gradient(135deg,#0f4c3a,#1a7a5e);">
+      <button class="topbar-back" onclick="go('coo')" style="color:white;background:rgba(255,255,255,0.15);">←</button>
+      <div class="topbar-title">
+        <h2 style="color:white;">🗺️ Location Tracking</h2>
+        <p style="color:rgba(255,255,255,0.5);">Jejak lokasi staff saat menyelesaikan task</p>
+      </div>
+      <div class="topbar-right">
+        <span style="font-size:20px;cursor:pointer;color:#fde68a;" onclick="loadLocationTracking()" title="Refresh">🔄</span>
+      </div>
+    </div>
+
+    <div class="scroll-area">
+      <!-- Filter Card -->
+      <div style="padding:12px 16px;">
+        <div style="background:white;border-radius:12px;padding:12px;box-shadow:var(--shadow-card);">
+          <div style="margin-bottom:8px;">
+            <label style="font-size:11px;color:var(--gray-500);font-weight:700;display:block;margin-bottom:4px;">Tanggal</label>
+            <input type="date" id="loctrack-date" style="width:100%;padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-family:inherit;font-size:12px;">
+          </div>
+          <div style="margin-bottom:8px;">
+            <label style="font-size:11px;color:var(--gray-500);font-weight:700;display:block;margin-bottom:4px;">Filter Role / Hotel (opsional)</label>
+            <input type="text" id="loctrack-filter-text" placeholder="Cari nama role atau hotel..." style="width:100%;padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-family:inherit;font-size:12px;">
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button onclick="loadLocationTracking()" style="flex:1;padding:10px;background:var(--navy);color:white;border:none;border-radius:8px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;">🔍 Cari</button>
+            <button onclick="resetLocationTrackingFilter()" style="padding:10px 14px;background:var(--gray-100);color:var(--gray-600);border:none;border-radius:8px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;">Reset</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Summary stats -->
+      <div style="padding:0 16px 12px;display:grid;grid-template-columns:repeat(2,1fr);gap:8px;">
+        <div style="background:white;border-radius:10px;padding:10px;text-align:center;box-shadow:var(--shadow-card);">
+          <div id="loctrack-stat-total" style="font-size:20px;font-weight:800;color:var(--navy);">0</div>
+          <div style="font-size:10px;color:var(--gray-500);font-weight:600;">Total Titik Lokasi</div>
+        </div>
+        <div style="background:white;border-radius:10px;padding:10px;text-align:center;box-shadow:var(--shadow-card);">
+          <div id="loctrack-stat-staff" style="font-size:20px;font-weight:800;color:var(--navy);">0</div>
+          <div style="font-size:10px;color:var(--gray-500);font-weight:600;">Staff Tercatat</div>
+        </div>
+      </div>
+
+      <!-- Table -->
+      <div style="padding:0 16px 16px;">
+        <div style="background:white;border-radius:12px;overflow:hidden;box-shadow:var(--shadow-card);">
+          <div id="loctrack-table">
+            <div style="padding:30px;text-align:center;color:var(--gray-400);font-size:13px;">
+              Klik <strong>🔍 Cari</strong> untuk load data lokasi.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- ===== ARSIP LAPORAN ===== -->
   <div class="screen" id="screen-arsip">
     <div class="topbar" style="padding:48px 16px 12px;background:linear-gradient(135deg,#1a4a1a,#2d6a2d);">
@@ -2475,6 +2532,7 @@
       <div class="topbar-right">
         <span id="coo-user-btn" style="font-size:20px;cursor:pointer;color:var(--gold);margin-right:10px;display:none;" onclick="openUserMgmtReport()" title="Manage User">👥</span>
         <span id="coo-loglog-btn" style="font-size:20px;cursor:pointer;color:var(--gold);margin-right:10px;display:none;" onclick="openLoginHistory()" title="Login History">📊</span>
+        <span id="coo-loctrack-btn" style="font-size:20px;cursor:pointer;color:var(--gold);margin-right:10px;display:none;" onclick="openLocationTracking()" title="Location Tracking">🗺️</span>
         <span style="font-size:20px;cursor:pointer;color:var(--gold);" onclick="exportDashboardPDF()" title="Export PDF Konsolidasi">📄</span>
       </div>
     </div>
@@ -2844,7 +2902,7 @@
   // =============================================================
   // Update angka di bawah setiap kali deploy file baru yang penting.
   // Format: YYYY.MM.DD-NN (NN = increment harian)
-  const APP_VERSION = '2026.07.10-30';
+  const APP_VERSION = '2026.07.10-32';
   const APP_VERSION_KEY = 'verse_app_version';
 
   (function _checkAppVersion() {
@@ -4306,6 +4364,9 @@
       // Tombol Login History hanya untuk COO
       const llb = document.getElementById('coo-loglog-btn');
       if (llb) llb.style.display = (currentRole === 'COO') ? 'inline' : 'none';
+      // Tombol Location Tracking hanya untuk COO
+      const ltb = document.getElementById('coo-loctrack-btn');
+      if (ltb) ltb.style.display = (currentRole === 'COO') ? 'inline' : 'none';
       // Load Room Check summary
       if (typeof rcLoadCOORoomCheckSummary === 'function') rcLoadCOORoomCheckSummary();
       // Auto-prompt laporan bulanan kalau di awal bulan & belum dikirim
@@ -4696,6 +4757,96 @@
               ${hotel && hotel !== '-' && hotel !== 'Corporate' ? `<div style="color:var(--gray-500);font-size:10px;margin-top:1px;">🏨 ${hotel}</div>` : ''}
             </div>
             <div style="font-size:9px;color:var(--gray-500);font-weight:500;line-height:1.4;">${device}</div>
+          </div>
+        `;
+      });
+
+      tableEl.innerHTML = html;
+    } catch (e) {
+      tableEl.innerHTML = `<div style="padding:20px;text-align:center;color:#ef4444;font-size:12px;">❌ Network error: ${e.message}</div>`;
+    }
+  }
+
+  // === Location Tracking Viewer (COO only) ===
+  function openLocationTracking() {
+    go('location-tracking');
+    const today = new Date(Date.now() + 7*3600000).toISOString().split('T')[0];
+    const dateEl = document.getElementById('loctrack-date');
+    if (dateEl && !dateEl.value) dateEl.value = today;
+    loadLocationTracking();
+  }
+
+  function resetLocationTrackingFilter() {
+    const today = new Date(Date.now() + 7*3600000).toISOString().split('T')[0];
+    document.getElementById('loctrack-date').value = today;
+    document.getElementById('loctrack-filter-text').value = '';
+    loadLocationTracking();
+  }
+
+  async function loadLocationTracking() {
+    const tableEl = document.getElementById('loctrack-table');
+    if (!tableEl) return;
+    tableEl.innerHTML = '<div style="padding:20px;text-align:center;color:var(--gray-400);font-size:12px;">⏳ Loading...</div>';
+
+    const dateVal = document.getElementById('loctrack-date').value;
+    const filterText = (document.getElementById('loctrack-filter-text').value || '').toLowerCase().trim();
+
+    try {
+      let url = SUPA_URL + '/rest/v1/location_log?select=*&order=recorded_at.desc&limit=500';
+      if (dateVal) {
+        url += '&tanggal=eq.' + dateVal;
+      }
+
+      const resp = await fetch(url, {
+        headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY }
+      });
+
+      if (!resp.ok) {
+        const errText = await resp.text();
+        tableEl.innerHTML = `<div style="padding:20px;text-align:center;color:#ef4444;font-size:12px;">❌ Error: ${resp.status}<br><span style="font-size:10px;">${errText.substring(0, 200)}</span><br><br><span style="font-size:10px;color:var(--gray-500);">💡 Pastikan tabel <code>location_log</code> sudah dibuat di Supabase.</span></div>`;
+        return;
+      }
+
+      let data = await resp.json();
+
+      if (filterText) {
+        data = data.filter(r => {
+          const hay = ((r.role || '') + ' ' + (r.hotel || '')).toLowerCase();
+          return hay.includes(filterText);
+        });
+      }
+
+      const total = data.length;
+      const uniqueStaff = new Set(data.map(r => r.role + '|' + r.hotel)).size;
+      document.getElementById('loctrack-stat-total').textContent = total;
+      document.getElementById('loctrack-stat-staff').textContent = uniqueStaff;
+
+      if (data.length === 0) {
+        tableEl.innerHTML = '<div style="padding:30px;text-align:center;color:var(--gray-400);font-size:13px;">📭 Tidak ada data lokasi pada tanggal ini.</div>';
+        return;
+      }
+
+      let html = '<div style="background:var(--gray-50);padding:10px 12px;display:grid;grid-template-columns:70px 1fr 60px;gap:8px;font-size:10px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.5px;border-bottom:1px solid var(--gray-200);">';
+      html += '<div>Waktu</div><div>Role / Hotel / Task</div><div>Peta</div>';
+      html += '</div>';
+
+      data.forEach((r, idx) => {
+        const recDate = new Date(r.recorded_at);
+        const wibDate = new Date(recDate.getTime() + 7*3600000);
+        const timeStr = wibDate.toISOString().split('T')[1].substring(0, 5);
+        const bgColor = idx % 2 === 0 ? 'white' : 'var(--gray-50)';
+        const mapUrl = 'https://www.google.com/maps?q=' + r.latitude + ',' + r.longitude;
+        const statusLabel = r.status === 'done' ? '✅ Sudah' : (r.status === 'not' ? '❌ Tidak Dikerjakan' : (r.status || '-'));
+
+        html += `
+          <div style="background:${bgColor};padding:10px 12px;display:grid;grid-template-columns:70px 1fr 60px;gap:8px;font-size:11px;border-bottom:1px solid var(--gray-100);align-items:start;">
+            <div style="color:var(--gray-600);font-weight:600;">${timeStr}</div>
+            <div>
+              <div style="font-weight:700;color:var(--navy);font-size:12px;">🎫 ${r.role || '-'}</div>
+              <div style="color:var(--gray-500);font-size:10px;margin-top:1px;">🏨 ${r.hotel || '-'}</div>
+              <div style="color:#7c3aed;font-size:10px;margin-top:1px;">${r.task_id || '-'} — ${statusLabel}</div>
+            </div>
+            <div><a href="${mapUrl}" target="_blank" style="font-size:16px;text-decoration:none;">📍</a></div>
           </div>
         `;
       });
@@ -5533,6 +5684,43 @@
   const taskFiles = {};
   const taskFileUrls = {}; // Menyimpan URL file yang sudah diupload ke Storage
 
+  // Rekam titik lokasi HP setiap kali task diselesaikan (untuk history tracking pergerakan staff)
+  // Gagal diam-diam kalau lokasi ditolak/tidak tersedia — tidak boleh mengganggu alur kerja staff
+  function logTaskLocation(taskId, status) {
+    if (!navigator.geolocation || !currentRole || !currentHotel) return;
+    try {
+      navigator.geolocation.getCurrentPosition(
+        async (pos) => {
+          try {
+            const today = new Date(Date.now() + 7*3600000).toISOString().split('T')[0];
+            await fetch(SUPA_URL + '/rest/v1/location_log', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'apikey': SUPA_KEY,
+                'Authorization': 'Bearer ' + SUPA_KEY,
+                'Prefer': 'return=minimal'
+              },
+              body: JSON.stringify({
+                tanggal: today,
+                role: currentRole,
+                hotel: currentHotel,
+                task_id: taskId,
+                status: status,
+                latitude: pos.coords.latitude,
+                longitude: pos.coords.longitude,
+                accuracy_m: pos.coords.accuracy ? Math.round(pos.coords.accuracy) : null,
+                recorded_at: new Date().toISOString()
+              })
+            });
+          } catch (e) { console.error('logTaskLocation insert error:', e); }
+        },
+        (err) => { console.log('logTaskLocation: lokasi tidak tersedia/ditolak:', err.message); },
+        { enableHighAccuracy: false, timeout: 8000, maximumAge: 60000 }
+      );
+    } catch (e) { console.error('logTaskLocation error:', e); }
+  }
+
   function setStatus(e, taskId, status) {
     e.stopPropagation();
     const item = document.getElementById(taskId);
@@ -5553,7 +5741,9 @@
     const needUpload = uploadWrap && !isNoUpload;
 
     // Auto-save status segera ke database
-    saveDraftNow(taskId); // punya upload area dan bukan no-upload
+    saveDraftNow(taskId);
+    // Rekam titik lokasi HP saat ini (untuk history tracking pergerakan — cuma COO yang bisa lihat)
+    logTaskLocation(taskId, status);
 
     // Reset highlight error jika ada
     if (uploadWrap) {
@@ -14166,11 +14356,11 @@ ROLE_TASKS["F&B Attendant Oak Tree"] = {
           <div class="task-upload-wrap" id="fu${i}-upload" style="display:none;">
             <div class="task-upload-area" id="fu${i}-upload-area">
               <label class="task-upload-btn">
-                <input type="file" accept="image/*" capture="environment" multiple onchange="handleFileUpload(this,'fu${i}',true)">
-                <span class="task-upload-icon">📷</span>
+                <input type="file" accept="image/*" multiple onchange="handleFileUpload(this,'fu${i}',true)">
+                <span class="task-upload-icon">🖼️</span>
                 <div class="task-upload-text">
-                  <strong>Ambil Foto</strong>
-                  <span>Wajib untuk semua status Follow Up</span>
+                  <strong>Upload Foto</strong>
+                  <span>Boleh kamera langsung / pilih dari galeri</span>
                 </div>
               </label>
             </div>
