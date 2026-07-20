@@ -2903,7 +2903,7 @@
   // =============================================================
   // Update angka di bawah setiap kali deploy file baru yang penting.
   // Format: YYYY.MM.DD-NN (NN = increment harian)
-  const APP_VERSION = '2026.07.10-35';
+  const APP_VERSION = '2026.07.10-36';
   const APP_VERSION_KEY = 'verse_app_version';
 
   (function _checkAppVersion() {
@@ -3191,6 +3191,40 @@
     } else {
       doDownload();
     }
+  }
+
+  // =============================================================
+  // BLOKIR "Wajib Foto Langsung" kalau dibuka dari laptop/desktop
+  // (atribut capture="environment" cuma diikuti HP; di laptop
+  // browser abaikan dan buka file explorer biasa — jadi wajib
+  // diblokir manual di sisi kita)
+  // =============================================================
+  function isMobileDevice() {
+    const ua = navigator.userAgent || '';
+    if (/Android|iPhone|iPad|iPod|Mobile|IEMobile/i.test(ua)) return true;
+    // Fallback: device dengan layar sentuh & tanpa mouse presisi biasanya HP/tablet
+    if (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) return true;
+    return false;
+  }
+
+  function blockCameraOnlyInputsOnDesktop() {
+    if (isMobileDevice()) return; // di HP, biarkan normal
+    document.querySelectorAll('input[type="file"][capture="environment"]').forEach(inp => {
+      const label = inp.closest('.task-upload-btn') || inp.closest('label');
+      if (!label || label.dataset.desktopBlocked) return;
+      label.dataset.desktopBlocked = '1';
+      inp.disabled = true;
+      inp.style.pointerEvents = 'none';
+      const icon = label.querySelector('.task-upload-icon');
+      if (icon) icon.textContent = '💻🚫';
+      const strong = label.querySelector('.task-upload-text strong');
+      if (strong) strong.textContent = 'Tidak Bisa dari Laptop';
+      const span = label.querySelector('.task-upload-text span');
+      if (span) span.textContent = 'Fitur ini hanya bisa diakses lewat HP';
+      label.style.opacity = '0.55';
+      label.style.cursor = 'not-allowed';
+      label.style.filter = 'grayscale(1)';
+    });
   }
 
   async function stampImageTimestamp(file) {
@@ -14580,6 +14614,9 @@ ROLE_TASKS["F&B Attendant Oak Tree"] = {
     tasklistRendered = true;
     lastRenderedRole = role;
 
+    // Kalau dibuka dari laptop/desktop, blokir tombol "Ambil Foto" (Wajib Foto Langsung)
+    blockCameraOnlyInputsOnDesktop();
+
     // Auto-save pada semua textarea
     setTimeout(() => {
       document.querySelectorAll('#tasklist-content .task-note, #followup-list .task-note, #tasklist-scroll .task-note').forEach(textarea => {
@@ -17124,6 +17161,7 @@ ROLE_TASKS["F&B Attendant Oak Tree"] = {
     rcRenderFormPhotos();
     rcRenderFormDefects();
     document.getElementById('rc-form-modal').classList.add('show');
+    blockCameraOnlyInputsOnDesktop();
   }
 
   function rcCloseForm() {
@@ -17196,6 +17234,7 @@ ROLE_TASKS["F&B Attendant Oak Tree"] = {
         '<div class="rc-photo-thumb"><img src="' + p.dataUrl + '"><button class="rc-photo-del" onclick="rcRemovePhoto(\'' + area + '\',' + i + ')">×</button></div>'
       ).join('') + addBtn;
     });
+    blockCameraOnlyInputsOnDesktop();
   }
 
   // ====== DEFECTS ======
@@ -17252,11 +17291,13 @@ ROLE_TASKS["F&B Attendant Oak Tree"] = {
     const addBtn = '<label class="rc-photo-add"><span>+</span>Foto<input type="file" accept="image/*" capture="environment" multiple style="display:none;" onchange="rcAddDefectPhotos(event)"></label>';
     if (rcDefectFormPhotos.length === 0) {
       grid.innerHTML = addBtn;
+      blockCameraOnlyInputsOnDesktop();
       return;
     }
     grid.innerHTML = rcDefectFormPhotos.map((p, i) =>
       '<div class="rc-photo-thumb"><img src="' + p.dataUrl + '"><button class="rc-photo-del" onclick="rcRemoveDefectPhoto(' + i + ')">×</button></div>'
     ).join('') + addBtn;
+    blockCameraOnlyInputsOnDesktop();
   }
 
   function rcSubmitDefect() {
