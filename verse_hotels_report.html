@@ -2533,6 +2533,7 @@
         <span id="coo-user-btn" style="font-size:20px;cursor:pointer;color:var(--gold);margin-right:10px;display:none;" onclick="openUserMgmtReport()" title="Manage User">👥</span>
         <span id="coo-loglog-btn" style="font-size:20px;cursor:pointer;color:var(--gold);margin-right:10px;display:none;" onclick="openLoginHistory()" title="Login History">📊</span>
         <span id="coo-loctrack-btn" style="font-size:20px;cursor:pointer;color:var(--gold);margin-right:10px;display:none;" onclick="openLocationTracking()" title="Location Tracking">🗺️</span>
+        <span id="coo-devapproval-btn" style="font-size:20px;cursor:pointer;color:var(--gold);margin-right:10px;display:none;" onclick="openDeviceApproval()" title="Device Approval">📱</span>
         <span style="font-size:20px;cursor:pointer;color:var(--gold);" onclick="exportDashboardPDF()" title="Export PDF Konsolidasi">📄</span>
       </div>
     </div>
@@ -2902,7 +2903,7 @@
   // =============================================================
   // Update angka di bawah setiap kali deploy file baru yang penting.
   // Format: YYYY.MM.DD-NN (NN = increment harian)
-  const APP_VERSION = '2026.07.10-34';
+  const APP_VERSION = '2026.07.10-35';
   const APP_VERSION_KEY = 'verse_app_version';
 
   (function _checkAppVersion() {
@@ -3032,6 +3033,104 @@
   // ===== SUPABASE SETUP =====
   const SUPA_URL = 'https://hgbqecsmhrzlavsjwlwq.supabase.co';
   const SUPA_KEY = 'sb_publishable_KeAmOu9ex8r1PDRI1MRMsQ_40uiEkbM';
+
+  // =============================================================
+  // DEVICE APPROVAL GATE — HP baru wajib disetujui COO dulu
+  // =============================================================
+  const DEVICE_ID_KEY = 'verse_device_id';
+
+  function getOrCreateDeviceId() {
+    let id = localStorage.getItem(DEVICE_ID_KEY);
+    if (!id) {
+      id = (crypto.randomUUID ? crypto.randomUUID() : 'dev-' + Date.now() + '-' + Math.random().toString(36).slice(2));
+      localStorage.setItem(DEVICE_ID_KEY, id);
+    }
+    return id;
+  }
+
+  function showDeviceGateScreen(status, deviceId) {
+    const old = document.getElementById('device-gate-overlay');
+    if (old) old.remove();
+    const overlay = document.createElement('div');
+    overlay.id = 'device-gate-overlay';
+    overlay.style.cssText = 'position:fixed;inset:0;background:#0f2540;z-index:9999999;display:flex;align-items:center;justify-content:center;padding:24px;font-family:system-ui,sans-serif;';
+
+    let icon = '⏳', title = 'Menunggu Persetujuan Admin', desc = 'HP/browser ini belum terdaftar. Minta COO untuk menyetujui akses dari Dashboard COO → Device Approval.';
+    if (status === 'revoked') {
+      icon = '🚫'; title = 'Akses Dicabut'; desc = 'Akses untuk HP/browser ini sudah dicabut oleh Admin. Hubungi COO kalau ini keliru.';
+    }
+
+    overlay.innerHTML = `
+      <div style="background:white;border-radius:18px;padding:28px 22px;max-width:360px;width:100%;text-align:center;">
+        <div style="font-size:44px;margin-bottom:10px;">${icon}</div>
+        <div style="font-weight:800;font-size:17px;color:#1a3a5c;margin-bottom:8px;">${title}</div>
+        <div style="font-size:13px;color:#64748b;line-height:1.5;margin-bottom:16px;">${desc}</div>
+        <div style="font-size:10px;color:#94a3b8;background:#f8fafc;border-radius:8px;padding:8px;margin-bottom:16px;word-break:break-all;">Device ID: ${deviceId}</div>
+        <button id="device-gate-recheck" style="width:100%;padding:12px;background:#1a3a5c;color:white;border:none;border-radius:10px;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;">🔄 Cek Status Lagi</button>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+    document.getElementById('device-gate-recheck').onclick = () => checkDeviceApproval();
+  }
+
+  function hideDeviceGateScreen() {
+    const old = document.getElementById('device-gate-overlay');
+    if (old) old.remove();
+  }
+
+  async function checkDeviceApproval() {
+    // Link laporan publik (WA share) tidak digembok — cuma alur login utama
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('view') === 'detail') return;
+
+    const deviceId = getOrCreateDeviceId();
+    try {
+      const resp = await fetch(SUPA_URL + '/rest/v1/device_approvals?device_id=eq.' + encodeURIComponent(deviceId) + '&select=status', {
+        headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY }
+      });
+      const rows = await resp.json();
+
+      if (!rows || rows.length === 0) {
+        // Device baru → daftarkan sebagai pending
+        await fetch(SUPA_URL + '/rest/v1/device_approvals', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': SUPA_KEY,
+            'Authorization': 'Bearer ' + SUPA_KEY,
+            'Prefer': 'return=minimal'
+          },
+          body: JSON.stringify({ device_id: deviceId, status: 'pending', user_agent: navigator.userAgent })
+        });
+        showDeviceGateScreen('pending', deviceId);
+        return;
+      }
+
+      const status = rows[0].status;
+      if (status === 'approved') {
+        hideDeviceGateScreen();
+        // Update last_seen_at diam-diam (tidak perlu ditunggu)
+        fetch(SUPA_URL + '/rest/v1/device_approvals?device_id=eq.' + encodeURIComponent(deviceId), {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': SUPA_KEY,
+            'Authorization': 'Bearer ' + SUPA_KEY,
+            'Prefer': 'return=minimal'
+          },
+          body: JSON.stringify({ last_seen_at: new Date().toISOString() })
+        }).catch(()=>{});
+      } else {
+        showDeviceGateScreen(status, deviceId);
+      }
+    } catch (e) {
+      console.error('Device approval check error:', e);
+      // Kalau gagal cek (offline dsb), jangan kunci total — biarkan lanjut supaya tidak stuck
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', checkDeviceApproval);
+
   const supa = supabase.createClient(SUPA_URL, SUPA_KEY, {
     auth: {
       persistSession: false,
@@ -4411,6 +4510,9 @@
       // Tombol Location Tracking hanya untuk COO
       const ltb = document.getElementById('coo-loctrack-btn');
       if (ltb) ltb.style.display = (currentRole === 'COO') ? 'inline' : 'none';
+      // Tombol Device Approval hanya untuk COO
+      const dab = document.getElementById('coo-devapproval-btn');
+      if (dab) dab.style.display = (currentRole === 'COO') ? 'inline' : 'none';
       // Load Room Check summary
       if (typeof rcLoadCOORoomCheckSummary === 'function') rcLoadCOORoomCheckSummary();
       // Auto-prompt laporan bulanan kalau di awal bulan & belum dikirim
@@ -4901,7 +5003,117 @@
     }
   }
 
-  // === Modal Hotel Picker untuk F&B Manager (Opsi A: switch hotel) ===
+  // === Device Approval (COO only) ===
+  function openDeviceApproval() {
+    if (currentRole !== 'COO') { showToast('Hanya COO yang dapat mengelola device.'); return; }
+    const old = document.getElementById('devapp-overlay'); if (old) old.remove();
+    const ov = document.createElement('div');
+    ov.id = 'devapp-overlay';
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;padding:16px;z-index:100000;';
+    ov.innerHTML = `
+      <div style="background:white;border-radius:18px;padding:20px;max-width:520px;width:100%;max-height:88vh;overflow-y:auto;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div style="font-size:18px;font-weight:800;color:var(--navy);">📱 Device Approval</div>
+          <span style="cursor:pointer;font-size:20px;color:#94a3b8;" onclick="document.getElementById('devapp-overlay').remove()">✕</span>
+        </div>
+        <p style="font-size:12px;color:#888;margin:6px 0 12px;">HP/browser baru yang buka aplikasi otomatis masuk daftar "Pending" di bawah dan tidak bisa akses sampai disetujui. Setujui device yang benar milik staff, cabut (revoke) kalau ada yang mencurigakan.</p>
+        <div id="devapp-list" style="font-size:13px;color:#555;">Memuat…</div>
+      </div>
+    `;
+    document.body.appendChild(ov);
+    loadDeviceApprovalList();
+  }
+
+  async function loadDeviceApprovalList() {
+    const listEl = document.getElementById('devapp-list');
+    if (!listEl) return;
+    listEl.innerHTML = '⏳ Memuat…';
+    try {
+      const resp = await fetch(SUPA_URL + '/rest/v1/device_approvals?select=*&order=requested_at.desc&limit=200', {
+        headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY }
+      });
+      const rows = await resp.json();
+      if (!rows || rows.length === 0) {
+        listEl.innerHTML = '<div style="text-align:center;color:#94a3b8;padding:20px;">Belum ada device yang pernah akses.</div>';
+        return;
+      }
+      const statusBadge = (s) => {
+        if (s === 'approved') return '<span style="background:#dcfce7;color:#16a34a;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;">✅ Approved</span>';
+        if (s === 'revoked') return '<span style="background:#fee2e2;color:#dc2626;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;">🚫 Revoked</span>';
+        return '<span style="background:#fef3c7;color:#d97706;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;">⏳ Pending</span>';
+      };
+      let html = '';
+      rows.forEach(r => {
+        const dt = new Date(r.requested_at);
+        const wib = new Date(dt.getTime() + 7*3600000);
+        const dateStr = wib.toISOString().split('T')[0] + ' ' + wib.toISOString().split('T')[1].substring(0,5) + ' WIB';
+        const uaShort = (r.user_agent || '').substring(0, 60);
+        html += `
+          <div style="border:1px solid #e5e7eb;border-radius:10px;padding:10px 12px;margin-bottom:8px;">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+              <div style="flex:1;min-width:0;">
+                <div style="font-weight:700;font-size:12px;color:var(--navy);">${r.label ? _umrEsc(r.label) : '(belum diberi label)'}</div>
+                <div style="font-size:10px;color:#94a3b8;margin-top:2px;">Diminta: ${dateStr}</div>
+                <div style="font-size:9px;color:#cbd5e1;margin-top:2px;word-break:break-all;">${_umrEsc(uaShort)}</div>
+                <div style="font-size:9px;color:#cbd5e1;margin-top:2px;word-break:break-all;">ID: ${_umrEsc(r.device_id)}</div>
+              </div>
+              <div>${statusBadge(r.status)}</div>
+            </div>
+            <div style="display:flex;gap:6px;margin-top:8px;">
+              <input type="text" placeholder="Label (misal: HP Dinal - HM Lite)" value="${r.label ? _umrEsc(r.label) : ''}" id="devapp-label-${r.id}" style="flex:1;padding:6px 8px;border:1px solid #ddd;border-radius:6px;font-size:11px;">
+              ${r.status !== 'approved' ? `<button onclick="devappSetStatus(${r.id}, 'approved')" style="padding:6px 10px;background:#16a34a;color:white;border:none;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;">Setujui</button>` : ''}
+              ${r.status !== 'revoked' ? `<button onclick="devappSetStatus(${r.id}, 'revoked')" style="padding:6px 10px;background:#dc2626;color:white;border:none;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;">Cabut</button>` : ''}
+              <button onclick="devappSaveLabel(${r.id})" style="padding:6px 10px;background:#f1f5f9;color:#475569;border:none;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;">Simpan Label</button>
+            </div>
+          </div>
+        `;
+      });
+      listEl.innerHTML = html;
+    } catch (e) {
+      listEl.innerHTML = `<div style="color:#ef4444;text-align:center;padding:20px;">❌ Gagal memuat: ${e.message}</div>`;
+    }
+  }
+
+  async function devappSetStatus(id, status) {
+    try {
+      await fetch(SUPA_URL + '/rest/v1/device_approvals?id=eq.' + id, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': SUPA_KEY,
+          'Authorization': 'Bearer ' + SUPA_KEY,
+          'Prefer': 'return=minimal'
+        },
+        body: JSON.stringify({ status: status, approved_at: status === 'approved' ? new Date().toISOString() : null })
+      });
+      showToast(status === 'approved' ? '✅ Device disetujui' : '🚫 Akses dicabut');
+      loadDeviceApprovalList();
+    } catch (e) {
+      showToast('❌ Gagal update: ' + e.message);
+    }
+  }
+
+  async function devappSaveLabel(id) {
+    const input = document.getElementById('devapp-label-' + id);
+    if (!input) return;
+    try {
+      await fetch(SUPA_URL + '/rest/v1/device_approvals?id=eq.' + id, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': SUPA_KEY,
+          'Authorization': 'Bearer ' + SUPA_KEY,
+          'Prefer': 'return=minimal'
+        },
+        body: JSON.stringify({ label: input.value })
+      });
+      showToast('✅ Label disimpan');
+    } catch (e) {
+      showToast('❌ Gagal simpan label: ' + e.message);
+    }
+  }
+
+
   function showFBMHotelPicker() {
     const modal = document.getElementById('fbm-hotel-modal');
     if (modal) {
