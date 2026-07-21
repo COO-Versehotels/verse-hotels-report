@@ -1619,6 +1619,14 @@
   @keyframes rc-pulse-alert { 0%,100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.35); } 50% { box-shadow: 0 0 0 5px rgba(239,68,68,0); } }
   .rc-room-cell.needs-followup.overdue { background: #fecaca; border-color: #dc2626; animation: rc-pulse-alert-fast 1s ease-in-out infinite; }
   @keyframes rc-pulse-alert-fast { 0%,100% { box-shadow: 0 0 0 0 rgba(220,38,38,0.5); } 50% { box-shadow: 0 0 0 6px rgba(220,38,38,0); } }
+  .rc-room-cell.rc-oo-room { outline: 2.5px dashed #d97706; outline-offset: 1px; }
+  .rc-room-cell .rc-oo-badge {
+    position: absolute; bottom: -6px; right: -6px;
+    background: #d97706; color: white;
+    border-radius: 50%; width: 18px; height: 18px;
+    font-size: 10px; display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  }
   .rc-room-cell .rc-recur-badge {
     position: absolute; top: -6px; right: -6px;
     background: #7c3aed; color: white;
@@ -2742,11 +2750,14 @@
       <span><i class="rc-dot-followup"></i> Perlu Follow Up</span>
     </div>
 
-    <!-- Follow-up alert banner -->
-    <div id="rc-followup-alert" style="display:none;margin:0 12px 10px;"></div>
-
     <!-- Rooms grid -->
     <div class="scroll-area" style="background:#f5f7fa;">
+      <!-- Follow-up alert banner -->
+      <div id="rc-followup-alert" style="display:none;margin:12px 12px 10px;"></div>
+
+      <!-- EHK daily target reminder -->
+      <div id="rc-ehk-target-alert" style="display:none;margin:0 12px 10px;"></div>
+
       <div class="rc-rooms-wrapper" id="rc-rooms-wrapper">
         <div style="text-align:center;padding:40px;color:#9ca3af;font-size:13px;">Pilih hotel untuk mulai...</div>
       </div>
@@ -2927,7 +2938,7 @@
   // =============================================================
   // Update angka di bawah setiap kali deploy file baru yang penting.
   // Format: YYYY.MM.DD-NN (NN = increment harian)
-  const APP_VERSION = '2026.07.10-45';
+  const APP_VERSION = '2026.07.10-48';
   const APP_VERSION_KEY = 'verse_app_version';
 
   (function _checkAppVersion() {
@@ -7070,62 +7081,18 @@
     msg += '📊 *Progress:* ' + pct + '\n';
     msg += '📎 *Lampiran:* ' + files + '\n';
 
-    // Detail kekurangan jika < 100%
-    const pctNum = parseInt(pct);
-    if (pctNum < 100) {
-      let kurangList = '';
-      document.querySelectorAll('#tasklist-content .task-item').forEach(item => {
-        const s = item.dataset.status;
-        if (!s || s === 'note_only') return;
-        if (s === 'not' || s === 'progress') {
-          const taskTextEl = item.querySelector('.task-text');
-          const cat = item.closest('.task-category');
-          const hdr = cat ? cat.querySelector('.task-cat-title') : null;
-          const name = taskTextEl ? taskTextEl.textContent.trim().substring(0,50) : (hdr ? hdr.textContent.trim() : 'Task');
-          const note = item.querySelector('.task-note');
-          const ket = note && note.value.trim() ? note.value.trim() : '-';
-          const icon = s === 'progress' ? '⏳' : '❌';
-          kurangList += '\n  ' + icon + ' ' + name + ' → ' + ket;
-        }
-      });
-      if (kurangList) msg += '\n⚠️ *BELUM / DALAM PROSES:*' + kurangList + '\n';
-    }
-
-    if (doneList) {
-      msg += `\n✅ *SUDAH DILAKUKAN:*${doneList}\n`;
-    }
-    if (progressList) {
-      msg += `\n⏳ *DALAM PROSES:*${progressList}\n`;
-    }
-    if (notList) {
-      msg += `\n❌ *BELUM DILAKUKAN:*${notList}\n`;
-    }
-    if (fuLines) {
-      msg += `\n📌 *FOLLOW UP:*${fuLines}\n`;
-    }
-
-    const planNote = document.querySelector('#activity-plan .task-note');
-    const planText = planNote && planNote.value.trim() ? planNote.value.trim() : '';
-
-    // Unit Visit Tomorrow — hanya untuk Corporate role
-    if (needsUnitVisitTomorrow(currentRole)) {
-      const apHotelValEl = document.getElementById('activity-plan-hotel-val');
-      const visitHotel = apHotelValEl && apHotelValEl.value ? apHotelValEl.value : '';
-      if (visitHotel) msg += `\n🏨 *Unit Visit Tomorrow:*\n${visitHotel}\n`;
-    }
-
-    if (planText) msg += `\n📝 *Planning for Tomorrow:*\n${planText}\n`;
-
-    // === Ringkasan Pengecekan Kamar (khusus role HM) — langsung di teks WA, tanpa perlu klik link ===
-    if (role && role.startsWith('HM ') && RC_HM_HOTEL_MAP[role]) {
+    // === Ringkasan Pengecekan Kamar (HM, EHK Corporate, Chief Engineering Corporate) — langsung di teks WA, tanpa perlu klik link ===
+    const rcWaEligible = role && (role.startsWith('HM ') || role === 'EHK Corporate' || role === 'Chief Engineering Corporate');
+    const rcWaHotel = role && role.startsWith('HM ') ? RC_HM_HOTEL_MAP[role] : hotel;
+    if (rcWaEligible && rcWaHotel) {
       try {
-        const rcHotel = RC_HM_HOTEL_MAP[role];
+        const rcHotel = rcWaHotel;
         const todayStr2 = new Date(Date.now() + 7*3600000).toISOString().split('T')[0];
         const monthKeyNow = todayStr2.slice(0, 7);
 
         const { data: rcMonthData, error: rcErr } = await supa
           .from('room_checks')
-          .select('room_no, cleanliness, followup_notes, checked_at')
+          .select('room_no, cleanliness, followup_notes, checked_at, room_status, user_role')
           .eq('hotel', rcHotel)
           .eq('month_key', monthKeyNow)
           .order('checked_at', { ascending: false });
@@ -7171,12 +7138,73 @@
             msg += `\n`;
           }
 
+          // Khusus Chief Engineering Corporate: daftar kamar OO yang tercatat CE sendiri
+          if (role === 'Chief Engineering Corporate') {
+            const ooRooms = Object.keys(latestOverallByRoom)
+              .filter(rn => latestOverallByRoom[rn].room_status === 'OO' && latestOverallByRoom[rn].user_role === 'CE')
+              .sort((a,b) => a.localeCompare(b, undefined, {numeric:true}));
+            if (ooRooms.length > 0) {
+              msg += `\n🔧 *KAMAR OUT OF ORDER (${ooRooms.length} kamar):*`;
+              ooRooms.forEach(rn => {
+                const r = latestOverallByRoom[rn];
+                msg += `\n  🔧 ${rn}${r.followup_notes ? ' — ' + r.followup_notes : ''}`;
+              });
+              msg += `\n`;
+            }
+          }
+
           msg += `\n📊 *Total Kamar Dicek Bulan Ini:* ${uniqueCheckedMonth}/${totalRoomsHotel} kamar (${pctMonth}%)\n`;
         }
       } catch (rcMsgErr) {
         console.error('Room check WA summary error:', rcMsgErr);
       }
     }
+
+    // Detail kekurangan jika < 100%
+    const pctNum = parseInt(pct);
+    if (pctNum < 100) {
+      let kurangList = '';
+      document.querySelectorAll('#tasklist-content .task-item').forEach(item => {
+        const s = item.dataset.status;
+        if (!s || s === 'note_only') return;
+        if (s === 'not' || s === 'progress') {
+          const taskTextEl = item.querySelector('.task-text');
+          const cat = item.closest('.task-category');
+          const hdr = cat ? cat.querySelector('.task-cat-title') : null;
+          const name = taskTextEl ? taskTextEl.textContent.trim().substring(0,50) : (hdr ? hdr.textContent.trim() : 'Task');
+          const note = item.querySelector('.task-note');
+          const ket = note && note.value.trim() ? note.value.trim() : '-';
+          const icon = s === 'progress' ? '⏳' : '❌';
+          kurangList += '\n  ' + icon + ' ' + name + ' → ' + ket;
+        }
+      });
+      if (kurangList) msg += '\n⚠️ *BELUM / DALAM PROSES:*' + kurangList + '\n';
+    }
+
+    if (doneList) {
+      msg += `\n✅ *SUDAH DILAKUKAN:*${doneList}\n`;
+    }
+    if (progressList) {
+      msg += `\n⏳ *DALAM PROSES:*${progressList}\n`;
+    }
+    if (notList) {
+      msg += `\n❌ *BELUM DILAKUKAN:*${notList}\n`;
+    }
+    if (fuLines) {
+      msg += `\n📌 *FOLLOW UP:*${fuLines}\n`;
+    }
+
+    const planNote = document.querySelector('#activity-plan .task-note');
+    const planText = planNote && planNote.value.trim() ? planNote.value.trim() : '';
+
+    // Unit Visit Tomorrow — hanya untuk Corporate role
+    if (needsUnitVisitTomorrow(currentRole)) {
+      const apHotelValEl = document.getElementById('activity-plan-hotel-val');
+      const visitHotel = apHotelValEl && apHotelValEl.value ? apHotelValEl.value : '';
+      if (visitHotel) msg += `\n🏨 *Unit Visit Tomorrow:*\n${visitHotel}\n`;
+    }
+
+    if (planText) msg += `\n📝 *Planning for Tomorrow:*\n${planText}\n`;
 
     // Link dokumentasi foto
     const today2 = new Date(Date.now() + 7*3600000).toISOString().split('T')[0];
@@ -16445,7 +16473,8 @@ ROLE_TASKS["F&B Attendant Oak Tree"] = {
       html += `</div>`;
     }
 
-    // 6. Section PENGECEKAN KAMAR (sebelum Planning)
+    // 6. Section PENGECEKAN KAMAR (dipindah ke PALING ATAS — sebelum tasklist)
+    const _rcSectionStart = html.length;
     if (rcItems && rcItems.length > 0) {
       html += `<div style="background:white;border-radius:14px;margin-bottom:14px;overflow:hidden;border:1px solid #e0e0e0;box-shadow:0 1px 3px rgba(0,0,0,0.04);">`;
       html += `<div style="background:#f8f9fa;padding:14px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid #e0e0e0;">`;
@@ -16539,6 +16568,10 @@ ROLE_TASKS["F&B Attendant Oak Tree"] = {
       });
       html += `</div>`;
     }
+    // Ambil HTML section Pengecekan Kamar yang barusan ditulis, lalu keluarkan dari posisi sekarang
+    // (akan ditaruh di paling atas nanti, sebelum tasklist)
+    const _rcSectionHtml = html.slice(_rcSectionStart);
+    html = html.slice(0, _rcSectionStart);
 
     // 7. Section PLANNING FOR TOMORROW
     // NOTE: 'activity-plan' adalah task_id UI element (auto-save), TIDAK ditampilkan di laporan
@@ -16573,7 +16606,7 @@ ROLE_TASKS["F&B Attendant Oak Tree"] = {
       html += `</div>`;
     }
 
-    return html || '<div style="text-align:center;padding:40px;color:#aaa;">Tidak ada data.</div>';
+    return (_rcSectionHtml + html) || '<div style="text-align:center;padding:40px;color:#aaa;">Tidak ada data.</div>';
   }
 
   // === PUBLIC DETAIL (link dari WA) ===
@@ -17206,12 +17239,17 @@ ROLE_TASKS["F&B Attendant Oak Tree"] = {
         else if (needsFollowup) cls += ' needs-followup';
         else if (cnt >= 2) cls += ' multi';
         else if (cnt >= 1) cls += ' checked';
+        // Khusus CE: kamar yang CE sendiri tandai OO (Out of Order) — highlight terpisah dari cleanliness
+        const isOO = rcUserRoleType === 'CE' && latest && latest.room_status === 'OO' && latest.user_role === 'CE';
+        if (isOO) cls += ' rc-oo-room';
         const cntBadge = (cnt >= 2 && !needsFollowup) ? '<span class="rc-cnt">' + cnt + '</span>' : '';
         const fuBadge = needsFollowup ? '<span class="rc-fu-badge">' + (isOverdue ? '⏰' : '⚠️') + '</span>' : '';
         const recurBadge = isRecurring ? '<span class="rc-recur-badge">🔁</span>' : '';
+        const ooBadge = isOO ? '<span class="rc-oo-badge">🔧</span>' : '';
         html += '<div class="' + cls + '" onclick="rcOpenRoom(\'' + rm.r.replace(/'/g, "\\'") + '\')">';
         html += fuBadge;
         html += recurBadge;
+        html += ooBadge;
         html += '<div class="rc-rn">' + rm.r + '</div>';
         html += '<div class="rc-rt">' + rm.t + '</div>';
         html += cntBadge;
@@ -17316,6 +17354,32 @@ ROLE_TASKS["F&B Attendant Oak Tree"] = {
       .map(([n, c]) => n + ' ' + c)
       .join(' · ') || 'Belum ada cek';
     document.getElementById('rc-progress-detail').textContent = detailText;
+
+    rcRenderEHKDailyTarget();
+  }
+
+  // ====== EHK TARGET HARIAN (5 kamar/hari, reminder saja — tidak blocking) ======
+  function rcRenderEHKDailyTarget() {
+    const box = document.getElementById('rc-ehk-target-alert');
+    if (!box) return;
+    if (rcUserRoleType !== 'EHK') { box.style.display = 'none'; box.innerHTML = ''; return; }
+
+    const todayStr = new Date(Date.now() + 7*3600000).toISOString().split('T')[0];
+    const todayCount = new Set(
+      rcChecks.filter(c => {
+        const d = c.checked_at ? new Date(new Date(c.checked_at).getTime()+7*3600000).toISOString().split('T')[0] : null;
+        return d === todayStr;
+      }).map(c => c.room_no)
+    ).size;
+    const target = 5;
+    const met = todayCount >= target;
+
+    box.style.display = 'block';
+    if (met) {
+      box.innerHTML = '<div style="background:#dcfce7;border:1.5px solid #22c55e;border-radius:12px;padding:10px 14px;font-size:12px;font-weight:700;color:#15803d;">✅ Target harian tercapai — ' + todayCount + '/' + target + ' kamar sudah dicek hari ini</div>';
+    } else {
+      box.innerHTML = '<div style="background:#fff7ed;border:1.5px solid #fb923c;border-radius:12px;padding:10px 14px;font-size:12px;font-weight:700;color:#9a3412;">⏰ Target harian: ' + todayCount + '/' + target + ' kamar — masih kurang ' + (target - todayCount) + ' kamar lagi hari ini</div>';
+    }
   }
 
   // ====== OPEN ROOM HISTORY MODAL ======
