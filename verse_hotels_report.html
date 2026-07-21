@@ -1583,6 +1583,7 @@
   .rc-dot-unchecked { background: #d1d5db; }
   .rc-dot-checked { background: #22c55e; }
   .rc-dot-multi { background: #3b82f6; }
+  .rc-dot-followup { background: #ef4444; }
 
   .rc-rooms-wrapper { padding: 12px; }
   .rc-floor-block {
@@ -1613,6 +1614,16 @@
   .rc-room-cell:active { transform: scale(0.95); }
   .rc-room-cell.checked { background: #dcfce7; border-color: #22c55e; }
   .rc-room-cell.multi { background: #dbeafe; border-color: #3b82f6; }
+  .rc-room-cell.needs-followup { background: #fef2f2; border-color: #ef4444; border-width: 2.5px; animation: rc-pulse-alert 1.8s ease-in-out infinite; }
+  .rc-room-cell.needs-followup .rc-rn { color: #b91c1c; }
+  @keyframes rc-pulse-alert { 0%,100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.35); } 50% { box-shadow: 0 0 0 5px rgba(239,68,68,0); } }
+  .rc-room-cell .rc-fu-badge {
+    position: absolute; top: -6px; left: -6px;
+    background: #ef4444; color: white;
+    border-radius: 50%; width: 18px; height: 18px;
+    font-size: 11px; display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  }
   .rc-room-cell .rc-rn { font-size: 13px; font-weight: 700; color: #1f2937; }
   .rc-room-cell .rc-rt { font-size: 10px; color: #6b7280; margin-top: 2px; }
   .rc-room-cell .rc-cnt {
@@ -2719,7 +2730,11 @@
       <span><i class="rc-dot-unchecked"></i> Belum dicek</span>
       <span><i class="rc-dot-checked"></i> Sudah dicek</span>
       <span><i class="rc-dot-multi"></i> Multi-cek</span>
+      <span><i class="rc-dot-followup"></i> Perlu Follow Up</span>
     </div>
+
+    <!-- Follow-up alert banner -->
+    <div id="rc-followup-alert" style="display:none;margin:0 12px 10px;"></div>
 
     <!-- Rooms grid -->
     <div class="scroll-area" style="background:#f5f7fa;">
@@ -2903,7 +2918,7 @@
   // =============================================================
   // Update angka di bawah setiap kali deploy file baru yang penting.
   // Format: YYYY.MM.DD-NN (NN = increment harian)
-  const APP_VERSION = '2026.07.10-37';
+  const APP_VERSION = '2026.07.10-41';
   const APP_VERSION_KEY = 'verse_app_version';
 
   (function _checkAppVersion() {
@@ -16226,6 +16241,15 @@ ROLE_TASKS["F&B Attendant Oak Tree"] = {
         html += `</div>`;
         if (statusBadge) html += statusBadge;
         html += `</div>`;
+        // Tanggal & jam task ini dikerjakan
+        if (d && d.updated_at) {
+          const dt = new Date(d.updated_at);
+          const wib = new Date(dt.getTime() + 7*3600000);
+          const bulanShort = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+          const dateStr = String(wib.getUTCDate()).padStart(2,'0') + ' ' + bulanShort[wib.getUTCMonth()] + ' ' + wib.getUTCFullYear();
+          const timeStr = String(wib.getUTCHours()).padStart(2,'0') + ':' + String(wib.getUTCMinutes()).padStart(2,'0') + ' WIB';
+          html += `<div style="margin-left:38px;margin-top:4px;font-size:11px;color:#94a3b8;">🕐 ${dateStr}, ${timeStr}</div>`;
+        }
 
         // Keterangan + foto (kalau ada data)
         if (d) {
@@ -16997,10 +17021,17 @@ ROLE_TASKS["F&B Attendant Oak Tree"] = {
 
     const floorOrder = Object.keys(byFloor).sort((a, b) => rcFloorSortKey(a) - rcFloorSortKey(b));
 
-    // Map check counts per room
+    // Map check counts per room + status cek TERAKHIR per kamar (rcChecks sudah urut checked_at desc)
     const cntMap = {};
+    const latestByRoom = {};
     rcChecks.forEach(ch => {
       cntMap[ch.room_no] = (cntMap[ch.room_no] || 0) + 1;
+      if (!latestByRoom[ch.room_no]) latestByRoom[ch.room_no] = ch; // pertama = terbaru (sudah desc)
+    });
+    // Kamar yang cek terakhirnya masih Sedang/Buruk → perlu di-follow-up & check ulang
+    const followupRooms = Object.keys(latestByRoom).filter(rn => {
+      const c = latestByRoom[rn];
+      return c.cleanliness === 'Sedang' || c.cleanliness === 'Buruk';
     });
 
     let html = '';
@@ -17011,11 +17042,16 @@ ROLE_TASKS["F&B Attendant Oak Tree"] = {
       html += '<div class="rc-room-grid">';
       for (const rm of rms) {
         const cnt = cntMap[rm.r] || 0;
+        const latest = latestByRoom[rm.r];
+        const needsFollowup = latest && (latest.cleanliness === 'Sedang' || latest.cleanliness === 'Buruk');
         let cls = 'rc-room-cell';
-        if (cnt >= 2) cls += ' multi';
+        if (needsFollowup) cls += ' needs-followup';
+        else if (cnt >= 2) cls += ' multi';
         else if (cnt >= 1) cls += ' checked';
-        const cntBadge = cnt >= 2 ? '<span class="rc-cnt">' + cnt + '</span>' : '';
+        const cntBadge = (cnt >= 2 && !needsFollowup) ? '<span class="rc-cnt">' + cnt + '</span>' : '';
+        const fuBadge = needsFollowup ? '<span class="rc-fu-badge">⚠️</span>' : '';
         html += '<div class="' + cls + '" onclick="rcOpenRoom(\'' + rm.r.replace(/'/g, "\\'") + '\')">';
+        html += fuBadge;
         html += '<div class="rc-rn">' + rm.r + '</div>';
         html += '<div class="rc-rt">' + rm.t + '</div>';
         html += cntBadge;
@@ -17024,6 +17060,45 @@ ROLE_TASKS["F&B Attendant Oak Tree"] = {
       html += '</div></div>';
     }
     wrap.innerHTML = html;
+    rcRenderFollowUpAlert(followupRooms, latestByRoom);
+  }
+
+  // ====== FOLLOW-UP ALERT (kamar Sedang/Buruk yang belum di-check ulang) ======
+  function rcRenderFollowUpAlert(followupRooms, latestByRoom) {
+    const box = document.getElementById('rc-followup-alert');
+    if (!box) return;
+    if (!followupRooms || followupRooms.length === 0) {
+      box.style.display = 'none';
+      box.innerHTML = '';
+      return;
+    }
+    const escHtml2 = (s) => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const cards = followupRooms
+      .sort((a, b) => a.localeCompare(b, undefined, {numeric:true}))
+      .map(rn => {
+        const c = latestByRoom[rn];
+        const isBuruk = c.cleanliness === 'Buruk';
+        const color = isBuruk ? '#b91c1c' : '#c2410c';
+        const bg = isBuruk ? '#fee2e2' : '#ffedd5';
+        const border = isBuruk ? '#fca5a5' : '#fdba74';
+        const note = c.followup_notes ? escHtml2(c.followup_notes) : '<i style="color:#9ca3af;">(catatan follow up tidak diisi)</i>';
+        const assetNote = c.asset_notes ? '<div style="margin-top:3px;font-size:11px;color:#78350f;">📦 Asset: ' + escHtml2(c.asset_notes) + '</div>' : '';
+        return '<div onclick="rcOpenRoom(\'' + rn.replace(/'/g, "\\'") + '\')" style="background:' + bg + ';border:1px solid ' + border + ';border-radius:10px;padding:8px 10px;margin-bottom:6px;cursor:pointer;">' +
+          '<div style="display:flex;align-items:center;gap:6px;">' +
+            '<span style="background:' + color + ';color:white;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:800;">' + (isBuruk ? '❌' : '⚠️') + ' ' + rn + '</span>' +
+            '<span style="font-size:10px;color:' + color + ';font-weight:700;">' + c.cleanliness + '</span>' +
+          '</div>' +
+          '<div style="margin-top:4px;font-size:12px;color:#374151;line-height:1.4;">📝 ' + note + '</div>' +
+          assetNote +
+        '</div>';
+      }).join('');
+    box.style.display = 'block';
+    box.innerHTML =
+      '<div style="background:#fff7ed;border:1.5px solid #fb923c;border-radius:12px;padding:12px 14px;">' +
+        '<div style="font-weight:800;font-size:13px;color:#9a3412;margin-bottom:4px;">🚨 ' + followupRooms.length + ' Kamar Perlu Follow Up & Check Ulang</div>' +
+        '<div style="font-size:11px;color:#9a3412;margin-bottom:8px;line-height:1.5;">Kamar-kamar ini pengecekan terakhirnya masih "Sedang"/"Buruk". Follow up masalahnya lalu check ulang sampai hasilnya "Baik". Tap kartu untuk buka riwayatnya.</div>' +
+        cards +
+      '</div>';
   }
 
   function rcGetFloor(roomNo) {
@@ -17532,8 +17607,9 @@ ROLE_TASKS["F&B Attendant Oak Tree"] = {
     try {
       const { data, error } = await supa
         .from('room_checks')
-        .select('hotel, room_no, user_role')
-        .eq('month_key', monthKey);
+        .select('hotel, room_no, user_role, cleanliness, checked_at, followup_notes, asset_notes')
+        .eq('month_key', monthKey)
+        .order('checked_at', { ascending: false });
       if (error) throw error;
       const checks = data || [];
 
@@ -17541,26 +17617,91 @@ ROLE_TASKS["F&B Attendant Oak Tree"] = {
       const hotels = ['Verse Luxe Wahid Hasyim','Verse Lite Gajah Mada','Verse Hotel Cirebon','Oak Tree Mahakam Blok M'];
       const labels = {'Verse Luxe Wahid Hasyim':'Verse Luxe','Verse Lite Gajah Mada':'Verse Lite','Verse Hotel Cirebon':'Verse Cirebon','Oak Tree Mahakam Blok M':'Oak Tree'};
       let html = '';
+      let totalFollowup = 0;
       for (const h of hotels) {
-        const total = (RC_ROOMS_BY_HOTEL[h] || []).length;
-        const checked = new Set(checks.filter(c => c.hotel === h).map(c => c.room_no)).size;
+        const hotelRooms = RC_ROOMS_BY_HOTEL[h] || [];
+        const total = hotelRooms.length;
+        const hotelChecks = checks.filter(c => c.hotel === h);
+        const checked = new Set(hotelChecks.map(c => c.room_no)).size;
         const pct = total > 0 ? Math.round((checked/total)*100) : 0;
-        html += '<div class="rc-coo-hotel-row">' +
+        // Kamar yang cek terakhirnya masih Sedang/Buruk (checks sudah urut terbaru dulu)
+        const latestByRoom = {};
+        hotelChecks.forEach(c => { if (!latestByRoom[c.room_no]) latestByRoom[c.room_no] = c; });
+        const fuCount = Object.values(latestByRoom).filter(c => c.cleanliness === 'Sedang' || c.cleanliness === 'Buruk').length;
+        totalFollowup += fuCount;
+        const hotelSlug = h.replace(/[^a-zA-Z0-9]/g, '_');
+        html += '<div class="rc-coo-hotel-row" style="cursor:pointer;" onclick="rcCooToggleHotelDetail(\'' + hotelSlug + '\')">' +
           '<div class="rc-coo-hotel-name">' + labels[h] + '</div>' +
           '<div class="rc-coo-hotel-progress"><div class="rc-coo-hotel-fill" style="width:' + pct + '%"></div></div>' +
           '<div class="rc-coo-hotel-pct">' + checked + '/' + total + ' (' + pct + '%)</div>' +
+          '<span id="rc-coo-caret-' + hotelSlug + '" style="font-size:10px;color:#94a3b8;margin-left:4px;">▼</span>' +
         '</div>';
+        if (fuCount > 0) {
+          html += '<div style="margin:2px 0 6px;font-size:11px;color:#b91c1c;font-weight:700;">🚨 ' + fuCount + ' kamar perlu follow up di ' + labels[h] + '</div>';
+        }
+        // Detail grid semua kamar hotel ini — collapsed by default, klik nama hotel untuk buka/tutup
+        html += '<div id="rc-coo-detail-' + hotelSlug + '" style="display:none;margin:0 0 10px;">';
+        html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(56px,1fr));gap:5px;background:#f8fafc;border-radius:10px;padding:8px;">';
+        hotelRooms
+          .slice()
+          .sort((a,b) => a.r.localeCompare(b.r, undefined, {numeric:true}))
+          .forEach(rm => {
+            const latest = latestByRoom[rm.r];
+            const isFollowup = latest && (latest.cleanliness === 'Sedang' || latest.cleanliness === 'Buruk');
+            const isChecked = !!latest;
+            let bg = '#e5e7eb', color = '#6b7280', border='transparent';
+            if (isFollowup) { bg = '#fee2e2'; color = '#b91c1c'; border = '#ef4444'; }
+            else if (isChecked) { bg = '#dcfce7'; color = '#15803d'; border = '#22c55e'; }
+            html += '<div title="' + rm.r + (latest ? ' - ' + latest.cleanliness : ' - Belum dicek') + '" style="background:' + bg + ';color:' + color + ';border:1.5px solid ' + border + ';border-radius:6px;padding:5px 2px;text-align:center;font-size:10px;font-weight:700;">' + rm.r + (isFollowup ? ' ⚠️' : '') + '</div>';
+          });
+        html += '</div>';
+        // Daftar keterangan kekurangan tiap kamar bermasalah (teks, bukan cuma tanda di grid)
+        const escHtml3 = (s) => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        const fuRoomsForHotel = Object.keys(latestByRoom)
+          .filter(rn => latestByRoom[rn].cleanliness === 'Sedang' || latestByRoom[rn].cleanliness === 'Buruk')
+          .sort((a,b) => a.localeCompare(b, undefined, {numeric:true}));
+        if (fuRoomsForHotel.length > 0) {
+          html += '<div style="margin-top:8px;">';
+          fuRoomsForHotel.forEach(rn => {
+            const c = latestByRoom[rn];
+            const isBuruk = c.cleanliness === 'Buruk';
+            const color = isBuruk ? '#b91c1c' : '#c2410c';
+            const bg = isBuruk ? '#fee2e2' : '#ffedd5';
+            const border = isBuruk ? '#fca5a5' : '#fdba74';
+            const note = c.followup_notes ? escHtml3(c.followup_notes) : '<i style="color:#9ca3af;">(catatan tidak diisi)</i>';
+            const assetNote = c.asset_notes ? '<div style="margin-top:2px;font-size:10px;color:#78350f;">📦 Asset: ' + escHtml3(c.asset_notes) + '</div>' : '';
+            html += '<div style="background:' + bg + ';border:1px solid ' + border + ';border-radius:8px;padding:6px 9px;margin-bottom:5px;">' +
+              '<span style="background:' + color + ';color:white;padding:1px 7px;border-radius:5px;font-size:10px;font-weight:800;">' + (isBuruk ? '❌' : '⚠️') + ' ' + rn + ' — ' + c.cleanliness + '</span>' +
+              '<div style="margin-top:3px;font-size:11px;color:#374151;line-height:1.4;">📝 ' + note + '</div>' +
+              assetNote +
+            '</div>';
+          });
+          html += '</div>';
+        }
+        html += '</div>';
       }
       // Total summary
       const totalAll = hotels.reduce((s,h)=>s+(RC_ROOMS_BY_HOTEL[h]||[]).length, 0);
       const checkedAll = checks.reduce((acc,c)=>{ acc.add(c.hotel+'|'+c.room_no); return acc; }, new Set()).size;
       const pctAll = totalAll > 0 ? Math.round((checkedAll/totalAll)*100) : 0;
       html += '<div style="margin-top:10px;padding-top:10px;border-top:2px solid #e5e7eb;font-size:12px;color:#6b7280;text-align:center;">Total Coverage: <b style="color:#1a3a5c;">' + checkedAll + '/' + totalAll + ' kamar (' + pctAll + '%)</b></div>';
+      if (totalFollowup > 0) {
+        html += '<div style="margin-top:6px;text-align:center;font-size:12px;color:#b91c1c;font-weight:800;">🚨 Total ' + totalFollowup + ' kamar di semua hotel masih perlu follow up</div>';
+      }
       document.getElementById('rc-coo-section-body').innerHTML = html;
     } catch (e) {
       console.error('rcLoadCOORoomCheckSummary:', e);
       document.getElementById('rc-coo-section-body').innerHTML = '<div style="color:#ef4444;font-size:12px;">Gagal memuat</div>';
     }
+  }
+
+  function rcCooToggleHotelDetail(hotelSlug) {
+    const el = document.getElementById('rc-coo-detail-' + hotelSlug);
+    const caret = document.getElementById('rc-coo-caret-' + hotelSlug);
+    if (!el) return;
+    const show = el.style.display === 'none';
+    el.style.display = show ? 'block' : 'none';
+    if (caret) caret.textContent = show ? '▲' : '▼';
   }
 
   // ====== HOME MENU CARD ======
