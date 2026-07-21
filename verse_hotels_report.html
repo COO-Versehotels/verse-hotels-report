@@ -1617,6 +1617,15 @@
   .rc-room-cell.needs-followup { background: #fef2f2; border-color: #ef4444; border-width: 2.5px; animation: rc-pulse-alert 1.8s ease-in-out infinite; }
   .rc-room-cell.needs-followup .rc-rn { color: #b91c1c; }
   @keyframes rc-pulse-alert { 0%,100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.35); } 50% { box-shadow: 0 0 0 5px rgba(239,68,68,0); } }
+  .rc-room-cell.needs-followup.overdue { background: #fecaca; border-color: #dc2626; animation: rc-pulse-alert-fast 1s ease-in-out infinite; }
+  @keyframes rc-pulse-alert-fast { 0%,100% { box-shadow: 0 0 0 0 rgba(220,38,38,0.5); } 50% { box-shadow: 0 0 0 6px rgba(220,38,38,0); } }
+  .rc-room-cell .rc-recur-badge {
+    position: absolute; top: -6px; right: -6px;
+    background: #7c3aed; color: white;
+    border-radius: 50%; width: 18px; height: 18px;
+    font-size: 10px; display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  }
   .rc-room-cell .rc-fu-badge {
     position: absolute; top: -6px; left: -6px;
     background: #ef4444; color: white;
@@ -2573,7 +2582,17 @@
         </div>
       </div>
 
-      <!-- Live Progress Section — PALING ATAS -->
+      <!-- Room Check Section — dipindah ke paling atas -->
+      <div style="padding:16px 16px 6px;font-size:11px;color:var(--gray-400);font-weight:700;text-transform:uppercase;letter-spacing:1px;">🏨 Pengecekan Kamar (Bulan Ini)</div>
+      <div class="rc-coo-section" id="rc-coo-section">
+        <div class="rc-coo-title">📊 Coverage per Hotel</div>
+        <div id="rc-coo-section-body">
+          <div style="text-align:center;padding:14px;color:#9ca3af;font-size:12px;">Memuat...</div>
+        </div>
+        <button class="rc-btn-primary" onclick="rcOpenMonthlyReport()" style="margin-top:12px;background:#1a3a5c;">📤 Buat & Kirim Laporan Bulan Lalu</button>
+      </div>
+
+      <!-- Live Progress Section -->
       <div style="padding:16px 16px 6px;font-size:11px;color:var(--gray-400);font-weight:700;text-transform:uppercase;letter-spacing:1px;display:flex;align-items:center;justify-content:space-between;">
         <span>🔴 Sedang Dikerjakan</span>
         <span id="coo-live-timer" style="font-size:10px;font-weight:500;color:var(--gray-400);">Refresh dalam 5:00</span>
@@ -2594,16 +2613,6 @@
       <div style="padding:0 16px 6px;font-size:11px;color:var(--gray-400);font-weight:700;text-transform:uppercase;letter-spacing:1px;">Detail per Hotel</div>
       <div id="coo-hotel-detail">
         <!-- Diisi JS -->
-      </div>
-
-      <!-- Room Check Section -->
-      <div style="padding:16px 16px 6px;font-size:11px;color:var(--gray-400);font-weight:700;text-transform:uppercase;letter-spacing:1px;">🏨 Pengecekan Kamar (Bulan Ini)</div>
-      <div class="rc-coo-section" id="rc-coo-section">
-        <div class="rc-coo-title">📊 Coverage per Hotel</div>
-        <div id="rc-coo-section-body">
-          <div style="text-align:center;padding:14px;color:#9ca3af;font-size:12px;">Memuat...</div>
-        </div>
-        <button class="rc-btn-primary" onclick="rcOpenMonthlyReport()" style="margin-top:12px;background:#1a3a5c;">📤 Buat & Kirim Laporan Bulan Lalu</button>
       </div>
 
       <div style="height:20px;"></div>
@@ -2918,7 +2927,7 @@
   // =============================================================
   // Update angka di bawah setiap kali deploy file baru yang penting.
   // Format: YYYY.MM.DD-NN (NN = increment harian)
-  const APP_VERSION = '2026.07.10-41';
+  const APP_VERSION = '2026.07.10-45';
   const APP_VERSION_KEY = 'verse_app_version';
 
   (function _checkAppVersion() {
@@ -6946,9 +6955,9 @@
   // Legacy alias
   function submitReport() { doSubmitReport(); }
 
-  function sendWAValidated() {
+  async function sendWAValidated() {
     if (!validateAndSubmit()) return;
-    sendWA();
+    await sendWA();
   }
 
   async function doSubmitAndSendWA() {
@@ -6986,13 +6995,13 @@
 
     // Kirim WA
     showToast('✅ Laporan tersimpan! Membuka WhatsApp...');
-    setTimeout(() => {
-      sendWA();
+    setTimeout(async () => {
+      await sendWA();
       setTimeout(() => go('home'), 1500);
     }, 800);
   }
 
-  function sendWA() {
+  async function sendWA() {
     const role = document.getElementById('submit-role').textContent;
     const hotel = document.getElementById('submit-hotel').textContent;
     const date = document.getElementById('submit-date').textContent;
@@ -7106,6 +7115,68 @@
     }
 
     if (planText) msg += `\n📝 *Planning for Tomorrow:*\n${planText}\n`;
+
+    // === Ringkasan Pengecekan Kamar (khusus role HM) — langsung di teks WA, tanpa perlu klik link ===
+    if (role && role.startsWith('HM ') && RC_HM_HOTEL_MAP[role]) {
+      try {
+        const rcHotel = RC_HM_HOTEL_MAP[role];
+        const todayStr2 = new Date(Date.now() + 7*3600000).toISOString().split('T')[0];
+        const monthKeyNow = todayStr2.slice(0, 7);
+
+        const { data: rcMonthData, error: rcErr } = await supa
+          .from('room_checks')
+          .select('room_no, cleanliness, followup_notes, checked_at')
+          .eq('hotel', rcHotel)
+          .eq('month_key', monthKeyNow)
+          .order('checked_at', { ascending: false });
+
+        if (!rcErr && rcMonthData) {
+          const totalRoomsHotel = (RC_ROOMS_BY_HOTEL[rcHotel] || []).length;
+          const uniqueCheckedMonth = new Set(rcMonthData.map(r => r.room_no)).size;
+          const pctMonth = totalRoomsHotel > 0 ? Math.round((uniqueCheckedMonth/totalRoomsHotel)*100) : 0;
+
+          // Kamar yang dicek HARI INI (bisa lebih dari 1x, ambil yang terakhir per kamar)
+          const todayChecks = rcMonthData.filter(r => (r.checked_at || '').slice(0,10) === todayStr2 ||
+            new Date(new Date(r.checked_at).getTime()+7*3600000).toISOString().slice(0,10) === todayStr2);
+          const latestTodayByRoom = {};
+          todayChecks.forEach(r => { if (!latestTodayByRoom[r.room_no]) latestTodayByRoom[r.room_no] = r; });
+          const todayRoomNos = Object.keys(latestTodayByRoom).sort((a,b) => a.localeCompare(b, undefined, {numeric:true}));
+
+          if (todayRoomNos.length > 0) {
+            msg += `\n🚪 *PENGECEKAN KAMAR HARI INI (${todayRoomNos.length} kamar):*`;
+            todayRoomNos.forEach(rn => {
+              const r = latestTodayByRoom[rn];
+              const icon = r.cleanliness === 'Baik' ? '✅' : (r.cleanliness === 'Sedang' ? '⚠️' : '❌');
+              msg += `\n  ${icon} ${rn} — ${r.cleanliness}`;
+              if (r.cleanliness !== 'Baik' && r.followup_notes) {
+                msg += `: ${r.followup_notes}`;
+              }
+            });
+            msg += `\n`;
+          }
+
+          // Kamar bermasalah yang MASIH belum di-follow up (cek terakhir bulan ini, bukan cuma hari ini)
+          const latestOverallByRoom = {};
+          rcMonthData.forEach(r => { if (!latestOverallByRoom[r.room_no]) latestOverallByRoom[r.room_no] = r; });
+          const stillProblem = Object.keys(latestOverallByRoom)
+            .filter(rn => latestOverallByRoom[rn].cleanliness === 'Sedang' || latestOverallByRoom[rn].cleanliness === 'Buruk')
+            .sort((a,b) => a.localeCompare(b, undefined, {numeric:true}));
+          if (stillProblem.length > 0) {
+            msg += `\n🚨 *MASIH PERLU FOLLOW UP (${stillProblem.length} kamar):*`;
+            stillProblem.forEach(rn => {
+              const r = latestOverallByRoom[rn];
+              const icon = r.cleanliness === 'Buruk' ? '❌' : '⚠️';
+              msg += `\n  ${icon} ${rn} — ${r.cleanliness}${r.followup_notes ? ': ' + r.followup_notes : ''}`;
+            });
+            msg += `\n`;
+          }
+
+          msg += `\n📊 *Total Kamar Dicek Bulan Ini:* ${uniqueCheckedMonth}/${totalRoomsHotel} kamar (${pctMonth}%)\n`;
+        }
+      } catch (rcMsgErr) {
+        console.error('Room check WA summary error:', rcMsgErr);
+      }
+    }
 
     // Link dokumentasi foto
     const today2 = new Date(Date.now() + 7*3600000).toISOString().split('T')[0];
@@ -17003,6 +17074,81 @@ ROLE_TASKS["F&B Attendant Oak Tree"] = {
   }
 
   // ====== RENDER GRID ======
+  // SLA batas waktu follow-up (jam) berdasarkan tingkat keparahan
+  function rcSlaHours(cleanliness) {
+    if (cleanliness === 'Buruk') return 24;
+    if (cleanliness === 'Sedang') return 72;
+    return null;
+  }
+  function rcHoursSince(dateStr) {
+    if (!dateStr) return null;
+    return (Date.now() - new Date(dateStr).getTime()) / 3600000;
+  }
+
+  // Kelompokkan foto per area (Entrance/Bedroom/Bathroom) — dipakai di riwayat HM & Before/After
+  function rcGroupPhotosByArea(photos) {
+    const byArea = { entrance: [], bedroom: [], bathroom: [], lainnya: [] };
+    if (!photos) return byArea;
+    let arr = photos;
+    if (typeof arr === 'string') { try { arr = JSON.parse(arr); } catch(e) { arr = []; } }
+    if (!Array.isArray(arr)) return byArea;
+    arr.forEach(p => {
+      if (typeof p === 'string') { byArea.lainnya.push(p); }
+      else if (p && p.url) {
+        const a = p.area || 'lainnya';
+        if (byArea[a]) byArea[a].push(p.url);
+        else byArea.lainnya.push(p.url);
+      }
+    });
+    return byArea;
+  }
+  const RC_AREA_CFG = [
+    { key: 'entrance', label: '🚪 Entrance' },
+    { key: 'bedroom', label: '🛏️ Bedroom' },
+    { key: 'bathroom', label: '🚿 Bathroom' },
+    { key: 'lainnya', label: '📷 Foto' }
+  ];
+
+  // Bangun kartu Before/After per-area (dipakai HM & COO)
+  function rcBuildBeforeAfterHtml(prevCheck, latestCheck) {
+    if (!prevCheck || !latestCheck) return '';
+    const beforeByArea = rcGroupPhotosByArea(prevCheck.cleanliness_photos);
+    const afterByArea = rcGroupPhotosByArea(latestCheck.cleanliness_photos);
+    const prevDt = prevCheck.checked_at ? new Date(new Date(prevCheck.checked_at).getTime()+7*3600000).toISOString().substring(0,10) : '—';
+    const afterDt = latestCheck.checked_at ? new Date(new Date(latestCheck.checked_at).getTime()+7*3600000).toISOString().substring(0,10) : '—';
+    const esc = (s) => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+    let areaBlocks = '';
+    RC_AREA_CFG.forEach(cfg => {
+      const beforeUrls = beforeByArea[cfg.key] || [];
+      const afterUrls = afterByArea[cfg.key] || [];
+      if (beforeUrls.length === 0 && afterUrls.length === 0) return;
+      areaBlocks += '<div style="margin-top:8px;">';
+      areaBlocks += '<div style="font-size:11px;font-weight:700;color:#1a3a5c;margin-bottom:4px;">' + cfg.label + '</div>';
+      areaBlocks += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">';
+      areaBlocks += '<div>';
+      areaBlocks += '<div style="font-size:9px;font-weight:700;color:#b91c1c;margin-bottom:2px;">❌ SEBELUM</div>';
+      areaBlocks += beforeUrls.length > 0
+        ? '<div style="display:grid;grid-template-columns:repeat(' + Math.min(beforeUrls.length,2) + ',1fr);gap:3px;">' + beforeUrls.map(u => '<img src="' + u + '" style="width:100%;height:56px;object-fit:cover;border-radius:6px;border:1px solid #fca5a5;" onclick="window.open(this.src,\'_blank\')">').join('') + '</div>'
+        : '<div style="font-size:9px;color:#cbd5e1;">(tidak ada foto)</div>';
+      areaBlocks += '</div>';
+      areaBlocks += '<div>';
+      areaBlocks += '<div style="font-size:9px;font-weight:700;color:#15803d;margin-bottom:2px;">✅ SESUDAH</div>';
+      areaBlocks += afterUrls.length > 0
+        ? '<div style="display:grid;grid-template-columns:repeat(' + Math.min(afterUrls.length,2) + ',1fr);gap:3px;">' + afterUrls.map(u => '<img src="' + u + '" style="width:100%;height:56px;object-fit:cover;border-radius:6px;border:1px solid #86efac;" onclick="window.open(this.src,\'_blank\')">').join('') + '</div>'
+        : '<div style="font-size:9px;color:#cbd5e1;">(tidak ada foto)</div>';
+      areaBlocks += '</div>';
+      areaBlocks += '</div></div>';
+    });
+
+    return '<div style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:12px;padding:12px;margin-bottom:12px;">' +
+      '<div style="font-size:13px;font-weight:800;color:#15803d;margin-bottom:2px;">✅ Sudah Diperbaiki — Before / After per Area</div>' +
+      '<div style="font-size:10px;color:#166534;margin-bottom:2px;">SEBELUM (' + prevDt + '): ' + esc(prevCheck.cleanliness) + (prevCheck.followup_notes ? ' — ' + esc(prevCheck.followup_notes) : '') + '</div>' +
+      '<div style="font-size:10px;color:#166534;">SESUDAH (' + afterDt + '): Baik</div>' +
+      areaBlocks +
+    '</div>';
+  }
+
   function rcRenderGrid() {
     const wrap = document.getElementById('rc-rooms-wrapper');
     const rooms = RC_ROOMS_BY_HOTEL[rcCurrentHotel] || [];
@@ -17024,9 +17170,13 @@ ROLE_TASKS["F&B Attendant Oak Tree"] = {
     // Map check counts per room + status cek TERAKHIR per kamar (rcChecks sudah urut checked_at desc)
     const cntMap = {};
     const latestByRoom = {};
+    const recurCountMap = {}; // berapa kali Sedang/Buruk bulan ini per kamar
     rcChecks.forEach(ch => {
       cntMap[ch.room_no] = (cntMap[ch.room_no] || 0) + 1;
       if (!latestByRoom[ch.room_no]) latestByRoom[ch.room_no] = ch; // pertama = terbaru (sudah desc)
+      if (ch.cleanliness === 'Sedang' || ch.cleanliness === 'Buruk') {
+        recurCountMap[ch.room_no] = (recurCountMap[ch.room_no] || 0) + 1;
+      }
     });
     // Kamar yang cek terakhirnya masih Sedang/Buruk → perlu di-follow-up & check ulang
     const followupRooms = Object.keys(latestByRoom).filter(rn => {
@@ -17044,14 +17194,24 @@ ROLE_TASKS["F&B Attendant Oak Tree"] = {
         const cnt = cntMap[rm.r] || 0;
         const latest = latestByRoom[rm.r];
         const needsFollowup = latest && (latest.cleanliness === 'Sedang' || latest.cleanliness === 'Buruk');
+        const isRecurring = (recurCountMap[rm.r] || 0) >= 3;
+        let isOverdue = false;
+        if (needsFollowup) {
+          const sla = rcSlaHours(latest.cleanliness);
+          const elapsed = rcHoursSince(latest.checked_at);
+          if (sla && elapsed !== null && elapsed > sla) isOverdue = true;
+        }
         let cls = 'rc-room-cell';
-        if (needsFollowup) cls += ' needs-followup';
+        if (isOverdue) cls += ' needs-followup overdue';
+        else if (needsFollowup) cls += ' needs-followup';
         else if (cnt >= 2) cls += ' multi';
         else if (cnt >= 1) cls += ' checked';
         const cntBadge = (cnt >= 2 && !needsFollowup) ? '<span class="rc-cnt">' + cnt + '</span>' : '';
-        const fuBadge = needsFollowup ? '<span class="rc-fu-badge">⚠️</span>' : '';
+        const fuBadge = needsFollowup ? '<span class="rc-fu-badge">' + (isOverdue ? '⏰' : '⚠️') + '</span>' : '';
+        const recurBadge = isRecurring ? '<span class="rc-recur-badge">🔁</span>' : '';
         html += '<div class="' + cls + '" onclick="rcOpenRoom(\'' + rm.r.replace(/'/g, "\\'") + '\')">';
         html += fuBadge;
+        html += recurBadge;
         html += '<div class="rc-rn">' + rm.r + '</div>';
         html += '<div class="rc-rt">' + rm.t + '</div>';
         html += cntBadge;
@@ -17060,11 +17220,11 @@ ROLE_TASKS["F&B Attendant Oak Tree"] = {
       html += '</div></div>';
     }
     wrap.innerHTML = html;
-    rcRenderFollowUpAlert(followupRooms, latestByRoom);
+    rcRenderFollowUpAlert(followupRooms, latestByRoom, recurCountMap);
   }
 
   // ====== FOLLOW-UP ALERT (kamar Sedang/Buruk yang belum di-check ulang) ======
-  function rcRenderFollowUpAlert(followupRooms, latestByRoom) {
+  function rcRenderFollowUpAlert(followupRooms, latestByRoom, recurCountMap) {
     const box = document.getElementById('rc-followup-alert');
     if (!box) return;
     if (!followupRooms || followupRooms.length === 0) {
@@ -17073,29 +17233,44 @@ ROLE_TASKS["F&B Attendant Oak Tree"] = {
       return;
     }
     const escHtml2 = (s) => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const rcFmtHours = (h) => {
+      if (h < 24) return Math.floor(h) + ' jam';
+      return Math.floor(h/24) + ' hari';
+    };
+    let overdueCount = 0;
     const cards = followupRooms
-      .sort((a, b) => a.localeCompare(b, undefined, {numeric:true}))
       .map(rn => {
         const c = latestByRoom[rn];
+        const sla = rcSlaHours(c.cleanliness);
+        const elapsed = rcHoursSince(c.checked_at);
+        const isOverdue = sla && elapsed !== null && elapsed > sla;
+        if (isOverdue) overdueCount++;
+        return { rn, c, elapsed: elapsed || 0, isOverdue };
+      })
+      .sort((a, b) => b.elapsed - a.elapsed) // paling lama mengendap di atas
+      .map(({rn, c, elapsed, isOverdue}) => {
         const isBuruk = c.cleanliness === 'Buruk';
-        const color = isBuruk ? '#b91c1c' : '#c2410c';
-        const bg = isBuruk ? '#fee2e2' : '#ffedd5';
-        const border = isBuruk ? '#fca5a5' : '#fdba74';
+        const color = isOverdue ? '#7f1d1d' : (isBuruk ? '#b91c1c' : '#c2410c');
+        const bg = isOverdue ? '#fecaca' : (isBuruk ? '#fee2e2' : '#ffedd5');
+        const border = isOverdue ? '#dc2626' : (isBuruk ? '#fca5a5' : '#fdba74');
+        const isRecurring = (recurCountMap[rn] || 0) >= 3;
         const note = c.followup_notes ? escHtml2(c.followup_notes) : '<i style="color:#9ca3af;">(catatan follow up tidak diisi)</i>';
         const assetNote = c.asset_notes ? '<div style="margin-top:3px;font-size:11px;color:#78350f;">📦 Asset: ' + escHtml2(c.asset_notes) + '</div>' : '';
-        return '<div onclick="rcOpenRoom(\'' + rn.replace(/'/g, "\\'") + '\')" style="background:' + bg + ';border:1px solid ' + border + ';border-radius:10px;padding:8px 10px;margin-bottom:6px;cursor:pointer;">' +
+        const slaLine = '<div style="margin-top:3px;font-size:10px;font-weight:700;color:' + color + ';">' + (isOverdue ? '⏰ TERLAMBAT — sudah ' : '🕐 Sudah ') + rcFmtHours(elapsed) + ' belum di-follow up' + (isOverdue ? '!' : '') + '</div>';
+        const recurLine = isRecurring ? '<div style="margin-top:2px;font-size:10px;font-weight:700;color:#7c3aed;">🔁 Recurring — sudah ' + recurCountMap[rn] + 'x bermasalah bulan ini</div>' : '';
+        return '<div onclick="rcOpenRoom(\'' + rn.replace(/'/g, "\\'") + '\')" style="background:' + bg + ';border:1.5px solid ' + border + ';border-radius:10px;padding:8px 10px;margin-bottom:6px;cursor:pointer;">' +
           '<div style="display:flex;align-items:center;gap:6px;">' +
-            '<span style="background:' + color + ';color:white;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:800;">' + (isBuruk ? '❌' : '⚠️') + ' ' + rn + '</span>' +
+            '<span style="background:' + color + ';color:white;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:800;">' + (isOverdue ? '⏰' : (isBuruk ? '❌' : '⚠️')) + ' ' + rn + '</span>' +
             '<span style="font-size:10px;color:' + color + ';font-weight:700;">' + c.cleanliness + '</span>' +
           '</div>' +
           '<div style="margin-top:4px;font-size:12px;color:#374151;line-height:1.4;">📝 ' + note + '</div>' +
-          assetNote +
+          assetNote + slaLine + recurLine +
         '</div>';
       }).join('');
     box.style.display = 'block';
     box.innerHTML =
       '<div style="background:#fff7ed;border:1.5px solid #fb923c;border-radius:12px;padding:12px 14px;">' +
-        '<div style="font-weight:800;font-size:13px;color:#9a3412;margin-bottom:4px;">🚨 ' + followupRooms.length + ' Kamar Perlu Follow Up & Check Ulang</div>' +
+        '<div style="font-weight:800;font-size:13px;color:#9a3412;margin-bottom:4px;">🚨 ' + followupRooms.length + ' Kamar Perlu Follow Up & Check Ulang' + (overdueCount > 0 ? ' <span style="color:#7f1d1d;">(' + overdueCount + ' TERLAMBAT)</span>' : '') + '</div>' +
         '<div style="font-size:11px;color:#9a3412;margin-bottom:8px;line-height:1.5;">Kamar-kamar ini pengecekan terakhirnya masih "Sedang"/"Buruk". Follow up masalahnya lalu check ulang sampai hasilnya "Baik". Tap kartu untuk buka riwayatnya.</div>' +
         cards +
       '</div>';
@@ -17154,7 +17329,13 @@ ROLE_TASKS["F&B Attendant Oak Tree"] = {
     if (matches.length === 0) {
       listEl.innerHTML = '<div style="text-align:center;padding:20px;color:#9ca3af;font-size:13px;">Belum ada pengecekan bulan ini</div>';
     } else {
-      listEl.innerHTML = matches.map(c => {
+      // Kalau cek terbaru "Baik" dan ada cek bermasalah sebelumnya → tampilkan Before/After per area di paling atas
+      let beforeAfterHtml = '';
+      if (matches[0].cleanliness === 'Baik') {
+        const prevProblem = matches.slice(1).find(m => m.cleanliness === 'Sedang' || m.cleanliness === 'Buruk');
+        if (prevProblem) beforeAfterHtml = rcBuildBeforeAfterHtml(prevProblem, matches[0]);
+      }
+      listEl.innerHTML = beforeAfterHtml + matches.map(c => {
         const dt = new Date(c.checked_at);
         const dStr = dt.toLocaleDateString('id-ID', {day:'numeric', month:'short'}) + ' ' + dt.toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'});
         const name = c.checker_name || c.checked_by.split('@')[0];
@@ -17607,7 +17788,7 @@ ROLE_TASKS["F&B Attendant Oak Tree"] = {
     try {
       const { data, error } = await supa
         .from('room_checks')
-        .select('hotel, room_no, user_role, cleanliness, checked_at, followup_notes, asset_notes')
+        .select('hotel, room_no, user_role, cleanliness, checked_at, followup_notes, asset_notes, checker_name, room_status, cleanliness_photos')
         .eq('month_key', monthKey)
         .order('checked_at', { ascending: false });
       if (error) throw error;
@@ -17618,6 +17799,7 @@ ROLE_TASKS["F&B Attendant Oak Tree"] = {
       const labels = {'Verse Luxe Wahid Hasyim':'Verse Luxe','Verse Lite Gajah Mada':'Verse Lite','Verse Hotel Cirebon':'Verse Cirebon','Oak Tree Mahakam Blok M':'Oak Tree'};
       let html = '';
       let totalFollowup = 0;
+      window._rcCooLatestData = window._rcCooLatestData || {};
       for (const h of hotels) {
         const hotelRooms = RC_ROOMS_BY_HOTEL[h] || [];
         const total = hotelRooms.length;
@@ -17626,10 +17808,22 @@ ROLE_TASKS["F&B Attendant Oak Tree"] = {
         const pct = total > 0 ? Math.round((checked/total)*100) : 0;
         // Kamar yang cek terakhirnya masih Sedang/Buruk (checks sudah urut terbaru dulu)
         const latestByRoom = {};
-        hotelChecks.forEach(c => { if (!latestByRoom[c.room_no]) latestByRoom[c.room_no] = c; });
+        const recurCountMap = {};
+        const prevProblemByRoom = {}; // untuk before/after: masalah terakhir SEBELUM cek terbaru
+        hotelChecks.forEach(c => {
+          if (!latestByRoom[c.room_no]) latestByRoom[c.room_no] = c;
+          if (c.cleanliness === 'Sedang' || c.cleanliness === 'Buruk') {
+            recurCountMap[c.room_no] = (recurCountMap[c.room_no] || 0) + 1;
+            // simpan kejadian problematik pertama yang ketemu SETELAH cek terbaru (kronologis lebih lama)
+            if (latestByRoom[c.room_no] !== c && !prevProblemByRoom[c.room_no]) {
+              prevProblemByRoom[c.room_no] = c;
+            }
+          }
+        });
         const fuCount = Object.values(latestByRoom).filter(c => c.cleanliness === 'Sedang' || c.cleanliness === 'Buruk').length;
         totalFollowup += fuCount;
         const hotelSlug = h.replace(/[^a-zA-Z0-9]/g, '_');
+        window._rcCooLatestData[hotelSlug] = { latestByRoom, hotelLabel: labels[h], recurCountMap, prevProblemByRoom };
         html += '<div class="rc-coo-hotel-row" style="cursor:pointer;" onclick="rcCooToggleHotelDetail(\'' + hotelSlug + '\')">' +
           '<div class="rc-coo-hotel-name">' + labels[h] + '</div>' +
           '<div class="rc-coo-hotel-progress"><div class="rc-coo-hotel-fill" style="width:' + pct + '%"></div></div>' +
@@ -17652,28 +17846,39 @@ ROLE_TASKS["F&B Attendant Oak Tree"] = {
             let bg = '#e5e7eb', color = '#6b7280', border='transparent';
             if (isFollowup) { bg = '#fee2e2'; color = '#b91c1c'; border = '#ef4444'; }
             else if (isChecked) { bg = '#dcfce7'; color = '#15803d'; border = '#22c55e'; }
-            html += '<div title="' + rm.r + (latest ? ' - ' + latest.cleanliness : ' - Belum dicek') + '" style="background:' + bg + ';color:' + color + ';border:1.5px solid ' + border + ';border-radius:6px;padding:5px 2px;text-align:center;font-size:10px;font-weight:700;">' + rm.r + (isFollowup ? ' ⚠️' : '') + '</div>';
+            const isRecurringCoo = (recurCountMap[rm.r] || 0) >= 3;
+            const cellClickAttr = isChecked ? ' onclick="rcCooShowRoomDetail(\'' + hotelSlug + '\',\'' + rm.r.replace(/'/g, "\\'") + '\')" style="cursor:pointer;position:relative;' : ' style="position:relative;';
+            html += '<div title="' + rm.r + (latest ? ' - ' + latest.cleanliness : ' - Belum dicek') + '"' + cellClickAttr + 'background:' + bg + ';color:' + color + ';border:1.5px solid ' + border + ';border-radius:6px;padding:5px 2px;text-align:center;font-size:10px;font-weight:700;">' + rm.r + (isFollowup ? ' ⚠️' : '') + (isRecurringCoo ? ' 🔁' : '') + '</div>';
           });
         html += '</div>';
         // Daftar keterangan kekurangan tiap kamar bermasalah (teks, bukan cuma tanda di grid)
         const escHtml3 = (s) => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        const rcFmtHours2 = (hh) => hh < 24 ? Math.floor(hh) + ' jam' : Math.floor(hh/24) + ' hari';
         const fuRoomsForHotel = Object.keys(latestByRoom)
           .filter(rn => latestByRoom[rn].cleanliness === 'Sedang' || latestByRoom[rn].cleanliness === 'Buruk')
-          .sort((a,b) => a.localeCompare(b, undefined, {numeric:true}));
+          .map(rn => ({ rn, elapsed: rcHoursSince(latestByRoom[rn].checked_at) || 0 }))
+          .sort((a,b) => b.elapsed - a.elapsed)
+          .map(o => o.rn);
         if (fuRoomsForHotel.length > 0) {
           html += '<div style="margin-top:8px;">';
           fuRoomsForHotel.forEach(rn => {
             const c = latestByRoom[rn];
+            const elapsed = rcHoursSince(c.checked_at) || 0;
+            const sla = rcSlaHours(c.cleanliness);
+            const isOverdue = sla && elapsed > sla;
             const isBuruk = c.cleanliness === 'Buruk';
-            const color = isBuruk ? '#b91c1c' : '#c2410c';
-            const bg = isBuruk ? '#fee2e2' : '#ffedd5';
-            const border = isBuruk ? '#fca5a5' : '#fdba74';
+            const color = isOverdue ? '#7f1d1d' : (isBuruk ? '#b91c1c' : '#c2410c');
+            const bg = isOverdue ? '#fecaca' : (isBuruk ? '#fee2e2' : '#ffedd5');
+            const border = isOverdue ? '#dc2626' : (isBuruk ? '#fca5a5' : '#fdba74');
+            const isRecurring = (recurCountMap[rn] || 0) >= 3;
             const note = c.followup_notes ? escHtml3(c.followup_notes) : '<i style="color:#9ca3af;">(catatan tidak diisi)</i>';
             const assetNote = c.asset_notes ? '<div style="margin-top:2px;font-size:10px;color:#78350f;">📦 Asset: ' + escHtml3(c.asset_notes) + '</div>' : '';
-            html += '<div style="background:' + bg + ';border:1px solid ' + border + ';border-radius:8px;padding:6px 9px;margin-bottom:5px;">' +
-              '<span style="background:' + color + ';color:white;padding:1px 7px;border-radius:5px;font-size:10px;font-weight:800;">' + (isBuruk ? '❌' : '⚠️') + ' ' + rn + ' — ' + c.cleanliness + '</span>' +
+            const slaLine = '<div style="margin-top:2px;font-size:10px;font-weight:700;color:' + color + ';">' + (isOverdue ? '⏰ TERLAMBAT — ' : '🕐 ') + 'sudah ' + rcFmtHours2(elapsed) + '</div>';
+            const recurLine = isRecurring ? '<div style="margin-top:2px;font-size:10px;font-weight:700;color:#7c3aed;">🔁 Recurring — ' + recurCountMap[rn] + 'x bulan ini</div>' : '';
+            html += '<div onclick="rcCooShowRoomDetail(\'' + hotelSlug + '\',\'' + rn.replace(/'/g, "\\'") + '\')" style="cursor:pointer;background:' + bg + ';border:1.5px solid ' + border + ';border-radius:8px;padding:6px 9px;margin-bottom:5px;">' +
+              '<span style="background:' + color + ';color:white;padding:1px 7px;border-radius:5px;font-size:10px;font-weight:800;">' + (isOverdue ? '⏰' : (isBuruk ? '❌' : '⚠️')) + ' ' + rn + ' — ' + c.cleanliness + '</span>' +
               '<div style="margin-top:3px;font-size:11px;color:#374151;line-height:1.4;">📝 ' + note + '</div>' +
-              assetNote +
+              assetNote + slaLine + recurLine +
             '</div>';
           });
           html += '</div>';
@@ -17702,6 +17907,83 @@ ROLE_TASKS["F&B Attendant Oak Tree"] = {
     const show = el.style.display === 'none';
     el.style.display = show ? 'block' : 'none';
     if (caret) caret.textContent = show ? '▲' : '▼';
+  }
+
+  function rcCooShowRoomDetail(hotelSlug, roomNo) {
+    const store = window._rcCooLatestData && window._rcCooLatestData[hotelSlug];
+    if (!store || !store.latestByRoom[roomNo]) return;
+    const c = store.latestByRoom[roomNo];
+    const escHtml4 = (s) => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+    const old = document.getElementById('rc-room-detail-overlay');
+    if (old) old.remove();
+
+    const isBuruk = c.cleanliness === 'Buruk';
+    const isSedang = c.cleanliness === 'Sedang';
+    const statusColor = isBuruk ? '#b91c1c' : (isSedang ? '#c2410c' : '#15803d');
+    const statusBg = isBuruk ? '#fee2e2' : (isSedang ? '#ffedd5' : '#dcfce7');
+    const statusIcon = isBuruk ? '❌' : (isSedang ? '⚠️' : '✅');
+
+    const dt = c.checked_at ? new Date(c.checked_at) : null;
+    const dtStr = dt ? new Date(dt.getTime()+7*3600000).toISOString().replace('T',' ').substring(0,16) + ' WIB' : '—';
+
+    // SLA & Recurring
+    let slaHtml = '';
+    if (isBuruk || isSedang) {
+      const elapsed = rcHoursSince(c.checked_at) || 0;
+      const sla = rcSlaHours(c.cleanliness);
+      const isOverdue = sla && elapsed > sla;
+      const fmtH = elapsed < 24 ? Math.floor(elapsed) + ' jam' : Math.floor(elapsed/24) + ' hari';
+      slaHtml = '<div style="font-size:11px;font-weight:700;margin-bottom:6px;color:' + (isOverdue ? '#7f1d1d' : '#c2410c') + ';">' + (isOverdue ? '⏰ TERLAMBAT — sudah ' : '🕐 Sudah ') + fmtH + ' belum di-follow up' + (isOverdue ? ' (lewat SLA)' : '') + '</div>';
+    }
+    const recurCount = (store.recurCountMap && store.recurCountMap[roomNo]) || 0;
+    const recurHtml = recurCount >= 3 ? '<div style="font-size:11px;font-weight:700;color:#7c3aed;margin-bottom:6px;">🔁 Recurring Issue — sudah ' + recurCount + 'x bermasalah bulan ini, kemungkinan perlu perbaikan permanen</div>' : '';
+
+    const buildPhotosHtml = (photosRaw) => {
+      try {
+        const photos = Array.isArray(photosRaw) ? photosRaw : (typeof photosRaw === 'string' ? JSON.parse(photosRaw) : []);
+        if (photos.length === 0) return '';
+        return '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:6px;">' +
+          photos.map(p => '<img src="' + (p.url || p) + '" style="width:100%;height:70px;object-fit:cover;border-radius:8px;border:1px solid #e5e7eb;" onclick="window.open(this.src,\'_blank\')">').join('') +
+          '</div>';
+      } catch(e) { return ''; }
+    };
+
+    // Before/After: kalau kondisi terakhir "Baik" tapi sebelumnya pernah bermasalah, tampilkan perbandingan per-area
+    let beforeAfterHtml = '';
+    const prevProblem = store.prevProblemByRoom && store.prevProblemByRoom[roomNo];
+    if (c.cleanliness === 'Baik' && prevProblem) {
+      beforeAfterHtml = rcBuildBeforeAfterHtml(prevProblem, c);
+    }
+
+    let photosHtml = beforeAfterHtml ? '' : buildPhotosHtml(c.cleanliness_photos);
+
+    const ov = document.createElement('div');
+    ov.id = 'rc-room-detail-overlay';
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;padding:16px;z-index:100000;';
+    ov.innerHTML = `
+      <div style="background:white;border-radius:18px;padding:20px;max-width:420px;width:100%;max-height:85vh;overflow-y:auto;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+          <div style="font-size:16px;font-weight:800;color:var(--navy);">🚪 Kamar ${escHtml4(roomNo)}</div>
+          <span style="cursor:pointer;font-size:20px;color:#94a3b8;" onclick="document.getElementById('rc-room-detail-overlay').remove()">✕</span>
+        </div>
+        <div style="font-size:11px;color:#94a3b8;margin-bottom:10px;">${escHtml4(store.hotelLabel)}</div>
+        <div style="display:flex;gap:8px;margin-bottom:8px;">
+          <span style="background:${statusBg};color:${statusColor};padding:4px 10px;border-radius:8px;font-size:12px;font-weight:800;">${statusIcon} Cleanliness: ${escHtml4(c.cleanliness || '—')}</span>
+        </div>
+        ${slaHtml}
+        ${recurHtml}
+        ${c.room_status ? '<div style="font-size:12px;color:#374151;margin-bottom:6px;"><b>Status Kamar:</b> ' + escHtml4(c.room_status) + '</div>' : ''}
+        <div style="font-size:12px;color:#374151;margin-bottom:6px;"><b>Dicek oleh:</b> ${escHtml4(c.checker_name || '—')}</div>
+        <div style="font-size:12px;color:#374151;margin-bottom:10px;"><b>Waktu:</b> ${dtStr}</div>
+        ${c.followup_notes ? '<div style="background:#fff7ed;border:1px solid #fdba74;border-radius:8px;padding:8px 10px;margin-bottom:8px;"><div style="font-size:11px;font-weight:700;color:#9a3412;margin-bottom:2px;">📝 Catatan Follow Up</div><div style="font-size:12px;color:#374151;line-height:1.5;">' + escHtml4(c.followup_notes) + '</div></div>' : ''}
+        ${c.asset_notes ? '<div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;padding:8px 10px;margin-bottom:8px;"><div style="font-size:11px;font-weight:700;color:#475569;margin-bottom:2px;">📦 Kelengkapan Asset</div><div style="font-size:12px;color:#374151;line-height:1.5;">' + escHtml4(c.asset_notes) + '</div></div>' : ''}
+        ${beforeAfterHtml}
+        ${photosHtml}
+        <div style="margin-top:12px;font-size:10px;color:#cbd5e1;text-align:center;">Tap foto untuk perbesar</div>
+      </div>
+    `;
+    document.body.appendChild(ov);
   }
 
   // ====== HOME MENU CARD ======
