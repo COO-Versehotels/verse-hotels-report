@@ -2903,7 +2903,7 @@
   // =============================================================
   // Update angka di bawah setiap kali deploy file baru yang penting.
   // Format: YYYY.MM.DD-NN (NN = increment harian)
-  const APP_VERSION = '2026.07.10-36';
+  const APP_VERSION = '2026.07.10-37';
   const APP_VERSION_KEY = 'verse_app_version';
 
   (function _checkAppVersion() {
@@ -3169,7 +3169,20 @@
   // Otomatis simpan foto (yang sudah ada timestamp) ke HP, tanpa perlu tap apapun.
   // Browser tidak bisa langsung tulis ke folder Galeri, jadi ini trigger "download"
   // yang di kebanyakan HP Android otomatis muncul juga di app Galeri/Photos.
+  // KHUSUS iPhone (Safari) — atribut download di link blob TIDAK didukung dengan baik,
+  // klik link ini bisa memicu navigasi/reload halaman yang memutus proses upload yang
+  // sedang berjalan di belakang layar (foto jadi "hilang"). Jadi di iOS, auto-download
+  // ini DIMATIKAN — foto tetap ke-upload normal, cuma tidak auto-tersimpan ke Photos.
+  function isIOSDevice() {
+    const ua = navigator.userAgent || '';
+    return /iPhone|iPad|iPod/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  }
+
   function triggerAutoDownload(file) {
+    if (isIOSDevice()) {
+      console.log('Auto-download dilewati di iOS (mencegah gangguan upload).');
+      return;
+    }
     const NOTICE_KEY = 'verse_download_notice_shown';
     const doDownload = () => {
       try {
