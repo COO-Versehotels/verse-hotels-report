@@ -2938,7 +2938,7 @@
   // =============================================================
   // Update angka di bawah setiap kali deploy file baru yang penting.
   // Format: YYYY.MM.DD-NN (NN = increment harian)
-  const APP_VERSION = '2026.07.10-50';
+  const APP_VERSION = '2026.07.10-51';
   const APP_VERSION_KEY = 'verse_app_version';
 
   (function _checkAppVersion() {
@@ -4158,6 +4158,23 @@
       const today = new Date(Date.now() + 7*3600000).toISOString().split('T')[0];
       const allItems = [];
 
+      // Ambil jam ASLI tiap task dikerjakan dari draft_tasklist (bukan jam submit)
+      // supaya timestamp yang tampil di laporan tetap jam sebenarnya task itu dikerjakan
+      const draftUpdatedAtMap = {};
+      try {
+        const draftRes = await fetch(
+          SUPA_URL + '/rest/v1/draft_tasklist?tanggal=eq.' + today +
+          '&role=eq.' + encodeURIComponent(role) +
+          '&hotel=eq.' + encodeURIComponent(hotel) +
+          '&select=task_id,updated_at',
+          { headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY } }
+        );
+        if (draftRes.ok) {
+          const draftRows = await draftRes.json();
+          draftRows.forEach(r => { if (r.task_id && r.updated_at) draftUpdatedAtMap[r.task_id] = r.updated_at; });
+        }
+      } catch(e) { console.error('Gagal ambil jam asli draft:', e); }
+
       // Kumpulkan semua task dari tasklist
       document.querySelectorAll('#tasklist-content .task-item').forEach(item => {
         const taskId = item.id;
@@ -4231,6 +4248,8 @@
           { headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY } }
         );
         const existing = checkRes.ok ? await checkRes.json() : [];
+        // Jam asli task ini dikerjakan (dari draft) — fallback ke jam sekarang kalau tidak ketemu
+        const origUpdatedAt = draftUpdatedAtMap[item.task_id] || new Date().toISOString();
 
         if (existing && existing.length > 0) {
           // PATCH
@@ -4242,7 +4261,7 @@
             {
               method: 'PATCH',
               headers: { 'Content-Type': 'application/json', 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY },
-              body: JSON.stringify({ status: item.status, keterangan: item.keterangan, file_urls: item.file_urls, updated_at: new Date().toISOString() })
+              body: JSON.stringify({ status: item.status, keterangan: item.keterangan, file_urls: item.file_urls, updated_at: origUpdatedAt })
             }
           );
         } else {
@@ -4250,7 +4269,7 @@
           await fetch(SUPA_URL + '/rest/v1/laporan_detail', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY },
-            body: JSON.stringify({ ...item, updated_at: new Date().toISOString() })
+            body: JSON.stringify({ ...item, updated_at: origUpdatedAt })
           });
         }
       }
