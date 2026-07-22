@@ -2938,7 +2938,7 @@
   // =============================================================
   // Update angka di bawah setiap kali deploy file baru yang penting.
   // Format: YYYY.MM.DD-NN (NN = increment harian)
-  const APP_VERSION = '2026.07.10-48';
+  const APP_VERSION = '2026.07.10-49';
   const APP_VERSION_KEY = 'verse_app_version';
 
   (function _checkAppVersion() {
@@ -6179,6 +6179,10 @@
   async function handleFileUpload(input, taskId, isCamera) {
     const files = Array.from(input.files);
     if (!files.length) return;
+    // Cuma auto-simpan ke HP kalau ini titik upload "Wajib Foto Langsung" (kamera dipaksa).
+    // Untuk task "Boleh Kamera atau Galeri", foto yang dipilih SUDAH ada di galeri —
+    // download ulang cuma buang-buang proses & memori HP, jadi dilewati.
+    const isForcedCamera = input.hasAttribute('capture');
 
     if (!taskFiles[taskId]) taskFiles[taskId] = [];
     const remaining = 10 - taskFiles[taskId].length;
@@ -6196,11 +6200,13 @@
       // Foto (dari kamera maupun galeri) → cap timestamp+hotel/role dulu, baru kompres
       // (stampImageTimestamp otomatis skip file non-gambar, misal PDF/Word/Video)
       const stamped = await stampImageTimestamp(file);
-      // Auto-simpan ke HP (tanpa perlu tap apapun) — foto ber-timestamp, atau video apa adanya
-      if (stamped !== file) {
-        triggerAutoDownload(stamped);
-      } else if (file.type && file.type.startsWith('video/')) {
-        triggerAutoDownload(file);
+      // Auto-simpan ke HP (tanpa perlu tap apapun) — cuma untuk foto Wajib Kamera
+      if (isForcedCamera) {
+        if (stamped !== file) {
+          triggerAutoDownload(stamped);
+        } else if (file.type && file.type.startsWith('video/')) {
+          triggerAutoDownload(file);
+        }
       }
       // Kompres foto sebelum upload (video dilewati apa adanya)
       const processedFile = await compressImage(stamped, 150, 1024);
@@ -6243,17 +6249,10 @@
     if (uploadedUrls.length > 0) {
       if (!taskFileUrls[taskId]) taskFileUrls[taskId] = [];
       taskFileUrls[taskId].push(...uploadedUrls);
-      // Sync taskFiles dari taskFileUrls agar tidak duplikat
+      // Sync taskFiles dari taskFileUrls (SATU-SATUNYA sumber, supaya tidak dobel dihitung)
       taskFiles[taskId] = taskFileUrls[taskId].map(u => {
         try { return new File(['x'], u.name, { type: u.type || 'image/jpeg' }); } catch(e) { return null; }
       }).filter(Boolean);
-      if (!taskFiles[taskId]) taskFiles[taskId] = [];
-      uploadedUrls.forEach(u => {
-        try {
-          const f = new File(['x'], u.name, { type: u.type || 'image/jpeg' });
-          taskFiles[taskId].push(f);
-        } catch(e) {}
-      });
       // Simpan ke draft database dengan file_urls terbaru
       console.log('Saving draft after upload, fileUrls:', taskFileUrls[taskId].length);
       await saveDraftNow(taskId);
