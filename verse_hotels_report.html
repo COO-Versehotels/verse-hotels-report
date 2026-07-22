@@ -2938,7 +2938,7 @@
   // =============================================================
   // Update angka di bawah setiap kali deploy file baru yang penting.
   // Format: YYYY.MM.DD-NN (NN = increment harian)
-  const APP_VERSION = '2026.07.10-49';
+  const APP_VERSION = '2026.07.10-50';
   const APP_VERSION_KEY = 'verse_app_version';
 
   (function _checkAppVersion() {
@@ -15944,8 +15944,10 @@ ROLE_TASKS["F&B Attendant Oak Tree"] = {
       const btns = item ? item.querySelectorAll('.status-btn') : [];
       btns.forEach(b => b.className = 'status-btn');
     }
-    // Auto-save (simpan fu-input sebagai keterangan)
-    saveDraftNow(fuId);
+    // Auto-save (simpan fu-input sebagai keterangan) — didebounce supaya ketik cepat
+    // tidak memicu beberapa saveDraftNow bersamaan (race condition bikin baris dobel di DB)
+    if (input._fuDebounceTimer) clearTimeout(input._fuDebounceTimer);
+    input._fuDebounceTimer = setTimeout(() => saveDraftNow(fuId), 600);
   }
 
   // Set status untuk room inspection slot
@@ -16426,7 +16428,19 @@ ROLE_TASKS["F&B Attendant Oak Tree"] = {
     });
 
     // 5. Section FOLLOW UP
-    const fuItems = items.filter(it => it.task_id && (it.task_id.startsWith('fu') || it.task_id.startsWith('FU')));
+    let fuItems = items.filter(it => it.task_id && (it.task_id.startsWith('fu') || it.task_id.startsWith('FU')));
+    // DEDUPE: kalau ada baris dobel untuk task_id FU yang sama (misal race condition auto-save),
+    // ambil cuma 1 — yang updated_at paling baru
+    {
+      const fuDedup = {};
+      fuItems.forEach(it => {
+        const key = it.task_id;
+        if (!fuDedup[key] || (it.updated_at || '') > (fuDedup[key].updated_at || '')) {
+          fuDedup[key] = it;
+        }
+      });
+      fuItems = Object.values(fuDedup);
+    }
     if (fuItems.length > 0) {
       fuItems.sort((a,b) => {
         const na = parseInt((a.task_id || '').replace(/[^0-9]/g, '')) || 0;
@@ -16447,7 +16461,8 @@ ROLE_TASKS["F&B Attendant Oak Tree"] = {
         else if (status === 'progress') { bg = '#fff7ed'; badge = '<span style="background:#f59e0b;color:white;padding:3px 10px;border-radius:6px;font-size:11px;font-weight:700;">⏳</span>'; }
         html += `<div style="padding:12px 16px;background:${bg};${idx > 0 ? 'border-top:1px solid #e0e0e0;' : ''}">`;
         html += `<div style="display:flex;gap:10px;align-items:flex-start;">`;
-        html += `<div style="background:#dbeafe;color:#1e40af;border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700;min-width:42px;text-align:center;flex-shrink:0;">FU${idx+1}</div>`;
+        const fuNum = parseInt((fu.task_id || '').replace(/[^0-9]/g, '')) || (idx+1);
+        html += `<div style="background:#dbeafe;color:#1e40af;border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700;min-width:42px;text-align:center;flex-shrink:0;">FU${fuNum}</div>`;
         html += `<div style="flex:1;font-size:13px;color:#374151;line-height:1.5;white-space:pre-wrap;">${escHtml(fu.keterangan || '')}</div>`;
         if (badge) html += badge;
         html += `</div>`;
