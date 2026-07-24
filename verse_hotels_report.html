@@ -2938,7 +2938,7 @@
   // =============================================================
   // Update angka di bawah setiap kali deploy file baru yang penting.
   // Format: YYYY.MM.DD-NN (NN = increment harian)
-  const APP_VERSION = '2026.07.10-51';
+  const APP_VERSION = '2026.07.10-52';
   const APP_VERSION_KEY = 'verse_app_version';
 
   (function _checkAppVersion() {
@@ -7226,7 +7226,9 @@
 
     // Link dokumentasi foto
     const today2 = new Date(Date.now() + 7*3600000).toISOString().split('T')[0];
-    const docLink = `https://verse-hotels-report.vercel.app/?view=detail&role=${encodeURIComponent(role)}&hotel=${encodeURIComponent(hotel)}&tanggal=${today2}`;
+    // Pakai "-" pengganti spasi (bukan %20) supaya WhatsApp lebih konsisten mendeteksi link ini sebagai bisa diklik —
+    // link dengan banyak %20 kadang gagal ke-linkify penuh oleh WhatsApp, khususnya untuk nama role/hotel yang panjang.
+    const docLink = `https://verse-hotels-report.vercel.app/?view=detail&role=${encodeURIComponent(role.replace(/ /g, '-'))}&hotel=${encodeURIComponent(hotel.replace(/ /g, '-'))}&tanggal=${today2}`;
     msg += `\n📸 *Dokumentasi:* ${docLink}`;
 
     msg += `\n━━━━━━━━━━━━━━━━━━━━━━`;
@@ -16817,8 +16819,10 @@ ROLE_TASKS["F&B Attendant Oak Tree"] = {
     const params = new URLSearchParams(window.location.search);
     const view = params.get('view');
     if (view === 'detail') {
-      const role = params.get('role');
-      const hotel = params.get('hotel');
+      // "-" di role/hotel adalah pengganti spasi (lihat catatan di docLink) — balikin jadi spasi lagi.
+      // Kalau link lama (masih pakai %20 asli / spasi asli), ini tidak berpengaruh karena tidak ada "-".
+      const role = params.get('role') ? params.get('role').replace(/-/g, ' ') : null;
+      const hotel = params.get('hotel') ? params.get('hotel').replace(/-/g, ' ') : null;
       const tanggal = params.get('tanggal');
       if (role && hotel && tanggal) {
         // Sembunyikan semua screen utama
