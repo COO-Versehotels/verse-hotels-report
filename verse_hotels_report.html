@@ -6232,23 +6232,22 @@
       const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
       const path = today + '/' + currentRole.replace(/ /g,'_') + '/' + currentHotel.replace(/ /g,'_') + '/' + taskId + '/' + Date.now() + '_' + safeName;
       try {
-        // Upload langsung via fetch API
-        const uploadUrl = SUPA_URL + '/storage/v1/object/' + 'laporan-files/' + path;
-        console.log('Uploading to:', uploadUrl);
-        const arrayBuffer = await processedFile.arrayBuffer();
-        const response = await fetch(uploadUrl, {
+        // Upload ke Cloudinary (unsigned upload) — ganti dari Supabase Storage
+        const cloudFormData = new FormData();
+        cloudFormData.append('file', processedFile);
+        cloudFormData.append('upload_preset', 'verse_hotels');
+        cloudFormData.append('public_id', path.replace(/\.[^/.]+$/, ''));
+        const mime = processedFile.type || '';
+        const resourceType = mime.startsWith('image/') ? 'image' : (mime.startsWith('video/') ? 'video' : 'raw');
+        console.log('Uploading to Cloudinary ('+resourceType+'):', path);
+        const response = await fetch('https://api.cloudinary.com/v1_1/bojm1fah/'+resourceType+'/upload', {
           method: 'POST',
-          headers: {
-            'Authorization': 'Bearer ' + SUPA_KEY,
-            'apikey': SUPA_KEY,
-            'Content-Type': processedFile.type || 'application/octet-stream',
-            'x-upsert': 'true'
-          },
-          body: arrayBuffer
+          body: cloudFormData
         });
         console.log('Upload response status:', response.status);
         if (response.ok) {
-          const publicUrl = SUPA_URL + '/storage/v1/object/public/laporan-files/' + path;
+          const respData = await response.json();
+          const publicUrl = respData.secure_url;
           console.log('Upload success, URL:', publicUrl);
           uploadedUrls.push({ name: file.name, url: publicUrl, type: file.type });
           // taskFiles di-sync dari taskFileUrls setelah loop
@@ -17756,24 +17755,23 @@ ROLE_TASKS["F&B Attendant Oak Tree"] = {
     saveBtn.textContent = '⏳ Menyimpan...';
 
     try {
-      // 1. Upload photos to Supabase storage (per area)
+      // 1. Upload photos to Cloudinary (per area)
       const photoUrls = []; // array of {url, area}
       const areas = ['entrance','bedroom','bathroom'];
       for (const area of areas) {
         const photos = rcFormPhotos[area] || [];
         for (let i = 0; i < photos.length; i++) {
           const p = photos[i];
-          const ext = p.file.name.split('.').pop() || 'jpg';
-          const fname = 'rc_' + area + '_' + Date.now() + '_' + i + '.' + ext;
-          const path = 'room-check/' + rcCurrentHotel.replace(/[^a-zA-Z0-9]/g, '_') + '/' + rcCurrentMonthKey + '/' + fname;
-          const { error: upErr } = await supa.storage.from('defect-photos').upload(path, p.file, {
-            cacheControl: '3600',
-            upsert: false,
-            contentType: p.file.type
-          });
-          if (upErr) throw new Error('Upload foto gagal: ' + upErr.message);
-          const { data: pub } = supa.storage.from('defect-photos').getPublicUrl(path);
-          photoUrls.push({ url: pub.publicUrl, area: area });
+          const fname = 'rc_' + area + '_' + Date.now() + '_' + i;
+          const publicId = 'room-check/' + rcCurrentHotel.replace(/[^a-zA-Z0-9]/g, '_') + '/' + rcCurrentMonthKey + '/' + fname;
+          const cf = new FormData();
+          cf.append('file', p.file);
+          cf.append('upload_preset', 'verse_hotels');
+          cf.append('public_id', publicId);
+          const upRes = await fetch('https://api.cloudinary.com/v1_1/bojm1fah/image/upload', { method:'POST', body:cf });
+          if (!upRes.ok) { const et = await upRes.text(); throw new Error('Upload foto gagal: ' + et); }
+          const upData = await upRes.json();
+          photoUrls.push({ url: upData.secure_url, area: area });
         }
       }
 
@@ -17788,17 +17786,16 @@ ROLE_TASKS["F&B Attendant Oak Tree"] = {
           for (let pi = 0; pi < d.photos.length; pi++) {
             const ph = d.photos[pi];
             try {
-              const ext = ph.file.name.split('.').pop() || 'jpg';
-              const fname = 'defect_' + Date.now() + '_' + pi + '.' + ext;
-              const path = 'room-check/' + rcCurrentHotel.replace(/[^a-zA-Z0-9]/g, '_') + '/' + rcCurrentMonthKey + '/' + fname;
-              const { error: dupErr } = await supa.storage.from('defect-photos').upload(path, ph.file, {
-                cacheControl: '3600',
-                upsert: false,
-                contentType: ph.file.type
-              });
-              if (dupErr) { console.error('Defect photo upload error:', dupErr); continue; }
-              const { data: dpub } = supa.storage.from('defect-photos').getPublicUrl(path);
-              defectPhotoUrls.push(dpub.publicUrl);
+              const fname = 'defect_' + Date.now() + '_' + pi;
+              const publicId = 'room-check/' + rcCurrentHotel.replace(/[^a-zA-Z0-9]/g, '_') + '/' + rcCurrentMonthKey + '/' + fname;
+              const cf2 = new FormData();
+              cf2.append('file', ph.file);
+              cf2.append('upload_preset', 'verse_hotels');
+              cf2.append('public_id', publicId);
+              const dupRes = await fetch('https://api.cloudinary.com/v1_1/bojm1fah/image/upload', { method:'POST', body:cf2 });
+              if (!dupRes.ok) { console.error('Defect photo upload error:', await dupRes.text()); continue; }
+              const dupData = await dupRes.json();
+              defectPhotoUrls.push(dupData.secure_url);
             } catch(uperr) { console.error('Defect photo error:', uperr); }
           }
         }
