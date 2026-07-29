@@ -2938,7 +2938,7 @@
   // =============================================================
   // Update angka di bawah setiap kali deploy file baru yang penting.
   // Format: YYYY.MM.DD-NN (NN = increment harian)
-  const APP_VERSION = '2026.07.10-52';
+  const APP_VERSION = '2026.07.10-53';
   const APP_VERSION_KEY = 'verse_app_version';
 
   (function _checkAppVersion() {
@@ -6232,22 +6232,23 @@
       const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
       const path = today + '/' + currentRole.replace(/ /g,'_') + '/' + currentHotel.replace(/ /g,'_') + '/' + taskId + '/' + Date.now() + '_' + safeName;
       try {
-        // Upload ke Cloudinary (unsigned upload) — ganti dari Supabase Storage
-        const cloudFormData = new FormData();
-        cloudFormData.append('file', processedFile);
-        cloudFormData.append('upload_preset', 'verse_hotels');
-        cloudFormData.append('public_id', path.replace(/\.[^/.]+$/, ''));
-        const mime = processedFile.type || '';
-        const resourceType = mime.startsWith('image/') ? 'image' : (mime.startsWith('video/') ? 'video' : 'raw');
-        console.log('Uploading to Cloudinary ('+resourceType+'):', path);
-        const response = await fetch('https://api.cloudinary.com/v1_1/bojm1fah/'+resourceType+'/upload', {
+        // Upload langsung via fetch API
+        const uploadUrl = SUPA_URL + '/storage/v1/object/' + 'laporan-files/' + path;
+        console.log('Uploading to:', uploadUrl);
+        const arrayBuffer = await processedFile.arrayBuffer();
+        const response = await fetch(uploadUrl, {
           method: 'POST',
-          body: cloudFormData
+          headers: {
+            'Authorization': 'Bearer ' + SUPA_KEY,
+            'apikey': SUPA_KEY,
+            'Content-Type': processedFile.type || 'application/octet-stream',
+            'x-upsert': 'true'
+          },
+          body: arrayBuffer
         });
         console.log('Upload response status:', response.status);
         if (response.ok) {
-          const respData = await response.json();
-          const publicUrl = respData.secure_url;
+          const publicUrl = SUPA_URL + '/storage/v1/object/public/laporan-files/' + path;
           console.log('Upload success, URL:', publicUrl);
           uploadedUrls.push({ name: file.name, url: publicUrl, type: file.type });
           // taskFiles di-sync dari taskFileUrls setelah loop
@@ -6277,19 +6278,33 @@
       console.log('Draft saved after upload');
     }
 
-    showToast('✅ ' + uploadedUrls.length + ' file berhasil diupload!');
+    showToast(uploadedUrls.length + '/' + toAdd.length + ' file berhasil diupload!');
     renderFilePreview(taskId);
-    showTimestamp(taskId, 'upload');
 
-    // Mark upload area as has-file
     const area = document.getElementById(taskId + '-upload-area');
-    if (area) {
-      area.classList.add('has-file');
-      area.classList.remove('required-alert');
-      const strong = area.querySelector('.task-upload-text strong');
-      const span = area.querySelector('.task-upload-text span');
-      if (strong) strong.textContent = taskFiles[taskId].length + ' file terlampir ✓';
-      if (span) span.textContent = taskFiles[taskId].map(f => f.name).join(', ').substring(0, 40) + (taskFiles[taskId].length > 1 ? '...' : '');
+    if (uploadedUrls.length > 0) {
+      showTimestamp(taskId, 'upload');
+      // Mark upload area as has-file — CUMA kalau beneran ada yang berhasil diupload
+      if (area) {
+        area.classList.add('has-file');
+        area.classList.remove('required-alert');
+        const strong = area.querySelector('.task-upload-text strong');
+        const span = area.querySelector('.task-upload-text span');
+        if (strong) strong.textContent = taskFiles[taskId].length + ' file terlampir ✓';
+        if (span) span.textContent = taskFiles[taskId].map(f => f.name).join(', ').substring(0, 40) + (taskFiles[taskId].length > 1 ? '...' : '');
+      }
+    } else {
+      // GAGAL total — jangan ditandai sukses. Tampilkan status gagal yang jelas & tetap kelihatan
+      // (bukan cuma toast sekilas) supaya user tahu harus coba upload ulang.
+      showToast('❌ Upload gagal, coba lagi (cek koneksi internet)');
+      if (area) {
+        area.classList.remove('has-file');
+        area.classList.add('required-alert');
+        const strong = area.querySelector('.task-upload-text strong');
+        const span = area.querySelector('.task-upload-text span');
+        if (strong) strong.textContent = '❌ Upload gagal';
+        if (span) span.textContent = 'Coba lagi — cek koneksi internet';
+      }
     }
   }
 
@@ -17005,7 +17020,6 @@ ROLE_TASKS["F&B Attendant Oak Tree"] = {
   let rcCurrentHotel = null;
   let rcCurrentMonthKey = null; // 'YYYY-MM'
   let rcChecks = []; // semua check untuk hotel & month yang aktif
-  let rcDefectsById = {}; // lookup defect (foto+keterangan) by id, dari defect_ids tiap check
   let rcCurrentRoom = null; // kamar yang sedang dibuka di modal
   let rcFormPhotos = { entrance: [], bedroom: [], bathroom: [] }; // 3 area, each {file, dataUrl}
   let rcFormDefects = []; // {category, priority, description, _tempId} array
@@ -17133,19 +17147,6 @@ ROLE_TASKS["F&B Attendant Oak Tree"] = {
         .order('checked_at', { ascending: false });
       if (error) throw error;
       rcChecks = data || [];
-
-      // Ambil detail defect (foto+keterangan+status) untuk semua defect_ids yang direferensikan
-      const allDefectIds = [...new Set(rcChecks.flatMap(c => c.defect_ids || []))];
-      rcDefectsById = {};
-      if (allDefectIds.length > 0) {
-        const { data: defData, error: defErr } = await supa
-          .from('defects')
-          .select('id,description,category,priority,status,photo_defect,photo_after,location')
-          .in('id', allDefectIds);
-        if (!defErr && defData) {
-          defData.forEach(d => { rcDefectsById[d.id] = d; });
-        }
-      }
     } catch (e) {
       console.error('rcLoadAndRender error:', e);
       wrap.innerHTML = '<div style="text-align:center;padding:40px;color:#ef4444;font-size:13px;">Gagal memuat: ' + (e.message || e) + '</div>';
@@ -17224,13 +17225,10 @@ ROLE_TASKS["F&B Attendant Oak Tree"] = {
       areaBlocks += '</div></div>';
     });
 
-    const defectCardsHtml = rcBuildDefectCardsHtml(prevCheck.defect_ids, 'Defect sebelumnya: ');
-
     return '<div style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:12px;padding:12px;margin-bottom:12px;">' +
       '<div style="font-size:13px;font-weight:800;color:#15803d;margin-bottom:2px;">✅ Sudah Diperbaiki — Before / After per Area</div>' +
       '<div style="font-size:10px;color:#166534;margin-bottom:2px;">SEBELUM (' + prevDt + '): ' + esc(prevCheck.cleanliness) + (prevCheck.followup_notes ? ' — ' + esc(prevCheck.followup_notes) : '') + '</div>' +
       '<div style="font-size:10px;color:#166534;">SESUDAH (' + afterDt + '): Baik</div>' +
-      defectCardsHtml +
       areaBlocks +
     '</div>';
   }
@@ -17349,27 +17347,13 @@ ROLE_TASKS["F&B Attendant Oak Tree"] = {
         const assetNote = c.asset_notes ? '<div style="margin-top:3px;font-size:11px;color:#78350f;">📦 Asset: ' + escHtml2(c.asset_notes) + '</div>' : '';
         const slaLine = '<div style="margin-top:3px;font-size:10px;font-weight:700;color:' + color + ';">' + (isOverdue ? '⏰ TERLAMBAT — sudah ' : '🕐 Sudah ') + rcFmtHours(elapsed) + ' belum di-follow up' + (isOverdue ? '!' : '') + '</div>';
         const recurLine = isRecurring ? '<div style="margin-top:2px;font-size:10px;font-weight:700;color:#7c3aed;">🔁 Recurring — sudah ' + recurCountMap[rn] + 'x bermasalah bulan ini</div>' : '';
-        let defectThumbHtml = '';
-        if (c.defect_ids && c.defect_ids.length > 0) {
-          const firstDefect = rcDefectsById[c.defect_ids[0]];
-          if (firstDefect) {
-            let photos = [];
-            try { photos = JSON.parse(firstDefect.photo_defect || '[]'); } catch(e) {}
-            if (photos.length > 0) {
-              defectThumbHtml = '<img src="' + photos[0] + '" style="width:40px;height:40px;object-fit:cover;border-radius:7px;flex-shrink:0;" onclick="event.stopPropagation();window.open(this.src,\'_blank\')">';
-            }
-          }
-        }
-        return '<div onclick="rcOpenRoom(\'' + rn.replace(/'/g, "\\'") + '\')" style="background:' + bg + ';border:1.5px solid ' + border + ';border-radius:10px;padding:8px 10px;margin-bottom:6px;cursor:pointer;display:flex;gap:8px;align-items:flex-start;">' +
-          (defectThumbHtml ? defectThumbHtml : '') +
-          '<div style="flex:1;min-width:0;">' +
+        return '<div onclick="rcOpenRoom(\'' + rn.replace(/'/g, "\\'") + '\')" style="background:' + bg + ';border:1.5px solid ' + border + ';border-radius:10px;padding:8px 10px;margin-bottom:6px;cursor:pointer;">' +
           '<div style="display:flex;align-items:center;gap:6px;">' +
             '<span style="background:' + color + ';color:white;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:800;">' + (isOverdue ? '⏰' : (isBuruk ? '❌' : '⚠️')) + ' ' + rn + '</span>' +
             '<span style="font-size:10px;color:' + color + ';font-weight:700;">' + c.cleanliness + '</span>' +
           '</div>' +
           '<div style="margin-top:4px;font-size:12px;color:#374151;line-height:1.4;">📝 ' + note + '</div>' +
           assetNote + slaLine + recurLine +
-          '</div>' +
         '</div>';
       }).join('');
     box.style.display = 'block';
@@ -17450,34 +17434,6 @@ ROLE_TASKS["F&B Attendant Oak Tree"] = {
   }
 
   // ====== OPEN ROOM HISTORY MODAL ======
-  function rcBuildDefectCardsHtml(defectIds, labelPrefix) {
-    if (!defectIds || defectIds.length === 0) return '';
-    const esc2 = (s) => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-    const statusColors = { 'Open':'#dc2626', 'In Progress':'#f59e0b', 'Pending':'#a855f7', 'Done':'#16a34a' };
-    const cards = defectIds.map(id => {
-      const d = rcDefectsById[id];
-      if (!d) return '';
-      let photos = [];
-      try { photos = JSON.parse(d.photo_defect || '[]'); } catch(e) {}
-      const sc = statusColors[d.status] || '#6b7280';
-      const thumb = photos.length > 0
-        ? '<img src="' + photos[0] + '" style="width:52px;height:52px;object-fit:cover;border-radius:8px;flex-shrink:0;" onclick="window.open(this.src,\'_blank\')">'
-        : '<div style="width:52px;height:52px;border-radius:8px;background:#f3f4f6;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">🔧</div>';
-      return '<div style="display:flex;gap:8px;align-items:flex-start;background:#fff;border:1px solid #fde68a;border-radius:8px;padding:6px;margin-top:5px;">' +
-        thumb +
-        '<div style="flex:1;min-width:0;">' +
-          '<div style="font-size:11px;font-weight:700;color:#92400e;">' + esc2(d.category||'') + ' — ' + esc2(d.description||'') + '</div>' +
-          '<span style="background:' + sc + '22;color:' + sc + ';font-size:9px;font-weight:800;padding:1px 6px;border-radius:5px;">' + esc2(d.status) + '</span>' +
-        '</div>' +
-      '</div>';
-    }).join('');
-    if (!cards) return '';
-    return '<div style="margin-top:6px;">' +
-      '<div style="font-size:11px;color:#92400e;font-weight:700;">🔧 ' + (labelPrefix||'') + defectIds.length + ' defect dilaporkan</div>' +
-      cards +
-    '</div>';
-  }
-
   function rcOpenRoom(roomNo) {
     rcCurrentRoom = roomNo;
     document.getElementById('rc-modal-title').textContent = 'Kamar ' + roomNo;
@@ -17537,7 +17493,7 @@ ROLE_TASKS["F&B Attendant Oak Tree"] = {
         }
         let defectsHtml = '';
         if (c.defect_ids && c.defect_ids.length > 0) {
-          defectsHtml = rcBuildDefectCardsHtml(c.defect_ids);
+          defectsHtml = '<div style="margin-top:6px;font-size:11px;color:#92400e;">🔧 ' + c.defect_ids.length + ' defect dilaporkan</div>';
         }
         // Status kamar badge dengan warna
         const statusColors = {
@@ -17814,23 +17770,24 @@ ROLE_TASKS["F&B Attendant Oak Tree"] = {
     saveBtn.textContent = '⏳ Menyimpan...';
 
     try {
-      // 1. Upload photos to Cloudinary (per area)
+      // 1. Upload photos to Supabase storage (per area)
       const photoUrls = []; // array of {url, area}
       const areas = ['entrance','bedroom','bathroom'];
       for (const area of areas) {
         const photos = rcFormPhotos[area] || [];
         for (let i = 0; i < photos.length; i++) {
           const p = photos[i];
-          const fname = 'rc_' + area + '_' + Date.now() + '_' + i;
-          const publicId = 'room-check/' + rcCurrentHotel.replace(/[^a-zA-Z0-9]/g, '_') + '/' + rcCurrentMonthKey + '/' + fname;
-          const cf = new FormData();
-          cf.append('file', p.file);
-          cf.append('upload_preset', 'verse_hotels');
-          cf.append('public_id', publicId);
-          const upRes = await fetch('https://api.cloudinary.com/v1_1/bojm1fah/image/upload', { method:'POST', body:cf });
-          if (!upRes.ok) { const et = await upRes.text(); throw new Error('Upload foto gagal: ' + et); }
-          const upData = await upRes.json();
-          photoUrls.push({ url: upData.secure_url, area: area });
+          const ext = p.file.name.split('.').pop() || 'jpg';
+          const fname = 'rc_' + area + '_' + Date.now() + '_' + i + '.' + ext;
+          const path = 'room-check/' + rcCurrentHotel.replace(/[^a-zA-Z0-9]/g, '_') + '/' + rcCurrentMonthKey + '/' + fname;
+          const { error: upErr } = await supa.storage.from('defect-photos').upload(path, p.file, {
+            cacheControl: '3600',
+            upsert: false,
+            contentType: p.file.type
+          });
+          if (upErr) throw new Error('Upload foto gagal: ' + upErr.message);
+          const { data: pub } = supa.storage.from('defect-photos').getPublicUrl(path);
+          photoUrls.push({ url: pub.publicUrl, area: area });
         }
       }
 
@@ -17845,16 +17802,17 @@ ROLE_TASKS["F&B Attendant Oak Tree"] = {
           for (let pi = 0; pi < d.photos.length; pi++) {
             const ph = d.photos[pi];
             try {
-              const fname = 'defect_' + Date.now() + '_' + pi;
-              const publicId = 'room-check/' + rcCurrentHotel.replace(/[^a-zA-Z0-9]/g, '_') + '/' + rcCurrentMonthKey + '/' + fname;
-              const cf2 = new FormData();
-              cf2.append('file', ph.file);
-              cf2.append('upload_preset', 'verse_hotels');
-              cf2.append('public_id', publicId);
-              const dupRes = await fetch('https://api.cloudinary.com/v1_1/bojm1fah/image/upload', { method:'POST', body:cf2 });
-              if (!dupRes.ok) { console.error('Defect photo upload error:', await dupRes.text()); continue; }
-              const dupData = await dupRes.json();
-              defectPhotoUrls.push(dupData.secure_url);
+              const ext = ph.file.name.split('.').pop() || 'jpg';
+              const fname = 'defect_' + Date.now() + '_' + pi + '.' + ext;
+              const path = 'room-check/' + rcCurrentHotel.replace(/[^a-zA-Z0-9]/g, '_') + '/' + rcCurrentMonthKey + '/' + fname;
+              const { error: dupErr } = await supa.storage.from('defect-photos').upload(path, ph.file, {
+                cacheControl: '3600',
+                upsert: false,
+                contentType: ph.file.type
+              });
+              if (dupErr) { console.error('Defect photo upload error:', dupErr); continue; }
+              const { data: dpub } = supa.storage.from('defect-photos').getPublicUrl(path);
+              defectPhotoUrls.push(dpub.publicUrl);
             } catch(uperr) { console.error('Defect photo error:', uperr); }
           }
         }
