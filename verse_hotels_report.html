@@ -2938,7 +2938,7 @@
   // =============================================================
   // Update angka di bawah setiap kali deploy file baru yang penting.
   // Format: YYYY.MM.DD-NN (NN = increment harian)
-  const APP_VERSION = '2026.08.31-54';
+  const APP_VERSION = '2026.09.02-55';
   const APP_VERSION_KEY = 'verse_app_version';
 
   (function _checkAppVersion() {
@@ -6230,7 +6230,11 @@
       // Kompres foto sebelum upload (video dilewati apa adanya)
       const processedFile = await compressImage(stamped, 150, 1024);
       const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-      const publicId = today + '/' + currentRole.replace(/ /g,'_') + '/' + currentHotel.replace(/ /g,'_') + '/' + taskId + '/' + Date.now() + '_' + safeName.replace(/\.[^.]+$/, '');
+      // Bersihkan karakter yang TIDAK diterima Cloudinary di public_id (misal "&" di "F&B Manager")
+      // — bukan cuma spasi, semua karakter selain huruf/angka/titik/underscore/strip harus diganti.
+      const safeRole = currentRole.replace(/[^a-zA-Z0-9]+/g, '_');
+      const safeHotel = currentHotel.replace(/[^a-zA-Z0-9]+/g, '_');
+      const publicId = today + '/' + safeRole + '/' + safeHotel + '/' + taskId + '/' + Date.now() + '_' + safeName.replace(/\.[^.]+$/, '');
       try {
         // Upload ke Cloudinary (unsigned) — menggantikan Supabase Storage supaya tidak numpuk kuota lagi
         const formData = new FormData();
