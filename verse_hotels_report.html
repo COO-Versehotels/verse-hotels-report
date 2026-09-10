@@ -2262,9 +2262,9 @@
 
       <!-- Room Check Override (HM only, tampil kalau check < 5 kamar) -->
       <div id="submit-rc-override-section" style="display:none;margin:0 16px 12px;background:#fff7ed;border:1.5px solid #f59e0b;border-radius:var(--radius);padding:12px 14px;">
-        <div style="font-size:12px;color:#92400e;font-weight:700;margin-bottom:6px;">🏨 Alasan tidak bisa check 5 kamar hari ini</div>
+        <div style="font-size:12px;color:#92400e;font-weight:700;margin-bottom:6px;">🏨 Alasan Tidak Ada Pengecekan Kamar Hari Ini</div>
         <div style="font-size:11px;color:#78350f;margin-bottom:8px;">Isi alasan minimal 10 karakter (contoh: event besar, hotel penuh, dst). Alasan akan ditampilkan di WA report.</div>
-        <textarea id="submit-rc-override-reason" rows="3" style="width:100%;padding:10px;border:1px solid #fcd34d;border-radius:8px;font-family:inherit;font-size:13px;resize:vertical;box-sizing:border-box;" placeholder="Jelaskan alasan kenapa tidak bisa check minimum 5 kamar hari ini..."></textarea>
+        <textarea id="submit-rc-override-reason" rows="3" style="width:100%;padding:10px;border:1px solid #fcd34d;border-radius:8px;font-family:inherit;font-size:13px;resize:vertical;box-sizing:border-box;" placeholder="Jelaskan kenapa tidak ada pengecekan kamar sama sekali hari ini..."></textarea>
         <div style="font-size:11px;color:#78350f;margin-top:6px;" id="submit-rc-override-counter">0 / 10 karakter</div>
       </div>
 
@@ -2757,6 +2757,7 @@
 
       <!-- EHK daily target reminder -->
       <div id="rc-ehk-target-alert" style="display:none;margin:0 12px 10px;"></div>
+      <div id="rc-hm-target-alert" style="display:none;margin:0 12px 10px;"></div>
 
       <div class="rc-rooms-wrapper" id="rc-rooms-wrapper">
         <div style="text-align:center;padding:40px;color:#9ca3af;font-size:13px;">Pilih hotel untuk mulai...</div>
@@ -2938,7 +2939,7 @@
   // =============================================================
   // Update angka di bawah setiap kali deploy file baru yang penting.
   // Format: YYYY.MM.DD-NN (NN = increment harian)
-  const APP_VERSION = '2026.09.02-55';
+  const APP_VERSION = '2026.09.10-59';
   const APP_VERSION_KEY = 'verse_app_version';
 
   (function _checkAppVersion() {
@@ -4196,6 +4197,18 @@
         allItems.push({ tanggal: today, role, hotel, task_id: taskId, status, keterangan: keterangan || null, file_urls: fileUrls });
       });
 
+      // Simpan alasan "tidak bisa check 5 kamar" (kalau HM sedang dalam kondisi override hari ini)
+      {
+        const rcOverrideSection = document.getElementById('submit-rc-override-section');
+        const rcOverrideTa = document.getElementById('submit-rc-override-reason');
+        if (rcOverrideSection && rcOverrideSection.style.display !== 'none' && rcOverrideTa && rcOverrideTa.value.trim()) {
+          allItems.push({
+            tanggal: today, role, hotel, task_id: 'rc-override-reason',
+            status: 'info', keterangan: rcOverrideTa.value.trim(), file_urls: null
+          });
+        }
+      }
+
       // Kumpulkan Follow Up
       document.querySelectorAll('#followup-list .task-item').forEach(item => {
         const taskId = item.id;
@@ -5452,7 +5465,7 @@
           '<span style="font-size:16px;">' + sIcon + '</span>' +
           '<span style="font-size:13px;font-weight:700;color:' + sColor + ';">' + sLabel + '</span>' +
           '<span style="font-size:10px;color:#aaa;margin-left:auto;">' + (d.task_id || '') + '</span></div>' +
-          (d.keterangan ? '<div style="font-size:13px;color:#333;background:#f9f9f9;padding:10px;border-radius:8px;line-height:1.6;">' + d.keterangan + '</div>' : '') +
+          (d.keterangan ? '<div style="font-size:13px;color:#333;background:#f9f9f9;padding:10px;border-radius:8px;line-height:1.6;">' + _formatKeterangan(d.keterangan) + '</div>' : '') +
           filesHtml + '</div>';
       }
 
@@ -6876,10 +6889,10 @@
       }
     });
 
-    // Validasi khusus HM: Room Check minimum 5 kamar per hari
+    // Validasi khusus HM: alasan WAJIB diisi kalau 0 kamar dicek hari ini (tidak ada lagi minimal 5 kamar —
+    // target harian sekarang dinamis/informatif saja, lihat rcRenderHMDailyTarget, tidak menghalangi submit)
     if (_isHmRole) {
-      // ATAU isi alasan minimum 10 karakter kalau kurang
-      const MIN_ROOM_CHECKS = 5;
+      const MIN_ROOM_CHECKS = 1; // wajib isi alasan HANYA kalau 0 kamar (bukan lagi <5)
       const MIN_REASON_CHARS = 10;
       const rcOverrideSection = document.getElementById('submit-rc-override-section');
       const rcOverrideTa = document.getElementById('submit-rc-override-reason');
@@ -6924,7 +6937,7 @@
             const reasonText = rcOverrideTa ? rcOverrideTa.value.trim() : '';
             if (reasonText.length < MIN_REASON_CHARS) {
               const needRoomsOrChars = reasonText.length === 0
-                ? '<i>baru ' + rcCount + '/' + MIN_ROOM_CHECKS + ' kamar — isi alasan di kotak kuning di bawah</i>'
+                ? '<i>belum ada kamar dicek hari ini — isi alasan di kotak kuning di bawah</i>'
                 : '<i>alasan kurang ' + (MIN_REASON_CHARS - reasonText.length) + ' karakter (min ' + MIN_REASON_CHARS + ')</i>';
               requiredItems.push('• <b>🏨 Pengecekan Kamar</b> — ' + needRoomsOrChars);
             }
@@ -7113,6 +7126,20 @@
     msg += '📊 *Progress:* ' + pct + '\n';
     msg += '📎 *Lampiran:* ' + files + '\n';
 
+    // Tampilkan alasan "tidak bisa check 5 kamar" kalau HM submit hari ini pakai alasan override
+    if (role && role.startsWith('HM ')) {
+      try {
+        const todayStrRc = new Date(Date.now() + 7*3600000).toISOString().split('T')[0];
+        const reasonRes = await supa.from('laporan_detail')
+          .select('keterangan')
+          .eq('tanggal', todayStrRc).eq('role', role).eq('hotel', hotel)
+          .eq('task_id', 'rc-override-reason').maybeSingle();
+        if (reasonRes.data && reasonRes.data.keterangan) {
+          msg += '\n⚠️ *Alasan Tidak Check 5 Kamar Hari Ini:*\n' + reasonRes.data.keterangan + '\n';
+        }
+      } catch(e) { console.error('Gagal ambil alasan RC override:', e); }
+    }
+
     // === Ringkasan Pengecekan Kamar (HM, EHK Corporate, Chief Engineering Corporate) — langsung di teks WA, tanpa perlu klik link ===
     const rcWaEligible = role && (role.startsWith('HM ') || role === 'EHK Corporate' || role === 'Chief Engineering Corporate');
     const rcWaHotel = role && role.startsWith('HM ') ? RC_HM_HOTEL_MAP[role] : hotel;
@@ -7204,10 +7231,10 @@
           const cat = item.closest('.task-category');
           const hdr = cat ? cat.querySelector('.task-cat-title') : null;
           const name = taskTextEl ? taskTextEl.textContent.trim().substring(0,50) : (hdr ? hdr.textContent.trim() : 'Task');
-          const note = item.querySelector('.task-note');
-          const ket = note && note.value.trim() ? note.value.trim() : '-';
+          const rawKet = _getTaskKeterangan(item);
+          const ket = rawKet ? _formatKeterangan(rawKet, item) : '-';
           const icon = s === 'progress' ? '⏳' : '❌';
-          kurangList += '\n  ' + icon + ' ' + name + ' → ' + ket;
+          kurangList += '\n  ' + icon + ' ' + name + ' → ' + (ket || '-');
         }
       });
       if (kurangList) msg += '\n⚠️ *BELUM / DALAM PROSES:*' + kurangList + '\n';
@@ -16524,6 +16551,16 @@ ROLE_TASKS["F&B Attendant Oak Tree"] = {
 
     // 6. Section PENGECEKAN KAMAR (dipindah ke PALING ATAS — sebelum tasklist)
     const _rcSectionStart = html.length;
+
+    // Alasan "tidak bisa check 5 kamar" (kalau ada) — tampil paling atas juga, dekat Room Check
+    const rcReasonItem = items.find(it => it.task_id === 'rc-override-reason');
+    if (rcReasonItem && rcReasonItem.keterangan) {
+      html += `<div style="background:#fff7ed;border:1.5px solid #fdba74;border-radius:12px;padding:14px 16px;margin-bottom:14px;">`;
+      html += `<div style="font-size:13px;font-weight:700;color:#9a3412;margin-bottom:6px;">⚠️ Alasan Tidak Check 5 Kamar Hari Ini</div>`;
+      html += `<div style="font-size:13px;color:#78350f;line-height:1.5;">${(rcReasonItem.keterangan||'').replace(/</g,'&lt;')}</div>`;
+      html += `</div>`;
+    }
+
     if (rcItems && rcItems.length > 0) {
       html += `<div style="background:white;border-radius:14px;margin-bottom:14px;overflow:hidden;border:1px solid #e0e0e0;box-shadow:0 1px 3px rgba(0,0,0,0.04);">`;
       html += `<div style="background:#f8f9fa;padding:14px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid #e0e0e0;">`;
@@ -16649,7 +16686,7 @@ ROLE_TASKS["F&B Attendant Oak Tree"] = {
         else if (it.task_id === 'planning-tomorrow') label = '📝 Rencana Pekerjaan Besok';
         html += `<div style="padding:14px 16px;">`;
         html += `<div style="font-size:11px;font-weight:700;color:#1a3a5c;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">${label}</div>`;
-        html += `<div style="font-size:13px;color:#374151;line-height:1.6;white-space:pre-wrap;">${escHtml(it.keterangan || '-')}</div>`;
+        html += `<div style="font-size:13px;color:#374151;line-height:1.6;white-space:pre-wrap;">${escHtml(_formatKeterangan(it.keterangan) || '-')}</div>`;
         html += `</div>`;
       });
       html += `</div>`;
@@ -17009,6 +17046,36 @@ ROLE_TASKS["F&B Attendant Oak Tree"] = {
   };
 
   // Map role → hotel (untuk HM)
+  // ====== TANGGAL MERAH INDONESIA (untuk hitung target harian Room Check) ======
+  // ⚠️ PENTING: update daftar ini tiap awal tahun (sumber: SKB 3 Menteri / Kemenag)
+  const HARI_LIBUR_NASIONAL = [
+    '2026-01-01','2026-01-16','2026-02-17','2026-03-20','2026-03-22','2026-04-03',
+    '2026-05-01','2026-05-14','2026-05-26','2026-06-01','2026-07-07','2026-07-27',
+    '2026-08-17','2026-10-05','2026-12-25'
+    // Cuti bersama tambahan (kalau ada) bisa ditambah manual di sini, format 'YYYY-MM-DD'
+  ];
+
+  function rcIsHariKerja(dateObj) {
+    const day = dateObj.getDay(); // 0=Minggu, 6=Sabtu
+    if (day === 0 || day === 6) return false;
+    const dateStr = dateObj.toISOString().split('T')[0];
+    if (HARI_LIBUR_NASIONAL.includes(dateStr)) return false;
+    return true;
+  }
+
+  // Hitung berapa hari kerja tersisa dari HARI INI sampai akhir bulan (termasuk hari ini kalau hari ini hari kerja)
+  function rcHitungHariKerjaTersisaBulanIni() {
+    const nowWib = new Date(Date.now() + 7*3600000);
+    const year = nowWib.getUTCFullYear(), month = nowWib.getUTCMonth();
+    const lastDay = new Date(Date.UTC(year, month+1, 0)).getUTCDate();
+    let count = 0;
+    for (let d = nowWib.getUTCDate(); d <= lastDay; d++) {
+      const check = new Date(Date.UTC(year, month, d));
+      if (rcIsHariKerja(check)) count++;
+    }
+    return count;
+  }
+
   const RC_HM_HOTEL_MAP = {
     'HM Verse Lite': 'Verse Lite Gajah Mada',
     'HM Verse Luxe': 'Verse Luxe Wahid Hasyim',
@@ -17407,6 +17474,48 @@ ROLE_TASKS["F&B Attendant Oak Tree"] = {
     document.getElementById('rc-progress-detail').textContent = detailText;
 
     rcRenderEHKDailyTarget();
+    rcRenderHMDailyTarget();
+  }
+
+  // ====== HM TARGET HARIAN DINAMIS — reminder saja, TIDAK blocking submit ======
+  // Target dihitung otomatis: (sisa kamar bulan ini) / (hari kerja tersisa, exclude Sabtu-Minggu-tanggal merah)
+  function rcRenderHMDailyTarget() {
+    const box = document.getElementById('rc-hm-target-alert');
+    if (!box) return;
+    if (rcUserRoleType !== 'HM') { box.style.display = 'none'; box.innerHTML = ''; return; }
+
+    const rooms = RC_ROOMS_BY_HOTEL[rcCurrentHotel] || [];
+    const total = rooms.length;
+    const checkedRooms = new Set(rcChecks.map(c => c.room_no));
+    const sisaKamar = Math.max(0, total - checkedRooms.size);
+
+    const todayStr = new Date(Date.now() + 7*3600000).toISOString().split('T')[0];
+    const todayCount = new Set(
+      rcChecks.filter(c => {
+        const d = c.checked_at ? new Date(new Date(c.checked_at).getTime()+7*3600000).toISOString().split('T')[0] : null;
+        return d === todayStr;
+      }).map(c => c.room_no)
+    ).size;
+
+    box.style.display = 'block';
+
+    if (sisaKamar === 0) {
+      box.innerHTML = '<div style="background:#dcfce7;border:1.5px solid #22c55e;border-radius:12px;padding:10px 14px;font-size:12px;font-weight:700;color:#15803d;">✅ Semua ' + total + ' kamar sudah dicek bulan ini — target tercapai!</div>';
+      return;
+    }
+
+    const hariKerjaTersisa = rcHitungHariKerjaTersisaBulanIni();
+    const targetHarian = hariKerjaTersisa > 0 ? Math.ceil(sisaKamar / hariKerjaTersisa) : sisaKamar;
+    const met = todayCount >= targetHarian;
+    const warna = met
+      ? { bg:'#dcfce7', border:'#22c55e', text:'#15803d', icon:'✅' }
+      : { bg:'#fff7ed', border:'#fb923c', text:'#9a3412', icon:'⏰' };
+
+    box.innerHTML =
+      '<div style="background:' + warna.bg + ';border:1.5px solid ' + warna.border + ';border-radius:12px;padding:10px 14px;font-size:12px;font-weight:700;color:' + warna.text + ';line-height:1.6;">' +
+      warna.icon + ' Hari ini: ' + todayCount + '/' + targetHarian + ' kamar tercapai' +
+      '<div style="font-weight:500;font-size:11px;margin-top:3px;opacity:0.85;">Sisa ' + sisaKamar + ' dari ' + total + ' kamar · ' + hariKerjaTersisa + ' hari kerja tersisa bulan ini (di luar Sabtu/Minggu/tanggal merah) → target ' + targetHarian + ' kamar/hari agar 100% tercapai akhir bulan</div>' +
+      '</div>';
   }
 
   // ====== EHK TARGET HARIAN (5 kamar/hari, reminder saja — tidak blocking) ======
