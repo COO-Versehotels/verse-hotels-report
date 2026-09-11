@@ -2939,7 +2939,7 @@
   // =============================================================
   // Update angka di bawah setiap kali deploy file baru yang penting.
   // Format: YYYY.MM.DD-NN (NN = increment harian)
-  const APP_VERSION = '2026.09.10-59';
+  const APP_VERSION = '2026.09.11-60';
   const APP_VERSION_KEY = 'verse_app_version';
 
   (function _checkAppVersion() {
@@ -3654,9 +3654,35 @@
     }
   }
 
-  // ============================================================
-  // MENU SISA (FBM Closing Breakfast Per Unit) — Radio + Dynamic List
-  // ============================================================
+  // Versi RINGKAS dari _formatKeterangan — khusus buat bagian "SUDAH DILAKUKAN"/"DALAM PROSES" di WA report.
+  // Beda dari _formatKeterangan: TIDAK tampilkan teks pertanyaan lengkap, cukup jawabannya saja.
+  // Kalau ada lebih dari 1 pertanyaan terisi, dikasih label [Q1]/[Q2] dst supaya tetap jelas mana jawaban yang mana.
+  function _formatKeteranganRingkas(keterangan) {
+    if (!keterangan || typeof keterangan !== 'string') return '';
+    if (keterangan.charAt(0) !== '{') return keterangan.trim();
+    if (keterangan.indexOf('"q1"') < 0 && keterangan.indexOf('"_alasan_tidak"') < 0 && keterangan.indexOf('"menu_sisa_status"') < 0) return keterangan.trim();
+    try {
+      const data = JSON.parse(keterangan);
+      const answers = [];
+      for (let i = 1; i <= 6; i++) {
+        const v = data['q' + i];
+        if (v && typeof v === 'string' && v.trim()) answers.push(v.trim());
+      }
+      if (typeof data.menu_sisa_status === 'string' && data.menu_sisa_status) {
+        let ms = 'Menu sisa: ' + data.menu_sisa_status;
+        if (data.menu_sisa_status === 'Ada' && Array.isArray(data.menu_sisa_list) && data.menu_sisa_list.length > 0) {
+          ms += ' (' + data.menu_sisa_list.map(m => (m && m.nama ? m.nama : '-') + ' ' + (m && m.gram ? m.gram : '-') + 'g').join(', ') + ')';
+        }
+        answers.push(ms);
+      }
+      if (answers.length === 0) return '';
+      if (answers.length === 1) return answers[0];
+      return answers.map((a, idx) => '[Q' + (idx+1) + '] ' + a).join('\n');
+    } catch(e) {
+      return keterangan.trim();
+    }
+  }
+
   function onMenuSisaChange(event, taskId, value) {
     if (event) event.stopPropagation();
     const item = document.getElementById(taskId);
@@ -7087,9 +7113,13 @@
       if (!taskName) return;
 
       if (status === 'done') {
-        doneList += `\n  ${doneIdx++}. ${taskName}`;
+        const doneKet = _formatKeteranganRingkas(_getTaskKeterangan(item));
+        const doneKomentar = doneKet ? `\n     💬 ${doneKet}` : `\n     (tidak ada catatan)`;
+        doneList += `\n  ${doneIdx++}. ${taskName}${doneKomentar}`;
       } else if (status === 'progress') {
-        progressList += `\n  ${progressIdx++}. ${taskName}`;
+        const progKet = _formatKeteranganRingkas(_getTaskKeterangan(item));
+        const progKomentar = progKet ? `\n     💬 ${progKet}` : `\n     (tidak ada catatan)`;
+        progressList += `\n  ${progressIdx++}. ${taskName}${progKomentar}`;
       } else if (status === 'not') {
         const rawKet = _getTaskKeterangan(item);
         const ketDisplay = _formatKeterangan(rawKet, item);
@@ -7173,7 +7203,8 @@
             todayRoomNos.forEach(rn => {
               const r = latestTodayByRoom[rn];
               const icon = r.cleanliness === 'Baik' ? '✅' : (r.cleanliness === 'Sedang' ? '⚠️' : '❌');
-              msg += `\n  ${icon} ${rn} — ${r.cleanliness}`;
+              const statusTag = r.room_status ? ` [${r.room_status}]` : '';
+              msg += `\n  ${icon} ${rn}${statusTag} — ${r.cleanliness}`;
               if (r.cleanliness !== 'Baik' && r.followup_notes) {
                 msg += `: ${r.followup_notes}`;
               }
@@ -7192,7 +7223,8 @@
             stillProblem.forEach(rn => {
               const r = latestOverallByRoom[rn];
               const icon = r.cleanliness === 'Buruk' ? '❌' : '⚠️';
-              msg += `\n  ${icon} ${rn} — ${r.cleanliness}${r.followup_notes ? ': ' + r.followup_notes : ''}`;
+              const statusTag = r.room_status ? ` [${r.room_status}]` : '';
+              msg += `\n  ${icon} ${rn}${statusTag} — ${r.cleanliness}${r.followup_notes ? ': ' + r.followup_notes : ''}`;
             });
             msg += `\n`;
           }
@@ -7230,7 +7262,13 @@
           const taskTextEl = item.querySelector('.task-text');
           const cat = item.closest('.task-category');
           const hdr = cat ? cat.querySelector('.task-cat-title') : null;
-          const name = taskTextEl ? taskTextEl.textContent.trim().substring(0,50) : (hdr ? hdr.textContent.trim() : 'Task');
+          const fullName = taskTextEl ? taskTextEl.textContent.trim() : (hdr ? hdr.textContent.trim() : 'Task');
+          let name = fullName;
+          if (fullName.length > 50) {
+            const cut = fullName.substring(0, 50);
+            const lastSpace = cut.lastIndexOf(' ');
+            name = (lastSpace > 20 ? cut.substring(0, lastSpace) : cut) + '...';
+          }
           const rawKet = _getTaskKeterangan(item);
           const ket = rawKet ? _formatKeterangan(rawKet, item) : '-';
           const icon = s === 'progress' ? '⏳' : '❌';
@@ -7275,12 +7313,9 @@
     msg += `\n━━━━━━━━━━━━━━━━━━━━━━`;
     msg += `\n_Dikirim via Verse Hotels Report App_`;
 
-    // Routing WA per role
-    const waUrl = isFBRole
-      ? 'https://chat.whatsapp.com/IWIR8JM2Mo34gCmJLJy5s5'
-      : (currentRole && currentRole.startsWith('HM ')
-        ? 'https://chat.whatsapp.com/IWIR8JM2Mo34gCmJLJy5s5'
-        : 'https://chat.whatsapp.com/LWd1d8MrSpUC59Rea9lRT0');
+    // Routing WA — semua role sekarang gabung jadi 1 grup yang sama
+    // (dulu CRA/EHK/Ops HR/HR Corp/CE Corporate pakai grup terpisah, sekarang digabung dengan HM & FBM)
+    const waUrl = 'https://chat.whatsapp.com/IWIR8JM2Mo34gCmJLJy5s5';
 
     const doOpenWA = () => {
       // Tampilkan modal dengan teks pesan + tombol copy
