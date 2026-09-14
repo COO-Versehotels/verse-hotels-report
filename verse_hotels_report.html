@@ -2939,7 +2939,7 @@
   // =============================================================
   // Update angka di bawah setiap kali deploy file baru yang penting.
   // Format: YYYY.MM.DD-NN (NN = increment harian)
-  const APP_VERSION = '2026.09.14-62';
+  const APP_VERSION = '2026.09.14-63';
   const APP_VERSION_KEY = 'verse_app_version';
 
   (function _checkAppVersion() {
@@ -7174,6 +7174,24 @@
     msg += '📊 *Progress:* ' + pct + '\n';
     msg += '📎 *Lampiran:* ' + files + '\n';
 
+    // Link dokumentasi — DITARUH DI SINI (dekat awal pesan), BUKAN di paling bawah setelah
+    // semua isi task + planning yang panjang. Percobaan sebelumnya menunjukkan link yang sama
+    // persis berhasil ke-linkify WhatsApp kalau posisinya dekat awal pesan, tapi GAGAL kalau
+    // posisinya jauh di ujung pesan yang sangat panjang (WhatsApp sepertinya berhenti memindai
+    // link setelah jarak tertentu dalam 1 pesan).
+    const today2 = new Date(Date.now() + 7*3600000).toISOString().split('T')[0];
+    let docLink = `https://verse-hotels-report.vercel.app/`; // fallback kalau simpan kode gagal
+    try {
+      const kodePendek = Math.random().toString(36).substring(2, 8);
+      const { error: linkErr } = await supa.from('wa_report_links').insert({
+        kode: kodePendek, role: role, hotel: hotel, tanggal: today2
+      });
+      if (!linkErr) {
+        docLink = `https://verse-hotels-report.vercel.app/?r=${kodePendek}`;
+      }
+    } catch(e) { console.error('Gagal buat link pendek:', e); }
+    msg += `📸 *Dokumentasi:* ${docLink}\n`;
+
     // Tampilkan alasan "tidak bisa check 5 kamar" kalau HM submit hari ini pakai alasan override
     if (role && role.startsWith('HM ')) {
       try {
@@ -7320,23 +7338,6 @@
     }
 
     if (planText) msg += `\n📝 *Planning for Tomorrow:*\n${planText}\n`;
-
-    // Link dokumentasi foto — pakai kode pendek acak (short link), BUKAN nama role/hotel/tanggal
-    // langsung di URL. Sebelumnya URL panjang (dengan hyphen + tanggal mentah di akhir) gagal
-    // dikenali utuh oleh WhatsApp linkify. Kode pendek disimpan permanen di database (ukurannya
-    // kecil sekali, tidak pernah dihapus, jadi link laporan lama tetap bisa diklik selamanya).
-    const today2 = new Date(Date.now() + 7*3600000).toISOString().split('T')[0];
-    let docLink = `https://verse-hotels-report.vercel.app/`; // fallback kalau simpan kode gagal
-    try {
-      const kodePendek = Math.random().toString(36).substring(2, 8); // 6 karakter acak
-      const { error: linkErr } = await supa.from('wa_report_links').insert({
-        kode: kodePendek, role: role, hotel: hotel, tanggal: today2
-      });
-      if (!linkErr) {
-        docLink = `https://verse-hotels-report.vercel.app/?r=${kodePendek}`;
-      }
-    } catch(e) { console.error('Gagal buat link pendek:', e); }
-    msg += `\n📸 *Dokumentasi:* ${docLink}`;
 
     msg += `\n━━━━━━━━━━━━━━━━━━━━━━`;
     msg += `\n_Dikirim via Verse Hotels Report App_`;
