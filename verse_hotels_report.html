@@ -2939,7 +2939,7 @@
   // =============================================================
   // Update angka di bawah setiap kali deploy file baru yang penting.
   // Format: YYYY.MM.DD-NN (NN = increment harian)
-  const APP_VERSION = '2026.09.11-60';
+  const APP_VERSION = '2026.09.14-61';
   const APP_VERSION_KEY = 'verse_app_version';
 
   (function _checkAppVersion() {
@@ -3655,29 +3655,47 @@
   }
 
   // Versi RINGKAS dari _formatKeterangan — khusus buat bagian "SUDAH DILAKUKAN"/"DALAM PROSES" di WA report.
-  // Beda dari _formatKeterangan: TIDAK tampilkan teks pertanyaan lengkap, cukup jawabannya saja.
-  // Kalau ada lebih dari 1 pertanyaan terisi, dikasih label [Q1]/[Q2] dst supaya tetap jelas mana jawaban yang mana.
-  function _formatKeteranganRingkas(keterangan) {
+  // Beda dari _formatKeterangan: format "Label: jawaban" per baris (bukan "Label\n→ jawaban"),
+  // TAPI tetap pakai LABEL ASLI dari form (bukan [Q1]/[Q2] generik yang tidak jelas maksudnya).
+  // Label diambil dinamis dari DOM (sama mekanisme dgn _formatKeterangan) — otomatis benar
+  // untuk SEMUA role/task tanpa perlu di-hardcode satu-satu, dan tidak berisiko salah reka.
+  function _formatKeteranganRingkas(keterangan, item) {
     if (!keterangan || typeof keterangan !== 'string') return '';
     if (keterangan.charAt(0) !== '{') return keterangan.trim();
     if (keterangan.indexOf('"q1"') < 0 && keterangan.indexOf('"_alasan_tidak"') < 0 && keterangan.indexOf('"menu_sisa_status"') < 0) return keterangan.trim();
     try {
       const data = JSON.parse(keterangan);
+      // Ambil label ASLI dari DOM (kalau item tersedia) — sama seperti _formatKeterangan
+      const labels = {};
+      if (item) {
+        for (let i = 1; i <= 6; i++) {
+          const el = item.querySelector('.task-q' + i);
+          if (el && el.parentElement) {
+            const labelEl = el.parentElement.querySelector('label');
+            if (labelEl) {
+              // Buang nomor urut depan ("1. ") dan tanda tanya di akhir, biar ringkas jadi "Label: jawaban"
+              labels['q' + i] = labelEl.textContent.trim().replace(/^\d+\.\s*/, '').replace(/\?+$/, '');
+            }
+          }
+        }
+      }
       const answers = [];
       for (let i = 1; i <= 6; i++) {
         const v = data['q' + i];
-        if (v && typeof v === 'string' && v.trim()) answers.push(v.trim());
+        if (v && typeof v === 'string' && v.trim()) {
+          const label = labels['q' + i];
+          answers.push(label ? (label + ': ' + v.trim()) : v.trim());
+        }
       }
       if (typeof data.menu_sisa_status === 'string' && data.menu_sisa_status) {
-        let ms = 'Menu sisa: ' + data.menu_sisa_status;
+        let ms = 'Menu Sisa: ' + data.menu_sisa_status;
         if (data.menu_sisa_status === 'Ada' && Array.isArray(data.menu_sisa_list) && data.menu_sisa_list.length > 0) {
           ms += ' (' + data.menu_sisa_list.map(m => (m && m.nama ? m.nama : '-') + ' ' + (m && m.gram ? m.gram : '-') + 'g').join(', ') + ')';
         }
         answers.push(ms);
       }
       if (answers.length === 0) return '';
-      if (answers.length === 1) return answers[0];
-      return answers.map((a, idx) => '[Q' + (idx+1) + '] ' + a).join('\n');
+      return answers.join('\n     💬 ');
     } catch(e) {
       return keterangan.trim();
     }
@@ -7113,11 +7131,11 @@
       if (!taskName) return;
 
       if (status === 'done') {
-        const doneKet = _formatKeteranganRingkas(_getTaskKeterangan(item));
+        const doneKet = _formatKeteranganRingkas(_getTaskKeterangan(item), item);
         const doneKomentar = doneKet ? `\n     💬 ${doneKet}` : `\n     (tidak ada catatan)`;
         doneList += `\n  ${doneIdx++}. ${taskName}${doneKomentar}`;
       } else if (status === 'progress') {
-        const progKet = _formatKeteranganRingkas(_getTaskKeterangan(item));
+        const progKet = _formatKeteranganRingkas(_getTaskKeterangan(item), item);
         const progKomentar = progKet ? `\n     💬 ${progKet}` : `\n     (tidak ada catatan)`;
         progressList += `\n  ${progressIdx++}. ${taskName}${progKomentar}`;
       } else if (status === 'not') {
@@ -7305,9 +7323,11 @@
 
     // Link dokumentasi foto
     const today2 = new Date(Date.now() + 7*3600000).toISOString().split('T')[0];
-    // Pakai "-" pengganti spasi (bukan %20) supaya WhatsApp lebih konsisten mendeteksi link ini sebagai bisa diklik —
-    // link dengan banyak %20 kadang gagal ke-linkify penuh oleh WhatsApp, khususnya untuk nama role/hotel yang panjang.
-    const docLink = `https://verse-hotels-report.vercel.app/?view=detail&role=${encodeURIComponent(role.replace(/ /g, '-'))}&hotel=${encodeURIComponent(hotel.replace(/ /g, '-'))}&tanggal=${today2}`;
+    // PENTING: pakai SATU parameter (bukan beberapa dipisah "&") — WhatsApp kadang gagal
+    // mendeteksi link penuh kalau ada beberapa "&" berturut-turut (linkify cuma nangkap
+    // sebagian, biasanya cuma bagian akhir link). Format: ?d=role/hotel/tanggal, dipisah "/"
+    // yang aman (tidak perlu encode, tidak ada "&" sama sekali di seluruh URL).
+    const docLink = `https://verse-hotels-report.vercel.app/?d=${encodeURIComponent(role.replace(/ /g, '-'))}/${encodeURIComponent(hotel.replace(/ /g, '-'))}/${today2}`;
     msg += `\n📸 *Dokumentasi:* ${docLink}`;
 
     msg += `\n━━━━━━━━━━━━━━━━━━━━━━`;
@@ -16903,18 +16923,32 @@ ROLE_TASKS["F&B Attendant Oak Tree"] = {
   // Cek URL parameter saat load
   document.addEventListener('DOMContentLoaded', function checkPublicView() {
     const params = new URLSearchParams(window.location.search);
-    const view = params.get('view');
-    if (view === 'detail') {
-      // "-" di role/hotel adalah pengganti spasi (lihat catatan di docLink) — balikin jadi spasi lagi.
-      // Kalau link lama (masih pakai %20 asli / spasi asli), ini tidak berpengaruh karena tidak ada "-".
-      const role = params.get('role') ? params.get('role').replace(/-/g, ' ') : null;
-      const hotel = params.get('hotel') ? params.get('hotel').replace(/-/g, ' ') : null;
-      const tanggal = params.get('tanggal');
-      if (role && hotel && tanggal) {
-        // Sembunyikan semua screen utama
-        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-        loadPublicDetail(role, hotel, tanggal);
+    let role = null, hotel = null, tanggal = null;
+
+    // Format BARU (satu parameter "d", dipisah "/") — dipakai sejak link WA diperbaiki
+    // supaya selalu terdeteksi utuh oleh WhatsApp (tidak ada "&" berulang di URL).
+    const d = params.get('d');
+    if (d) {
+      const parts = d.split('/');
+      if (parts.length === 3) {
+        role = decodeURIComponent(parts[0]).replace(/-/g, ' ');
+        hotel = decodeURIComponent(parts[1]).replace(/-/g, ' ');
+        tanggal = parts[2];
       }
+    }
+
+    // Format LAMA (view=detail&role=...&hotel=...&tanggal=...) — tetap didukung supaya
+    // link yang sudah terlanjur ter-share sebelum perbaikan ini tidak rusak.
+    if (!role && params.get('view') === 'detail') {
+      role = params.get('role') ? params.get('role').replace(/-/g, ' ') : null;
+      hotel = params.get('hotel') ? params.get('hotel').replace(/-/g, ' ') : null;
+      tanggal = params.get('tanggal');
+    }
+
+    if (role && hotel && tanggal) {
+      // Sembunyikan semua screen utama
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      loadPublicDetail(role, hotel, tanggal);
     }
   });
 
