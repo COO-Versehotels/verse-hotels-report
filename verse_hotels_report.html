@@ -2939,7 +2939,7 @@
   // =============================================================
   // Update angka di bawah setiap kali deploy file baru yang penting.
   // Format: YYYY.MM.DD-NN (NN = increment harian)
-  const APP_VERSION = '2026.09.14-61';
+  const APP_VERSION = '2026.09.14-62';
   const APP_VERSION_KEY = 'verse_app_version';
 
   (function _checkAppVersion() {
@@ -7321,13 +7321,21 @@
 
     if (planText) msg += `\n📝 *Planning for Tomorrow:*\n${planText}\n`;
 
-    // Link dokumentasi foto
+    // Link dokumentasi foto — pakai kode pendek acak (short link), BUKAN nama role/hotel/tanggal
+    // langsung di URL. Sebelumnya URL panjang (dengan hyphen + tanggal mentah di akhir) gagal
+    // dikenali utuh oleh WhatsApp linkify. Kode pendek disimpan permanen di database (ukurannya
+    // kecil sekali, tidak pernah dihapus, jadi link laporan lama tetap bisa diklik selamanya).
     const today2 = new Date(Date.now() + 7*3600000).toISOString().split('T')[0];
-    // PENTING: pakai SATU parameter (bukan beberapa dipisah "&") — WhatsApp kadang gagal
-    // mendeteksi link penuh kalau ada beberapa "&" berturut-turut (linkify cuma nangkap
-    // sebagian, biasanya cuma bagian akhir link). Format: ?d=role/hotel/tanggal, dipisah "/"
-    // yang aman (tidak perlu encode, tidak ada "&" sama sekali di seluruh URL).
-    const docLink = `https://verse-hotels-report.vercel.app/?d=${encodeURIComponent(role.replace(/ /g, '-'))}/${encodeURIComponent(hotel.replace(/ /g, '-'))}/${today2}`;
+    let docLink = `https://verse-hotels-report.vercel.app/`; // fallback kalau simpan kode gagal
+    try {
+      const kodePendek = Math.random().toString(36).substring(2, 8); // 6 karakter acak
+      const { error: linkErr } = await supa.from('wa_report_links').insert({
+        kode: kodePendek, role: role, hotel: hotel, tanggal: today2
+      });
+      if (!linkErr) {
+        docLink = `https://verse-hotels-report.vercel.app/?r=${kodePendek}`;
+      }
+    } catch(e) { console.error('Gagal buat link pendek:', e); }
     msg += `\n📸 *Dokumentasi:* ${docLink}`;
 
     msg += `\n━━━━━━━━━━━━━━━━━━━━━━`;
@@ -16921,23 +16929,41 @@ ROLE_TASKS["F&B Attendant Oak Tree"] = {
 
 
   // Cek URL parameter saat load
-  document.addEventListener('DOMContentLoaded', function checkPublicView() {
+  document.addEventListener('DOMContentLoaded', async function checkPublicView() {
     const params = new URLSearchParams(window.location.search);
     let role = null, hotel = null, tanggal = null;
 
-    // Format BARU (satu parameter "d", dipisah "/") — dipakai sejak link WA diperbaiki
-    // supaya selalu terdeteksi utuh oleh WhatsApp (tidak ada "&" berulang di URL).
-    const d = params.get('d');
-    if (d) {
-      const parts = d.split('/');
-      if (parts.length === 3) {
-        role = decodeURIComponent(parts[0]).replace(/-/g, ' ');
-        hotel = decodeURIComponent(parts[1]).replace(/-/g, ' ');
-        tanggal = parts[2];
+    // Format TERBARU (kode pendek acak, "?r=xxxxxx") — dicek ke database untuk tahu
+    // laporan siapa. Ini yang dipakai sekarang supaya link WA selalu pendek & selalu
+    // terdeteksi utuh oleh WhatsApp (link panjang sebelumnya, meski sudah dirapikan
+    // formatnya, tetap gagal ke-linkify penuh — kemungkinan besar karena WhatsApp
+    // mendeteksi tanggal YYYY-MM-DD di ujung URL sebagai entitas terpisah).
+    const kodePendek = params.get('r');
+    if (kodePendek) {
+      try {
+        const { data } = await supa.from('wa_report_links').select('role,hotel,tanggal').eq('kode', kodePendek).maybeSingle();
+        if (data) {
+          role = data.role;
+          hotel = data.hotel;
+          tanggal = data.tanggal;
+        }
+      } catch(e) { console.error('Gagal baca kode link pendek:', e); }
+    }
+
+    // Format LAMA #2 (satu parameter "d", dipisah "/") — sempat dipakai sebentar sebelum short-link
+    if (!role) {
+      const d = params.get('d');
+      if (d) {
+        const parts = d.split('/');
+        if (parts.length === 3) {
+          role = decodeURIComponent(parts[0]).replace(/-/g, ' ');
+          hotel = decodeURIComponent(parts[1]).replace(/-/g, ' ');
+          tanggal = parts[2];
+        }
       }
     }
 
-    // Format LAMA (view=detail&role=...&hotel=...&tanggal=...) — tetap didukung supaya
+    // Format LAMA #1 (view=detail&role=...&hotel=...&tanggal=...) — tetap didukung supaya
     // link yang sudah terlanjur ter-share sebelum perbaikan ini tidak rusak.
     if (!role && params.get('view') === 'detail') {
       role = params.get('role') ? params.get('role').replace(/-/g, ' ') : null;
