@@ -3494,9 +3494,33 @@
   // ============================================================
   // Format keterangan untuk display di Dashboard/Link (tanpa akses DOM item).
   // Parse JSON dan render multi-line readable. taskNameMap & taskId opsional.
+  // Format tampilan untuk laporan HOD — key JSON-nya adalah teks pertanyaan
+  // asli (bukan q1..q6 seperti role lain), jadi tinggal ditampilkan langsung
+  // sebagai "Pertanyaan\n→ Jawaban" per baris.
+  function _formatHodKeteranganForDisplay(keterangan) {
+    try {
+      const data = JSON.parse(keterangan);
+      if (typeof data._alasan_tidak === 'string') {
+        return '⚠️ Tidak Dikerjakan\n→ ' + data._alasan_tidak;
+      }
+      const parts = [];
+      Object.keys(data).forEach(key => {
+        if (key.startsWith('_')) return;
+        const v = data[key];
+        if (v !== undefined && v !== null && String(v).trim()) {
+          parts.push(key + '\n→ ' + String(v).trim());
+        }
+      });
+      return parts.length > 0 ? parts.join('\n\n') : keterangan;
+    } catch(e) {
+      return keterangan;
+    }
+  }
+
   function _formatKeteranganForDisplay(keterangan, taskNameMap, taskId) {
     if (!keterangan || typeof keterangan !== 'string') return keterangan || '';
-    if (keterangan.charAt(0) !== '{' || keterangan.indexOf('"q1"') < 0) return keterangan;
+    if (keterangan.charAt(0) !== '{') return keterangan;
+    if (keterangan.indexOf('"q1"') < 0) return _formatHodKeteranganForDisplay(keterangan);
     try {
       const data = JSON.parse(keterangan);
       // Coba ambil label pertanyaan dari ROLE_TASKS template kalau ada
@@ -3668,8 +3692,11 @@
   function _formatKeterangan(keterangan, item) {
     if (!keterangan || typeof keterangan !== 'string') return keterangan || '';
     if (keterangan.charAt(0) !== '{') return keterangan;
-    // Skip kalau tidak ada q1 atau _alasan_tidak (bukan JSON terstruktur)
-    if (keterangan.indexOf('"q1"') < 0 && keterangan.indexOf('"_alasan_tidak"') < 0) return keterangan;
+    // Skip kalau tidak ada q1 atau _alasan_tidak (bukan JSON terstruktur) —
+    // KECUALI format HOD (key-value biasa berbasis teks pertanyaan asli).
+    if (keterangan.indexOf('"q1"') < 0 && keterangan.indexOf('"_alasan_tidak"') < 0) {
+      return _formatHodKeteranganForDisplay(keterangan);
+    }
     try {
       const data = JSON.parse(keterangan);
       // Kalau ada _alasan_tidak (status='not'), prioritize tampilkan sebagai alasan
@@ -3719,10 +3746,31 @@
   // TAPI tetap pakai LABEL ASLI dari form (bukan [Q1]/[Q2] generik yang tidak jelas maksudnya).
   // Label diambil dinamis dari DOM (sama mekanisme dgn _formatKeterangan) — otomatis benar
   // untuk SEMUA role/task tanpa perlu di-hardcode satu-satu, dan tidak berisiko salah reka.
+  // Versi ringkas untuk WA recap HOD — semua field ditampilkan (sesuai
+  // keputusan Pak Ian: sama detailnya seperti role lain), digabung per baris
+  // "Label: jawaban" seperti pola existing.
+  function _formatHodKeteranganRingkas(keterangan) {
+    try {
+      const data = JSON.parse(keterangan);
+      const answers = [];
+      Object.keys(data).forEach(key => {
+        if (key.startsWith('_')) return;
+        const v = data[key];
+        if (v !== undefined && v !== null && String(v).trim()) {
+          const label = key.replace(/\?+$/, '').replace(/:\s*$/, '');
+          answers.push(label + ': ' + String(v).trim());
+        }
+      });
+      return answers.length ? answers.join('\n     💬 ') : '';
+    } catch(e) { return ''; }
+  }
+
   function _formatKeteranganRingkas(keterangan, item) {
     if (!keterangan || typeof keterangan !== 'string') return '';
     if (keterangan.charAt(0) !== '{') return keterangan.trim();
-    if (keterangan.indexOf('"q1"') < 0 && keterangan.indexOf('"_alasan_tidak"') < 0 && keterangan.indexOf('"menu_sisa_status"') < 0) return keterangan.trim();
+    if (keterangan.indexOf('"q1"') < 0 && keterangan.indexOf('"_alasan_tidak"') < 0 && keterangan.indexOf('"menu_sisa_status"') < 0) {
+      return _formatHodKeteranganRingkas(keterangan);
+    }
     try {
       const data = JSON.parse(keterangan);
       // Ambil label ASLI dari DOM (kalau item tersedia) — sama seperti _formatKeterangan
@@ -22423,6 +22471,11 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
       {name:'HM Verse Luxe', icon:'🏨'},
       {name:'HM Verse Cirebon', icon:'🏨'},
       {name:'HM Oak Tree', icon:'🏨'},
+      // HOD (Head of Department) — 12 kombinasi, icon sesuai divisi
+      ...Object.keys(HOD_HOTEL_MAP).map(name => ({
+        name,
+        icon: name.startsWith('Housekeeping') ? '🧹' : name.startsWith('Engineering') ? '🔧' : '🛎️'
+      })),
     ];
 
     // Hitung statistik dari laporan yang masuk
@@ -22494,10 +22547,13 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
       const hotelShort = hotel.replace('Verse ','').replace(' Gajah Mada','').replace(' Wahid Hasyim','');
       let roleRowsHtml = '';
       roles.forEach(role => {
+        const isHM = role.name.startsWith('HM ');
+        const isHOD = HOD_HOTEL_MAP[role.name] !== undefined;
         // Corporate roles tidak tampil di section hotel unit — mereka punya section sendiri
-        if (!role.name.startsWith('HM ')) return;
-        // HM hanya tampil di hotelnya sendiri
-        if (role.name.startsWith('HM ') && hmHotelMap[role.name] !== hotel) return;
+        if (!isHM && !isHOD) return;
+        // HM/HOD hanya tampil di hotelnya sendiri
+        const roleHotel = isHM ? hmHotelMap[role.name] : HOD_HOTEL_MAP[role.name];
+        if (roleHotel !== hotel) return;
         const report = submittedReports.find(r => r.hotel === hotel && r.role === role.name);
         if (report) {
           const barColor = report.pct === 100 ? 'var(--green)' : report.pct >= 70 ? 'var(--navy)' : 'var(--amber)';
@@ -22536,7 +22592,7 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
         <div class="hotel-report-card">
           <div class="hotel-report-header">
             <h3>🏨 ${hotel}</h3>
-            <span>${submittedReports.filter(r=>r.hotel===hotel && r.role.startsWith('HM ')).length}/1 submit</span>
+            <span>${submittedReports.filter(r=>r.hotel===hotel && (r.role.startsWith('HM ') || HOD_HOTEL_MAP[r.role]===hotel)).length}/4 submit</span>
           </div>
           ${roleRowsHtml}
         </div>`;
@@ -25999,6 +26055,11 @@ function hodSetStatus(e, taskId, status) {
 
   item.dataset.status = status;
 
+  // Rekam titik lokasi HP (sama seperti role lain — dipakai COO untuk
+  // history tracking pergerakan staff). Function ini sudah ada & global,
+  // gagal diam-diam kalau lokasi ditolak/tidak tersedia.
+  logTaskLocation(taskId, status);
+
   const origNum = num.dataset.origNum || num.textContent;
   if (!num.dataset.origNum) num.dataset.origNum = origNum;
 
@@ -26172,8 +26233,8 @@ function hodValidateAll(containerSelector) {
   return errors;
 }
 
-// Bangun teks rekap WA — Daily Inventory DULU, baru Tasklist di bawahnya,
-// sesuai keputusan Pak Ian (berlaku juga di halaman detail Report Link).
+// Bangun teks rekap WA — detail lengkap per tugas (sama seperti role lain),
+// Daily Inventory DULU, baru Tasklist di bawahnya, sesuai keputusan Pak Ian.
 function hodBuildWaRecap(role, hotel, containerSelector) {
   const today = new Date(Date.now() + 7*3600000);
   const dateStr = today.toLocaleDateString('id-ID', { day:'2-digit', month:'long', year:'numeric' });
@@ -26185,16 +26246,51 @@ function hodBuildWaRecap(role, hotel, containerSelector) {
   msg += `📅 *Tanggal:* ${dateStr}\n`;
   msg += `🕐 *Jam Kirim:* ${jam}\n`;
 
+  let totalDone = 0, totalAll = 0, totalFiles = 0;
+
+  // Loop tiap kategori sesuai urutan DOM — generator HTML sudah menaruh
+  // Daily Inventory SEBELUM Tasklist Harian, jadi urutan ini otomatis benar
+  // tanpa perlu logic tambahan di sini.
   const cats = document.querySelectorAll(containerSelector + ' .task-category');
-  let totalDone = 0, totalAll = 0;
   cats.forEach(cat => {
-    cat.querySelectorAll('.hod-task-item').forEach(it => {
+    const catTitleEl = cat.querySelector('.task-cat-title');
+    const catTitle = catTitleEl ? catTitleEl.textContent.trim() : '';
+    const isInventory = /inventory/i.test(catTitle);
+    let sectionLines = '';
+    let idx = 1;
+
+    cat.querySelectorAll('.hod-task-item').forEach(item => {
+      const taskId = item.id;
+      const status = item.dataset.status;
+      if (!status) return;
       totalAll++;
-      if (it.dataset.status === 'done') totalDone++;
+      const nameEl = item.querySelector('.task-text');
+      const taskName = nameEl ? nameEl.textContent.trim() : taskId;
+      const required = parseInt(item.dataset.requiredPhotos || '0', 10);
+      for (let i = 0; i < required; i++) {
+        const slotId = taskId + '__p' + i;
+        if (taskFileUrls[slotId]) totalFiles += taskFileUrls[slotId].length;
+      }
+
+      if (status === 'done') {
+        totalDone++;
+        const answers = hodCollectAnswers(taskId);
+        const ket = _formatHodKeteranganRingkas(JSON.stringify(answers));
+        sectionLines += `\n  ${idx++}. ✅ ${taskName}${ket ? `\n     💬 ${ket}` : ''}`;
+      } else {
+        const reason = hodGetReason(taskId);
+        sectionLines += `\n  ${idx++}. ❌ ${taskName}${reason ? `\n     💬 ${reason}` : ''}`;
+      }
     });
+
+    if (sectionLines) {
+      msg += `\n${isInventory ? '📦 *DAILY INVENTORY*' : '📋 *TASKLIST HARIAN*'}${sectionLines}\n`;
+    }
   });
+
   const pct = totalAll > 0 ? Math.round((totalDone/totalAll)*100) : 0;
-  msg += `📊 *Progress:* ${totalDone}/${totalAll} (${pct}%)\n`;
+  msg += `\n📊 *Progress:* ${totalDone}/${totalAll} (${pct}%)\n`;
+  msg += `📎 *Lampiran:* ${totalFiles} file\n`;
 
   return { msg, totalDone, totalAll, pct };
 }
