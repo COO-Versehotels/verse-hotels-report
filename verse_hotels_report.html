@@ -2999,7 +2999,7 @@
   // =============================================================
   // Update angka di bawah setiap kali deploy file baru yang penting.
   // Format: YYYY.MM.DD-NN (NN = increment harian)
-  const APP_VERSION = '2026.09.22-03';
+  const APP_VERSION = '2026.09.22-04';
   const APP_VERSION_KEY = 'verse_app_version';
 
   (function _checkAppVersion() {
@@ -7024,6 +7024,18 @@ function hodHasUploadForTask(item) {
 
       // Validasi alasan TIDAK DIKERJAKAN — wajib min 10 chars
       if (status === 'not') {
+        // HOD: cek langsung .hod-reason — selector generik di bawah salah
+        // ambil field jawaban kosong duluan (field & kotak alasan sama-sama
+        // punya class .task-note, field-nya muncul lebih dulu di HTML).
+        if (item.classList.contains('hod-task-item')) {
+          const hodReasonTa = item.querySelector('.hod-reason');
+          const reason = hodReasonTa ? hodReasonTa.value.trim() : '';
+          if (reason.length < 10) {
+            const need = 10 - reason.length;
+            requiredItems.push('• No.' + taskNum + ' — <b>' + taskName + '</b> <i>(alasan tidak dikerjakan kurang ' + need + ' karakter, min 10)</i>');
+          }
+          return;
+        }
         const reasonTa = item.querySelector('.task-not-reason');
         if (reasonTa) {
           // Task dengan Q1-Q5: pakai task-not-reason
