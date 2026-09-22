@@ -2999,7 +2999,7 @@
   // =============================================================
   // Update angka di bawah setiap kali deploy file baru yang penting.
   // Format: YYYY.MM.DD-NN (NN = increment harian)
-  const APP_VERSION = '2026.09.21-01';
+  const APP_VERSION = '2026.09.21-04';
   const APP_VERSION_KEY = 'verse_app_version';
 
   (function _checkAppVersion() {
@@ -4070,6 +4070,12 @@
 
   // Load draft dari Supabase saat masuk tasklist
   async function loadDraft(role, hotel) {
+    // HOD (Head of Department) pakai struktur draft berbeda (multi-slot foto,
+    // field key-value) — logic lama di bawah ini TIDAK cocok untuknya, jadi
+    // dialihkan ke hodLoadDraft() yang terpisah. Role lain tidak terpengaruh.
+    if (HOD_ROLE_SET.has(role)) {
+      return hodLoadDraft(role, hotel);
+    }
     if (!role || !hotel) {
       console.log('loadDraft skipped - role:', role, 'hotel:', hotel);
       return;
@@ -5505,7 +5511,7 @@
       document.getElementById('profile-role-name').textContent = getDisplayRole(currentRole);
       // Update badge
       const badge = document.getElementById('home-role-badge');
-      if (badge) badge.textContent = currentRole.startsWith('HM ') ? 'UNIT HEAD' : 'CORPORATE';
+      if (badge) badge.textContent = currentRole.startsWith('HM ') ? 'UNIT HEAD' : (HOD_HOTEL_MAP[currentRole] ? 'HEAD OF DEPARTMENT' : 'CORPORATE');
       tasklistRendered = false;
       lastRenderedRole = '';
       Object.keys(taskFiles).forEach(k => delete taskFiles[k]);
@@ -5521,7 +5527,7 @@
     }
 
     currentRole = role;
-    loginScreenContext = ['F&B Manager','Team Kitchen','F&B Attendant'].includes(role) ? 'login-fb' : (role.startsWith('HM ') ? 'splash' : 'login');
+    loginScreenContext = ['F&B Manager','Team Kitchen','F&B Attendant'].includes(role) ? 'login-fb' : ((role.startsWith('HM ') || HOD_HOTEL_MAP[role]) ? 'splash' : 'login');
     pin = '';
     updatePinDots();
     // Update PIN screen header
@@ -6141,7 +6147,7 @@
       'HM Oak Tree': 'Oak Tree Mahakam Blok M',
     };
     const CORPORATE_ROLES = ['Ops HR Manager','HR Officer','Chief Engineering Corporate','EHK Corporate','CRA Corporate','F&B Manager','Team Kitchen','F&B Attendant','COO'];
-    currentHotel = hmHotels[role] || (CORPORATE_ROLES.includes(role) ? 'Corporate' : '');
+    currentHotel = hmHotels[role] || HOD_HOTEL_MAP[role] || (CORPORATE_ROLES.includes(role) ? 'Corporate' : '');
     Object.keys(taskFiles).forEach(k => delete taskFiles[k]);
     Object.keys(taskFileUrls).forEach(k => delete taskFileUrls[k]);
     ['nav-coo-home','nav-coo-tasklist'].forEach(id => {
@@ -22598,7 +22604,7 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
         </div>`;
     });
     // Tambah section Corporate di bawah section hotel
-    const corpRoleList = roles.filter(r => !r.name.startsWith('HM '));
+    const corpRoleList = roles.filter(r => !r.name.startsWith('HM ') && !HOD_HOTEL_MAP[r.name]);
     let corpSectionHtml = `<div class="hotel-report-card" style="margin-top:12px;">
       <div class="hotel-report-header">
         <h3>🏢 Tim Corporate & F&B Department</h3>
@@ -22769,6 +22775,14 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
         {name:'HM Verse Luxe', icon:'🏨', hotel:'Verse Luxe Wahid Hasyim', taskKey:'HM Verse Luxe'},
         {name:'HM Verse Cirebon', icon:'🏨', hotel:'Verse Hotel Cirebon', taskKey:'HM Verse Cirebon'},
         {name:'HM Oak Tree', icon:'🏨', hotel:'Oak Tree Mahakam Blok M', taskKey:'HM Oak Tree'},
+        // HOD (Head of Department) — 12 kombinasi, taskKey = nama role sendiri
+        // (sesuai pola ROLE_TASKS["nama role"] yang dipakai HOD)
+        ...Object.keys(HOD_HOTEL_MAP).map(name => ({
+          name,
+          icon: name.startsWith('Housekeeping') ? '🧹' : name.startsWith('Engineering') ? '🔧' : '🛎️',
+          hotel: HOD_HOTEL_MAP[name],
+          taskKey: name
+        })),
       ];
 
       let html = '';
@@ -26044,6 +26058,21 @@ function hodSetStatus(e, taskId, status) {
   e.stopPropagation();
   const item = document.getElementById(taskId);
   if (!item) return;
+
+  item.querySelectorAll('.required-alert').forEach(el => el.classList.remove('required-alert'));
+  hodApplyStatusVisual(item, taskId, status);
+
+  // Rekam titik lokasi HP (sama seperti role lain) — HANYA saat user
+  // benar-benar klik, bukan saat draft di-restore ulang.
+  logTaskLocation(taskId, status);
+
+  hodSaveDraft(taskId);
+}
+
+// Bagian visual dipisah dari hodSetStatus supaya bisa dipakai ulang oleh
+// hodLoadDraft() saat restore draft, tanpa ikut mencatat lokasi ulang
+// atau menyimpan draft lagi (mencegah loop tak berguna).
+function hodApplyStatusVisual(item, taskId, status) {
   const btns = item.querySelectorAll('.status-btn');
   btns.forEach(b => b.className = 'status-btn');
 
@@ -26055,16 +26084,8 @@ function hodSetStatus(e, taskId, status) {
 
   item.dataset.status = status;
 
-  // Rekam titik lokasi HP (sama seperti role lain — dipakai COO untuk
-  // history tracking pergerakan staff). Function ini sudah ada & global,
-  // gagal diam-diam kalau lokasi ditolak/tidak tersedia.
-  logTaskLocation(taskId, status);
-
   const origNum = num.dataset.origNum || num.textContent;
   if (!num.dataset.origNum) num.dataset.origNum = origNum;
-
-  // Reset highlight error
-  item.querySelectorAll('.required-alert').forEach(el => el.classList.remove('required-alert'));
 
   if (status === 'done') {
     btns[0].classList.add('selected-green');
@@ -26086,7 +26107,16 @@ function hodSetStatus(e, taskId, status) {
     if (reasonWrap) reasonWrap.style.display = '';
   }
   hodUpdateCategoryCount(item);
-  hodSaveDraft(taskId);
+
+  // Pasang auto-save saat SELESAI mengetik (blur) di tiap field, bukan cuma
+  // saat klik status — task HOD ada yang sampai puluhan field (mis. Linen
+  // 30 field), jadi ini pengaman ekstra dibanding role lain yang cuma
+  // auto-save saat klik status. Ditandai dataset flag supaya tidak dobel-pasang.
+  item.querySelectorAll('.hod-qfield, .hod-reason').forEach(el => {
+    if (el.dataset.hodAutosaveWired) return;
+    el.dataset.hodAutosaveWired = '1';
+    el.addEventListener('blur', () => hodSaveDraft(taskId));
+  });
 }
 
 // Wrapper tipis di atas handleFileUpload() yang SUDAH ADA — supaya proses
@@ -26096,6 +26126,7 @@ async function hodHandlePhoto(input, slotId, parentTaskId) {
   await handleFileUpload(input, slotId, false);
   hodRefreshUploadAreaLabel(slotId);
   hodCheckAllPhotosUploaded(parentTaskId);
+  hodSaveDraftPhoto(slotId);
 }
 
 function hodRefreshUploadAreaLabel(slotId) {
@@ -26190,18 +26221,109 @@ function hodUpdateCategoryCount(itemEl) {
   if (counter) counter.textContent = `${done}/${items.length}`;
 }
 
-// Auto-save draft ringan (opsional, dipanggil sama seperti sistem lama
-// tapi implementasi disederhanakan — hanya localStorage per browser,
-// tidak menyentuh mekanisme draftTasklist Supabase milik role lain).
+// Auto-save draft KE DATABASE (tabel draft_tasklist yang sama dipakai role
+// lain) — supaya progress HOD tidak hilang kalau browser ditutup/di-refresh
+// sebelum submit, persis seperti perilaku role lain.
+async function hodUpsertDraft(taskId, status, keterangan, fileUrlsJson) {
+  if (!currentRole || !currentHotel) return;
+  const today = new Date(Date.now() + 7*3600000).toISOString().split('T')[0];
+  try {
+    const checkRes = await fetch(
+      SUPA_URL + '/rest/v1/draft_tasklist?tanggal=eq.' + today +
+      '&role=eq.' + encodeURIComponent(currentRole) +
+      '&hotel=eq.' + encodeURIComponent(currentHotel) +
+      '&task_id=eq.' + encodeURIComponent(taskId) + '&select=id',
+      { headers: { apikey: SUPA_KEY, Authorization: 'Bearer ' + SUPA_KEY } }
+    );
+    const existing = checkRes.ok ? await checkRes.json() : [];
+    if (existing && existing.length > 0) {
+      await fetch(
+        SUPA_URL + '/rest/v1/draft_tasklist?tanggal=eq.' + today +
+        '&role=eq.' + encodeURIComponent(currentRole) +
+        '&hotel=eq.' + encodeURIComponent(currentHotel) +
+        '&task_id=eq.' + encodeURIComponent(taskId),
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json', apikey: SUPA_KEY, Authorization: 'Bearer ' + SUPA_KEY },
+          body: JSON.stringify({ status, keterangan, file_urls: fileUrlsJson, updated_at: new Date().toISOString() })
+        }
+      );
+    } else {
+      await fetch(SUPA_URL + '/rest/v1/draft_tasklist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', apikey: SUPA_KEY, Authorization: 'Bearer ' + SUPA_KEY },
+        body: JSON.stringify({ tanggal: today, role: currentRole, hotel: currentHotel, task_id: taskId, status, keterangan, file_urls: fileUrlsJson, updated_at: new Date().toISOString() })
+      });
+    }
+  } catch(e) { console.error('hodUpsertDraft error:', e); }
+}
+
 function hodSaveDraft(taskId) {
   try {
     if (!window._hodDraftDebounce) window._hodDraftDebounce = {};
     clearTimeout(window._hodDraftDebounce[taskId]);
     window._hodDraftDebounce[taskId] = setTimeout(() => {
-      // Placeholder ringan — draft HOD disimpan di memori saja untuk saat ini,
-      // konsisten dengan seluruh app yang juga tidak persist draft ke localStorage.
-    }, 400);
+      const item = document.getElementById(taskId);
+      if (!item) return;
+      const status = item.dataset.status || null;
+      let keterangan = null;
+      if (status === 'done') keterangan = JSON.stringify(hodCollectAnswers(taskId));
+      else if (status === 'not') keterangan = JSON.stringify({ _alasan_tidak: hodGetReason(taskId) });
+      hodUpsertDraft(taskId, status, keterangan, null);
+    }, 500);
   } catch(e) {}
+}
+
+// Foto disimpan sebagai draft TERPISAH per slot (task_id = "<task>__p<N>"),
+// supaya bisa langsung dipulihkan dengan restoreFileUrls() yang sudah ada
+// (fungsi itu generik, tidak spesifik ke role manapun).
+function hodSaveDraftPhoto(slotId) {
+  const urls = taskFileUrls[slotId];
+  hodUpsertDraft(slotId, null, null, urls && urls.length ? JSON.stringify(urls) : null);
+}
+
+// Muat ulang draft HOD (dipanggil sama seperti loadDraft() role lain, tapi
+// hanya untuk task/foto milik role HOD — role lain tidak tersentuh).
+async function hodLoadDraft(role, hotel) {
+  if (!role || !hotel) return;
+  const today = new Date(Date.now() + 7*3600000).toISOString().split('T')[0];
+  try {
+    const res = await fetch(
+      SUPA_URL + '/rest/v1/draft_tasklist?tanggal=eq.' + today +
+      '&role=eq.' + encodeURIComponent(role) + '&hotel=eq.' + encodeURIComponent(hotel) + '&select=*',
+      { headers: { apikey: SUPA_KEY, Authorization: 'Bearer ' + SUPA_KEY } }
+    );
+    const data = res.ok ? await res.json() : [];
+    if (!data || !data.length) return;
+
+    let restoredCount = 0;
+    data.forEach(draft => {
+      // Foto per-slot — task_id mengandung "__p"
+      if (draft.task_id.indexOf('__p') > -1 && draft.file_urls) {
+        restoreFileUrls(draft.task_id, draft.file_urls);
+        return;
+      }
+      const item = document.getElementById(draft.task_id);
+      if (!item || !item.classList.contains('hod-task-item')) return;
+      restoredCount++;
+      if (draft.status) hodApplyStatusVisual(item, draft.task_id, draft.status);
+      if (draft.keterangan) {
+        try {
+          const parsed = JSON.parse(draft.keterangan);
+          if (typeof parsed._alasan_tidak === 'string') {
+            const ta = item.querySelector('.hod-reason');
+            if (ta) ta.value = parsed._alasan_tidak;
+          } else {
+            item.querySelectorAll('.hod-qfield').forEach(el => {
+              const key = el.dataset.qkey;
+              if (key && parsed[key] !== undefined) el.value = parsed[key];
+            });
+          }
+        } catch(e) {}
+      }
+    });
+    if (restoredCount > 0) showToast('📂 Draft HOD dimuat (' + restoredCount + ' tugas)');
+  } catch(e) { console.error('hodLoadDraft error:', e); }
 }
 
 // Gabungkan semua slot foto (task__p0, task__p1, ...) jadi 1 array, format
