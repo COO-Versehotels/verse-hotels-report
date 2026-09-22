@@ -2999,7 +2999,7 @@
   // =============================================================
   // Update angka di bawah setiap kali deploy file baru yang penting.
   // Format: YYYY.MM.DD-NN (NN = increment harian)
-  const APP_VERSION = '2026.09.21-04';
+  const APP_VERSION = '2026.09.22-02';
   const APP_VERSION_KEY = 'verse_app_version';
 
   (function _checkAppVersion() {
@@ -3484,7 +3484,12 @@
     tsEl.textContent = '🕐 Diinput pukul ' + time + ' WIB';
   }
 
-  let autoSaveTimer = null;
+  // BUG LAMA (diperbaiki): variable ini dulu SATU timer tunggal dipakai
+  // SEMUA task — kalau user isi Task A lalu dalam 1.5 detik pindah isi
+  // Task B, timer Task A dibatalkan dan perubahannya TIDAK PERNAH
+  // tersimpan (kecuali submit akhir). Sekarang per-task (seperti draft HOD).
+  let legacyAutoSaveTimers = {};
+  let legacyPendingTaskIds = new Set();
 
   // Simpan satu task ke Supabase (debounced 1.5 detik)
   // ============================================================
@@ -3862,18 +3867,45 @@
 
   function autoSaveDraft(taskId) {
     if (window._isRestoringDraft) return; // jangan save saat restore
-    clearTimeout(autoSaveTimer);
-    autoSaveTimer = setTimeout(() => saveDraftNow(taskId), 1500);
+    legacyPendingTaskIds.add(taskId);
+    clearTimeout(legacyAutoSaveTimers[taskId]);
+    legacyAutoSaveTimers[taskId] = setTimeout(() => {
+      legacyPendingTaskIds.delete(taskId);
+      saveDraftNow(taskId);
+    }, 1500);
   }
+
+  // Kalau tab disembunyikan / app ditutup SEBELUM jeda 1.5 detik di atas
+  // selesai, simpan SEGERA semua task yang masih tertunda.
+  function flushAllPendingLegacyDrafts() {
+    if (!legacyPendingTaskIds.size) return;
+    legacyPendingTaskIds.forEach(taskId => {
+      clearTimeout(legacyAutoSaveTimers[taskId]);
+      saveDraftNow(taskId);
+    });
+    legacyPendingTaskIds.clear();
+  }
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') { flushAllPendingLegacyDrafts(); flushPendingPlanning(); }
+  });
+  window.addEventListener('pagehide', () => { flushAllPendingLegacyDrafts(); flushPendingPlanning(); });
 
   // ============================================================
   // AUTO-SAVE PLANNING FOR TOMORROW & UNIT VISIT TOMORROW
   // ============================================================
   let _planSaveTimer;
+  let _planSavePending = false;
   function autoSavePlanning() {
     if (window._isRestoringDraft) return;
+    _planSavePending = true;
     clearTimeout(_planSaveTimer);
-    _planSaveTimer = setTimeout(() => savePlanningDraft(), 1500);
+    _planSaveTimer = setTimeout(() => { _planSavePending = false; savePlanningDraft(); }, 1500);
+  }
+  function flushPendingPlanning() {
+    if (!_planSavePending) return;
+    _planSavePending = false;
+    clearTimeout(_planSaveTimer);
+    savePlanningDraft();
   }
 
   async function savePlanningDraft() {
@@ -23555,8 +23587,13 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
     }
     // Auto-save (simpan fu-input sebagai keterangan) — didebounce supaya ketik cepat
     // tidak memicu beberapa saveDraftNow bersamaan (race condition bikin baris dobel di DB)
+    input._fuId = fuId; // dipakai flushAllPendingLegacyDrafts saat app ditutup
+    legacyPendingTaskIds.add(fuId);
     if (input._fuDebounceTimer) clearTimeout(input._fuDebounceTimer);
-    input._fuDebounceTimer = setTimeout(() => saveDraftNow(fuId), 600);
+    input._fuDebounceTimer = setTimeout(() => {
+      legacyPendingTaskIds.delete(fuId);
+      saveDraftNow(fuId);
+    }, 600);
   }
 
   // Set status untuk room inspection slot
@@ -26258,21 +26295,44 @@ async function hodUpsertDraft(taskId, status, keterangan, fileUrlsJson) {
   } catch(e) { console.error('hodUpsertDraft error:', e); }
 }
 
+function hodFlushDraftNow(taskId) {
+  const item = document.getElementById(taskId);
+  if (!item) return;
+  const status = item.dataset.status || null;
+  let keterangan = null;
+  if (status === 'done') keterangan = JSON.stringify(hodCollectAnswers(taskId));
+  else if (status === 'not') keterangan = JSON.stringify({ _alasan_tidak: hodGetReason(taskId) });
+  hodUpsertDraft(taskId, status, keterangan, null);
+}
+
 function hodSaveDraft(taskId) {
   try {
     if (!window._hodDraftDebounce) window._hodDraftDebounce = {};
+    if (!window._hodPendingTaskIds) window._hodPendingTaskIds = new Set();
+    window._hodPendingTaskIds.add(taskId);
     clearTimeout(window._hodDraftDebounce[taskId]);
     window._hodDraftDebounce[taskId] = setTimeout(() => {
-      const item = document.getElementById(taskId);
-      if (!item) return;
-      const status = item.dataset.status || null;
-      let keterangan = null;
-      if (status === 'done') keterangan = JSON.stringify(hodCollectAnswers(taskId));
-      else if (status === 'not') keterangan = JSON.stringify({ _alasan_tidak: hodGetReason(taskId) });
-      hodUpsertDraft(taskId, status, keterangan, null);
+      window._hodPendingTaskIds.delete(taskId);
+      hodFlushDraftNow(taskId);
     }, 500);
   } catch(e) {}
 }
+
+// Kalau tab disembunyikan / app ditutup / pindah tab SEBELUM jeda 500ms di atas
+// selesai, simpan SEGERA semua yang masih tertunda — supaya kerjaan yang baru
+// saja diisi tidak hilang kalau user langsung menutup browser.
+function hodFlushAllPending() {
+  if (!window._hodPendingTaskIds || !window._hodPendingTaskIds.size) return;
+  window._hodPendingTaskIds.forEach(taskId => {
+    clearTimeout(window._hodDraftDebounce[taskId]);
+    hodFlushDraftNow(taskId);
+  });
+  window._hodPendingTaskIds.clear();
+}
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') hodFlushAllPending();
+});
+window.addEventListener('pagehide', hodFlushAllPending);
 
 // Foto disimpan sebagai draft TERPISAH per slot (task_id = "<task>__p<N>"),
 // supaya bisa langsung dipulihkan dengan restoreFileUrls() yang sudah ada
