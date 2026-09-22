@@ -2999,7 +2999,7 @@
   // =============================================================
   // Update angka di bawah setiap kali deploy file baru yang penting.
   // Format: YYYY.MM.DD-NN (NN = increment harian)
-  const APP_VERSION = '2026.09.22-02';
+  const APP_VERSION = '2026.09.22-03';
   const APP_VERSION_KEY = 'verse_app_version';
 
   (function _checkAppVersion() {
@@ -6876,6 +6876,19 @@
   }
 
   // Populate submit screen dengan data dinamis
+// Dipakai populateSubmit() (layar ringkasan sebelum submit) — untuk task HOD,
+// foto tersimpan di slot terpisah (taskId__p0, __p1, dst), BUKAN langsung di
+// taskFiles[taskId] seperti role lain. Helper ini cek semua slot yang relevan.
+function hodHasUploadForTask(item) {
+  const required = parseInt(item.dataset.requiredPhotos || '0', 10);
+  if (required === 0) return true; // tidak butuh foto sama sekali
+  for (let i = 0; i < required; i++) {
+    const slotId = item.id + '__p' + i;
+    if (!taskFiles[slotId] || !taskFiles[slotId].length) return false;
+  }
+  return true;
+}
+
   async function populateSubmit() {
     const d = new Date();
     const days = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
@@ -6905,7 +6918,7 @@
       if (s === 'done') {
         const uploadWrap = document.getElementById(item.id + '-upload');
         const isNoUpload = uploadWrap && uploadWrap.dataset.noUpload === '1';
-        const hasUpload = taskFiles[item.id] && taskFiles[item.id].length > 0;
+        const hasUpload = item.classList.contains('hod-task-item') ? hodHasUploadForTask(item) : (taskFiles[item.id] && taskFiles[item.id].length > 0);
         const note = item.querySelector('.task-note');
         const hasNote = note && note.value.trim();
         // Jika butuh upload tapi belum ada upload DAN tidak ada keterangan → belum lengkap
@@ -6997,7 +7010,7 @@
 
       const uploadWrap = document.getElementById(item.id + '-upload');
       const isNoUpload = uploadWrap && uploadWrap.dataset.noUpload === '1';
-      const hasUpload = taskFiles[item.id] && taskFiles[item.id].length > 0;
+      const hasUpload = item.classList.contains('hod-task-item') ? hodHasUploadForTask(item) : (taskFiles[item.id] && taskFiles[item.id].length > 0);
       const note = item.querySelector('.task-note:not(.task-q1):not(.task-q2):not(.task-q3):not(.task-q4):not(.task-q5):not(.task-q6):not(.task-not-reason)');
       const hasNote = note && note.value.trim();
 
@@ -7030,15 +7043,21 @@
       }
     });
 
-    // Cek Planning for Tomorrow
+    // Validasi: HM harus isi 5 sub-section, Corporate isi single textarea.
+    // Dideklarasikan di sini (bukan di dalam blok di bawah) karena dipakai
+    // lagi di bagian lain function ini (validasi Room Check).
+    const _isHmRole = currentRole && currentRole.startsWith('HM ');
+
+    // Cek Planning for Tomorrow — HOD tidak punya fitur ini sama sekali,
+    // jadi dilewati total (kalau tidak, akan selalu dianggap "belum diisi"
+    // karena elemennya memang tidak ada di layar HOD).
+    if (!HOD_ROLE_SET.has(currentRole)) {
     const apHotel = document.getElementById('activity-plan-hotel-val');
     const apNote = document.querySelector('#activity-plan .task-note');
     // Unit Visit Tomorrow wajib hanya untuk Team Corporate
     if (needsUnitVisitTomorrow(currentRole) && (!apHotel || !apHotel.value)) {
       requiredItems.push('• <b>Planning for Tomorrow</b> — <i>Unit Visit Tomorrow belum dipilih</i>');
     }
-    // Validasi: HM harus isi 5 sub-section, Corporate isi single textarea
-    const _isHmRole = currentRole && currentRole.startsWith('HM ');
     if (_isHmRole) {
       const hmUnits = ['hm','hk','eng','fnb','sec'];
       const hmLabels = ['HM','HK','ENG','F&B','SEC'];
@@ -7055,6 +7074,7 @@
         requiredItems.push('• <b>Planning for Tomorrow</b> — <i>Catatan rencana besok belum diisi</i>');
       }
     }
+    } // tutup blok "if (!HOD_ROLE_SET.has(currentRole))"
 
     // Validasi GENERIC Q1-Q5: berlaku untuk SEMUA role yang punya pertanyaan terstruktur
     // (HM, F&B Manager, Team Kitchen, F&B Attendant — kalau task punya .task-q1 elements)
