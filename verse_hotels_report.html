@@ -2999,7 +2999,7 @@
   // =============================================================
   // Update angka di bawah setiap kali deploy file baru yang penting.
   // Format: YYYY.MM.DD-NN (NN = increment harian)
-  const APP_VERSION = '2026.09.27-02';
+  const APP_VERSION = '2026.09.28-01';
   const APP_VERSION_KEY = 'verse_app_version';
 
   (function _checkAppVersion() {
@@ -3103,6 +3103,74 @@
     } catch(e) { return null; }
   }
 
+  // =============================================================
+  // CAMERA RESUME — HP RAM kecil sering MENUTUP Chrome saat kamera
+  // dibuka. Setelah foto, halaman dimuat ulang dari awal & staf
+  // terlempar ke Beranda. Solusi: catat posisi (layar + task) saat
+  // tombol foto ditekan; kalau halaman dibuka ulang <15 menit, langsung
+  // kembali ke Tasklist di task yang sama + beri tahu ambil dari Galeri.
+  // =============================================================
+  const CAM_RESUME_KEY = 'verse_cam_resume';
+  const CAM_RESUME_TTL = 15 * 60 * 1000;
+  document.addEventListener('click', function(e) {
+    const inp = e.target && e.target.closest ? e.target.closest('input[type="file"]') : null;
+    if (!inp || !currentRole) return;
+    try {
+      const scr = document.querySelector('.screen.active');
+      const task = inp.closest('.task-item');
+      localStorage.setItem(CAM_RESUME_KEY, JSON.stringify({
+        role: currentRole, hotel: currentHotel,
+        screen: scr ? scr.id.replace(/^screen-/, '') : '',
+        taskId: task ? task.id : '', ts: Date.now()
+      }));
+    } catch(err) {}
+  }, true);
+  // Foto berhasil masuk (halaman tidak tertutup) → hapus catatan
+  document.addEventListener('change', function(e) {
+    if (e.target && e.target.matches && e.target.matches('input[type="file"]')) {
+      try { localStorage.removeItem(CAM_RESUME_KEY); } catch(err) {}
+    }
+  }, true);
+  function _takeCamResume(role) {
+    try {
+      const raw = localStorage.getItem(CAM_RESUME_KEY);
+      if (!raw) return null;
+      const m = JSON.parse(raw);
+      if (!m || Date.now() - m.ts > CAM_RESUME_TTL || (role && m.role !== role)) {
+        localStorage.removeItem(CAM_RESUME_KEY); return null;
+      }
+      localStorage.removeItem(CAM_RESUME_KEY);
+      return m;
+    } catch(e) { return null; }
+  }
+  // Dipakai di semua jalur auto-login: ke Tasklist kalau baru balik dari kamera, selain itu Beranda
+  function _goHomeOrResume() {
+    const m = _takeCamResume(currentRole);
+    if (!m || m.screen !== 'tasklist') { go('home'); return false; }
+    go('tasklist');
+    setTimeout(() => {
+      const el = m.taskId && document.getElementById(m.taskId);
+      if (el) {
+        el.scrollIntoView({ block: 'center' });
+        el.style.transition = 'box-shadow .3s'; el.style.boxShadow = '0 0 0 3px #f59e0b';
+        setTimeout(() => { el.style.boxShadow = ''; }, 4000);
+      }
+      showToast('📷 HP sempat menutup browser saat kamera dibuka — foto tadi belum masuk. Isian aman, silakan ambil foto ulang di task ini.');
+    }, 1500);
+    return true;
+  }
+  // Saat halaman dimuat ulang: kalau ada sesi hari ini + catatan kamera, langsung pulihkan
+  function _camAutoResumeOnLoad() {
+    if (document.getElementById('device-gate-overlay')) return;
+    if (new URLSearchParams(location.search).get('view')) return;
+    const session = loadSessionToday();
+    if (!session || currentRole) return;
+    let m = null;
+    try { m = JSON.parse(localStorage.getItem(CAM_RESUME_KEY) || 'null'); } catch(e) {}
+    if (!m || m.role !== session.role || Date.now() - m.ts > CAM_RESUME_TTL) return;
+    tryAutoLogin();
+  }
+
   function tryAutoLogin() {
     const session = loadSessionToday();
     if (!session) return false;
@@ -3120,8 +3188,7 @@
       const el = document.getElementById(id);
       if (el) el.style.display = 'none';
     });
-    go('home');
-    showToast('👋 Selamat datang kembali, ' + currentRole.replace(' Corporate','') + '!');
+    if (!_goHomeOrResume()) showToast('👋 Selamat datang kembali, ' + currentRole.replace(' Corporate','') + '!');
     setTimeout(updateVisitSectionLogo, 100); setTimeout(saveTeamLocation, 500);
     return true;
   }
@@ -3225,7 +3292,7 @@
     }
   }
 
-  document.addEventListener('DOMContentLoaded', checkDeviceApproval);
+  document.addEventListener('DOMContentLoaded', () => { Promise.resolve(checkDeviceApproval()).catch(()=>{}).then(() => { try { _camAutoResumeOnLoad(); } catch(e) { console.error('camResume', e); } }); });
 
   const supa = supabase.createClient(SUPA_URL, SUPA_KEY, {
     auth: {
@@ -5573,8 +5640,7 @@
         const el = document.getElementById(id);
         if (el) el.style.display = 'none';
       });
-      go('home');
-      showToast('👋 Selamat datang kembali!');
+      if (!_goHomeOrResume()) showToast('👋 Selamat datang kembali!');
       setTimeout(updateVisitSectionLogo, 100); setTimeout(saveTeamLocation, 500);
       return;
     }
