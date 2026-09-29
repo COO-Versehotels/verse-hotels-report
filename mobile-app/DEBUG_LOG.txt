@@ -1,0 +1,2 @@
+[error] Could not find installation of TypeScript.
+        To use capacitor.config.ts files, you must install TypeScript in your project, e.g. w/ npm install -D typescript
