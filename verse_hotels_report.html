@@ -2049,6 +2049,15 @@
         <div class="rc-arrow">›</div>
       </div>
 
+      <div class="rc-menu-card" id="jv-home-card" style="display:none;background:linear-gradient(135deg,#c9973a,#a67a24);" onclick="jvOpen()">
+        <div class="rc-icon">🧳</div>
+        <div class="rc-text">
+          <div class="rc-title">Jadwal Visit Corp</div>
+          <div class="rc-sub" id="jv-home-card-sub">Lihat &amp; atur jadwal visit tim</div>
+        </div>
+        <div class="rc-arrow">›</div>
+      </div>
+
       <div class="section">
         <div class="section-title">PEKERJAAN HARI INI</div>
         <div id="home-visit-list">
@@ -2138,12 +2147,23 @@
           <div class="task-item" id="activity-plan" data-status="note_only" style="padding:4px 0;">
             <!-- Unit Visit hanya untuk Corporate, HM tidak perlu -->
             <div id="activity-plan-hotel-section">
-              <label style="font-size:11px;font-weight:700;color:var(--gray-400);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:8px;">🏨 Unit / Hotel Visit Tomorrow</label>
+              <label style="font-size:11px;font-weight:700;color:var(--gray-400);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:3px;">🏨 Unit / Hotel Visit Tomorrow</label>
+              <div id="jv-prefill-caption" style="display:none;font-size:11.5px;color:#c9973a;font-weight:600;margin:0 0 10px 0;line-height:1.4;"></div>
               <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;" id="activity-plan-hotel-select">
                 <button onclick="event.stopPropagation();selectActivityHotel(this,'activity-plan')" data-hotel="Verse Lite Gajah Mada" class="activity-hotel-btn">Verse Lite</button>
                 <button onclick="event.stopPropagation();selectActivityHotel(this,'activity-plan')" data-hotel="Verse Luxe Wahid Hasyim" class="activity-hotel-btn">Verse Luxe</button>
                 <button onclick="event.stopPropagation();selectActivityHotel(this,'activity-plan')" data-hotel="Verse Hotel Cirebon" class="activity-hotel-btn">Verse Cirebon</button>
                 <button onclick="event.stopPropagation();selectActivityHotel(this,'activity-plan')" data-hotel="Oak Tree Mahakam Blok M" class="activity-hotel-btn">Oak Tree</button>
+              </div>
+              <div id="jv-deviation-warning" style="display:none;margin-top:10px;background:#fef3cd;border:1px solid #f5d78a;border-radius:12px;padding:10px 12px;">
+                <div style="display:flex;gap:8px;align-items:flex-start;">
+                  <span style="font-size:14px;flex-shrink:0;margin-top:1px;">⚠️</span>
+                  <div style="flex:1;">
+                    <div style="font-size:12.5px;font-weight:700;color:#8a6408;">Beda dari jadwal</div>
+                    <div style="font-size:11.5px;color:#8a6408;margin-top:1px;line-height:1.4;" id="jv-deviation-text"></div>
+                  </div>
+                </div>
+                <textarea id="jv-deviation-reason" rows="2" placeholder="Alasan perubahan (opsional)..." onclick="event.stopPropagation()" onfocus="event.stopPropagation()" style="margin-top:8px;width:100%;box-sizing:border-box;border:1px solid #f5d78a;border-radius:8px;padding:8px 10px;font-family:inherit;font-size:12.5px;color:var(--gray-600);background:white;resize:none;"></textarea>
               </div>
               <input type="hidden" id="activity-plan-hotel-val" value="">
             </div>
@@ -2381,6 +2401,35 @@
         </button>
       </div>
       <button onclick="document.getElementById('fbm-hotel-modal').style.display='none';go('login')" style="margin-top:16px;width:100%;padding:12px;border:none;border-radius:12px;background:var(--gray-100);font-family:inherit;font-size:14px;font-weight:600;color:var(--gray-600);cursor:pointer;">Batal</button>
+    </div>
+  </div>
+
+  <!-- ===== JADWAL VISIT CORP ===== -->
+  <div class="screen" id="screen-jadwal-visit">
+    <div class="topbar" style="padding:48px 16px 12px;">
+      <button class="topbar-back" onclick="goHome()">←</button>
+      <div class="topbar-title">
+        <h2>Jadwal Visit Corp</h2>
+        <p id="jv-period-label">Memuat...</p>
+      </div>
+    </div>
+
+    <div id="jv-date-strip" style="background:white;border-bottom:1px solid var(--gray-100);padding:14px 0 14px 16px;display:flex;gap:8px;overflow-x:auto;flex-shrink:0;"></div>
+
+    <div style="padding:14px 16px 4px;font-size:12px;font-weight:700;color:var(--gray-400);letter-spacing:0.5px;flex-shrink:0;" id="jv-selected-date-label">—</div>
+
+    <div class="scroll-area" id="jv-member-list" style="padding:4px 16px 16px;display:flex;flex-direction:column;gap:10px;"></div>
+
+    <div style="background:white;border-top:1px solid var(--gray-100);padding:12px 16px 18px;display:flex;flex-wrap:wrap;gap:8px 14px;flex-shrink:0;" id="jv-legend"></div>
+  </div>
+
+  <!-- Jadwal Visit — bottom sheet picker -->
+  <div id="jv-picker-modal" style="display:none;position:fixed;inset:0;background:rgba(15,16,20,0.45);z-index:9999;align-items:flex-end;justify-content:center;" onclick="if(event.target===this) jvClosePicker()">
+    <div style="width:100%;max-width:480px;background:white;border-radius:24px 24px 0 0;padding:10px 20px 28px;max-height:80vh;overflow-y:auto;">
+      <div style="width:36px;height:4px;background:#E2E2DE;border-radius:2px;margin:0 auto 18px;"></div>
+      <div id="jv-picker-header" style="display:flex;align-items:center;gap:12px;margin-bottom:4px;"></div>
+      <div style="font-size:12px;font-weight:700;color:var(--gray-400);letter-spacing:0.5px;margin:20px 0 10px;">PILIH STATUS VISIT</div>
+      <div id="jv-picker-options" style="display:flex;flex-direction:column;gap:8px;"></div>
     </div>
   </div>
 
@@ -4521,6 +4570,22 @@
         });
       }
 
+      // 1b. Deviasi dari jadwal Corp Visit (Stage 2) — cuma kalau warning-nya lagi tampil
+      {
+        const jvDevWarn = document.getElementById('jv-deviation-warning');
+        const jvDevReason = document.getElementById('jv-deviation-reason');
+        if (needsUnitVisitTomorrow(role) && jvDevWarn && jvDevWarn.style.display !== 'none') {
+          const reasonText = jvDevReason ? jvDevReason.value.trim() : '';
+          allItems.push({
+            tanggal: today, role, hotel,
+            task_id: 'unit-visit-deviation',
+            status: 'info',
+            keterangan: 'Beda dari jadwal Corp Visit (rencana: ' + (typeof jvPlannedHotel !== 'undefined' && jvPlannedHotel ? jvPlannedHotel : '-') + ')' + (reasonText ? ' — Alasan: ' + reasonText : ''),
+            file_urls: null
+          });
+        }
+      }
+
       // 2. Planning for Tomorrow — untuk SEMUA role (Corporate & HM)
       if (apNote && apNote.value.trim()) {
         allItems.push({
@@ -5022,6 +5087,9 @@
       const apHotelSection = document.getElementById('activity-plan-hotel-section');
       if (apHotelSection) {
         apHotelSection.style.display = needsUnitVisitTomorrow(currentRole) ? 'block' : 'none';
+        if (needsUnitVisitTomorrow(currentRole) && typeof jvApplyAutoPrefill === 'function') {
+          jvApplyAutoPrefill();
+        }
       }
 
       // Planning for Tomorrow: HM lihat 5 sub-section, lainnya lihat single textarea
@@ -5073,6 +5141,9 @@
 
       // Show/hide Room Check menu card based on role
       if (typeof rcMaybeShowHomeMenu === 'function') rcMaybeShowHomeMenu();
+
+      // Show/hide Jadwal Visit Corp menu card based on role
+      if (typeof jvMaybeShowHomeMenu === 'function') jvMaybeShowHomeMenu();
 
       const d = new Date();
       const days = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
@@ -23833,6 +23904,8 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
     // Auto-save draft (untuk Unit Visit Tomorrow)
     if (taskId === 'activity-plan') {
       saveUnitVisitDraft();
+      // Cek deviasi dari jadwal Corp Visit (Stage 2)
+      if (typeof jvCheckDeviation === 'function') jvCheckDeviation(btn.dataset.hotel);
     } else {
       autoSaveDraft(taskId);
     }
@@ -26153,6 +26226,321 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
       if (subEl) subEl.textContent = subText;
     } else {
       card.style.display = 'none';
+    }
+  }
+
+  // ======================================================
+  // JADWAL VISIT CORP — terhubung ke Google Sheet via Apps Script Web App
+  // ======================================================
+  const JV_API_URL = 'https://script.google.com/macros/s/AKfycbxPvPPMRe1AuegJjLYkKU4N3h5xWBrHF9Upw3vw_vHufUGQJD2gFa6WVpjPmsloy-GDpQ/exec';
+  const JV_API_KEY = 'verse-corp-visit-2026';
+
+  let jvData = null;
+  let jvSelectedDateIdx = 0;
+  let jvPickerEmployeeIdx = null;
+
+  function jvEsc(s) {
+    return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function jvMaybeShowHomeMenu() {
+    const card = document.getElementById('jv-home-card');
+    if (!card) return;
+    // Corp Team (5 PIN) + COO — COO bisa ubah jadwal langsung dari app juga
+    const eligible = (typeof isCorporateTeamRole === 'function' && isCorporateTeamRole(currentRole)) || currentRole === 'COO';
+    card.style.display = eligible ? 'flex' : 'none';
+  }
+
+  function jvOpen() {
+    go('jadwal-visit');
+    jvLoad();
+  }
+
+  async function jvLoad() {
+    const listEl = document.getElementById('jv-member-list');
+    if (listEl) listEl.innerHTML = '<div style="text-align:center;padding:24px;color:var(--gray-400);font-size:13px;">Memuat jadwal...</div>';
+    try {
+      const resp = await fetch(JV_API_URL + '?key=' + encodeURIComponent(JV_API_KEY));
+      const data = await resp.json();
+      if (!data.success) {
+        if (listEl) listEl.innerHTML = '<div style="text-align:center;padding:24px;color:#e74c3c;font-size:13px;">' + jvEsc(data.error || 'Gagal memuat jadwal') + '</div>';
+        return;
+      }
+      jvData = data;
+      const periodEl = document.getElementById('jv-period-label');
+      if (periodEl) periodEl.textContent = data.periodLabel + (data.isLocked ? ' 🔒 Terkunci' : '');
+
+      const todayStr = new Date(Date.now() + 7*3600000).toISOString().split('T')[0];
+      const todayIdx = data.dates.findIndex(d => d.date === todayStr);
+      jvSelectedDateIdx = todayIdx >= 0 ? todayIdx : 0;
+
+      jvRenderDateStrip();
+      jvRenderSelectedDateLabel();
+      jvRenderMemberList();
+      jvRenderLegend();
+    } catch(err) {
+      if (listEl) listEl.innerHTML = '<div style="text-align:center;padding:24px;color:#e74c3c;font-size:13px;">Gagal terhubung ke server: ' + jvEsc(err.message) + '</div>';
+    }
+  }
+
+  function jvCodeInfo(code) {
+    if (!jvData) return null;
+    return jvData.codes.find(c => c.code === code) || null;
+  }
+
+  function jvRenderDateStrip() {
+    const strip = document.getElementById('jv-date-strip');
+    if (!strip || !jvData) return;
+    const dowShort = { 'Sunday':'Min','Monday':'Sen','Tuesday':'Sel','Wednesday':'Rab','Thursday':'Kam','Friday':'Jum','Saturday':'Sab' };
+    strip.innerHTML = jvData.dates.map((d, idx) => {
+      const isSel = idx === jvSelectedDateIdx;
+      const isSpecial = d.isWeekend || d.isPH;
+      let bg = '#F0F0EE', color = '#8A8A92';
+      if (isSel) { bg = 'var(--navy)'; color = '#fff'; }
+      else if (isSpecial) { bg = '#FFF3E0'; color = '#c9973a'; }
+      return '<div onclick="jvSelectDate(' + idx + ')" style="cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;width:46px;height:58px;border-radius:12px;background:' + bg + ';color:' + color + ';flex-shrink:0;' + (isSel ? 'box-shadow:0 4px 10px rgba(26,58,92,0.3);' : '') + '">' +
+        '<div style="font-size:11px;font-weight:600;' + (isSel?'opacity:0.75;':'') + '">' + (dowShort[d.dow] || '') + '</div>' +
+        '<div style="font-size:15px;font-weight:700;margin-top:2px;">' + d.day + '</div>' +
+        '</div>';
+    }).join('') + '<div style="width:8px;flex-shrink:0;"></div>';
+    setTimeout(() => {
+      const selEl = strip.children[jvSelectedDateIdx];
+      if (selEl) selEl.scrollIntoView({ inline: 'center', behavior: 'smooth', block: 'nearest' });
+    }, 50);
+  }
+
+  function jvRenderSelectedDateLabel() {
+    const el = document.getElementById('jv-selected-date-label');
+    if (!el || !jvData) return;
+    const d = jvData.dates[jvSelectedDateIdx];
+    const dowFull = { 'Sunday':'MINGGU','Monday':'SENIN','Tuesday':'SELASA','Wednesday':'RABU','Thursday':'KAMIS','Friday':'JUMAT','Saturday':'SABTU' };
+    const monthNames = ['','JANUARI','FEBRUARI','MARET','APRIL','MEI','JUNI','JULI','AGUSTUS','SEPTEMBER','OKTOBER','NOVEMBER','DESEMBER'];
+    const dt = new Date(d.date + 'T00:00:00');
+    let label = (dowFull[d.dow] || d.dow.toUpperCase()) + ', ' + d.day + ' ' + monthNames[dt.getMonth()+1] + ' ' + dt.getFullYear();
+    if (d.isPH) label += '  🇮🇩 ' + d.phName;
+    el.textContent = label;
+  }
+
+  function jvSelectDate(idx) {
+    jvSelectedDateIdx = idx;
+    jvRenderDateStrip();
+    jvRenderSelectedDateLabel();
+    jvRenderMemberList();
+  }
+
+  function jvInitials(name) {
+    return (name || '').split(' ').filter(Boolean).slice(0,2).map(w => w[0].toUpperCase()).join('');
+  }
+
+  function jvRenderMemberList() {
+    const listEl = document.getElementById('jv-member-list');
+    if (!listEl || !jvData) return;
+    listEl.innerHTML = jvData.roster.map(emp => {
+      const code = emp.codes[jvSelectedDateIdx] || '';
+      const info = jvCodeInfo(code);
+      const initials = jvInitials(emp.name);
+      let badgeHtml;
+      if (info) {
+        badgeHtml = '<div style="display:flex;align-items:center;gap:6px;background:' + info.color + ';color:' + info.fontColor + ';border-radius:10px;padding:7px 12px;flex-shrink:0;font-size:12px;font-weight:700;">' + jvEsc(info.label === 'Libur' ? 'Libur' : code) + '</div>';
+      } else {
+        badgeHtml = '<div style="display:flex;align-items:center;gap:6px;background:#F2F2F0;color:#8A8A92;border:1.5px dashed #D5D5D0;border-radius:10px;padding:6.5px 12px;flex-shrink:0;font-size:12px;font-weight:600;">Isi jadwal</div>';
+      }
+      const disabled = jvData.isLocked;
+      return '<button ' + (disabled ? 'disabled' : ('onclick="jvOpenPicker(' + emp.employeeIndex + ')"')) + ' style="display:flex;align-items:center;gap:12px;background:#FFFFFF;border:1px solid #EDEDE9;border-radius:16px;padding:12px 14px;text-align:left;width:100%;font-family:inherit;' + (disabled ? 'opacity:0.6;' : 'cursor:pointer;') + '">' +
+        '<div style="width:40px;height:40px;border-radius:12px;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0;">' + jvEsc(initials) + '</div>' +
+        '<div style="flex:1;min-width:0;">' +
+          '<div style="font-size:14px;font-weight:600;color:#17171A;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + jvEsc(emp.name) + '</div>' +
+          '<div style="font-size:12px;color:#9A9AA4;margin-top:1px;">' + jvEsc(emp.position) + '</div>' +
+        '</div>' +
+        badgeHtml +
+      '</button>';
+    }).join('');
+  }
+
+  function jvRenderLegend() {
+    const el = document.getElementById('jv-legend');
+    if (!el || !jvData) return;
+    el.innerHTML = jvData.codes.map(c =>
+      '<div style="display:flex;align-items:center;gap:5px;"><span style="width:8px;height:8px;border-radius:50%;background:' + c.color + ';"></span><span style="font-size:11px;color:#6B6B72;font-weight:600;">' + jvEsc(c.label) + '</span></div>'
+    ).join('');
+  }
+
+  function jvOpenPicker(employeeIndex) {
+    if (!jvData || jvData.isLocked) return;
+    jvPickerEmployeeIdx = employeeIndex;
+    const emp = jvData.roster.find(e => e.employeeIndex === employeeIndex);
+    if (!emp) return;
+    const d = jvData.dates[jvSelectedDateIdx];
+    const currentCode = emp.codes[jvSelectedDateIdx] || '';
+
+    const headerEl = document.getElementById('jv-picker-header');
+    if (headerEl) {
+      headerEl.innerHTML =
+        '<div style="width:40px;height:40px;border-radius:12px;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0;">' + jvEsc(jvInitials(emp.name)) + '</div>' +
+        '<div><div style="font-size:15px;font-weight:700;color:#17171A;">' + jvEsc(emp.name) + '</div>' +
+        '<div style="font-size:12px;color:#9A9AA4;">' + jvEsc(d.dow) + ', ' + d.day + '</div></div>';
+    }
+
+    const optsEl = document.getElementById('jv-picker-options');
+    if (optsEl) {
+      optsEl.innerHTML = jvData.codes.map(c => {
+        const isSel = c.code === currentCode;
+        return '<button onclick="jvSaveCode(' + employeeIndex + ',\'' + c.code + '\')" style="display:flex;align-items:center;gap:12px;padding:13px 14px;border-radius:14px;border:' + (isSel ? '2px solid ' + c.color : '1.5px solid #EDEDE9') + ';background:' + (isSel ? c.color + '22' : '#FFFFFF') + ';text-align:left;width:100%;font-family:inherit;cursor:pointer;">' +
+          '<span style="width:10px;height:10px;border-radius:50%;background:' + c.color + ';flex-shrink:0;"></span>' +
+          '<span style="flex:1;font-size:14px;font-weight:' + (isSel?'700':'600') + ';color:#17171A;">' + jvEsc(c.label) + '</span>' +
+          (isSel ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="' + c.color + '" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>' : '') +
+          '</button>';
+      }).join('');
+    }
+
+    const modal = document.getElementById('jv-picker-modal');
+    if (modal) modal.style.display = 'flex';
+  }
+
+  function jvClosePicker() {
+    const modal = document.getElementById('jv-picker-modal');
+    if (modal) modal.style.display = 'none';
+    jvPickerEmployeeIdx = null;
+  }
+
+  async function jvSaveCode(employeeIndex, code) {
+    const emp = jvData.roster.find(e => e.employeeIndex === employeeIndex);
+    if (!emp) return;
+    try {
+      const resp = await fetch(JV_API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ key: JV_API_KEY, row: emp.row, dateIndex: jvSelectedDateIdx, code: code })
+      });
+      const result = await resp.json();
+      if (!result.success) {
+        alert('Gagal menyimpan: ' + (result.error || 'Unknown error'));
+        return;
+      }
+      emp.codes[jvSelectedDateIdx] = code;
+      jvClosePicker();
+      jvRenderMemberList();
+    } catch(err) {
+      alert('Gagal terhubung ke server: ' + err.message);
+    }
+  }
+
+  // ======================================================
+  // JADWAL VISIT CORP — STAGE 2: auto-prefill "Unit Visit Tomorrow"
+  // ======================================================
+  const JV_HOTEL_BY_CODE = {
+    'GM': 'Verse Lite Gajah Mada',
+    'WH': 'Verse Luxe Wahid Hasyim',
+    'OT': 'Oak Tree Mahakam Blok M',
+    'CB': 'Verse Hotel Cirebon',
+  };
+  // Role (PIN) -> kata kunci posisi di roster Google Sheet (dicari case-insensitive, substring)
+  const JV_ROLE_POSITION_MATCH = {
+    'Chief Engineering Corporate': ['chief engineering'],
+    'Ops HR Manager': ['operation hr', 'ops hr manager'],
+    'HR Officer': ['hr officer'],
+    'CRA Corporate': ['central reservation', 'cra'],
+    'EHK Corporate': ['ehk'],
+  };
+
+  let jvPlannedHotel = null; // hasil auto-resolve, dipakai untuk cek deviasi
+
+  async function jvEnsureDataLoaded() {
+    if (jvData) return jvData;
+    try {
+      const resp = await fetch(JV_API_URL + '?key=' + encodeURIComponent(JV_API_KEY));
+      const data = await resp.json();
+      if (data.success) jvData = data;
+      return jvData;
+    } catch(err) {
+      return null;
+    }
+  }
+
+  function jvFindMyRosterRow(role) {
+    if (!jvData) return null;
+    const keywords = JV_ROLE_POSITION_MATCH[role];
+    if (!keywords) return null;
+    return jvData.roster.find(emp => {
+      const pos = (emp.position || '').toLowerCase();
+      return keywords.some(k => pos.includes(k));
+    }) || null;
+  }
+
+  // Cari kode hari kerja pertama mulai dari tanggal besok — kalau besok libur,
+  // lompat maju sampai ketemu hari yang bukan dayoff/kosong.
+  function jvResolveTomorrowHotel(role) {
+    if (!jvData) return null;
+    const emp = jvFindMyRosterRow(role);
+    if (!emp) return null;
+
+    const tomorrow = new Date(Date.now() + 7*3600000);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const tomorrowStr = tomorrow.toISOString().split('T')[0];
+    let startIdx = jvData.dates.findIndex(d => d.date === tomorrowStr);
+    if (startIdx === -1) return null; // besok di luar periode aktif
+
+    for (let i = startIdx; i < jvData.dates.length; i++) {
+      const code = emp.codes[i] || '';
+      if (code && code !== 'dayoff') {
+        const hotelName = JV_HOTEL_BY_CODE[code];
+        if (!hotelName) continue; // kode tidak dikenal, lanjut cari
+        return { hotelName: hotelName, code: code, dateLabel: jvData.dates[i].day + ' ' + jvData.dates[i].dow, isToday: i === startIdx };
+      }
+    }
+    return null; // tidak ketemu hari kerja sampai akhir periode
+  }
+
+  async function jvApplyAutoPrefill() {
+    const captionEl = document.getElementById('jv-prefill-caption');
+    if (captionEl) { captionEl.style.display = 'none'; captionEl.textContent = ''; }
+    jvPlannedHotel = null;
+
+    await jvEnsureDataLoaded();
+    if (!jvData) return;
+
+    const resolved = jvResolveTomorrowHotel(currentRole);
+    if (!resolved) return; // tidak ketemu jadwal — biarkan manual seperti biasa
+
+    jvPlannedHotel = resolved.hotelName;
+
+    const container = document.getElementById('activity-plan-hotel-select');
+    if (container) {
+      const targetBtn = Array.from(container.querySelectorAll('.activity-hotel-btn'))
+        .find(b => b.dataset.hotel === resolved.hotelName);
+      if (targetBtn) {
+        container.querySelectorAll('.activity-hotel-btn').forEach(b => b.classList.remove('selected'));
+        targetBtn.classList.add('selected');
+        const hotelInput = document.getElementById('activity-plan-hotel-val');
+        if (hotelInput) hotelInput.value = resolved.hotelName;
+      }
+    }
+
+    if (captionEl) {
+      captionEl.style.display = 'block';
+      captionEl.textContent = resolved.isToday
+        ? '✨ Otomatis dari jadwal — kalau besok libur, ikut jadwal hari kerja berikutnya'
+        : '✨ Otomatis dari jadwal (' + resolved.dateLabel + ' — besok libur)';
+    }
+
+    const warnEl = document.getElementById('jv-deviation-warning');
+    if (warnEl) warnEl.style.display = 'none';
+  }
+
+  function jvCheckDeviation(selectedHotel) {
+    const warnEl = document.getElementById('jv-deviation-warning');
+    const textEl = document.getElementById('jv-deviation-text');
+    if (!warnEl) return;
+    if (jvPlannedHotel && selectedHotel !== jvPlannedHotel) {
+      warnEl.style.display = 'block';
+      if (textEl) {
+        const shortNames = { 'Verse Lite Gajah Mada':'Verse Lite', 'Verse Luxe Wahid Hasyim':'Verse Luxe', 'Verse Hotel Cirebon':'Verse Cirebon', 'Oak Tree Mahakam Blok M':'Oak Tree' };
+        textEl.textContent = 'Jadwal Corp Visit untuk besok: ' + (shortNames[jvPlannedHotel] || jvPlannedHotel);
+      }
+    } else {
+      warnEl.style.display = 'none';
+      const reasonEl = document.getElementById('jv-deviation-reason');
+      if (reasonEl) reasonEl.value = '';
     }
   }
 
