@@ -7,10 +7,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: |
-          U='https://script.google.com/macros/s/AKfycbz3b0dZeU2TMYT2x9V9SjhE8rlK5aDDhJ1hM2OnBrX1KawBpFkBCSu7kqF5pbT2eGWSyQ/exec?key=verse-grps-rating-2026&role=HM%20Verse%20Luxe'
           mkdir out && cd out
-          curl -sL -D headers.txt -o body.txt -H 'Origin: https://verse-hotels-report.vercel.app' "$U" || true
-          head -c 3000 body.txt > body_head.txt; rm body.txt
+          for r in "HM%20Verse%20Luxe" "HM%20Verse%20Lite" "HM%20Verse%20Cirebon" "HM%20Oak%20Tree"; do
+            echo "== $r" >> result.txt
+            curl -s -m 60 -w "\nHTTP %{http_code} time %{time_total}s\n" "https://verse-hotels-report.vercel.app/api/grps?role=$r" | head -c 700 >> result.txt
+            echo >> result.txt
+          done
+          curl -s -o /dev/null -w "HTML page HTTP %{http_code}\n" https://verse-hotels-report.vercel.app/ >> result.txt
           git init -q && git checkout -q -b tmp-grps-result
           git config user.email a@b.c && git config user.name bot
           git add . && git commit -qm result

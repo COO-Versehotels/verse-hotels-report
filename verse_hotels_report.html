@@ -26906,8 +26906,7 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
     if (gridEl) gridEl.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:12px;color:var(--gray-400);font-size:12px;">Memuat...</div>';
 
     try {
-      const resp = await fetch(GRPS_API_URL + '?key=' + encodeURIComponent(GRPS_API_KEY_FE) + '&role=' + encodeURIComponent(currentRole));
-      const data = await resp.json();
+      const data = await grpsFetchRating(currentRole);
       if (!data.success) {
         if (gridEl) gridEl.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:12px;color:#e74c3c;font-size:12px;">' + jvEsc(data.error || 'Gagal memuat') + '</div>';
         return;
@@ -26935,7 +26934,28 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
         convEl.textContent = pct;
       }
     } catch (err) {
-      if (gridEl) gridEl.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:12px;color:#e74c3c;font-size:12px;">Gagal terhubung ke server</div>';
+      if (gridEl) gridEl.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:12px;color:#e74c3c;font-size:12px;">' +
+        'Gagal memuat rating. Periksa koneksi internet.<br>' +
+        '<button onclick="grpsMaybeShowHomeCard()" style="margin-top:8px;padding:7px 16px;border:1.5px solid var(--navy);background:none;color:var(--navy);border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;">🔄 Coba lagi</button></div>';
+    }
+  }
+
+  // Ambil rating: utamanya lewat server sendiri (/api/grps), cadangan langsung ke Apps Script
+  async function grpsFetchRating(role) {
+    const tryFetch = async (url, ms) => {
+      const ctrl = new AbortController();
+      const t = setTimeout(() => ctrl.abort(), ms);
+      try {
+        const r = await fetch(url, { signal: ctrl.signal });
+        const d = await r.json();
+        if (!d || typeof d.success === 'undefined') throw new Error('Respons tidak valid');
+        return d;
+      } finally { clearTimeout(t); }
+    };
+    try {
+      return await tryFetch('/api/grps?role=' + encodeURIComponent(role), 25000);
+    } catch (e1) {
+      return await tryFetch(GRPS_API_URL + '?key=' + encodeURIComponent(GRPS_API_KEY_FE) + '&role=' + encodeURIComponent(role), 25000);
     }
   }
 
