@@ -26345,8 +26345,11 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
       } else {
         badgeHtml = '<div style="display:flex;align-items:center;gap:6px;background:#F2F2F0;color:#8A8A92;border:1.5px dashed #D5D5D0;border-radius:10px;padding:6.5px 12px;flex-shrink:0;font-size:12px;font-weight:600;">Isi jadwal</div>';
       }
-      const disabled = jvData.isLocked;
-      return '<button ' + (disabled ? 'disabled' : ('onclick="jvOpenPicker(' + emp.employeeIndex + ')"')) + ' style="display:flex;align-items:center;gap:12px;background:#FFFFFF;border:1px solid #EDEDE9;border-radius:16px;padding:12px 14px;text-align:left;width:100%;font-family:inherit;' + (disabled ? 'opacity:0.6;' : 'cursor:pointer;') + '">' +
+      // Master schedule cuma boleh diubah oleh COO — Corp Team (5 PIN) hanya bisa LIHAT
+      // di layar ini. Mereka ubah punya diri sendiri lewat "Unit Visit Tomorrow" saja.
+      const canEdit = (currentRole === 'COO') && !jvData.isLocked;
+      const disabled = !canEdit;
+      return '<button ' + (disabled ? 'disabled' : ('onclick="jvOpenPicker(' + emp.employeeIndex + ')"')) + ' style="display:flex;align-items:center;gap:12px;background:#FFFFFF;border:1px solid #EDEDE9;border-radius:16px;padding:12px 14px;text-align:left;width:100%;font-family:inherit;' + (disabled ? '' : 'cursor:pointer;') + '">' +
         '<div style="width:40px;height:40px;border-radius:12px;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0;">' + jvEsc(initials) + '</div>' +
         '<div style="flex:1;min-width:0;">' +
           '<div style="font-size:14px;font-weight:600;color:#17171A;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + jvEsc(emp.name) + '</div>' +
@@ -26367,6 +26370,7 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
 
   function jvOpenPicker(employeeIndex) {
     if (!jvData || jvData.isLocked) return;
+    if (currentRole !== 'COO') return; // hanya COO yang boleh ubah jadwal master di layar ini
     jvPickerEmployeeIdx = employeeIndex;
     const emp = jvData.roster.find(e => e.employeeIndex === employeeIndex);
     if (!emp) return;
