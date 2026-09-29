@@ -2407,7 +2407,7 @@
   <!-- ===== JADWAL VISIT CORP ===== -->
   <div class="screen" id="screen-jadwal-visit">
     <div class="topbar" style="padding:48px 16px 12px;">
-      <button class="topbar-back" onclick="goHome()">←</button>
+      <button class="topbar-back" onclick="jvGoBack()">←</button>
       <div class="topbar-title">
         <h2>Jadwal Visit Corp</h2>
         <p id="jv-period-label">Memuat...</p>
@@ -2669,6 +2669,7 @@
         <p style="color:rgba(255,255,255,0.5);" id="coo-date">Verse Group Hotels</p>
       </div>
       <div class="topbar-right">
+        <span style="font-size:20px;cursor:pointer;color:var(--gold);margin-right:10px;" onclick="jvOpen()" title="Jadwal Visit Corp">🧳</span>
         <span id="coo-user-btn" style="font-size:20px;cursor:pointer;color:var(--gold);margin-right:10px;display:none;" onclick="openUserMgmtReport()" title="Manage User">👥</span>
         <span id="coo-loglog-btn" style="font-size:20px;cursor:pointer;color:var(--gold);margin-right:10px;display:none;" onclick="openLoginHistory()" title="Login History">📊</span>
         <span id="coo-loctrack-btn" style="font-size:20px;cursor:pointer;color:var(--gold);margin-right:10px;display:none;" onclick="openLocationTracking()" title="Location Tracking">🗺️</span>
@@ -26254,6 +26255,16 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
   function jvOpen() {
     go('jadwal-visit');
     jvLoad();
+  }
+
+  function jvGoBack() {
+    // COO balik ke Dashboard COO (bukan Beranda staff, karena COO tidak lewat situ);
+    // role lain (kalau nanti ada) balik ke Beranda seperti biasa.
+    if (currentRole === 'COO') {
+      go('coo');
+    } else {
+      goHome();
+    }
   }
 
   async function jvLoad() {
