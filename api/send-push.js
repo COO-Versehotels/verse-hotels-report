@@ -1,13 +1,56 @@
 // ============================================================
-// Vercel Serverless Function — kirim push notification (FCM)
-// Dipakai untuk: reminder otomatis (dipanggil GitHub Actions cron)
-// dan Broadcast Message dari Dashboard COO.
+// Vercel Serverless Function — kirim push notification (FCM HTTP v1)
+// Pakai Firebase Service Account (bukan Server Key lama yang sudah
+// dihapus Google).
 //
 // Perlu environment variable di Vercel:
-//   FIREBASE_SERVER_KEY   = Server Key dari Firebase Console
-//   SUPABASE_URL          = https://hgbqecsmhrzlavsjwlwq.supabase.co
-//   SUPABASE_ANON_KEY     = (anon/publishable key yang sudah ada)
+//   FIREBASE_PROJECT_ID    = verse-app-98604
+//   FIREBASE_CLIENT_EMAIL  = firebase-adminsdk-fbsvc@verse-app-98604.iam.gserviceaccount.com
+//   FIREBASE_PRIVATE_KEY   = (isi private_key dari file service account)
+//   SUPABASE_URL           = https://hgbqecsmhrzlavsjwlwq.supabase.co
+//   SUPABASE_ANON_KEY      = (anon/publishable key yang sudah ada)
 // ============================================================
+
+import crypto from 'crypto';
+
+function base64url(input) {
+  return Buffer.from(input)
+    .toString('base64')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '');
+}
+
+async function getAccessToken() {
+  const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+  const privateKey = (process.env.FIREBASE_PRIVATE_KEY || '').replace(/\\n/g, '\n');
+
+  const now = Math.floor(Date.now() / 1000);
+  const header = { alg: 'RS256', typ: 'JWT' };
+  const claim = {
+    iss: clientEmail,
+    scope: 'https://www.googleapis.com/auth/firebase.messaging',
+    aud: 'https://oauth2.googleapis.com/token',
+    exp: now + 3600,
+    iat: now,
+  };
+
+  const unsigned = base64url(JSON.stringify(header)) + '.' + base64url(JSON.stringify(claim));
+  const signer = crypto.createSign('RSA-SHA256');
+  signer.update(unsigned);
+  const signature = signer.sign(privateKey, 'base64')
+    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  const jwt = unsigned + '.' + signature;
+
+  const resp = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: 'grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=' + jwt,
+  });
+  const data = await resp.json();
+  if (!data.access_token) throw new Error('Gagal ambil access token: ' + JSON.stringify(data));
+  return data.access_token;
+}
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -21,21 +64,19 @@ export default async function handler(req, res) {
 
   const SUPA_URL = process.env.SUPABASE_URL || 'https://hgbqecsmhrzlavsjwlwq.supabase.co';
   const SUPA_KEY = process.env.SUPABASE_ANON_KEY || 'sb_publishable_KeAmOu9ex8r1PDRI1MRMsQ_40uiEkbM';
-  const FCM_SERVER_KEY = process.env.FIREBASE_SERVER_KEY;
+  const PROJECT_ID = process.env.FIREBASE_PROJECT_ID;
 
-  if (!FCM_SERVER_KEY) {
-    return res.status(500).json({ error: 'FIREBASE_SERVER_KEY belum di-set di Vercel' });
+  if (!PROJECT_ID || !process.env.FIREBASE_CLIENT_EMAIL || !process.env.FIREBASE_PRIVATE_KEY) {
+    return res.status(500).json({ error: 'Kredensial Firebase belum lengkap di Vercel' });
   }
 
   try {
-    // 1. Ambil device token yang relevan dari Supabase
     let query = SUPA_URL + '/rest/v1/device_tokens?select=token,role,hotel';
     if (target === 'role' && targetValue) {
       query += '&role=eq.' + encodeURIComponent(targetValue);
     } else if (target === 'hotel' && targetValue) {
       query += '&hotel=eq.' + encodeURIComponent(targetValue);
     }
-    // target === 'all' -> tidak ada filter tambahan
 
     const tokenResp = await fetch(query, {
       headers: { apikey: SUPA_KEY, Authorization: 'Bearer ' + SUPA_KEY },
@@ -47,22 +88,27 @@ export default async function handler(req, res) {
       return res.status(200).json({ success: true, sent: 0, message: 'Tidak ada device token yang cocok' });
     }
 
-    // 2. Kirim ke Firebase Cloud Messaging (legacy HTTP API, kirim per token)
+    const accessToken = await getAccessToken();
+
     let sent = 0, failed = 0;
     for (const token of tokens) {
       try {
-        const fcmResp = await fetch('https://fcm.googleapis.com/fcm/send', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: 'key=' + FCM_SERVER_KEY,
-          },
-          body: JSON.stringify({
-            to: token,
-            notification: { title, body },
-            priority: 'high',
-          }),
-        });
+        const fcmResp = await fetch(
+          `https://fcm.googleapis.com/v1/projects/${PROJECT_ID}/messages:send`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: 'Bearer ' + accessToken,
+            },
+            body: JSON.stringify({
+              message: {
+                token,
+                notification: { title, body },
+              },
+            }),
+          }
+        );
         if (fcmResp.ok) sent++; else failed++;
       } catch (e) {
         failed++;
