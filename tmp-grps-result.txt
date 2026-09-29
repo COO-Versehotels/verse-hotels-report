@@ -1,0 +1,10 @@
+== headers (tanpa login) ==
+HTTP/2 302 
+content-type: application/binary
+access-control-allow-origin: *
+location: https://script.googleusercontent.com/macros/echo?user_content_key=AUkAhnRKtTw42ZHrjzeNWSF7fFgvNFWlE0sFe3WX2lhTOZlU3VFfM0FZ3BZMALfzk8y6om0vjRL2zn9exIbv7SzuaoV4tPUzjaAbA0bX6lvsIZvVKbGCQjFcu50rCTAfCsdVG8EyfOMi2i2SmZ65x9n5kuW9z74QR51JzRsUj3YUxoSmIy2cUMbgF9WRBHuYzUG6Z8wZoc6Z0xxZaLgxxooICxi8etjjBQjxoM4J4E29mA5_XOeJCioOtpcB_GBXQeHpCGlNsuKg94jWF94t4XX129aVPKtjaGrV1DelcbnC7BwxShAnRuEY917XuI3wWvCoXrYt8pPgSoll3KI6AxRTnrSOx11Dow&lib=MooSb7Lvko7aDqNwi4nRINBNi4TzI6ntR
+HTTP/2 200 
+content-type: application/json; charset=utf-8
+access-control-allow-origin: *
+== body ==
+{"success":true,"updatedDate":"30 Sep 2026","platforms":[{"key":"google","label":"Google","score":4.3,"delta":0},{"key":"tripadvisor","label":"TripAdvisor","score":4.4,"delta":0.1},{"key":"traveloka","label":"Traveloka","score":8.2,"delta":0},{"key":"agoda","label":"Agoda","score":8,"delta":0},{"key":"booking","label":"Booking.com","score":6.7,"delta":0.1},{"key":"tiket","label":"Tiket.com","score":4.2,"delta":0},{"key":"trip","label":"Trip.com","score":7.7,"delta":0}],"collectionRateMTD":0.02127659574468085}
