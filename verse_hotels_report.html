@@ -2058,6 +2058,33 @@
         <div class="rc-arrow">›</div>
       </div>
 
+      <!-- KPI Utama card -->
+      <div id="kpi-home-card" style="display:none;margin:0 16px 14px;background:#fff;border:1px solid #eef0f4;border-radius:16px;padding:16px;box-shadow:0 2px 10px rgba(26,58,92,0.06);">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+          <div style="width:32px;height:32px;border-radius:9px;background:#eaf3ec;display:flex;align-items:center;justify-content:center;font-size:16px;">🎯</div>
+          <div style="font-size:13.5px;font-weight:700;color:var(--navy);" id="kpi-home-card-title">KPI Utama</div>
+        </div>
+        <div id="kpi-home-card-list" style="display:flex;flex-direction:column;gap:9px;"></div>
+      </div>
+
+      <!-- Rating Review + Conversion Rate card (HM only) -->
+      <div id="grps-home-card" style="display:none;margin:0 16px 14px;background:#fff;border:1px solid #eef0f4;border-radius:16px;padding:16px;box-shadow:0 2px 10px rgba(26,58,92,0.06);">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div style="width:32px;height:32px;border-radius:9px;background:#fff3e0;display:flex;align-items:center;justify-content:center;font-size:16px;">⭐</div>
+            <div style="font-size:13.5px;font-weight:700;color:var(--navy);">Rating Review</div>
+          </div>
+          <span style="font-size:10px;color:var(--gray-400);font-weight:600;">vs Tgl 1</span>
+        </div>
+        <div id="grps-home-card-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px;">
+          <div style="grid-column:1/-1;text-align:center;padding:12px;color:var(--gray-400);font-size:12px;">Memuat...</div>
+        </div>
+        <div id="grps-home-card-conv" style="margin-top:12px;background:linear-gradient(135deg,var(--navy),#0e2340);border-radius:12px;padding:12px 14px;">
+          <div style="font-size:10.5px;color:rgba(255,255,255,0.6);font-weight:600;">Conversion Rate (MTD)</div>
+          <div style="font-size:19px;font-weight:800;color:#fff;margin-top:1px;" id="grps-home-card-conv-val">—</div>
+        </div>
+      </div>
+
       <div class="section">
         <div class="section-title">PEKERJAAN HARI INI</div>
         <div id="home-visit-list">
@@ -4321,6 +4348,7 @@
               if (b.dataset.hotel === val) b.classList.add('selected');
               else b.classList.remove('selected');
             });
+            if (typeof jvColorizeHotelButtons === 'function') jvColorizeHotelButtons(container);
           }
           restoredCount++;
           return;
@@ -5145,6 +5173,12 @@
 
       // Show/hide Jadwal Visit Corp menu card based on role
       if (typeof jvMaybeShowHomeMenu === 'function') jvMaybeShowHomeMenu();
+
+      // Show/hide KPI Utama card based on role
+      if (typeof kpiMaybeShowHomeCard === 'function') kpiMaybeShowHomeCard();
+
+      // Show/hide Rating Review + Conversion Rate card based on role (HM only)
+      if (typeof grpsMaybeShowHomeCard === 'function') grpsMaybeShowHomeCard();
 
       const d = new Date();
       const days = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
@@ -23905,6 +23939,8 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
     // Auto-save draft (untuk Unit Visit Tomorrow)
     if (taskId === 'activity-plan') {
       saveUnitVisitDraft();
+      // Warna tombol ikut warna kode jadwal Corp Visit
+      if (typeof jvColorizeHotelButtons === 'function') jvColorizeHotelButtons(container);
       // Cek deviasi dari jadwal Corp Visit (Stage 2)
       if (typeof jvCheckDeviation === 'function') jvCheckDeviation(btn.dataset.hotel);
     } else {
@@ -26244,12 +26280,143 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
     return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   }
 
+  // ======================================================
+  // KPI UTAMA — kartu di Beranda, isi beda per role
+  // ======================================================
+  const KPI_CORP = {
+    'Ops HR Manager': [
+      'Memastikan seluruh karyawan memahami, menjalankan SOP, standar grooming & greeting',
+      'Menjalankan aplikasi (Tasklist & Recruitment), Daily & Monthly Report',
+      'Kebutuhan manning di setiap unit/pusat terpenuhi dengan waktu singkat',
+      'Timeline payroll tepat waktu',
+      'Memastikan data talenta (absen, data karyawan), BPJS Kes, BPJS TK valid & update',
+    ],
+    'HR Officer': [
+      'Memastikan seluruh karyawan memahami, menjalankan SOP, standar grooming & greeting',
+      'Menjalankan aplikasi (Tasklist & Recruitment), Daily & Monthly Report',
+      'Kebutuhan manning di setiap unit/pusat terpenuhi dengan waktu singkat',
+      'Timeline payroll tepat waktu',
+      'Memastikan data talenta (absen, data karyawan), BPJS Kes, BPJS TK valid & update',
+    ],
+    'Chief Engineering Corporate': [
+      'Kamar OO di setiap unit bisa selesai dengan cepat',
+      'Monitoring progress defect di setiap unit',
+      'Memastikan kendala ENG di setiap unit bisa ditangani',
+      'Memastikan project-project besar ENG di unit berjalan',
+      'Menjalankan aplikasi (Tasklist & Defect), Daily & Monthly Report',
+    ],
+    'CRA Corporate': [
+      'Memastikan semua reservasi, pertanyaan dilayani dengan baik',
+      'Memastikan rating guest review naik, review collection mencapai target, respons rate max H+1',
+      'Memastikan chat (inbox), pertanyaan tamu di extranet dan WhatsApp terjawab',
+      'Memastikan bad review/experience ditangani dengan cepat dan tepat',
+      'Menjalankan aplikasi (Tasklist)',
+    ],
+    // EHK Corporate: sengaja tidak ada entri — belum ada orangnya, kartu KPI disembunyikan
+  };
+
+  const KPI_HM = [
+    'Rating guest review naik, review collection mencapai target, respons rate max H+1',
+    'Menjalankan aplikasi (Tasklist & Defect), Daily & Monthly Report',
+    'Kebersihan, kerapihan unit & aset terjaga',
+    'SOP, greeting & grooming karyawan berjalan konsisten',
+    'Target Revenue dan ARR tercapai',
+  ];
+
+  // ======================================================
+  // GRPS RATING & CONVERSION RATE — kartu di Beranda HM
+  // ======================================================
+  const GRPS_API_URL = 'https://script.google.com/macros/s/AKfycbz3b0dZeU2TMYT2x9V9SjhE8rlK5aDDhJ1hM2OnBrX1KawBpFkBCSu7kqF5pbT2eGWSyQ/exec';
+  const GRPS_API_KEY_FE = 'verse-grps-rating-2026';
+
+  async function grpsMaybeShowHomeCard() {
+    const card = document.getElementById('grps-home-card');
+    if (!card) return;
+
+    const isHM = currentRole && currentRole.startsWith('HM ');
+    if (!isHM) { card.style.display = 'none'; return; }
+
+    card.style.display = 'block';
+    const gridEl = document.getElementById('grps-home-card-grid');
+    const convEl = document.getElementById('grps-home-card-conv-val');
+    if (gridEl) gridEl.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:12px;color:var(--gray-400);font-size:12px;">Memuat...</div>';
+
+    try {
+      const resp = await fetch(GRPS_API_URL + '?key=' + encodeURIComponent(GRPS_API_KEY_FE) + '&role=' + encodeURIComponent(currentRole));
+      const data = await resp.json();
+      if (!data.success) {
+        if (gridEl) gridEl.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:12px;color:#e74c3c;font-size:12px;">' + jvEsc(data.error || 'Gagal memuat') + '</div>';
+        return;
+      }
+
+      if (gridEl) {
+        gridEl.innerHTML = data.platforms.map(p => {
+          let arrow = '—', color = '#9aa3b2';
+          if (typeof p.delta === 'number') {
+            if (p.delta > 0) { arrow = '▲ ' + p.delta; color = '#2ecc71'; }
+            else if (p.delta < 0) { arrow = '▼ ' + Math.abs(p.delta); color = '#e74c3c'; }
+            else { arrow = '— 0'; color = '#9aa3b2'; }
+          }
+          return '<div style="background:var(--gray-50);border-radius:10px;padding:9px 10px;">' +
+            '<div style="font-size:10.5px;color:var(--gray-400);font-weight:600;margin-bottom:2px;">' + jvEsc(p.label) + '</div>' +
+            '<div style="display:flex;align-items:baseline;gap:6px;">' +
+              '<span style="font-size:15px;font-weight:800;color:#2d3340;">' + jvEsc(p.score) + '</span>' +
+              '<span style="font-size:10.5px;font-weight:700;color:' + color + ';">' + arrow + '</span>' +
+            '</div></div>';
+        }).join('');
+      }
+
+      if (convEl) {
+        const pct = (typeof data.collectionRateMTD === 'number') ? (data.collectionRateMTD * 100).toFixed(1) + '%' : '—';
+        convEl.textContent = pct;
+      }
+    } catch (err) {
+      if (gridEl) gridEl.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:12px;color:#e74c3c;font-size:12px;">Gagal terhubung ke server</div>';
+    }
+  }
+
+  function kpiMaybeShowHomeCard() {
+    const card = document.getElementById('kpi-home-card');
+    const titleEl = document.getElementById('kpi-home-card-title');
+    const listEl = document.getElementById('kpi-home-card-list');
+    if (!card || !listEl) return;
+
+    let points = null;
+    let title = 'KPI Utama';
+
+    const isHM = currentRole && currentRole.startsWith('HM ');
+    if (isHM) {
+      points = KPI_HM;
+      title = 'KPI Utama ' + currentRole;
+    } else if (KPI_CORP[currentRole]) {
+      points = KPI_CORP[currentRole];
+      title = 'KPI Utama ' + currentRole;
+    }
+
+    if (!points) {
+      card.style.display = 'none';
+      return;
+    }
+
+    if (titleEl) titleEl.textContent = title;
+    listEl.innerHTML = points.map(p =>
+      '<div style="display:flex;gap:9px;align-items:flex-start;">' +
+        '<span style="width:6px;height:6px;border-radius:50%;background:#c9973a;flex-shrink:0;margin-top:6px;"></span>' +
+        '<span style="font-size:12.5px;color:var(--gray-600);line-height:1.5;">' + jvEsc(p) + '</span>' +
+      '</div>'
+    ).join('');
+    card.style.display = 'block';
+  }
+
   function jvMaybeShowHomeMenu() {
     const card = document.getElementById('jv-home-card');
     if (!card) return;
     // Corp Team (5 PIN) + COO — COO bisa ubah jadwal langsung dari app juga
-    const eligible = (typeof isCorporateTeamRole === 'function' && isCorporateTeamRole(currentRole)) || currentRole === 'COO';
-    card.style.display = eligible ? 'flex' : 'none';
+    const isCorp = (typeof isCorporateTeamRole === 'function' && isCorporateTeamRole(currentRole));
+    const isCOO = currentRole === 'COO';
+    card.style.display = (isCorp || isCOO) ? 'flex' : 'none';
+    const subEl = document.getElementById('jv-home-card-sub');
+    if (subEl) subEl.textContent = isCOO ? 'Lihat & atur jadwal visit tim' : 'Lihat Jadwal Visit';
   }
 
   function jvOpen() {
@@ -26449,6 +26616,32 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
     'OT': 'Oak Tree Mahakam Blok M',
     'CB': 'Verse Hotel Cirebon',
   };
+  // Warna tombol Unit Visit Tomorrow — SAMA PERSIS dengan warna kode di Jadwal Visit Corp
+  const JV_HOTEL_BTN_COLOR = {
+    'Verse Lite Gajah Mada':  { bg: '#FFD700', fg: '#000000' }, // GM
+    'Verse Luxe Wahid Hasyim':{ bg: '#8B5A2B', fg: '#FFFFFF' }, // WH
+    'Oak Tree Mahakam Blok M':{ bg: '#E91E8C', fg: '#FFFFFF' }, // OT
+    'Verse Hotel Cirebon':    { bg: '#2E9E44', fg: '#FFFFFF' }, // CB
+  };
+  // Terapkan warna sesuai kode ke tombol yang sedang "selected"; kembalikan
+  // ke gaya netral CSS default untuk tombol yang tidak dipilih.
+  function jvColorizeHotelButtons(container) {
+    if (!container) return;
+    container.querySelectorAll('.activity-hotel-btn').forEach(b => {
+      if (b.classList.contains('selected')) {
+        const c = JV_HOTEL_BTN_COLOR[b.dataset.hotel];
+        if (c) {
+          b.style.background = c.bg;
+          b.style.borderColor = c.bg;
+          b.style.color = c.fg;
+        }
+      } else {
+        b.style.background = '';
+        b.style.borderColor = '';
+        b.style.color = '';
+      }
+    });
+  }
   // Role (PIN) -> kata kunci posisi di roster Google Sheet (dicari case-insensitive, substring)
   const JV_ROLE_POSITION_MATCH = {
     'Chief Engineering Corporate': ['chief engineering'],
@@ -26528,6 +26721,7 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
         targetBtn.classList.add('selected');
         const hotelInput = document.getElementById('activity-plan-hotel-val');
         if (hotelInput) hotelInput.value = resolved.hotelName;
+        jvColorizeHotelButtons(container);
       }
     }
 
