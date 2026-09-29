@@ -2600,6 +2600,40 @@
     <div id="peta-live-map" style="width:100%;height:calc(100% - 92px);"></div>
   </div>
 
+  <!-- ===== BROADCAST MESSAGE ===== -->
+  <div class="screen" id="screen-broadcast">
+    <div class="topbar" style="padding:48px 16px 12px;background:linear-gradient(135deg,#6d28d9,#8b5cf6);">
+      <button class="topbar-back" onclick="go('coo')" style="color:white;background:rgba(255,255,255,0.15);">←</button>
+      <div class="topbar-title">
+        <h2 style="color:white;">📢 Broadcast Message</h2>
+        <p style="color:rgba(255,255,255,0.6);">Kirim notifikasi langsung ke HP Team</p>
+      </div>
+    </div>
+    <div class="scroll-area">
+      <div style="padding:16px;">
+        <div style="background:white;border-radius:14px;padding:16px;box-shadow:var(--shadow-card);margin-bottom:12px;">
+          <label style="font-size:11px;color:var(--gray-500);font-weight:700;display:block;margin-bottom:6px;">TARGET PENERIMA</label>
+          <select id="bcast-target-type" onchange="bcastUpdateTargetOptions()" style="width:100%;padding:10px;border:1.5px solid var(--gray-200);border-radius:8px;font-family:inherit;font-size:13px;margin-bottom:8px;">
+            <option value="all">Semua Team</option>
+            <option value="role">Per Role</option>
+            <option value="hotel">Per Unit Hotel</option>
+          </select>
+          <select id="bcast-target-value" style="width:100%;padding:10px;border:1.5px solid var(--gray-200);border-radius:8px;font-family:inherit;font-size:13px;display:none;"></select>
+        </div>
+
+        <div style="background:white;border-radius:14px;padding:16px;box-shadow:var(--shadow-card);margin-bottom:12px;">
+          <label style="font-size:11px;color:var(--gray-500);font-weight:700;display:block;margin-bottom:6px;">JUDUL</label>
+          <input type="text" id="bcast-title" placeholder="Contoh: Pengumuman Penting" style="width:100%;padding:10px;border:1.5px solid var(--gray-200);border-radius:8px;font-family:inherit;font-size:13px;margin-bottom:12px;">
+          <label style="font-size:11px;color:var(--gray-500);font-weight:700;display:block;margin-bottom:6px;">PESAN</label>
+          <textarea id="bcast-body" rows="4" placeholder="Tulis pesan yang mau dikirim..." style="width:100%;padding:10px;border:1.5px solid var(--gray-200);border-radius:8px;font-family:inherit;font-size:13px;resize:vertical;"></textarea>
+        </div>
+
+        <button onclick="sendBroadcast()" id="bcast-send-btn" style="width:100%;padding:14px;background:#6d28d9;color:white;border:none;border-radius:10px;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;">📤 Kirim Sekarang</button>
+        <div id="bcast-status" style="margin-top:10px;font-size:12px;text-align:center;color:var(--gray-500);"></div>
+      </div>
+    </div>
+  </div>
+
   <!-- ===== ARSIP LAPORAN ===== -->
   <div class="screen" id="screen-arsip">
     <div class="topbar" style="padding:48px 16px 12px;background:linear-gradient(135deg,#1a4a1a,#2d6a2d);">
@@ -2719,6 +2753,7 @@
         <span id="coo-loglog-btn" style="font-size:20px;cursor:pointer;color:var(--gold);margin-right:10px;display:none;" onclick="openLoginHistory()" title="Login History">📊</span>
         <span id="coo-loctrack-btn" style="font-size:20px;cursor:pointer;color:var(--gold);margin-right:10px;display:none;" onclick="openLocationTracking()" title="Location Tracking">🗺️</span>
         <span style="font-size:20px;cursor:pointer;color:var(--gold);margin-right:10px;" onclick="openPetaLive()" title="Peta Live">📡</span>
+        <span style="font-size:20px;cursor:pointer;color:var(--gold);margin-right:10px;" onclick="openBroadcast()" title="Broadcast Message">📢</span>
         <span id="coo-devapproval-btn" style="font-size:20px;cursor:pointer;color:var(--gold);margin-right:10px;display:none;" onclick="openDeviceApproval()" title="Device Approval">📱</span>
         <span style="font-size:20px;cursor:pointer;color:var(--gold);" onclick="exportDashboardPDF()" title="Export PDF Konsolidasi">📄</span>
       </div>
@@ -3287,7 +3322,7 @@
       if (el) el.style.display = 'none';
     });
     if (!_goHomeOrResume()) showToast('👋 Selamat datang kembali, ' + currentRole.replace(' Corporate','') + '!');
-    setTimeout(updateVisitSectionLogo, 100); setTimeout(saveTeamLocation, 500); setTimeout(startBackgroundGpsTracking, 800);
+    setTimeout(updateVisitSectionLogo, 100); setTimeout(saveTeamLocation, 500); setTimeout(startBackgroundGpsTracking, 800); setTimeout(registerPushNotifications, 1000);
     return true;
   }
 
@@ -5630,6 +5665,77 @@
     }
   }
 
+  // === Broadcast Message (COO only) ===
+  const BCAST_ROLES = [
+    'HM Verse Lite', 'HM Verse Luxe', 'HM Verse Cirebon', 'HM Oak Tree',
+    'Ops HR Manager', 'HR Officer', 'Chief Engineering Corporate', 'CRA Corporate', 'EHK Corporate',
+    'F&B Manager', 'Team Kitchen', 'F&B Attendant',
+  ];
+  const BCAST_HOTELS = ['Verse Lite Gajah Mada', 'Verse Luxe Wahid Hasyim', 'Verse Hotel Cirebon', 'Oak Tree Mahakam Blok M'];
+
+  function openBroadcast() {
+    go('broadcast');
+    bcastUpdateTargetOptions();
+    document.getElementById('bcast-title').value = '';
+    document.getElementById('bcast-body').value = '';
+    document.getElementById('bcast-status').textContent = '';
+  }
+
+  function bcastUpdateTargetOptions() {
+    const type = document.getElementById('bcast-target-type').value;
+    const valSelect = document.getElementById('bcast-target-value');
+    if (type === 'all') {
+      valSelect.style.display = 'none';
+      return;
+    }
+    const options = type === 'role' ? BCAST_ROLES : BCAST_HOTELS;
+    valSelect.innerHTML = options.map(o => `<option value="${jvEsc(o)}">${jvEsc(o)}</option>`).join('');
+    valSelect.style.display = 'block';
+  }
+
+  async function sendBroadcast() {
+    const type = document.getElementById('bcast-target-type').value;
+    const targetValue = document.getElementById('bcast-target-value').value;
+    const title = document.getElementById('bcast-title').value.trim();
+    const body = document.getElementById('bcast-body').value.trim();
+    const statusEl = document.getElementById('bcast-status');
+    const btn = document.getElementById('bcast-send-btn');
+
+    if (!title || !body) {
+      statusEl.textContent = '⚠️ Judul dan pesan wajib diisi';
+      statusEl.style.color = '#e74c3c';
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = 'Mengirim...';
+    statusEl.textContent = '';
+
+    try {
+      const resp = await fetch('/api/send-push', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ target: type, targetValue, title, body }),
+      });
+      const data = await resp.json();
+      if (data.success) {
+        statusEl.textContent = `✅ Terkirim ke ${data.sent} HP` + (data.failed ? ` (${data.failed} gagal)` : '');
+        statusEl.style.color = '#2ecc71';
+        document.getElementById('bcast-title').value = '';
+        document.getElementById('bcast-body').value = '';
+      } else {
+        statusEl.textContent = '❌ Gagal: ' + (data.error || 'unknown error');
+        statusEl.style.color = '#e74c3c';
+      }
+    } catch (e) {
+      statusEl.textContent = '❌ Gagal terhubung ke server';
+      statusEl.style.color = '#e74c3c';
+    }
+
+    btn.disabled = false;
+    btn.textContent = '📤 Kirim Sekarang';
+  }
+
   // === Device Approval (COO only) ===
   function openDeviceApproval() {
     if (currentRole !== 'COO') { showToast('Hanya COO yang dapat mengelola device.'); return; }
@@ -5837,7 +5943,7 @@
         if (el) el.style.display = 'none';
       });
       if (!_goHomeOrResume()) showToast('👋 Selamat datang kembali!');
-      setTimeout(updateVisitSectionLogo, 100); setTimeout(saveTeamLocation, 500); setTimeout(startBackgroundGpsTracking, 800);
+      setTimeout(updateVisitSectionLogo, 100); setTimeout(saveTeamLocation, 500); setTimeout(startBackgroundGpsTracking, 800); setTimeout(registerPushNotifications, 1000);
       return;
     }
 
@@ -6306,7 +6412,7 @@
     // Simpan session hari ini (PIN sekali sehari)
     saveSessionToday(currentRole, currentHotel);
     // Update logo & lokasi
-    setTimeout(updateVisitSectionLogo, 100); setTimeout(saveTeamLocation, 500); setTimeout(startBackgroundGpsTracking, 800);
+    setTimeout(updateVisitSectionLogo, 100); setTimeout(saveTeamLocation, 500); setTimeout(startBackgroundGpsTracking, 800); setTimeout(registerPushNotifications, 1000);
   }
 
   // ===== BIOMETRIC / WEBAUTHN LOGIN COO =====
@@ -6472,7 +6578,7 @@
     });
     go('home');
     saveSessionToday(role, currentHotel);
-    setTimeout(updateVisitSectionLogo, 100); setTimeout(saveTeamLocation, 500); setTimeout(startBackgroundGpsTracking, 800);
+    setTimeout(updateVisitSectionLogo, 100); setTimeout(saveTeamLocation, 500); setTimeout(startBackgroundGpsTracking, 800); setTimeout(registerPushNotifications, 1000);
   }
 
   function loginAsCOO() {
@@ -23110,6 +23216,54 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
       if (BackgroundGeolocation) await BackgroundGeolocation.removeWatcher({ id: bgGeoWatcherId });
     } catch (e) {}
     bgGeoWatcherId = null;
+  }
+
+  // ======================================================
+  // NOTIFIKASI PUSH (Android app only) — daftar & simpan device
+  // token ke Supabase, supaya bisa dikirimi reminder & broadcast.
+  // ======================================================
+  async function registerPushNotifications() {
+    if (!isRunningInCapacitorApp()) return;
+    if (!currentRole || currentRole === 'COO' || currentRole === 'CEO') return;
+
+    try {
+      const { PushNotifications } = window.Capacitor.Plugins;
+      if (!PushNotifications) return;
+
+      const permStatus = await PushNotifications.requestPermissions();
+      if (permStatus.receive !== 'granted') return;
+
+      await PushNotifications.register();
+
+      PushNotifications.addListener('registration', async (token) => {
+        try {
+          const hotelVal = currentHotel || '';
+          // Upsert manual: hapus token lama utk role+hotel ini, simpan yang baru
+          await fetch(SUPA_URL + '/rest/v1/device_tokens?role=eq.' + encodeURIComponent(currentRole) + '&hotel=eq.' + encodeURIComponent(hotelVal), {
+            method: 'DELETE',
+            headers: { apikey: SUPA_KEY, Authorization: 'Bearer ' + SUPA_KEY },
+          });
+          await fetch(SUPA_URL + '/rest/v1/device_tokens', {
+            method: 'POST',
+            headers: {
+              apikey: SUPA_KEY,
+              Authorization: 'Bearer ' + SUPA_KEY,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              role: currentRole,
+              hotel: hotelVal,
+              token: token.value,
+              updated_at: new Date().toISOString(),
+            }),
+          });
+        } catch (e) {}
+      });
+
+      PushNotifications.addListener('registrationError', () => {});
+    } catch (e) {
+      // Plugin belum tersedia (browser biasa) — abaikan
+    }
   }
 
   async function saveTeamLocation() {

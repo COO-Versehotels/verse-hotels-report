@@ -1,0 +1,37 @@
+name: Reminder Otomatis Notifikasi
+
+# Waktu di sini pakai UTC. WIB = UTC+7.
+# - 08:00 WIB (pagi, cek tasklist belum mulai) = 01:00 UTC
+# - 20:00 WIB (sore, cek laporan belum submit) = 13:00 UTC
+# - 19:00 WIB (jadwal visit besok, buat Corp Team) = 12:00 UTC
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 1 * * *'
+    - cron: '0 12 * * *'
+    - cron: '0 13 * * *'
+
+jobs:
+  send-reminder:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Kirim reminder sesuai jam saat ini
+        run: |
+          HOUR_UTC=$(date -u +%H)
+          if [ "$HOUR_UTC" = "01" ]; then
+            TITLE="Pengingat Tasklist"
+            BODY="Tasklist hari ini belum dimulai. Yuk cek & kerjakan sekarang."
+          elif [ "$HOUR_UTC" = "12" ]; then
+            TITLE="Jadwal Visit Besok"
+            BODY="Jangan lupa cek jadwal visit Corp Team untuk besok."
+          elif [ "$HOUR_UTC" = "13" ]; then
+            TITLE="Pengingat Laporan"
+            BODY="Laporan hari ini belum lengkap. Mohon submit sebelum tutup hari."
+          else
+            echo "Bukan jam reminder, lewati."
+            exit 0
+          fi
+
+          curl -s -X POST "https://verse-hotels-report.vercel.app/api/send-push" \
+            -H "Content-Type: application/json" \
+            -d "{\"target\":\"all\",\"title\":\"$TITLE\",\"body\":\"$BODY\"}"
