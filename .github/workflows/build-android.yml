@@ -31,8 +31,9 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+      # Catatan: TIDAK perlu install Android SDK terpisah — runner
+      # ubuntu-latest dari GitHub sudah punya Android SDK bawaan
+      # (ANDROID_HOME sudah otomatis ke-set).
 
       - name: Install dependency npm
         run: npm install
