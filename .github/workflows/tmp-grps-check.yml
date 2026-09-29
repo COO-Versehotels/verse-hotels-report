@@ -1,11 +1,15 @@
 name: TMP GRPS check
 on: workflow_dispatch
+permissions:
+  contents: write
 jobs:
   check:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
       - run: |
           U='https://script.google.com/macros/s/AKfycbz3b0dZeU2TMYT2x9V9SjhE8rlK5aDDhJ1hM2OnBrX1KawBpFkBCSu7kqF5pbT2eGWSyQ/exec?key=verse-grps-rating-2026&role=HM%20Verse%20Luxe'
-          echo "== tanpa login, ikuti redirect =="
-          curl -sL -D - -o body.txt -H 'Origin: https://verse-hotels-report.vercel.app' "$U" | grep -iE '^(HTTP|location|access-control|content-type)'
-          echo "== body =="; head -c 600 body.txt; echo
+          { echo "== headers (tanpa login) =="; curl -sL -D - -o body.txt -H 'Origin: https://verse-hotels-report.vercel.app' "$U" | grep -iE '^(HTTP|location|access-control|content-type)';
+            echo "== body =="; head -c 800 body.txt; echo; } > tmp-grps-result.txt
+          git config user.email bot@x && git config user.name bot
+          git add tmp-grps-result.txt && git commit -m "tmp: hasil cek GRPS [skip ci]" && git push
