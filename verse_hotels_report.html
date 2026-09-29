@@ -3215,10 +3215,14 @@
   }
 
   // ===== SESSION MANAGEMENT — sekali sehari =====
+  // Login sekali: session disimpan untuk SEMUA role dan tetap aktif sampai
+  // user menekan tombol keluar (←). Di app Android dibuka pakai fingerprint.
   function saveSessionToday(role, hotel) {
-    if (!role || role === 'COO' || role === 'CEO') return; // dashboard role tidak perlu session
+    if (!role) return;
     const today = new Date(Date.now() + 7*3600000).toISOString().split('T')[0];
-    const session = { role, hotel, date: today };
+    let name = '';
+    try { name = currentUserName || ''; } catch(e) {}
+    const session = { role, hotel: hotel || '', name, date: today };
     localStorage.setItem('team_session', JSON.stringify(session));
   }
 
@@ -3227,11 +3231,7 @@
       const raw = localStorage.getItem('team_session');
       if (!raw) return null;
       const session = JSON.parse(raw);
-      const today = new Date(Date.now() + 7*3600000).toISOString().split('T')[0];
-      if (session.date !== today) {
-        // Session hari kemarin — hapus
-            return null;
-      }
+      if (!session || !session.role) return null;
       return session;
     } catch(e) { return null; }
   }
@@ -3307,6 +3307,13 @@
   function tryAutoLogin() {
     const session = loadSessionToday();
     if (!session) return false;
+    try { if (session.name) currentUserName = session.name; } catch(e) {}
+
+    if (session.role === 'COO' || session.role === 'CEO') {
+      cooOpenedFrom = 'splash';
+      if (session.role === 'COO') loginAsCOO(); else loginAsCEO();
+      return true;
+    }
 
     // Restore session tanpa PIN
     currentRole = session.role;
@@ -3425,7 +3432,89 @@
     }
   }
 
-  document.addEventListener('DOMContentLoaded', () => { Promise.resolve(checkDeviceApproval()).catch(()=>{}).then(() => { try { _camAutoResumeOnLoad(); } catch(e) { console.error('camResume', e); } }); });
+  document.addEventListener('DOMContentLoaded', () => { Promise.resolve(checkDeviceApproval()).catch(()=>{}).then(() => { try { _camAutoResumeOnLoad(); } catch(e) { console.error('camResume', e); } Promise.resolve().then(_appLockOnLoad).catch(e => console.error('appLock', e)); }); });
+
+  // =============================================================
+  // LOGIN SEKALI + FINGERPRINT (app Android)
+  // Ada session tersimpan -> app Android minta fingerprint dulu,
+  // web langsung masuk. PIN tetap tersedia sebagai cadangan.
+  // =============================================================
+  function _getNativeBiometric() {
+    try {
+      if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()
+          && window.Capacitor.Plugins && window.Capacitor.Plugins.VerseBiometric) {
+        return window.Capacitor.Plugins.VerseBiometric;
+      }
+    } catch(e) {}
+    return null;
+  }
+
+  async function _appLockOnLoad() {
+    if (document.getElementById('device-gate-overlay')) return;
+    if (new URLSearchParams(location.search).get('view')) return;
+    if (currentRole) return; // sudah dipulihkan (mis. resume kamera)
+    const session = loadSessionToday();
+    if (!session) return;
+    const bio = _getNativeBiometric();
+    let available = false;
+    if (bio) { try { available = !!(await bio.isAvailable()).available; } catch(e) {} }
+    if (!available) { tryAutoLogin(); return; }
+    _showAppLock(session);
+    _appLockFingerprint();
+  }
+
+  function _showAppLock(session) {
+    document.getElementById('app-lock-overlay')?.remove();
+    const el = document.createElement('div');
+    el.id = 'app-lock-overlay';
+    el.style.cssText = 'position:fixed;inset:0;z-index:99999;background:#1a3a5c;display:flex;align-items:center;justify-content:center;padding:24px;font-family:inherit;';
+    const roleName = (typeof getDisplayRole === 'function') ? getDisplayRole(session.role) : session.role;
+    el.innerHTML = `
+      <div style="background:#fff;border-radius:22px;padding:30px 22px 22px;width:100%;max-width:340px;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,0.25);">
+        <div style="font-size:44px;margin-bottom:6px;">🔒</div>
+        <div style="font-size:18px;font-weight:800;color:#1a2744;">Verse Apps</div>
+        <div style="font-size:13px;color:#666;margin:6px 0 22px;">Masuk sebagai <b style="color:#1a2744;">${escapeHtml(roleName)}</b>${session.name ? '<br>' + escapeHtml(session.name) : ''}</div>
+        <button id="app-lock-fp" style="width:100%;padding:15px;background:#1a3a5c;color:#fff;border:none;border-radius:14px;font-size:15px;font-weight:700;cursor:pointer;margin-bottom:10px;">👆 Buka dengan Fingerprint</button>
+        <button id="app-lock-pin" style="width:100%;padding:13px;background:#eef2f7;color:#1a3a5c;border:none;border-radius:14px;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:10px;">🔢 Masukkan PIN</button>
+        <button id="app-lock-switch" style="width:100%;padding:10px;background:none;color:#888;border:none;font-size:13px;cursor:pointer;">Ganti akun</button>
+      </div>`;
+    document.body.appendChild(el);
+    document.getElementById('app-lock-fp').onclick = _appLockFingerprint;
+    document.getElementById('app-lock-pin').onclick = () => {
+      const s = loadSessionToday();
+      document.getElementById('app-lock-overlay')?.remove();
+      if (!s) { go('splash'); return; }
+      currentRole = s.role;
+      loginScreenContext = 'splash';
+      pin = ''; updatePinDots();
+      document.getElementById('pin-role-name').textContent = s.role;
+      document.getElementById('pin-role-icon').textContent = (s.role === 'COO') ? '🔒' : (s.role === 'CEO' ? '👑' : ((typeof roleIcons !== 'undefined' && roleIcons[s.role]) || '👤'));
+      go('pin');
+    };
+    document.getElementById('app-lock-switch').onclick = () => {
+      document.getElementById('app-lock-overlay')?.remove();
+      logoutToSplash();
+    };
+  }
+
+  let _appLockBusy = false;
+  async function _appLockFingerprint() {
+    if (_appLockBusy) return;
+    const bio = _getNativeBiometric();
+    if (!bio) return;
+    _appLockBusy = true;
+    try {
+      const res = await bio.verify({ title: 'Buka Verse Apps', subtitle: 'Tempelkan jari untuk masuk' });
+      if (res && res.verified) {
+        document.getElementById('app-lock-overlay')?.remove();
+        tryAutoLogin();
+      }
+    } catch(e) {
+      console.warn('Fingerprint error:', e);
+    } finally {
+      _appLockBusy = false;
+    }
+  }
 
   const supa = supabase.createClient(SUPA_URL, SUPA_KEY, {
     auth: {
@@ -5054,6 +5143,7 @@
       go('home');
     } else {
       currentRole = '';
+      localStorage.removeItem('team_session');
       go('splash');
     }
   }
@@ -6584,6 +6674,7 @@
   function loginAsCOO() {
     pin = ''; updatePinDots();
     currentRole = 'COO';
+    if (typeof cooOpenedFrom === 'undefined' || cooOpenedFrom !== 'home') saveSessionToday('COO', 'Corporate');
     ['nav-coo-home','nav-coo-tasklist'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.style.display = 'block';
@@ -6594,6 +6685,7 @@
   function loginAsCEO() {
     pin = ''; updatePinDots();
     currentRole = 'CEO';
+    if (typeof cooOpenedFrom === 'undefined' || cooOpenedFrom !== 'home') saveSessionToday('CEO', 'Corporate');
     ['nav-coo-home','nav-coo-tasklist'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.style.display = 'block';
@@ -6604,6 +6696,7 @@
   function loginAsCEO() {
     pin = ''; updatePinDots();
     currentRole = 'CEO';
+    if (typeof cooOpenedFrom === 'undefined' || cooOpenedFrom !== 'home') saveSessionToday('CEO', 'Corporate');
     ['nav-coo-home','nav-coo-tasklist'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.style.display = 'block';
