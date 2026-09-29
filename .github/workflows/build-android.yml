@@ -13,6 +13,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     env:
       # ubuntu-latest sudah punya Android SDK bawaan di path ini, tapi
       # kadang variabel environment-nya tidak otomatis ter-expose ke semua
@@ -45,7 +47,30 @@ jobs:
         run: npm install
 
       - name: Sinkronkan konfigurasi ke project Android (Capacitor)
-        run: npx cap sync android
+        id: capsync
+        run: |
+          set +e
+          for i in 1 2 3; do
+            npx cap sync android > /tmp/capsync.log 2>&1
+            EC=$?
+            if [ "$EC" -eq 0 ]; then break; fi
+            echo "Percobaan $i gagal, coba lagi..."
+            sleep 10
+          done
+          cat /tmp/capsync.log
+          echo "exitcode=$EC" >> "$GITHUB_OUTPUT"
+          exit 0
+
+      - name: "[Debug] Simpan log kalau sync tetap gagal setelah 3x coba"
+        if: steps.capsync.outputs.exitcode != '0'
+        run: |
+          LOG_CONTENT=$(base64 -w 0 /tmp/capsync.log)
+          curl -s -X PUT \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github+json" \
+            https://api.github.com/repos/${{ github.repository }}/contents/mobile-app/DEBUG_LOG.txt \
+            -d "{\"message\":\"debug log\",\"content\":\"$LOG_CONTENT\"}"
+          exit 1
 
       - name: Beri izin eksekusi ke Gradle wrapper
         run: chmod +x android/gradlew
