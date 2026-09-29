@@ -1811,6 +1811,8 @@
   .role-cat-label { font-size:10px; font-weight:700; color:rgba(255,255,255,0.55); text-transform:uppercase; letter-spacing:1px; padding:0 20px 6px; margin-top:6px; }
 
 </style>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 </head>
 <body>
 <div id="app">
@@ -2583,6 +2585,21 @@
     </div>
   </div>
 
+  <!-- ===== PETA LIVE (GPS Realtime) ===== -->
+  <div class="screen" id="screen-peta-live">
+    <div class="topbar" style="padding:48px 16px 12px;background:linear-gradient(135deg,#0f4c3a,#1a7a5e);">
+      <button class="topbar-back" onclick="go('coo')" style="color:white;background:rgba(255,255,255,0.15);">←</button>
+      <div class="topbar-title">
+        <h2 style="color:white;">📡 Peta Live</h2>
+        <p style="color:rgba(255,255,255,0.5);">Posisi Team saat ini (update tiap ~3 menit)</p>
+      </div>
+      <div class="topbar-right">
+        <span style="font-size:20px;cursor:pointer;color:#fde68a;" onclick="loadPetaLive()" title="Refresh">🔄</span>
+      </div>
+    </div>
+    <div id="peta-live-map" style="width:100%;height:calc(100% - 92px);"></div>
+  </div>
+
   <!-- ===== ARSIP LAPORAN ===== -->
   <div class="screen" id="screen-arsip">
     <div class="topbar" style="padding:48px 16px 12px;background:linear-gradient(135deg,#1a4a1a,#2d6a2d);">
@@ -2701,6 +2718,7 @@
         <span id="coo-user-btn" style="font-size:20px;cursor:pointer;color:var(--gold);margin-right:10px;display:none;" onclick="openUserMgmtReport()" title="Manage User">👥</span>
         <span id="coo-loglog-btn" style="font-size:20px;cursor:pointer;color:var(--gold);margin-right:10px;display:none;" onclick="openLoginHistory()" title="Login History">📊</span>
         <span id="coo-loctrack-btn" style="font-size:20px;cursor:pointer;color:var(--gold);margin-right:10px;display:none;" onclick="openLocationTracking()" title="Location Tracking">🗺️</span>
+        <span style="font-size:20px;cursor:pointer;color:var(--gold);margin-right:10px;" onclick="openPetaLive()" title="Peta Live">📡</span>
         <span id="coo-devapproval-btn" style="font-size:20px;cursor:pointer;color:var(--gold);margin-right:10px;display:none;" onclick="openDeviceApproval()" title="Device Approval">📱</span>
         <span style="font-size:20px;cursor:pointer;color:var(--gold);" onclick="exportDashboardPDF()" title="Export PDF Konsolidasi">📄</span>
       </div>
@@ -3269,7 +3287,7 @@
       if (el) el.style.display = 'none';
     });
     if (!_goHomeOrResume()) showToast('👋 Selamat datang kembali, ' + currentRole.replace(' Corporate','') + '!');
-    setTimeout(updateVisitSectionLogo, 100); setTimeout(saveTeamLocation, 500);
+    setTimeout(updateVisitSectionLogo, 100); setTimeout(saveTeamLocation, 500); setTimeout(startBackgroundGpsTracking, 800);
     return true;
   }
 
@@ -5556,6 +5574,62 @@
     }
   }
 
+  // === Peta Live (GPS Realtime) ===
+  let petaLiveMap = null;
+  let petaLiveMarkers = [];
+  let petaLiveAutoRefreshTimer = null;
+
+  function openPetaLive() {
+    go('peta-live');
+    loadPetaLive();
+    if (petaLiveAutoRefreshTimer) clearInterval(petaLiveAutoRefreshTimer);
+    petaLiveAutoRefreshTimer = setInterval(loadPetaLive, 30000); // auto-refresh tiap 30 detik
+  }
+
+  async function loadPetaLive() {
+    try {
+      const resp = await fetch(
+        SUPA_URL + '/rest/v1/location_log?select=*&order=recorded_at.desc&limit=200',
+        { headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY } }
+      );
+      if (!resp.ok) return;
+      const data = await resp.json();
+
+      const latestByPerson = {};
+      data.forEach(r => {
+        const key = (r.role || '') + '|' + (r.hotel || '');
+        if (!latestByPerson[key]) latestByPerson[key] = r;
+      });
+      const points = Object.values(latestByPerson);
+
+      if (!petaLiveMap) {
+        petaLiveMap = L.map('peta-live-map').setView([-6.2088, 106.8456], 11);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '© OpenStreetMap',
+        }).addTo(petaLiveMap);
+      }
+
+      petaLiveMarkers.forEach(m => petaLiveMap.removeLayer(m));
+      petaLiveMarkers = [];
+
+      if (points.length === 0) return;
+
+      points.forEach(r => {
+        if (!r.latitude || !r.longitude) return;
+        const wibTime = new Date(new Date(r.recorded_at).getTime() + 7*3600000);
+        const timeStr = wibTime.toISOString().split('T')[1].substring(0,5);
+        const marker = L.marker([r.latitude, r.longitude]).addTo(petaLiveMap);
+        marker.bindPopup(`<b>${jvEsc(r.role || '-')}</b><br>${jvEsc(r.hotel || '-')}<br><span style="color:#888;font-size:11px;">Update ${timeStr} WIB</span>`);
+        petaLiveMarkers.push(marker);
+      });
+
+      const group = L.featureGroup(petaLiveMarkers);
+      if (petaLiveMarkers.length > 0) petaLiveMap.fitBounds(group.getBounds().pad(0.3));
+    } catch (e) {
+      // Diam saja kalau gagal
+    }
+  }
+
   // === Device Approval (COO only) ===
   function openDeviceApproval() {
     if (currentRole !== 'COO') { showToast('Hanya COO yang dapat mengelola device.'); return; }
@@ -5763,7 +5837,7 @@
         if (el) el.style.display = 'none';
       });
       if (!_goHomeOrResume()) showToast('👋 Selamat datang kembali!');
-      setTimeout(updateVisitSectionLogo, 100); setTimeout(saveTeamLocation, 500);
+      setTimeout(updateVisitSectionLogo, 100); setTimeout(saveTeamLocation, 500); setTimeout(startBackgroundGpsTracking, 800);
       return;
     }
 
@@ -6232,7 +6306,7 @@
     // Simpan session hari ini (PIN sekali sehari)
     saveSessionToday(currentRole, currentHotel);
     // Update logo & lokasi
-    setTimeout(updateVisitSectionLogo, 100); setTimeout(saveTeamLocation, 500);
+    setTimeout(updateVisitSectionLogo, 100); setTimeout(saveTeamLocation, 500); setTimeout(startBackgroundGpsTracking, 800);
   }
 
   // ===== BIOMETRIC / WEBAUTHN LOGIN COO =====
@@ -6368,6 +6442,7 @@
     tasklistRendered = false;
     lastRenderedRole = '';
     stopLiveRefresh();
+    stopBackgroundGpsTracking();
     // Hapus banner lokasi jika ada
     document.getElementById('loc-warning-banner')?.remove();
     go('splash');
@@ -6397,7 +6472,7 @@
     });
     go('home');
     saveSessionToday(role, currentHotel);
-    setTimeout(updateVisitSectionLogo, 100); setTimeout(saveTeamLocation, 500);
+    setTimeout(updateVisitSectionLogo, 100); setTimeout(saveTeamLocation, 500); setTimeout(startBackgroundGpsTracking, 800);
   }
 
   function loginAsCOO() {
@@ -22956,6 +23031,87 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
 
 
   // ===== TEAM LOCATION TRACKING =====
+  // ======================================================
+  // GPS LATAR BELAKANG (Android app only) — kirim posisi tiap
+  // 2-5 menit ke tabel location_log yang sama, supaya muncul di
+  // layar "Location Tracking" yang sudah ada. Di browser biasa
+  // (bukan app Android), ini otomatis tidak aktif.
+  // ======================================================
+  let bgGeoWatcherId = null;
+  let lastBgPingAt = 0;
+  const BG_PING_MIN_INTERVAL_MS = 3 * 60 * 1000; // tengah-tengah 2-5 menit sesuai pilihan Bapak
+
+  function isRunningInCapacitorApp() {
+    return typeof window.Capacitor !== 'undefined' && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform();
+  }
+
+  async function sendLocationPing(lat, lng, source) {
+    try {
+      const today = new Date(Date.now() + 7*3600000).toISOString().split('T')[0];
+      await fetch(SUPA_URL + '/rest/v1/location_log', {
+        method: 'POST',
+        headers: {
+          'apikey': SUPA_KEY,
+          'Authorization': 'Bearer ' + SUPA_KEY,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          tanggal: today,
+          role: currentRole,
+          hotel: currentHotel || '',
+          task_id: 'auto-tracking',
+          status: source || 'background',
+          latitude: lat,
+          longitude: lng,
+          recorded_at: new Date().toISOString(),
+        }),
+      });
+    } catch (e) {
+      // Diam saja kalau gagal kirim — jangan ganggu pemakaian app
+    }
+  }
+
+  async function startBackgroundGpsTracking() {
+    if (!isRunningInCapacitorApp()) return; // cuma jalan di app Android
+    if (!currentRole || currentRole === 'COO' || currentRole === 'CEO') return; // dashboard role tidak perlu
+    if (bgGeoWatcherId) return; // sudah jalan
+
+    try {
+      const { BackgroundGeolocation } = window.Capacitor.Plugins;
+      if (!BackgroundGeolocation) return;
+
+      bgGeoWatcherId = await BackgroundGeolocation.addWatcher(
+        {
+          backgroundMessage: 'Verse Apps sedang melacak lokasi kunjungan Anda',
+          backgroundTitle: 'Verse Apps aktif',
+          requestPermissions: true,
+          stale: false,
+          distanceFilter: 0, // kita atur sendiri jaraknya lewat interval waktu, bukan jarak
+        },
+        (location, error) => {
+          if (error) return;
+          if (location) {
+            const now = Date.now();
+            if (now - lastBgPingAt < BG_PING_MIN_INTERVAL_MS) return; // belum waktunya, lewati
+            lastBgPingAt = now;
+            sendLocationPing(location.latitude, location.longitude, 'background');
+          }
+        }
+      );
+    } catch (e) {
+      // Plugin belum tersedia (misal masih di browser) — abaikan
+    }
+  }
+
+  async function stopBackgroundGpsTracking() {
+    if (!bgGeoWatcherId) return;
+    try {
+      const { BackgroundGeolocation } = window.Capacitor.Plugins;
+      if (BackgroundGeolocation) await BackgroundGeolocation.removeWatcher({ id: bgGeoWatcherId });
+    } catch (e) {}
+    bgGeoWatcherId = null;
+  }
+
   async function saveTeamLocation() {
     if (!currentRole || currentRole === 'COO' || currentRole === 'CEO') return; // dashboard role tidak perlu simpan lokasi
     if (!navigator.geolocation) return;
