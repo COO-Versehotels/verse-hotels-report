@@ -45,23 +45,7 @@ jobs:
         run: npm install
 
       - name: Sinkronkan konfigurasi ke project Android (Capacitor)
-        id: capsync
-        run: |
-          set +e
-          npx cap sync android > /tmp/capsync.log 2>&1
-          echo "exitcode=$?" >> "$GITHUB_OUTPUT"
-          cat /tmp/capsync.log
-
-      - name: "[Debug] Simpan log kalau sync gagal"
-        if: steps.capsync.outputs.exitcode != '0'
-        run: |
-          LOG_CONTENT=$(cat /tmp/capsync.log | base64 -w 0)
-          curl -s -X PUT \
-            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-            -H "Accept: application/vnd.github+json" \
-            https://api.github.com/repos/${{ github.repository }}/contents/mobile-app/DEBUG_LOG.txt \
-            -d "{\"message\":\"debug log\",\"content\":\"$LOG_CONTENT\"}"
-          exit 1
+        run: npx cap sync android
 
       - name: Beri izin eksekusi ke Gradle wrapper
         run: chmod +x android/gradlew
