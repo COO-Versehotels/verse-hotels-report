@@ -1,0 +1,73 @@
+name: Build Android APK
+
+# Bisa dipicu manual dari tab "Actions" di GitHub (tombol "Run workflow"),
+# ATAU otomatis kalau ada perubahan ke file terkait di branch main.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, master]
+    paths:
+      - 'mobile-app/**'
+      - '.github/workflows/build-android.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile-app
+    steps:
+      - name: Checkout kode
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup Java (untuk Gradle/Android)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install dependency npm
+        run: npm install
+
+      - name: Sinkronkan konfigurasi ke project Android (Capacitor)
+        run: npx cap sync android
+
+      - name: Beri izin eksekusi ke Gradle wrapper
+        run: chmod +x android/gradlew
+
+      - name: Build APK (debug — cukup untuk install langsung/internal)
+        working-directory: mobile-app/android
+        run: ./gradlew assembleDebug --no-daemon
+
+      - name: Beri nama APK sesuai tanggal build
+        run: |
+          mkdir -p output
+          cp android/app/build/outputs/apk/debug/app-debug.apk "output/VerseHotelsTasklist-$(date +%Y%m%d-%H%M).apk"
+
+      - name: Upload APK sebagai artifact (bisa didownload dari halaman Actions)
+        uses: actions/upload-artifact@v4
+        with:
+          name: verse-hotels-tasklist-apk
+          path: mobile-app/output/*.apk
+          retention-days: 90
+
+      - name: Buat GitHub Release dengan APK terlampir (link download permanen)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: android-build-${{ github.run_number }}
+          name: "Android Build #${{ github.run_number }}"
+          files: mobile-app/output/*.apk
+          body: |
+            APK hasil build otomatis dari commit ${{ github.sha }}.
+            Cara install: download file .apk di bawah ini ke HP Android,
+            buka file-nya, izinkan "instal dari sumber tidak dikenal" kalau diminta.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
