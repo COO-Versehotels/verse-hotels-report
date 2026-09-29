@@ -2067,7 +2067,7 @@
         <div id="kpi-home-card-list" style="display:flex;flex-direction:column;gap:9px;"></div>
       </div>
 
-      <!-- Rating Review + Conversion Rate card (HM only) -->
+      <!-- Rating Review + Collection Rate card (HM only) -->
       <div id="grps-home-card" style="display:none;margin:0 16px 14px;background:#fff;border:1px solid #eef0f4;border-radius:16px;padding:16px;box-shadow:0 2px 10px rgba(26,58,92,0.06);">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
           <div style="display:flex;align-items:center;gap:8px;">
@@ -2080,8 +2080,9 @@
           <div style="grid-column:1/-1;text-align:center;padding:12px;color:var(--gray-400);font-size:12px;">Memuat...</div>
         </div>
         <div id="grps-home-card-conv" style="margin-top:12px;background:linear-gradient(135deg,var(--navy),#0e2340);border-radius:12px;padding:12px 14px;">
-          <div style="font-size:10.5px;color:rgba(255,255,255,0.6);font-weight:600;">Conversion Rate (MTD)</div>
+          <div style="font-size:10.5px;color:rgba(255,255,255,0.6);font-weight:600;">Collection Rate (MTD)</div>
           <div style="font-size:19px;font-weight:800;color:#fff;margin-top:1px;" id="grps-home-card-conv-val">—</div>
+          <div style="font-size:10px;color:rgba(255,255,255,0.45);margin-top:2px;">Review terkumpul dari total tamu checkout</div>
         </div>
       </div>
 
@@ -5177,7 +5178,7 @@
       // Show/hide KPI Utama card based on role
       if (typeof kpiMaybeShowHomeCard === 'function') kpiMaybeShowHomeCard();
 
-      // Show/hide Rating Review + Conversion Rate card based on role (HM only)
+      // Show/hide Rating Review + Collection Rate card based on role (HM only)
       if (typeof grpsMaybeShowHomeCard === 'function') grpsMaybeShowHomeCard();
 
       const d = new Date();
