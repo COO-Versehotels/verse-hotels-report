@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">Verse Hotels Tasklist</string>
-    <string name="title_activity_main">Verse Hotels Tasklist</string>
+    <string name="app_name">Verse Apps</string>
+    <string name="title_activity_main">Verse Apps</string>
     <string name="package_name">com.versehotels.tasklist</string>
     <string name="custom_url_scheme">com.versehotels.tasklist</string>
 </resources>

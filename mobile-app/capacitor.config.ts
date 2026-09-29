@@ -2,7 +2,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'com.versehotels.tasklist',
-  appName: 'Verse Hotels Tasklist',
+  appName: 'Verse Apps',
   webDir: 'www',
   // PENTING: app Android ini memuat konten LANGSUNG dari Vercel yang sudah
   // jalan — bukan salinan beku di dalam APK. Jadi setiap kali Pak Ian upload
