@@ -2009,7 +2009,7 @@
   <div class="screen" id="screen-home">
     <div class="home-header">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
-        <button onclick="logoutToSplash()" style="background:rgba(255,255,255,0.15);border:none;border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;color:white;flex-shrink:0;" title="Keluar">←</button>
+        <button onclick="go('splash')" style="background:rgba(255,255,255,0.15);border:none;border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;color:white;flex-shrink:0;" title="Keluar">←</button>
         <div style="font-size:11px;color:rgba(255,255,255,0.5);" id="today-date">15 Apr</div>
       </div>
       <div class="home-header-row">
@@ -2756,6 +2756,7 @@
         <span style="font-size:20px;cursor:pointer;color:var(--gold);margin-right:10px;" onclick="openBroadcast()" title="Broadcast Message">📢</span>
         <span id="coo-devapproval-btn" style="font-size:20px;cursor:pointer;color:var(--gold);margin-right:10px;display:none;" onclick="openDeviceApproval()" title="Device Approval">📱</span>
         <span style="font-size:20px;cursor:pointer;color:var(--gold);" onclick="exportDashboardPDF()" title="Export PDF Konsolidasi">📄</span>
+        <span style="font-size:20px;cursor:pointer;color:var(--gold);margin-left:10px;" onclick="cooLogout()" title="Keluar (Logout)">🚪</span>
       </div>
     </div>
 
@@ -2873,7 +2874,7 @@
       </div>
 
       <div style="margin:16px;">
-        <button class="login-btn" style="background:var(--red-soft);color:var(--red);font-size:15px;" onclick="go('login')">Keluar / Ganti Jabatan</button>
+        <button class="login-btn" style="background:var(--red-soft);color:var(--red);font-size:15px;" onclick="if(confirm('Keluar dari akun ini? Berikutnya perlu masukkan PIN lagi.')) logoutToSplash();">🚪 Keluar (Logout) / Ganti Jabatan</button>
       </div>
     </div>
   </div>
@@ -3433,6 +3434,158 @@
   }
 
   document.addEventListener('DOMContentLoaded', () => { Promise.resolve(checkDeviceApproval()).catch(()=>{}).then(() => { try { _camAutoResumeOnLoad(); } catch(e) { console.error('camResume', e); } Promise.resolve().then(_appLockOnLoad).catch(e => console.error('appLock', e)); }); });
+
+  // =============================================================
+  // VIEWER FOTO DI DALAM APP — foto/dokumentasi tidak lagi dilempar ke Chrome
+  // =============================================================
+  function _isImageUrl(u) {
+    if (!u || typeof u !== 'string') return false;
+    if (u.startsWith('data:image/')) return true;
+    return /\.(jpe?g|png|gif|webp|bmp|heic|heif)(\?|#|$)/i.test(u);
+  }
+
+  function openPhotoViewer(url) {
+    closePhotoViewer();
+    const ov = document.createElement('div');
+    ov.id = 'photo-viewer';
+    ov.style.cssText = 'position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,0.95);display:flex;flex-direction:column;';
+    ov.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:calc(env(safe-area-inset-top,0px) + 12px) 14px 10px;color:#fff;font-size:12px;">
+        <span style="opacity:.7;">Ketuk 2x untuk zoom</span>
+        <button id="pv-close" style="width:40px;height:40px;border-radius:50%;border:none;background:rgba(255,255,255,0.18);color:#fff;font-size:20px;cursor:pointer;">✕</button>
+      </div>
+      <div id="pv-scroll" style="flex:1;overflow:auto;display:flex;align-items:center;justify-content:center;-webkit-overflow-scrolling:touch;">
+        <img id="pv-img" src="${url.replace(/"/g,'&quot;')}" style="max-width:100%;max-height:100%;object-fit:contain;transition:width .15s;" alt="">
+      </div>`;
+    document.body.appendChild(ov);
+    document.getElementById('pv-close').onclick = closePhotoViewer;
+    const img = document.getElementById('pv-img');
+    const box = document.getElementById('pv-scroll');
+    let zoomed = false, lastTap = 0;
+    const toggleZoom = () => {
+      zoomed = !zoomed;
+      if (zoomed) {
+        box.style.display = 'block';
+        img.style.maxWidth = 'none'; img.style.maxHeight = 'none'; img.style.width = '250%';
+      } else {
+        box.style.display = 'flex';
+        img.style.width = ''; img.style.maxWidth = '100%'; img.style.maxHeight = '100%';
+      }
+    };
+    img.addEventListener('dblclick', toggleZoom);
+    img.addEventListener('touchend', () => {
+      const now = Date.now();
+      if (now - lastTap < 300) { toggleZoom(); lastTap = 0; } else lastTap = now;
+    });
+  }
+
+  function closePhotoViewer() {
+    const ov = document.getElementById('photo-viewer');
+    if (ov) { ov.remove(); return true; }
+    return false;
+  }
+
+  // Tangkap semua link foto (<a target="_blank"> berisi foto) -> buka di viewer
+  document.addEventListener('click', function (e) {
+    const a = e.target.closest ? e.target.closest('a[href]') : null;
+    if (!a) return;
+    const href = a.getAttribute('href') || '';
+    if (_isImageUrl(href) || (a.target === '_blank' && a.querySelector('img') && !/^(https?:\/\/)?(wa\.me|api\.whatsapp|www\.google\.com\/maps|maps\.)/i.test(href))) {
+      e.preventDefault();
+      e.stopPropagation();
+      openPhotoViewer(a.href);
+    }
+  }, true);
+
+  // window.open(foto) -> viewer; selain foto tetap seperti biasa
+  (function () {
+    const _origOpen = window.open;
+    window.open = function (url, target, features) {
+      if (_isImageUrl(url)) { openPhotoViewer(url); return null; }
+      return _origOpen.call(window, url, target, features);
+    };
+  })();
+
+  // =============================================================
+  // TOMBOL BACK HP (app Android)
+  // Urutan: tutup foto -> tutup popup -> layar sebelumnya -> di layar
+  // utama tekan 2x untuk keluar (app diminimize, login tetap tersimpan).
+  // =============================================================
+  let _staticOverlayIds = null;
+  function _collectStaticOverlays() {
+    _staticOverlayIds = new Set();
+    document.querySelectorAll('body [id]').forEach(el => {
+      const cs = getComputedStyle(el);
+      if (cs.position === 'fixed') _staticOverlayIds.add(el.id);
+    });
+  }
+
+  function _closeTopPopup() {
+    const skip = ['app-lock-overlay', 'device-gate-overlay', 'photo-viewer'];
+    const hm = document.getElementById('hotel-modal');
+    if (hm && hm.classList.contains('show')) { closeModal(); return true; }
+    const vw = window.innerWidth, vh = window.innerHeight;
+    const cands = Array.from(document.body.querySelectorAll('div')).filter(el => {
+      if (skip.includes(el.id)) return false;
+      const cs = getComputedStyle(el);
+      if (cs.position !== 'fixed' || cs.display === 'none' || cs.visibility === 'hidden' || parseFloat(cs.opacity) === 0) return false;
+      const r = el.getBoundingClientRect();
+      return r.width >= vw * 0.9 && r.height >= vh * 0.9;
+    });
+    if (!cands.length) return false;
+    cands.sort((a, b) => (parseInt(getComputedStyle(b).zIndex) || 0) - (parseInt(getComputedStyle(a).zIndex) || 0));
+    const top = cands[0];
+    if (top.id && _staticOverlayIds && _staticOverlayIds.has(top.id)) {
+      // Popup bawaan halaman: sembunyikan dengan cara yang sama seperti dibuka
+      if (top.style.display && top.style.display !== 'none') {
+        top.style.display = 'none';
+      } else {
+        top.classList.remove('show', 'active', 'open');
+      }
+    } else {
+      top.remove();
+    }
+    return true;
+  }
+
+  let _lastBackPress = 0;
+  function handleHardwareBack() {
+    if (document.getElementById('app-lock-overlay') || document.getElementById('device-gate-overlay')) {
+      _minimizeApp(); return;
+    }
+    if (closePhotoViewer()) return;
+    if (_closeTopPopup()) return;
+
+    const active = document.querySelector('.screen.active');
+    const id = active ? active.id.replace('screen-', '') : 'splash';
+    const isRoot = id === 'splash' || id === 'home' || (id === 'coo' && cooOpenedFrom !== 'home');
+    if (!isRoot && active) {
+      const backBtn = Array.from(active.querySelectorAll('button')).find(b => b.textContent.trim() === '←' && b.offsetParent !== null);
+      if (backBtn) { backBtn.click(); return; }
+      go(currentRole ? 'home' : 'splash'); return;
+    }
+    const now = Date.now();
+    if (now - _lastBackPress < 2000) { _lastBackPress = 0; _minimizeApp(); return; }
+    _lastBackPress = now;
+    showToast('Tekan kembali sekali lagi untuk keluar');
+  }
+
+  function _minimizeApp() {
+    try {
+      const App = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App;
+      if (App && App.minimizeApp) App.minimizeApp();
+    } catch(e) {}
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    _collectStaticOverlays();
+    try {
+      if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()
+          && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
+        window.Capacitor.Plugins.App.addListener('backButton', handleHardwareBack);
+      }
+    } catch(e) { console.warn('backButton listener', e); }
+  });
 
   // =============================================================
   // LOGIN SEKALI + FINGERPRINT (app Android)
@@ -5137,13 +5290,20 @@
   }
 
   // COO back — kembali ke asal
+  function cooLogout() {
+    if (!confirm('Keluar dari akun ini? Berikutnya perlu masukkan PIN lagi.')) return;
+    stopLiveRefresh();
+    localStorage.removeItem('team_session');
+    currentRole = '';
+    go('splash');
+  }
+
   function cooBack() {
     stopLiveRefresh();
     if (cooOpenedFrom === 'home') {
       go('home');
     } else {
       currentRole = '';
-      localStorage.removeItem('team_session');
       go('splash');
     }
   }
