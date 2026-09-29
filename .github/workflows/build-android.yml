@@ -47,12 +47,7 @@ jobs:
         run: npm install
 
       - name: Sinkronkan konfigurasi ke project Android (Capacitor)
-        run: |
-          for i in 1 2 3; do
-            npx cap sync android && break
-            echo "Percobaan $i gagal, coba lagi..."
-            sleep 10
-          done
+        run: npx cap sync android
 
       - name: Beri izin eksekusi ke Gradle wrapper
         run: chmod +x android/gradlew
