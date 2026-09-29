@@ -3001,7 +3001,7 @@
   // =============================================================
   // Update angka di bawah setiap kali deploy file baru yang penting.
   // Format: YYYY.MM.DD-NN (NN = increment harian)
-  const APP_VERSION = '2026.09.29-03';
+  const APP_VERSION = '2026.09.29-04';
   const APP_VERSION_KEY = 'verse_app_version';
 
   (function _checkAppVersion() {
@@ -5488,8 +5488,14 @@
         if (s === 'revoked') return '<span style="background:#fee2e2;color:#dc2626;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;">🚫 Revoked</span>';
         return '<span style="background:#fef3c7;color:#d97706;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;">⏳ Pending</span>';
       };
+      // Device yang sudah dicabut (revoked) disembunyikan supaya daftar tidak penuh.
+      // Tetap bisa dibuka lewat tombol di bawah (kalau perlu disetujui ulang).
+      const revokedCount = rows.filter(r => r.status === 'revoked').length;
+      const showRevoked = !!window._devappShowRevoked;
+      const visibleRows = showRevoked ? rows : rows.filter(r => r.status !== 'revoked');
       let html = '';
-      rows.forEach(r => {
+      if (visibleRows.length === 0) html += '<div style="text-align:center;color:#94a3b8;padding:20px;">Tidak ada device aktif / pending.</div>';
+      visibleRows.forEach(r => {
         const dt = new Date(r.requested_at);
         const wib = new Date(dt.getTime() + 7*3600000);
         const dateStr = wib.toISOString().split('T')[0] + ' ' + wib.toISOString().split('T')[1].substring(0,5) + ' WIB';
@@ -5514,6 +5520,9 @@
           </div>
         `;
       });
+      if (revokedCount > 0) {
+        html += `<div style="text-align:center;margin-top:10px;"><button onclick="window._devappShowRevoked=!window._devappShowRevoked;loadDeviceApprovalList()" style="padding:6px 12px;background:none;border:1px dashed #cbd5e1;border-radius:8px;color:#64748b;font-size:11px;font-weight:600;cursor:pointer;">${showRevoked ? 'Sembunyikan' : 'Tampilkan'} ${revokedCount} device yang sudah dicabut</button></div>`;
+      }
       listEl.innerHTML = html;
     } catch (e) {
       listEl.innerHTML = `<div style="color:#ef4444;text-align:center;padding:20px;">❌ Gagal memuat: ${e.message}</div>`;
