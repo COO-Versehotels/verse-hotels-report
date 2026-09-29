@@ -6,10 +6,12 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
       - run: |
           U='https://script.google.com/macros/s/AKfycbz3b0dZeU2TMYT2x9V9SjhE8rlK5aDDhJ1hM2OnBrX1KawBpFkBCSu7kqF5pbT2eGWSyQ/exec?key=verse-grps-rating-2026&role=HM%20Verse%20Luxe'
-          { echo "== headers (tanpa login) =="; curl -sL -D - -o body.txt -H 'Origin: https://verse-hotels-report.vercel.app' "$U" | grep -iE '^(HTTP|location|access-control|content-type)';
-            echo "== body =="; head -c 800 body.txt; echo; } > tmp-grps-result.txt
-          git config user.email bot@x && git config user.name bot
-          git add tmp-grps-result.txt && git commit -m "tmp: hasil cek GRPS [skip ci]" && git push
+          mkdir out && cd out
+          curl -sL -D headers.txt -o body.txt -H 'Origin: https://verse-hotels-report.vercel.app' "$U" || true
+          head -c 3000 body.txt > body_head.txt; rm body.txt
+          git init -q && git checkout -q -b tmp-grps-result
+          git config user.email a@b.c && git config user.name bot
+          git add . && git commit -qm result
+          git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" tmp-grps-result
