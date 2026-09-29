@@ -52,7 +52,7 @@ jobs:
           echo "exitcode=$?" >> "$GITHUB_OUTPUT"
           cat /tmp/capsync.log
 
-      - name: [Debug] Simpan log kalau sync gagal
+      - name: "[Debug] Simpan log kalau sync gagal"
         if: steps.capsync.outputs.exitcode != '0'
         run: |
           LOG_CONTENT=$(cat /tmp/capsync.log | base64 -w 0)
