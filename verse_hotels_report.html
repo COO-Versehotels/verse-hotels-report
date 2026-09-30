@@ -23355,6 +23355,9 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
       currentHotel = hmHotelMap[role];
       const hotelEl = document.getElementById('tasklist-hotel');
       if (hotelEl) hotelEl.textContent = currentHotel;
+      // HM & F&B unit tetap: unit dikunci sesuai jabatan, tab unit disembunyikan
+      const chipRow = document.querySelector('.hotel-chips-row');
+      if (chipRow) chipRow.style.display = 'none';
     } else if (HOD_HOTEL_MAP[role]) {
       currentHotel = HOD_HOTEL_MAP[role];
       const hotelEl = document.getElementById('tasklist-hotel');
@@ -23464,6 +23467,8 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
   }
 
   function selectHotelChip(el, hotelName) {
+    const _CHIP_ROLES = ['Ops HR Manager','HR Officer','Chief Engineering Corporate','EHK Corporate','CRA Corporate','COO'];
+    if (!_CHIP_ROLES.includes(currentRole)) { showToast('Unit sudah sesuai jabatan Anda'); return; }
     document.querySelectorAll('.hotel-chip').forEach(c => c.classList.remove('active'));
     el.classList.add('active');
     document.getElementById('tasklist-hotel').textContent = hotelName;
