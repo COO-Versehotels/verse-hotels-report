@@ -3666,15 +3666,18 @@
     ov.id = 'photo-viewer';
     ov.style.cssText = 'position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,0.95);display:flex;flex-direction:column;';
     ov.innerHTML = `
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:calc(env(safe-area-inset-top,0px) + 12px) 14px 10px;color:#fff;font-size:12px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:calc(env(safe-area-inset-top,0px) + 12px) 14px 10px;color:#fff;font-size:12px;">
         <span style="opacity:.7;">Ketuk 2x untuk zoom</span>
-        <button id="pv-close" style="width:40px;height:40px;border-radius:50%;border:none;background:rgba(255,255,255,0.18);color:#fff;font-size:20px;cursor:pointer;">✕</button>
+        <span style="display:flex;gap:8px;">
+        <button id="pv-share" style="height:40px;padding:0 14px;border-radius:20px;border:none;background:#25D366;color:#fff;font-size:13px;font-weight:800;cursor:pointer;">📤 Bagikan</button>
+        <button id="pv-close" style="width:40px;height:40px;border-radius:50%;border:none;background:rgba(255,255,255,0.18);color:#fff;font-size:20px;cursor:pointer;">✕</button></span>
       </div>
       <div id="pv-scroll" style="flex:1;overflow:auto;display:flex;align-items:center;justify-content:center;-webkit-overflow-scrolling:touch;">
         <img id="pv-img" src="${url.replace(/"/g,'&quot;')}" style="max-width:100%;max-height:100%;object-fit:contain;transition:width .15s;" alt="">
       </div>`;
     document.body.appendChild(ov);
     document.getElementById('pv-close').onclick = closePhotoViewer;
+    document.getElementById('pv-share').onclick = () => sharePhoto(url);
     const img = document.getElementById('pv-img');
     const box = document.getElementById('pv-scroll');
     let zoomed = false, lastTap = 0;
@@ -3693,6 +3696,31 @@
       const now = Date.now();
       if (now - lastTap < 300) { toggleZoom(); lastTap = 0; } else lastTap = now;
     });
+  }
+
+  // Bagikan foto ke WA / aplikasi lain. APK: menu share Android (pakai salinan di galeri kalau ada).
+  async function sharePhoto(url) {
+    const btn = document.getElementById('pv-share');
+    const setBtn = (t) => { if (btn) btn.textContent = t; };
+    const name = 'verse_' + Date.now() + '.jpg';
+    const plugin = _nativePhotoPlugin();
+    try {
+      if (plugin) {
+        const uri = _galleryMap()[url];
+        if (uri) { try { await plugin.shareImage({ uri, fileName: name }); return; } catch(e) {} }
+        setBtn('⏳ Menyiapkan…');
+        const blob = await (await fetch(url)).blob();
+        const b64 = await _fileToDataUrl(blob);
+        await plugin.shareImage({ base64: b64, fileName: name });
+        return;
+      }
+      const blob = await (await fetch(url)).blob();
+      const f = new File([blob], name, { type: blob.type || 'image/jpeg' });
+      if (navigator.canShare && navigator.canShare({ files: [f] })) { await navigator.share({ files: [f] }); return; }
+      window.open(url, '_blank');
+    } catch(e) {
+      if (!/abort|cancel/i.test(String(e && e.message))) showToast('Gagal membagikan foto');
+    } finally { setBtn('📤 Bagikan'); }
   }
 
   function closePhotoViewer() {
@@ -3828,7 +3856,37 @@
     _appLockFingerprint();
   }
 
+  // Pemberitahuan versi APK baru (info versi terbaru di /app-version.json)
+  async function checkAppUpdate() {
+    try {
+      const App = window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform() && window.Capacitor.Plugins && window.Capacitor.Plugins.App;
+      if (!App || !App.getInfo) return;
+      const info = await App.getInfo();
+      const cur = parseInt(info && info.build, 10) || 0;
+      const res = await fetch('/app-version.json?t=' + Date.now());
+      if (!res.ok) return;
+      const v = await res.json();
+      if (!v || !v.latestBuild || !v.url || cur >= v.latestBuild) return;
+      const key = 'verse_update_dismiss_' + v.latestBuild;
+      const until = parseInt(localStorage.getItem(key) || '0', 10);
+      if (until > Date.now()) return;
+      document.getElementById('update-banner')?.remove();
+      const b = document.createElement('div');
+      b.id = 'update-banner';
+      b.style.cssText = 'position:fixed;left:10px;right:10px;bottom:calc(env(safe-area-inset-bottom,0px) + 78px);z-index:9400;background:#1a3a5c;color:#fff;border-radius:14px;padding:12px 12px 12px 14px;box-shadow:0 8px 24px rgba(0,0,0,0.3);display:flex;align-items:center;gap:10px;max-width:500px;margin:0 auto;';
+      b.innerHTML = `<div style="font-size:24px;">📲</div>
+        <div style="flex:1;min-width:0;"><div style="font-weight:800;font-size:13.5px;">Versi baru Verse Apps tersedia</div>
+        <div style="font-size:11.5px;opacity:.85;">${escapeHtml(v.note || 'Install di atas versi lama — login tetap tersimpan.')}</div></div>
+        <button id="upd-go" style="border:none;background:#22c55e;color:#fff;border-radius:10px;padding:9px 12px;font-weight:800;font-size:12.5px;cursor:pointer;">Update</button>
+        <button id="upd-x" style="border:none;background:none;color:#fff;opacity:.7;font-size:18px;cursor:pointer;">✕</button>`;
+      document.body.appendChild(b);
+      b.querySelector('#upd-go').onclick = () => { window.open(v.url, '_blank'); };
+      b.querySelector('#upd-x').onclick = () => { localStorage.setItem(key, String(Date.now() + 12 * 3600000)); b.remove(); };
+    } catch(e) {}
+  }
+
   document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(checkAppUpdate, 4000);
     _collectStaticOverlays();
     try {
       if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()
@@ -3996,7 +4054,49 @@
     return /iPhone|iPad|iPod/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   }
 
+  function _nativePhotoPlugin() {
+    try {
+      if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()
+          && window.Capacitor.Plugins && window.Capacitor.Plugins.VerseBiometric) return window.Capacitor.Plugins.VerseBiometric;
+    } catch(e) {}
+    return null;
+  }
+  function _fileToDataUrl(file) {
+    return new Promise((resolve, reject) => { const r = new FileReader(); r.onload = () => resolve(r.result); r.onerror = reject; r.readAsDataURL(file); });
+  }
+  // Peta url foto (Cloudinary) -> uri galeri HP, supaya "Bagikan" tidak perlu unduh ulang
+  window._galleryUriByName = window._galleryUriByName || {};
+  window._pendingUrlByName = window._pendingUrlByName || {};
+  function _galleryMap() { try { return JSON.parse(localStorage.getItem('verse_gallery_map') || '{}'); } catch(e) { return {}; } }
+  function _galleryMapSet(url, uri) {
+    if (!url || !uri) return;
+    const m = _galleryMap(); m[url] = uri;
+    const keys = Object.keys(m); if (keys.length > 400) keys.slice(0, keys.length - 400).forEach(k => delete m[k]);
+    try { localStorage.setItem('verse_gallery_map', JSON.stringify(m)); } catch(e) {}
+  }
+  function _rememberGalleryUri(url, name) {
+    if (!url || !name) return;
+    const uri = window._galleryUriByName[name];
+    if (uri) _galleryMapSet(url, uri); else window._pendingUrlByName[name] = url;
+  }
+
   function triggerAutoDownload(file) {
+    const plugin = _nativePhotoPlugin();
+    if (plugin && file && file.type && file.type.startsWith('image/')) {
+      _fileToDataUrl(file).then(b64 => plugin.saveImageToGallery({ base64: b64, fileName: file.name || ('verse_' + Date.now() + '.jpg'), mimeType: file.type || 'image/jpeg' }))
+        .then(r => {
+          if (!r || !r.saved) return;
+          window._galleryUriByName[file.name] = r.uri;
+          const pendingUrl = window._pendingUrlByName[file.name];
+          if (pendingUrl) { _galleryMapSet(pendingUrl, r.uri); delete window._pendingUrlByName[file.name]; }
+          if (!localStorage.getItem('verse_gallery_notice')) {
+            localStorage.setItem('verse_gallery_notice', '1');
+            showToast('📸 Foto otomatis tersimpan di galeri HP (album "Verse Apps")');
+          }
+        }).catch(() => {});
+      return;
+    }
+    if (plugin) return; // APK lama: unduhan lewat browser tidak berfungsi di dalam app
     if (isIOSDevice()) {
       console.log('Auto-download dilewati di iOS (mencegah gangguan upload).');
       return;
@@ -7553,6 +7653,7 @@
           const data = await response.json();
           console.log('Upload success, URL:', data.secure_url);
           uploadedUrls.push({ name: file.name, url: data.secure_url, type: file.type });
+          try { _rememberGalleryUri(data.secure_url, stamped && stamped.name); } catch(e) {}
           // taskFiles di-sync dari taskFileUrls setelah loop
         } else {
           let errMsg = response.statusText;
