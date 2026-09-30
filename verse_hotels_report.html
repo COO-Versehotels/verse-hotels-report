@@ -23795,9 +23795,18 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
       const { PushNotifications } = window.Capacitor.Plugins;
       if (!PushNotifications) return;
 
+      // Saluran notifikasi khusus (lencana ikon + suara + muncul di atas layar)
+      try {
+        await PushNotifications.createChannel({ id: 'verse_apps', name: 'Verse Apps', description: 'Reminder, broadcast & approval Verse Apps', importance: 4, visibility: 1, vibration: true, lights: true, lightColor: '#1A3A5C' });
+      } catch (e) {}
+
       // Listener dipasang SEBELUM register supaya token tidak terlewat
       if (!_pushListenersAdded) {
         _pushListenersAdded = true;
+        // App sedang terbuka -> Android tidak menampilkan notifikasi, jadi tampilkan pita di dalam app
+        PushNotifications.addListener('pushNotificationReceived', (n) => {
+          try { _showInAppNotif((n && n.title) || 'Verse Apps', (n && n.body) || ''); } catch (e) {}
+        });
         PushNotifications.addListener('registration', async (token) => {
           try {
             if (window._peekMode || !token || !token.value) return;
@@ -23817,6 +23826,22 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
     } catch (e) {
       // Plugin belum tersedia (browser biasa) — abaikan
     }
+  }
+
+  function _showInAppNotif(title, body) {
+    document.getElementById('inapp-notif')?.remove();
+    const el = document.createElement('div');
+    el.id = 'inapp-notif';
+    el.style.cssText = 'position:fixed;left:10px;right:10px;top:calc(env(safe-area-inset-top,0px) + 10px);z-index:100001;background:#1a3a5c;color:#fff;border-radius:14px;padding:12px 14px;box-shadow:0 8px 24px rgba(0,0,0,0.3);display:flex;gap:10px;align-items:flex-start;transform:translateY(-120%);transition:transform .3s ease;cursor:pointer;max-width:500px;margin:0 auto;';
+    el.innerHTML = `<div style="font-size:22px;line-height:1;">🔔</div>
+      <div style="flex:1;min-width:0;"><div style="font-weight:800;font-size:14px;">${escapeHtml(title)}</div>
+      <div style="font-size:12.5px;opacity:.9;margin-top:2px;">${escapeHtml(body)}</div></div>
+      <div style="font-size:16px;opacity:.7;">✕</div>`;
+    document.body.appendChild(el);
+    requestAnimationFrame(() => { el.style.transform = 'translateY(0)'; });
+    const close = () => { el.style.transform = 'translateY(-120%)'; setTimeout(() => el.remove(), 350); };
+    el.onclick = close;
+    setTimeout(close, 7000);
   }
 
   function _unregisterPushToken() {

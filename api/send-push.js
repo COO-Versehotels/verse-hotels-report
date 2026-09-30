@@ -158,7 +158,14 @@ export default async function handler(req, res) {
         const fcmResp = await fetch(`https://fcm.googleapis.com/v1/projects/${PROJECT_ID}/messages:send`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + accessToken },
-          body: JSON.stringify({ message: { token, notification: { title, body } } }),
+          body: JSON.stringify({ message: {
+            token,
+            notification: { title, body },
+            android: {
+              priority: 'HIGH',
+              notification: { channel_id: 'verse_apps', notification_count: 1, default_sound: true, default_vibrate_timings: true, notification_priority: 'PRIORITY_HIGH', visibility: 'PUBLIC' },
+            },
+          } }),
         });
         if (fcmResp.ok) { sent++; }
         else {
