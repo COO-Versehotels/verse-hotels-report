@@ -23888,6 +23888,19 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
       b.style.display = unread > 0 ? 'inline-block' : 'none';
     });
   }
+  // Tujuan saat notifikasi di-tap
+  function _notifAction(n) {
+    const t = (n.title || '') + ' ' + (n.body || '');
+    const isAdmin = !window._peekMode && ['COO','CEO'].includes(currentRole);
+    if (n.source === 'approval') {
+      return isAdmin ? { label: 'Buka Device Approval', run: () => openDeviceApproval() } : null;
+    }
+    if (window._peekMode || isAdmin) return null;
+    if (/jadwal visit|visit/i.test(t)) return { label: 'Lihat Beranda & Jadwal Visit', run: () => go('home') };
+    if (/tasklist|laporan|submit/i.test(t)) return { label: 'Buka Tasklist', run: () => go('tasklist') };
+    return null;
+  }
+
   async function openNotifInbox() {
     document.getElementById('notif-inbox')?.remove();
     const ov = document.createElement('div');
@@ -23914,13 +23927,20 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
         const d = new Date(new Date(n.created_at).getTime() + 7 * 3600000).toISOString();
         const when = d.slice(8,10) + '/' + d.slice(5,7) + ' ' + d.slice(11,16) + ' WIB';
         const isNew = n.created_at > lastBefore;
-        return `<div style="background:#fff;border-radius:14px;padding:12px 14px;margin-bottom:8px;box-shadow:0 1px 3px rgba(0,0,0,0.06);${isNew ? 'border-left:4px solid #ef4444;' : ''}">
+        const act = _notifAction(n);
+        return `<div data-notif-id="${n.id}" style="background:#fff;border-radius:14px;padding:12px 14px;margin-bottom:8px;box-shadow:0 1px 3px rgba(0,0,0,0.06);${act ? 'cursor:pointer;' : ''}${isNew ? 'border-left:4px solid #ef4444;' : ''}">
           <div style="display:flex;justify-content:space-between;gap:8px;font-size:11px;color:#94a3b8;margin-bottom:4px;">
             <span>${icon[n.source] || '🔔'} ${escapeHtml(from[n.source] || 'Notifikasi')}${n.source === 'broadcast' && n.sender ? ' · ' + escapeHtml(n.sender) : ''}</span><span>${when}</span></div>
           <div style="font-size:14px;color:#1a2744;font-weight:${isNew ? 800 : 600};">${escapeHtml(n.title)}</div>
           <div style="font-size:13px;color:#475569;margin-top:3px;white-space:pre-wrap;">${escapeHtml(n.body)}</div>
+          ${act ? `<div style="margin-top:8px;font-size:12px;font-weight:800;color:#1a3a5c;">${act.label} ›</div>` : ''}
         </div>`;
       }).join('');
+      list.querySelectorAll('[data-notif-id]').forEach(card => {
+        const n = _notifCache.find(x => String(x.id) === card.getAttribute('data-notif-id'));
+        const act = n && _notifAction(n);
+        if (act) card.onclick = () => { document.getElementById('notif-inbox')?.remove(); act.run(); };
+      });
     }
     if (!window._peekMode) localStorage.setItem(_notifLastReadKey(), new Date().toISOString());
     document.querySelectorAll('.notif-badge').forEach(b => { b.style.display = 'none'; });
