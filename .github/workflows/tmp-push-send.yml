@@ -1,0 +1,17 @@
+name: TMP push send
+on: workflow_dispatch
+permissions:
+  contents: write
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    steps:
+      - env:
+          PUSH_AUTH: ${{ secrets.PUSH_SYSTEM_SECRET }}
+        run: |
+          mkdir out; o=out/r-$GITHUB_RUN_ID.txt; A=https://verse-hotels-report.vercel.app/api/send-push
+          echo "1: $(curl -s -X POST $A -H 'Content-Type: application/json' -d "{\"auth\":\"$PUSH_AUTH\",\"target\":\"role\",\"targetValue\":\"COO\",\"title\":\"🔔 Uji Notifikasi 1\",\"body\":\"Notifikasi pertama — cek panel & ikon app.\"}")" >> $o
+          sleep 4
+          echo "2: $(curl -s -X POST $A -H 'Content-Type: application/json' -d "{\"auth\":\"$PUSH_AUTH\",\"target\":\"role\",\"targetValue\":\"COO\",\"title\":\"🔔 Uji Notifikasi 2\",\"body\":\"Notifikasi kedua — ikon Verse Apps seharusnya menunjukkan angka/titik.\"}")" >> $o
+          cd out && git init -q && git checkout -q -b tmp-d-$GITHUB_RUN_ID && git config user.email a@b.c && git config user.name bot && git add . && git commit -qm r
+          git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" tmp-d-$GITHUB_RUN_ID
