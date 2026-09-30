@@ -127,7 +127,7 @@ export default async function handler(req, res) {
       normalized: { length: nk.length, lines: nk.split('\n').length, parse },
     });
   }
-  let tokens = [], title = '', body = '';
+  let tokens = [], title = '', body = '', notifId = null;
   try {
     if (reqBody.type === 'device_request') {
       const r = await supaRpc('push_device_request', { p_device_id: String(reqBody.deviceId || '') });
@@ -140,7 +140,10 @@ export default async function handler(req, res) {
       if (!title || !body) return res.status(400).json({ error: 'title dan body wajib diisi' });
       const target = reqBody.target || 'all';
       try {
-        tokens = (await supaRpc('push_tokens_for', { p_auth: String(reqBody.auth || ''), p_target: target, p_value: reqBody.targetValue || null })) || [];
+        // Catat pesan di kotak notifikasi + ambil HP tujuan
+        const prep = await supaRpc('push_send_prepare', { p_auth: String(reqBody.auth || ''), p_target: target, p_value: reqBody.targetValue || null, p_title: title, p_body: body });
+        tokens = (prep && prep.tokens) || [];
+        notifId = prep && prep.id;
       } catch (e) {
         if (/NOT_AUTHORIZED/.test(e.message)) return res.status(401).json({ success: false, error: 'NOT_AUTHORIZED' });
         throw e;
@@ -161,6 +164,7 @@ export default async function handler(req, res) {
           body: JSON.stringify({ message: {
             token,
             notification: { title, body },
+            data: { open: 'inbox' },
             android: {
               priority: 'HIGH',
               notification: { channel_id: 'verse_apps', notification_count: 1, default_sound: true, default_vibrate_timings: true, notification_priority: 'PRIORITY_HIGH', visibility: 'PUBLIC' },
@@ -180,6 +184,7 @@ export default async function handler(req, res) {
         failed++;
       }
     }
+    if (notifId) { try { await supaRpc('push_mark_sent', { p_auth: String(reqBody.auth || ''), p_id: notifId, p_sent: sent }); } catch (e) {} }
     return res.status(200).json({ success: true, sent, failed, total: tokens.length });
   } catch (e) {
     return res.status(500).json({ error: String(e && e.message || e) });

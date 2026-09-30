@@ -2010,7 +2010,10 @@
     <div class="home-header">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
         <button id="home-back-btn" onclick="go('splash')" style="visibility:hidden;background:rgba(255,255,255,0.15);border:none;border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;color:white;flex-shrink:0;" title="Keluar">←</button>
-        <div style="font-size:11px;color:rgba(255,255,255,0.5);" id="today-date">15 Apr</div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="font-size:11px;color:rgba(255,255,255,0.5);" id="today-date">15 Apr</div>
+          <button class="notif-bell" onclick="openNotifInbox()" title="Notifikasi" style="position:relative;background:rgba(255,255,255,0.15);border:none;border-radius:50%;width:36px;height:36px;font-size:17px;cursor:pointer;">🔔<span class="notif-badge" style="display:none;position:absolute;top:-3px;right:-3px;background:#ef4444;color:#fff;border-radius:999px;min-width:18px;height:18px;padding:0 5px;font-size:10px;font-weight:800;line-height:18px;text-align:center;"></span></button>
+        </div>
       </div>
       <div class="home-header-row">
         <div>
@@ -2630,6 +2633,8 @@
 
         <button onclick="sendBroadcast()" id="bcast-send-btn" style="width:100%;padding:14px;background:#6d28d9;color:white;border:none;border-radius:10px;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;">📤 Kirim Sekarang</button>
         <div id="bcast-status" style="margin-top:10px;font-size:12px;text-align:center;color:var(--gray-500);"></div>
+        <div style="margin-top:22px;font-size:12px;font-weight:800;letter-spacing:1px;color:var(--gray-500);">🕘 RIWAYAT BROADCAST & REMINDER</div>
+        <div id="bcast-history" style="margin-top:8px;font-size:12px;color:var(--gray-500);">—</div>
       </div>
     </div>
   </div>
@@ -2757,6 +2762,7 @@
         <span id="coo-devapproval-btn" style="font-size:20px;cursor:pointer;color:var(--gold);margin-right:10px;display:none;" onclick="openDeviceApproval()" title="Device Approval">📱</span>
         <span style="font-size:20px;cursor:pointer;color:var(--gold);" onclick="exportDashboardPDF()" title="Export PDF Konsolidasi">📄</span>
         <span style="font-size:20px;cursor:pointer;color:var(--gold);margin-left:10px;" onclick="openPeekPicker()" title="Intip tampilan user">👁️</span>
+        <span class="notif-bell" style="position:relative;font-size:20px;cursor:pointer;margin-left:10px;" onclick="openNotifInbox()" title="Notifikasi">🔔<span class="notif-badge" style="display:none;position:absolute;top:-6px;right:-8px;background:#ef4444;color:#fff;border-radius:999px;min-width:17px;height:17px;padding:0 4px;font-size:10px;font-weight:800;line-height:17px;text-align:center;"></span></span>
         <span style="font-size:20px;cursor:pointer;color:var(--gold);margin-left:10px;" onclick="cooLogout()" title="Keluar (Logout)">🚪</span>
       </div>
     </div>
@@ -3355,7 +3361,7 @@
           const url = typeof input === 'string' ? input : ((input && input.url) || '');
           const method = String((init && init.method) || (input && input.method) || 'GET').toUpperCase();
           const ours = url.indexOf(SUPA_URL) === 0 || url.indexOf('/api/') === 0 || url.indexOf(location.origin + '/api/') === 0;
-          const readOnlyRpc = /\/rest\/v1\/rpc\/(device_check|admin_devices_list|admin_users_list)$/.test(url.split('?')[0]);
+          const readOnlyRpc = /\/rest\/v1\/rpc\/(device_check|admin_devices_list|admin_users_list|notif_list|notif_history)$/.test(url.split('?')[0]);
           if (ours && method !== 'GET' && method !== 'HEAD' && !readOnlyRpc) {
             if (Date.now() - _lastPeekToast > 3000) {
               _lastPeekToast = Date.now();
@@ -3764,6 +3770,10 @@
       _minimizeApp(); return;
     }
     if (closePhotoViewer()) return;
+    for (const pid of ['notif-inbox', 'peek-picker', 'inapp-notif', 'devapp-overlay', 'umr-overlay']) {
+      const pe = document.getElementById(pid);
+      if (pe) { pe.remove(); return; }
+    }
     if (_closeTopPopup()) return;
 
     const active = document.querySelector('.screen.active');
@@ -5635,6 +5645,7 @@
       if (screen !== 'coo') { setTimeout(exitPeekMode, 0); }
       else { window._peekMode = null; document.getElementById('peek-banner')?.remove(); }
     }
+    if (screen === 'home' || screen === 'coo') { setTimeout(() => { refreshNotifBadge(); }, 400); }
     if (screen === 'pin') { Promise.resolve().then(_maybeShowNativeBioOnPin).catch(() => {}); }
     else { document.getElementById('native-bio-btn')?.remove(); }
 
@@ -6217,8 +6228,28 @@
   ];
   const BCAST_HOTELS = ['Verse Lite Gajah Mada', 'Verse Luxe Wahid Hasyim', 'Verse Hotel Cirebon', 'Oak Tree Mahakam Blok M'];
 
+  async function loadBroadcastHistory() {
+    const el = document.getElementById('bcast-history');
+    if (!el) return;
+    el.textContent = '⏳ Memuat…';
+    try {
+      const rows = (await _adminRpc('notif_history')) || [];
+      if (!rows.length) { el.textContent = 'Belum ada broadcast.'; return; }
+      const tgt = (r) => r.target === 'all' ? 'Semua team' : r.target_value;
+      el.innerHTML = rows.map(r => {
+        const d = new Date(new Date(r.created_at).getTime() + 7 * 3600000).toISOString();
+        return `<div style="background:#fff;border:1px solid #eef0f3;border-radius:10px;padding:9px 11px;margin-bottom:6px;">
+          <div style="display:flex;justify-content:space-between;color:#94a3b8;font-size:10.5px;"><span>${r.source === 'reminder' ? '⏰ Reminder' : '📢 ' + escapeHtml(r.sender || '')} → ${escapeHtml(tgt(r) || '')}</span><span>${d.slice(8,10)}/${d.slice(5,7)} ${d.slice(11,16)}</span></div>
+          <div style="font-weight:700;color:#1a2744;font-size:12.5px;margin-top:2px;">${escapeHtml(r.title)}</div>
+          <div style="color:#64748b;font-size:11.5px;">${escapeHtml(r.body)}</div>
+          <div style="color:#16a34a;font-size:10.5px;margin-top:3px;">✓ diterima ${r.sent || 0} HP</div></div>`;
+      }).join('');
+    } catch (e) { el.textContent = e.message === 'Dibatalkan' ? '—' : 'Gagal memuat riwayat.'; }
+  }
+
   function openBroadcast() {
     go('broadcast');
+    setTimeout(loadBroadcastHistory, 300);
     bcastUpdateTargetOptions();
     document.getElementById('bcast-title').value = '';
     document.getElementById('bcast-body').value = '';
@@ -6273,6 +6304,7 @@
         statusEl.style.color = '#2ecc71';
         document.getElementById('bcast-title').value = '';
         document.getElementById('bcast-body').value = '';
+        loadBroadcastHistory();
       } else {
         statusEl.textContent = '❌ Gagal: ' + (data.error || 'unknown error');
         statusEl.style.color = '#e74c3c';
@@ -23807,6 +23839,9 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
         PushNotifications.addListener('pushNotificationReceived', (n) => {
           try { _showInAppNotif((n && n.title) || 'Verse Apps', (n && n.body) || ''); } catch (e) {}
         });
+        PushNotifications.addListener('pushNotificationActionPerformed', () => {
+          setTimeout(() => { try { openNotifInbox(); } catch (e) {} }, 600);
+        });
         PushNotifications.addListener('registration', async (token) => {
           try {
             if (window._peekMode || !token || !token.value) return;
@@ -23828,6 +23863,69 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
     }
   }
 
+  // =============================================================
+  // KOTAK NOTIFIKASI — riwayat pesan 30 hari untuk akun yang login
+  // =============================================================
+  let _notifCache = [];
+  function _notifIdentity() {
+    if (window._peekMode) return { role: window._peekMode.role, hotel: currentHotel || '' };
+    const s = loadSessionToday();
+    if (!s) return null;
+    return { role: s.role, hotel: s.hotel || currentHotel || '' };
+  }
+  function _notifLastReadKey() { const id = _notifIdentity(); return 'verse_notif_read_' + (id ? id.role : ''); }
+  async function refreshNotifBadge() {
+    const id = _notifIdentity();
+    if (!id) return;
+    try {
+      _notifCache = (await _rpc('notif_list', { p_device_id: getOrCreateDeviceId(), p_role: id.role, p_hotel: id.hotel })) || [];
+    } catch (e) { return; }
+    let last = localStorage.getItem(_notifLastReadKey());
+    if (!last) { last = new Date(Date.now() - 24 * 3600000).toISOString(); if (!window._peekMode) localStorage.setItem(_notifLastReadKey(), last); }
+    const unread = _notifCache.filter(n => n.created_at > last).length;
+    document.querySelectorAll('.notif-badge').forEach(b => {
+      b.textContent = unread > 99 ? '99+' : String(unread);
+      b.style.display = unread > 0 ? 'inline-block' : 'none';
+    });
+  }
+  async function openNotifInbox() {
+    document.getElementById('notif-inbox')?.remove();
+    const ov = document.createElement('div');
+    ov.id = 'notif-inbox';
+    ov.style.cssText = 'position:fixed;inset:0;z-index:100000;background:var(--cream,#f7f5f0);display:flex;flex-direction:column;';
+    ov.innerHTML = `
+      <div style="background:linear-gradient(135deg,#1a3a5c,#0f2540);color:#fff;padding:calc(env(safe-area-inset-top,0px) + 16px) 16px 16px;display:flex;align-items:center;gap:12px;">
+        <button id="notif-close" style="width:38px;height:38px;border-radius:50%;border:none;background:rgba(255,255,255,0.15);color:#fff;font-size:18px;cursor:pointer;">←</button>
+        <div><div style="font-size:18px;font-weight:800;">🔔 Notifikasi</div><div style="font-size:11px;opacity:.7;">30 hari terakhir</div></div>
+      </div>
+      <div id="notif-list" style="flex:1;overflow-y:auto;padding:12px 14px calc(20px + env(safe-area-inset-bottom,0px));font-size:13px;color:#64748b;">⏳ Memuat…</div>`;
+    document.body.appendChild(ov);
+    document.getElementById('notif-close').onclick = () => ov.remove();
+    const lastBefore = localStorage.getItem(_notifLastReadKey()) || '';
+    await refreshNotifBadge();
+    const list = document.getElementById('notif-list');
+    if (!list) return;
+    if (!_notifCache.length) {
+      list.innerHTML = '<div style="text-align:center;padding:50px 20px;color:#94a3b8;"><div style="font-size:40px;">📭</div>Belum ada notifikasi</div>';
+    } else {
+      const icon = { broadcast: '📢', reminder: '⏰', approval: '📱' };
+      const from = { broadcast: 'Broadcast', reminder: 'Reminder otomatis', approval: 'Approval HP' };
+      list.innerHTML = _notifCache.map(n => {
+        const d = new Date(new Date(n.created_at).getTime() + 7 * 3600000).toISOString();
+        const when = d.slice(8,10) + '/' + d.slice(5,7) + ' ' + d.slice(11,16) + ' WIB';
+        const isNew = n.created_at > lastBefore;
+        return `<div style="background:#fff;border-radius:14px;padding:12px 14px;margin-bottom:8px;box-shadow:0 1px 3px rgba(0,0,0,0.06);${isNew ? 'border-left:4px solid #ef4444;' : ''}">
+          <div style="display:flex;justify-content:space-between;gap:8px;font-size:11px;color:#94a3b8;margin-bottom:4px;">
+            <span>${icon[n.source] || '🔔'} ${escapeHtml(from[n.source] || 'Notifikasi')}${n.source === 'broadcast' && n.sender ? ' · ' + escapeHtml(n.sender) : ''}</span><span>${when}</span></div>
+          <div style="font-size:14px;color:#1a2744;font-weight:${isNew ? 800 : 600};">${escapeHtml(n.title)}</div>
+          <div style="font-size:13px;color:#475569;margin-top:3px;white-space:pre-wrap;">${escapeHtml(n.body)}</div>
+        </div>`;
+      }).join('');
+    }
+    if (!window._peekMode) localStorage.setItem(_notifLastReadKey(), new Date().toISOString());
+    document.querySelectorAll('.notif-badge').forEach(b => { b.style.display = 'none'; });
+  }
+
   function _showInAppNotif(title, body) {
     document.getElementById('inapp-notif')?.remove();
     const el = document.createElement('div');
@@ -23840,8 +23938,9 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
     document.body.appendChild(el);
     requestAnimationFrame(() => { el.style.transform = 'translateY(0)'; });
     const close = () => { el.style.transform = 'translateY(-120%)'; setTimeout(() => el.remove(), 350); };
-    el.onclick = close;
+    el.onclick = () => { close(); openNotifInbox(); };
     setTimeout(close, 7000);
+    refreshNotifBadge();
   }
 
   function _unregisterPushToken() {
