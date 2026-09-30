@@ -1,15 +1,23 @@
-name: TMP push diag
+name: TMP vercel env
 on: workflow_dispatch
 permissions:
   contents: write
 jobs:
-  d:
+  fix:
     runs-on: ubuntu-latest
     steps:
       - env:
-          PUSH_AUTH: ${{ secrets.PUSH_SYSTEM_SECRET }}
+          VT: ${{ secrets.TMP_VERCEL_TOKEN }}
+          FBK: ${{ secrets.TMP_FB_KEY }}
         run: |
-          mkdir out
-          curl -s -X POST https://verse-hotels-report.vercel.app/api/send-push -H 'Content-Type: application/json' -d "{\"auth\":\"$PUSH_AUTH\",\"diag\":true}" > out/r-$GITHUB_RUN_ID.txt
+          mkdir out; o=out/r-$GITHUB_RUN_ID.txt
+          P=$(curl -s -H "Authorization: Bearer $VT" "https://api.vercel.com/v9/projects/verse-hotels-report")
+          PID=$(echo "$P" | python3 -c "import json,sys;d=json.load(sys.stdin);print(d.get('id') or 'ERR:'+json.dumps(d.get('error',d))[:200])")
+          echo "project: $PID" >> $o
+          if [[ "$PID" != ERR* ]]; then
+            BODY=$(python3 -c "import json,os;print(json.dumps({'key':'FIREBASE_PRIVATE_KEY','value':os.environ['FBK'],'type':'encrypted','target':['production','preview','development']}))")
+            R=$(curl -s -X POST -H "Authorization: Bearer $VT" -H "Content-Type: application/json" "https://api.vercel.com/v10/projects/$PID/env?upsert=true" -d "$BODY")
+            echo "set env: $(echo "$R" | python3 -c "import json,sys;d=json.load(sys.stdin);print('OK' if 'created' in d or d.get('key') else json.dumps(d)[:200])")" >> $o
+          fi
           cd out && git init -q && git checkout -q -b tmp-d-$GITHUB_RUN_ID && git config user.email a@b.c && git config user.name bot && git add . && git commit -qm r
           git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" tmp-d-$GITHUB_RUN_ID
