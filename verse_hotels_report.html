@@ -3657,7 +3657,10 @@
 
     const active = document.querySelector('.screen.active');
     const id = active ? active.id.replace('screen-', '') : 'splash';
-    const isRoot = id === 'splash' || id === 'home' || (id === 'coo' && cooOpenedFrom !== 'home');
+    // Beranda team & Dashboard COO/CEO -> kembali ke halaman awal (login tetap tersimpan)
+    if (id === 'home') { go('splash'); return; }
+    if (id === 'coo' && cooOpenedFrom !== 'home') { try { stopLiveRefresh(); } catch(e) {} go('splash'); return; }
+    const isRoot = id === 'splash';
     if (!isRoot && active) {
       const backBtn = Array.from(active.querySelectorAll('button')).find(b => b.textContent.trim() === '←' && b.offsetParent !== null);
       if (backBtn) { backBtn.click(); return; }
