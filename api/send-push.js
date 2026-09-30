@@ -21,9 +21,34 @@ function base64url(input) {
     .replace(/=+$/, '');
 }
 
+// Baca kredensial Firebase dari env Vercel — tahan berbagai format tempel:
+// tanda kutip di awal/akhir, "\n" literal, satu baris, atau isi file JSON utuh.
+function normalizePrivateKey(raw) {
+  let k = String(raw || '').trim();
+  if (k.startsWith('{')) { try { k = JSON.parse(k).private_key || k; } catch (e) {} }
+  if ((k.startsWith('"') && k.endsWith('"')) || (k.startsWith("'") && k.endsWith("'"))) k = k.slice(1, -1);
+  k = k.replace(/\\n/g, '\n').replace(/\r/g, '');
+  const m = k.match(/-----BEGIN ([A-Z ]*PRIVATE KEY)-----([\s\S]*?)-----END \1-----/);
+  if (m) {
+    const body = m[2].replace(/[^A-Za-z0-9+/=]/g, '');
+    k = '-----BEGIN ' + m[1] + '-----\n' + body.match(/.{1,64}/g).join('\n') + '\n-----END ' + m[1] + '-----\n';
+  }
+  return k;
+}
+
+function firebaseCreds() {
+  let sa = null;
+  const rawSa = process.env.FIREBASE_SERVICE_ACCOUNT || (String(process.env.FIREBASE_PRIVATE_KEY || '').trim().startsWith('{') ? process.env.FIREBASE_PRIVATE_KEY : '');
+  if (rawSa) { try { sa = JSON.parse(rawSa); } catch (e) {} }
+  return {
+    projectId: String(process.env.FIREBASE_PROJECT_ID || (sa && sa.project_id) || '').trim().replace(/^["']|["']$/g, ''),
+    clientEmail: String(process.env.FIREBASE_CLIENT_EMAIL || (sa && sa.client_email) || '').trim().replace(/^["']|["']$/g, ''),
+    privateKey: normalizePrivateKey((sa && sa.private_key) || process.env.FIREBASE_PRIVATE_KEY),
+  };
+}
+
 async function getAccessToken() {
-  const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
-  const privateKey = (process.env.FIREBASE_PRIVATE_KEY || '').replace(/\\n/g, '\n');
+  const { clientEmail, privateKey } = firebaseCreds();
 
   const now = Math.floor(Date.now() / 1000);
   const header = { alg: 'RS256', typ: 'JWT' };
@@ -77,8 +102,9 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
-  const PROJECT_ID = process.env.FIREBASE_PROJECT_ID;
-  if (!PROJECT_ID || !process.env.FIREBASE_CLIENT_EMAIL || !process.env.FIREBASE_PRIVATE_KEY) {
+  const creds = firebaseCreds();
+  const PROJECT_ID = creds.projectId;
+  if (!PROJECT_ID || !creds.clientEmail || !creds.privateKey) {
     return res.status(500).json({ error: 'Kredensial Firebase belum lengkap di Vercel' });
   }
 
