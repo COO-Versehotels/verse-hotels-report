@@ -3225,6 +3225,7 @@
     try { name = currentUserName || ''; } catch(e) {}
     const session = { role, hotel: hotel || '', name, date: today };
     localStorage.setItem('team_session', JSON.stringify(session));
+    localStorage.setItem('verse_last_login', JSON.stringify(session)); // untuk fingerprint setelah logout
   }
 
   function loadSessionToday() {
@@ -3352,6 +3353,123 @@
     return id;
   }
 
+  // APK: pakai ID bawaan HP (Android ID) supaya uninstall/install ulang tetap dikenali.
+  // Kalau ID lama di HP ini sudah approved, statusnya dibawa ke ID baru (tidak perlu approve ulang).
+  let _nativeDeviceModel = '';
+  async function _initNativeDeviceId() {
+    const bio = _getNativeBiometric();
+    if (!bio) return;
+    let info = null;
+    try { info = await bio.getDeviceInfo(); } catch(e) { return; } // APK lama belum punya fungsi ini
+    if (!info || !info.androidId) return;
+    _nativeDeviceModel = ((info.manufacturer || '') + ' ' + (info.model || '')).trim();
+    const newId = 'and-' + info.androidId;
+    const oldId = localStorage.getItem(DEVICE_ID_KEY);
+    if (oldId === newId) return;
+    if (oldId) {
+      try {
+        const h = { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY };
+        const oldRows = await (await fetch(SUPA_URL + '/rest/v1/device_approvals?device_id=eq.' + encodeURIComponent(oldId) + '&select=status,label', { headers: h })).json();
+        const newRows = await (await fetch(SUPA_URL + '/rest/v1/device_approvals?device_id=eq.' + encodeURIComponent(newId) + '&select=status', { headers: h })).json();
+        if (oldRows && oldRows[0] && oldRows[0].status === 'approved' && (!newRows || newRows.length === 0)) {
+          await fetch(SUPA_URL + '/rest/v1/device_approvals', {
+            method: 'POST',
+            headers: Object.assign({ 'Content-Type': 'application/json', 'Prefer': 'return=minimal' }, h),
+            body: JSON.stringify({ device_id: newId, status: 'approved', approved_at: new Date().toISOString(),
+              label: (oldRows[0].label || '') + (_nativeDeviceModel ? ' (' + _nativeDeviceModel + ')' : ''),
+              user_agent: navigator.userAgent })
+          });
+        }
+      } catch(e) { console.warn('migrasi device id', e); }
+    }
+    localStorage.setItem(DEVICE_ID_KEY, newId);
+  }
+
+  function _deviceModelLabel() {
+    if (_nativeDeviceModel) return _nativeDeviceModel;
+    const ua = navigator.userAgent || '';
+    if (/iPhone/i.test(ua)) return 'iPhone (browser)';
+    if (/Android/i.test(ua)) return 'Android (browser)';
+    if (/Windows/i.test(ua)) return 'Windows (browser)';
+    if (/Mac OS X/i.test(ua)) return 'Mac (browser)';
+    return 'Browser';
+  }
+
+  // ---------- Layar approval: isi PIN supaya COO tahu HP ini milik siapa ----------
+  let _gatePendingLogin = null;   // {role, nama} dari PIN yang diisi di layar approval
+  let _gatePollTimer = null;
+
+  async function _gateSubmitPin() {
+    const inp = document.getElementById('gate-pin-input');
+    const msg = document.getElementById('gate-pin-msg');
+    const btn = document.getElementById('gate-pin-btn');
+    const val = (inp && inp.value || '').trim();
+    if (!/^\d{4,6}$/.test(val)) { msg.style.color = '#dc2626'; msg.textContent = 'Masukkan PIN Anda (angka).'; return; }
+    btn.disabled = true; btn.textContent = '⏳ Mengirim…';
+    try {
+      const h = { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY };
+      const rows = await (await fetch(SUPA_URL + '/rest/v1/report_users?pin=eq.' + encodeURIComponent(val) + '&select=role,nama', { headers: h })).json();
+      if (!rows || rows.length === 0) {
+        msg.style.color = '#dc2626'; msg.textContent = 'PIN tidak terdaftar. Periksa lagi PIN Anda.';
+        btn.disabled = false; btn.textContent = 'Kirim ke COO'; return;
+      }
+      const who = rows.map(r => (r.nama ? r.nama + ' – ' : '') + r.role).join(' / ');
+      const label = who + ' · ' + _deviceModelLabel();
+      const deviceId = getOrCreateDeviceId();
+      await fetch(SUPA_URL + '/rest/v1/device_approvals?device_id=eq.' + encodeURIComponent(deviceId), {
+        method: 'PATCH',
+        headers: Object.assign({ 'Content-Type': 'application/json', 'Prefer': 'return=minimal' }, h),
+        body: JSON.stringify({ label: label })
+      });
+      _gatePendingLogin = (rows.length === 1) ? { role: rows[0].role, nama: rows[0].nama || '' } : null;
+      // Notifikasi ke HP COO
+      fetch('/api/send-push', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ target: 'role', targetValue: 'COO', title: '📱 Permintaan Approval HP', body: label + ' — buka Dashboard COO → Device Approval' })
+      }).catch(() => {});
+      msg.style.color = '#16a34a';
+      msg.textContent = '✅ Terkirim ke COO. Halaman ini otomatis masuk begitu disetujui.';
+      btn.textContent = '✅ Terkirim';
+      inp.disabled = true;
+    } catch(e) {
+      msg.style.color = '#dc2626'; msg.textContent = 'Gagal mengirim, periksa koneksi lalu coba lagi.';
+      btn.disabled = false; btn.textContent = 'Kirim ke COO';
+    }
+  }
+
+  function _startGatePolling() {
+    if (_gatePollTimer) return;
+    _gatePollTimer = setInterval(async () => {
+      if (!document.getElementById('device-gate-overlay')) { clearInterval(_gatePollTimer); _gatePollTimer = null; return; }
+      await checkDeviceApproval();
+      if (!document.getElementById('device-gate-overlay')) {
+        clearInterval(_gatePollTimer); _gatePollTimer = null;
+        _afterDeviceApproved();
+      }
+    }, 15000);
+  }
+
+  function _afterDeviceApproved() {
+    if (_gatePendingLogin && _gatePendingLogin.role) {
+      currentRole = _gatePendingLogin.role;
+      currentUserName = _gatePendingLogin.nama || '';
+      if (currentRole === 'COO' || currentRole === 'CEO') cooOpenedFrom = 'splash';
+      _gatePendingLogin = null;
+      _completeLoginAfterAuth();
+    } else {
+      Promise.resolve().then(_appLockOnLoad).catch(() => {});
+    }
+  }
+
+  // Jalur yang sama dengan PIN benar (dipakai juga oleh fingerprint & layar approval)
+  function _completeLoginAfterAuth() {
+    try { logUserLogin(); } catch(e) {}
+    if (currentRole === 'COO') loginAsCOO();
+    else if (currentRole === 'CEO') loginAsCEO();
+    else if (currentRole === 'F&B Manager') showFBMHotelPicker();
+    else doLogin();
+  }
+
   function showDeviceGateScreen(status, deviceId) {
     const old = document.getElementById('device-gate-overlay');
     if (old) old.remove();
@@ -3369,12 +3487,27 @@
         <div style="font-size:44px;margin-bottom:10px;">${icon}</div>
         <div style="font-weight:800;font-size:17px;color:#1a3a5c;margin-bottom:8px;">${title}</div>
         <div style="font-size:13px;color:#64748b;line-height:1.5;margin-bottom:16px;">${desc}</div>
+        ${status === 'pending' ? `
+        <div style="text-align:left;background:#f1f5f9;border-radius:12px;padding:12px;margin-bottom:12px;">
+          <div style="font-size:12px;font-weight:700;color:#1a3a5c;margin-bottom:6px;">Isi PIN Anda supaya COO tahu HP ini milik siapa</div>
+          <div style="display:flex;gap:6px;">
+            <input id="gate-pin-input" type="password" inputmode="numeric" maxlength="6" placeholder="PIN" style="flex:1;min-width:0;padding:10px;border:1.5px solid #cbd5e1;border-radius:10px;font-size:16px;letter-spacing:4px;text-align:center;">
+            <button id="gate-pin-btn" style="padding:10px 12px;background:#16a34a;color:white;border:none;border-radius:10px;font-weight:700;font-size:12px;cursor:pointer;white-space:nowrap;">Kirim ke COO</button>
+          </div>
+          <div id="gate-pin-msg" style="font-size:11px;margin-top:6px;color:#64748b;">PIN tidak langsung membuka akses — COO tetap harus menyetujui.</div>
+        </div>` : ''}
         <div style="font-size:10px;color:#94a3b8;background:#f8fafc;border-radius:8px;padding:8px;margin-bottom:16px;word-break:break-all;">Device ID: ${deviceId}</div>
         <button id="device-gate-recheck" style="width:100%;padding:12px;background:#1a3a5c;color:white;border:none;border-radius:10px;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;">🔄 Cek Status Lagi</button>
       </div>
     `;
     document.body.appendChild(overlay);
-    document.getElementById('device-gate-recheck').onclick = () => checkDeviceApproval();
+    document.getElementById('device-gate-recheck').onclick = async () => {
+      await checkDeviceApproval();
+      if (!document.getElementById('device-gate-overlay')) _afterDeviceApproved();
+    };
+    const gpb = document.getElementById('gate-pin-btn');
+    if (gpb) gpb.onclick = _gateSubmitPin;
+    if (status === 'pending') _startGatePolling();
   }
 
   function hideDeviceGateScreen() {
@@ -3433,7 +3566,7 @@
     }
   }
 
-  document.addEventListener('DOMContentLoaded', () => { Promise.resolve(checkDeviceApproval()).catch(()=>{}).then(() => { try { _camAutoResumeOnLoad(); } catch(e) { console.error('camResume', e); } Promise.resolve().then(_appLockOnLoad).catch(e => console.error('appLock', e)); }); });
+  document.addEventListener('DOMContentLoaded', () => { Promise.resolve(_initNativeDeviceId()).catch(()=>{}).then(() => checkDeviceApproval()).catch(()=>{}).then(() => { try { _camAutoResumeOnLoad(); } catch(e) { console.error('camResume', e); } Promise.resolve().then(_appLockOnLoad).catch(e => console.error('appLock', e)); }); });
 
   // =============================================================
   // VIEWER FOTO DI DALAM APP — foto/dokumentasi tidak lagi dilempar ke Chrome
@@ -3441,7 +3574,14 @@
   function _isImageUrl(u) {
     if (!u || typeof u !== 'string') return false;
     if (u.startsWith('data:image/')) return true;
-    return /\.(jpe?g|png|gif|webp|bmp|heic|heif)(\?|#|$)/i.test(u);
+    let path = u;
+    try {
+      const url = new URL(u, location.href);
+      if (/(^|\.)(wa\.me|whatsapp\.com|google\.com|goo\.gl)$/i.test(url.hostname)) return false;
+      if (!/^https?:$/.test(url.protocol)) return false;
+      path = url.pathname;
+    } catch(e) { return false; }
+    return /\.(jpe?g|png|gif|webp|bmp|heic|heif)$/i.test(path);
   }
 
   function openPhotoViewer(url) {
@@ -3525,7 +3665,10 @@
     const hm = document.getElementById('hotel-modal');
     if (hm && hm.classList.contains('show')) { closeModal(); return true; }
     const vw = window.innerWidth, vh = window.innerHeight;
-    const cands = Array.from(document.body.querySelectorAll('div')).filter(el => {
+    const pool = new Set(Array.from(document.body.children));
+    if (_staticOverlayIds) _staticOverlayIds.forEach(id => { const el = document.getElementById(id); if (el) pool.add(el); });
+    const cands = Array.from(pool).filter(el => {
+      if (el.tagName !== 'DIV') return false;
       if (skip.includes(el.id)) return false;
       const cs = getComputedStyle(el);
       if (cs.position !== 'fixed' || cs.display === 'none' || cs.visibility === 'hidden' || parseFloat(cs.opacity) === 0) return false;
@@ -3605,7 +3748,7 @@
       if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()
           && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
         window.Capacitor.Plugins.App.addListener('backButton', handleHardwareBack);
-        window.Capacitor.Plugins.App.addListener('appStateChange', _onAppStateChange);
+
       }
     } catch(e) { console.warn('backButton listener', e); }
   });
@@ -3615,6 +3758,35 @@
   // Ada session tersimpan -> app Android minta fingerprint dulu,
   // web langsung masuk. PIN tetap tersedia sebagai cadangan.
   // =============================================================
+  async function _maybeShowNativeBioOnPin() {
+    document.getElementById('native-bio-btn')?.remove();
+    const bio = _getNativeBiometric();
+    if (!bio || !currentRole) return;
+    let last = null;
+    try { last = JSON.parse(localStorage.getItem('verse_last_login') || 'null'); } catch(e) {}
+    if (!last || last.role !== currentRole) return;
+    let available = false;
+    try { available = !!(await bio.isAvailable()).available; } catch(e) {}
+    if (!available || currentRole !== last.role) return;
+    const dots = document.querySelector('#screen-pin .pin-dots');
+    if (!dots || document.getElementById('native-bio-btn')) return;
+    const b = document.createElement('button');
+    b.id = 'native-bio-btn';
+    b.textContent = '👆 Masuk dengan Fingerprint';
+    b.style.cssText = 'display:block;margin:4px auto 14px;padding:10px 18px;border:1.5px solid #1a3a5c;background:#fff;color:#1a3a5c;border-radius:12px;font-size:13px;font-weight:700;cursor:pointer;';
+    b.onclick = async () => {
+      let res = null;
+      try { res = await bio.verify({ title: 'Masuk Verse Apps', subtitle: getDisplayRole(currentRole) }); } catch(e) {}
+      if (res && res.verified && currentRole === last.role) {
+        currentUserName = last.name || '';
+        pin = ''; updatePinDots();
+        b.remove();
+        _completeLoginAfterAuth();
+      }
+    };
+    dots.insertAdjacentElement('afterend', b);
+  }
+
   function _getNativeBiometric() {
     try {
       if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()
@@ -3631,12 +3803,8 @@
     if (currentRole) return; // sudah dipulihkan (mis. resume kamera)
     const session = loadSessionToday();
     if (!session) return;
-    const bio = _getNativeBiometric();
-    let available = false;
-    if (bio) { try { available = !!(await bio.isAvailable()).available; } catch(e) {} }
-    if (!available) { tryAutoLogin(); return; }
-    _showAppLock(session);
-    _appLockFingerprint();
+    // Login sekali: selama belum logout, app langsung masuk tanpa PIN/fingerprint
+    tryAutoLogin();
   }
 
   let _appLockResumeMode = false;
@@ -5320,6 +5488,7 @@
   function cooLogout() {
     if (!confirm('Keluar dari akun ini? Berikutnya perlu masukkan PIN lagi.')) return;
     stopLiveRefresh();
+    _rememberLastLogin();
     localStorage.removeItem('team_session');
     currentRole = '';
     go('splash');
@@ -5365,6 +5534,9 @@
     if (screen === 'submit') {
       populateSubmit();
     }
+
+    if (screen === 'pin') { Promise.resolve().then(_maybeShowNativeBioOnPin).catch(() => {}); }
+    else { document.getElementById('native-bio-btn')?.remove(); }
 
     // Populate COO dashboard
     if (screen === 'coo') {
@@ -6057,9 +6229,13 @@
       // Device yang sudah dicabut (revoked) disembunyikan supaya daftar tidak penuh.
       // Tetap bisa dibuka lewat tombol di bawah (kalau perlu disetujui ulang).
       const revokedCount = rows.filter(r => r.status === 'revoked').length;
+      const namedPending = rows.filter(r => r.status === 'pending' && r.label);
       const showRevoked = !!window._devappShowRevoked;
       const visibleRows = showRevoked ? rows : rows.filter(r => r.status !== 'revoked');
       let html = '';
+      if (namedPending.length > 0) {
+        html += `<button onclick="devappApproveAllNamed()" style="width:100%;padding:10px;margin-bottom:10px;background:#16a34a;color:white;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;">✅ Approve semua yang sudah bernama (${namedPending.length})</button>`;
+      }
       if (visibleRows.length === 0) html += '<div style="text-align:center;color:#94a3b8;padding:20px;">Tidak ada device aktif / pending.</div>';
       visibleRows.forEach(r => {
         const dt = new Date(r.requested_at);
@@ -6093,6 +6269,19 @@
     } catch (e) {
       listEl.innerHTML = `<div style="color:#ef4444;text-align:center;padding:20px;">❌ Gagal memuat: ${e.message}</div>`;
     }
+  }
+
+  async function devappApproveAllNamed() {
+    if (!confirm('Approve semua HP pending yang sudah mengisi PIN (sudah ada nama)?')) return;
+    try {
+      await fetch(SUPA_URL + '/rest/v1/device_approvals?status=eq.pending&label=not.is.null&label=neq.', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY, 'Prefer': 'return=minimal' },
+        body: JSON.stringify({ status: 'approved', approved_at: new Date().toISOString() })
+      });
+      showToast('✅ Semua HP bernama disetujui');
+    } catch(e) { showToast('❌ Gagal: ' + e.message); }
+    loadDeviceApprovalList();
   }
 
   async function devappSetStatus(id, status) {
@@ -6816,8 +7005,14 @@
     }
   }
 
+  function _rememberLastLogin() {
+    const s = localStorage.getItem('team_session');
+    if (s) localStorage.setItem('verse_last_login', s);
+  }
+
   function logoutToSplash() {
-    // Hapus session tersimpan
+    // Hapus session tersimpan (akun terakhir diingat untuk tombol fingerprint)
+    _rememberLastLogin();
     localStorage.removeItem('team_session');
     // Reset state
     currentRole = '';

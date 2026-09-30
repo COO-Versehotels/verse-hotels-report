@@ -72,7 +72,7 @@ jobs:
       - name: Beri nama APK sesuai tanggal build
         run: |
           mkdir -p output
-          cp android/app/build/outputs/apk/debug/app-debug.apk "output/VerseHotelsTasklist-$(date +%Y%m%d-%H%M).apk"
+          cp android/app/build/outputs/apk/debug/app-debug.apk "output/Verse-Apps-Tasklist-Build${GITHUB_RUN_NUMBER}.apk"
 
       - name: Upload APK sebagai artifact (bisa didownload dari halaman Actions)
         uses: actions/upload-artifact@v4
@@ -85,7 +85,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: android-build-${{ github.run_number }}
-          name: "Android Build #${{ github.run_number }}"
+          name: "Verse Apps (Tasklist Verse Hotels) — Build #${{ github.run_number }}"
           files: mobile-app/output/*.apk
           body: |
             APK hasil build otomatis dari commit ${{ github.sha }}.

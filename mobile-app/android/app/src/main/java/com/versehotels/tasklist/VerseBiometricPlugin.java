@@ -1,5 +1,8 @@
 package com.versehotels.tasklist;
 
+import android.os.Build;
+import android.provider.Settings;
+
 import androidx.annotation.NonNull;
 import androidx.biometric.BiometricManager;
 import androidx.biometric.BiometricPrompt;
@@ -17,6 +20,8 @@ import java.util.concurrent.Executor;
  * Fingerprint native untuk Verse Apps.
  * JS: Capacitor.Plugins.VerseBiometric.isAvailable() / .verify({title, subtitle})
  * verify() selalu resolve: { verified: true } atau { verified: false, error, code }.
+ * getDeviceInfo(): { androidId, manufacturer, model } — ID bawaan HP, tetap sama
+ * walaupun app di-uninstall/install ulang (selama kunci tanda tangan APK sama).
  */
 @CapacitorPlugin(name = "VerseBiometric")
 public class VerseBiometricPlugin extends Plugin {
@@ -29,6 +34,21 @@ public class VerseBiometricPlugin extends Plugin {
         JSObject ret = new JSObject();
         ret.put("available", result == BiometricManager.BIOMETRIC_SUCCESS);
         ret.put("code", result);
+        call.resolve(ret);
+    }
+
+    @PluginMethod
+    public void getDeviceInfo(PluginCall call) {
+        JSObject ret = new JSObject();
+        String androidId = "";
+        try {
+            androidId = Settings.Secure.getString(getContext().getContentResolver(), Settings.Secure.ANDROID_ID);
+        } catch (Exception e) {
+            androidId = "";
+        }
+        ret.put("androidId", androidId == null ? "" : androidId);
+        ret.put("manufacturer", Build.MANUFACTURER == null ? "" : Build.MANUFACTURER);
+        ret.put("model", Build.MODEL == null ? "" : Build.MODEL);
         call.resolve(ret);
     }
 
