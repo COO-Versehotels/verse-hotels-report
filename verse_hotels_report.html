@@ -3443,7 +3443,7 @@
       // Notifikasi ke HP COO
       fetch('/api/send-push', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ target: 'role', targetValue: 'COO', title: '📱 Permintaan Approval HP', body: label + ' — buka Dashboard COO → Device Approval' })
+        body: JSON.stringify({ type: 'device_request', deviceId: deviceId })
       }).catch(() => {});
       msg.style.color = '#16a34a';
       msg.textContent = '✅ Terkirim ke COO. Halaman ini otomatis masuk begitu disetujui.';
@@ -5461,17 +5461,22 @@
 
   // Token admin COO (didapat saat login PIN COO) — dipakai untuk kelola device & user
   const ADMIN_TOKEN_KEY = 'verse_admin_token';
+  async function _getAdminToken() {
+    let token = localStorage.getItem(ADMIN_TOKEN_KEY);
+    if (token) return token;
+    const s = loadSessionToday();
+    const role = (s && s.role === 'CEO') ? 'CEO' : 'COO';
+    const p = prompt('Masukkan PIN ' + role + ' untuk melanjutkan:');
+    if (!p) throw new Error('Dibatalkan');
+    const r = await _rpc('verify_pin', { p_role: role, p_pin: p.trim(), p_device_id: getOrCreateDeviceId() });
+    if (!r || !r.ok || !r.token) throw new Error(r && r.reason === 'device' ? 'HP ini belum di-approve' : 'PIN ' + role + ' salah');
+    localStorage.setItem(ADMIN_TOKEN_KEY, r.token);
+    return r.token;
+  }
+
   async function _adminRpc(fn, params) {
     for (let attempt = 0; attempt < 2; attempt++) {
-      let token = localStorage.getItem(ADMIN_TOKEN_KEY);
-      if (!token) {
-        const p = prompt('Masukkan PIN COO untuk membuka menu admin:');
-        if (!p) throw new Error('Dibatalkan');
-        const r = await _rpc('verify_pin', { p_role: 'COO', p_pin: p.trim(), p_device_id: getOrCreateDeviceId() });
-        if (!r || !r.ok || !r.token) throw new Error(r && r.reason === 'device' ? 'HP ini belum di-approve' : 'PIN COO salah');
-        localStorage.setItem(ADMIN_TOKEN_KEY, r.token);
-        token = r.token;
-      }
+      const token = await _getAdminToken();
       try {
         return await _rpc(fn, Object.assign({ p_token: token }, params || {}));
       } catch(e) {
@@ -5578,6 +5583,7 @@
     if (!confirm('Keluar dari akun ini? Berikutnya perlu masukkan PIN lagi.')) return;
     stopLiveRefresh();
     _rememberLastLogin();
+    _unregisterPushToken();
     localStorage.removeItem('team_session');
     localStorage.removeItem(ADMIN_TOKEN_KEY);
     currentRole = '';
@@ -6250,12 +6256,18 @@
     statusEl.textContent = '';
 
     try {
-      const resp = await fetch('/api/send-push', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ target: type, targetValue, title, body }),
-      });
-      const data = await resp.json();
+      let data = null;
+      for (let attempt = 0; attempt < 2; attempt++) {
+        const auth = await _getAdminToken();
+        const resp = await fetch('/api/send-push', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ auth, target: type, targetValue, title, body }),
+        });
+        data = await resp.json();
+        if (resp.status === 401 && attempt === 0) { localStorage.removeItem(ADMIN_TOKEN_KEY); continue; }
+        break;
+      }
       if (data.success) {
         statusEl.textContent = `✅ Terkirim ke ${data.sent} HP` + (data.failed ? ` (${data.failed} gagal)` : '');
         statusEl.style.color = '#2ecc71';
@@ -6266,7 +6278,7 @@
         statusEl.style.color = '#e74c3c';
       }
     } catch (e) {
-      statusEl.textContent = '❌ Gagal terhubung ke server';
+      statusEl.textContent = e && e.message === 'Dibatalkan' ? 'Dibatalkan' : '❌ ' + ((e && e.message) || 'Gagal terhubung ke server');
       statusEl.style.color = '#e74c3c';
     }
 
@@ -7076,6 +7088,7 @@
     if (window._peekMode) { exitPeekMode(); return; }
     // Hapus session tersimpan (akun terakhir diingat untuk tombol fingerprint)
     _rememberLastLogin();
+    _unregisterPushToken();
     localStorage.removeItem('team_session');
     localStorage.removeItem(ADMIN_TOKEN_KEY);
     // Reset state
@@ -7124,6 +7137,7 @@
     pin = ''; updatePinDots();
     currentRole = 'COO';
     if (typeof cooOpenedFrom === 'undefined' || cooOpenedFrom !== 'home') saveSessionToday('COO', 'Corporate');
+    setTimeout(registerPushNotifications, 1200);
     ['nav-coo-home','nav-coo-tasklist'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.style.display = 'block';
@@ -7135,6 +7149,7 @@
     pin = ''; updatePinDots();
     currentRole = 'CEO';
     if (typeof cooOpenedFrom === 'undefined' || cooOpenedFrom !== 'home') saveSessionToday('CEO', 'Corporate');
+    setTimeout(registerPushNotifications, 1200);
     ['nav-coo-home','nav-coo-tasklist'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.style.display = 'block';
@@ -7146,6 +7161,7 @@
     pin = ''; updatePinDots();
     currentRole = 'CEO';
     if (typeof cooOpenedFrom === 'undefined' || cooOpenedFrom !== 'home') saveSessionToday('CEO', 'Corporate');
+    setTimeout(registerPushNotifications, 1200);
     ['nav-coo-home','nav-coo-tasklist'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.style.display = 'block';
@@ -23769,49 +23785,45 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
   // NOTIFIKASI PUSH (Android app only) — daftar & simpan device
   // token ke Supabase, supaya bisa dikirimi reminder & broadcast.
   // ======================================================
+  let _pushListenersAdded = false;
   async function registerPushNotifications() {
     if (window._peekMode) return;
     if (!isRunningInCapacitorApp()) return;
-    if (!currentRole || currentRole === 'COO' || currentRole === 'CEO') return;
+    if (!currentRole) return; // COO/CEO juga didaftarkan (untuk notifikasi approval HP & broadcast)
 
     try {
       const { PushNotifications } = window.Capacitor.Plugins;
       if (!PushNotifications) return;
 
+      // Listener dipasang SEBELUM register supaya token tidak terlewat
+      if (!_pushListenersAdded) {
+        _pushListenersAdded = true;
+        PushNotifications.addListener('registration', async (token) => {
+          try {
+            if (window._peekMode || !token || !token.value) return;
+            const sess = loadSessionToday();
+            const role = (sess && sess.role) || currentRole;
+            const hotel = (sess && sess.hotel) || currentHotel || '';
+            const r = await _rpc('register_push_token', { p_device_id: getOrCreateDeviceId(), p_role: role, p_hotel: hotel, p_token: token.value });
+            if (r === 'ok') localStorage.setItem('verse_push_token', token.value);
+          } catch (e) { console.warn('register push', e); }
+        });
+        PushNotifications.addListener('registrationError', (e) => console.warn('push registrationError', e));
+      }
+
       const permStatus = await PushNotifications.requestPermissions();
       if (permStatus.receive !== 'granted') return;
-
       await PushNotifications.register();
-
-      PushNotifications.addListener('registration', async (token) => {
-        try {
-          const hotelVal = currentHotel || '';
-          // Upsert manual: hapus token lama utk role+hotel ini, simpan yang baru
-          await fetch(SUPA_URL + '/rest/v1/device_tokens?role=eq.' + encodeURIComponent(currentRole) + '&hotel=eq.' + encodeURIComponent(hotelVal), {
-            method: 'DELETE',
-            headers: { apikey: SUPA_KEY, Authorization: 'Bearer ' + SUPA_KEY },
-          });
-          await fetch(SUPA_URL + '/rest/v1/device_tokens', {
-            method: 'POST',
-            headers: {
-              apikey: SUPA_KEY,
-              Authorization: 'Bearer ' + SUPA_KEY,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              role: currentRole,
-              hotel: hotelVal,
-              token: token.value,
-              updated_at: new Date().toISOString(),
-            }),
-          });
-        } catch (e) {}
-      });
-
-      PushNotifications.addListener('registrationError', () => {});
     } catch (e) {
       // Plugin belum tersedia (browser biasa) — abaikan
     }
+  }
+
+  function _unregisterPushToken() {
+    const t = localStorage.getItem('verse_push_token');
+    if (!t) return;
+    localStorage.removeItem('verse_push_token');
+    _rpc('unregister_push_token', { p_token: t }).catch(() => {});
   }
 
   async function saveTeamLocation() {

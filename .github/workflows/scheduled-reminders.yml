@@ -16,6 +16,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Kirim reminder sesuai jam saat ini
+        env:
+          PUSH_AUTH: ${{ secrets.PUSH_SYSTEM_SECRET }}
         run: |
           HOUR_UTC=$(date -u +%H)
           if [ "$HOUR_UTC" = "01" ]; then
@@ -34,4 +36,4 @@ jobs:
 
           curl -s -X POST "https://verse-hotels-report.vercel.app/api/send-push" \
             -H "Content-Type: application/json" \
-            -d "{\"target\":\"all\",\"title\":\"$TITLE\",\"body\":\"$BODY\"}"
+            -d "{\"auth\":\"$PUSH_AUTH\",\"target\":\"all\",\"title\":\"$TITLE\",\"body\":\"$BODY\"}"
