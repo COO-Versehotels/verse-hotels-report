@@ -1,0 +1,19 @@
+name: TMP push check
+on: workflow_dispatch
+permissions:
+  contents: write
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - env:
+          PUSH_AUTH: ${{ secrets.PUSH_SYSTEM_SECRET }}
+        run: |
+          A=https://verse-hotels-report.vercel.app/api/send-push; mkdir out; o=out/result.txt
+          echo "1 kirim tanpa izin: $(curl -s -w ' HTTP%{http_code}' -X POST $A -H 'Content-Type: application/json' -d '{"target":"all","title":"spam","body":"spam"}')" >> $o
+          echo "2 kirim izin palsu: $(curl -s -w ' HTTP%{http_code}' -X POST $A -H 'Content-Type: application/json' -d '{"auth":"palsu","target":"all","title":"spam","body":"spam"}')" >> $o
+          echo "3 reminder resmi (ke role uji): $(curl -s -w ' HTTP%{http_code}' -X POST $A -H 'Content-Type: application/json' -d "{\"auth\":\"$PUSH_AUTH\",\"target\":\"role\",\"targetValue\":\"__uji__\",\"title\":\"t\",\"body\":\"t\"}")" >> $o
+          echo "4 approval HP palsu: $(curl -s -w ' HTTP%{http_code}' -X POST $A -H 'Content-Type: application/json' -d '{"type":"device_request","deviceId":"tidak-ada"}')" >> $o
+          echo "5 akses tabel token langsung: $(curl -s -H 'apikey: sb_publishable_KeAmOu9ex8r1PDRI1MRMsQ_40uiEkbM' -H 'Authorization: Bearer sb_publishable_KeAmOu9ex8r1PDRI1MRMsQ_40uiEkbM' 'https://hgbqecsmhrzlavsjwlwq.supabase.co/rest/v1/device_tokens?select=*' | head -c 110)" >> $o
+          cd out && git init -q && git checkout -q -b tmp-result && git config user.email a@b.c && git config user.name bot && git add . && git commit -qm r
+          git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" tmp-result
