@@ -2009,7 +2009,7 @@
   <div class="screen" id="screen-home">
     <div class="home-header">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
-        <button onclick="go('splash')" style="background:rgba(255,255,255,0.15);border:none;border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;color:white;flex-shrink:0;" title="Keluar">←</button>
+        <button id="home-back-btn" onclick="go('splash')" style="visibility:hidden;background:rgba(255,255,255,0.15);border:none;border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;color:white;flex-shrink:0;" title="Keluar">←</button>
         <div style="font-size:11px;color:rgba(255,255,255,0.5);" id="today-date">15 Apr</div>
       </div>
       <div class="home-header-row">
@@ -2742,7 +2742,7 @@
   <!-- ===== COO DASHBOARD ===== -->
   <div class="screen" id="screen-coo">
     <div class="topbar" style="padding:48px 16px 12px;background:linear-gradient(135deg,var(--navy),#0e2340);">
-      <button class="topbar-back" onclick="cooBack()" style="color:white;background:rgba(255,255,255,0.15);">←</button>
+      <button class="topbar-back" id="coo-back-btn" onclick="cooBack()" style="color:white;background:rgba(255,255,255,0.15);">←</button>
       <div class="topbar-title">
         <h2 style="color:white;">Dashboard COO</h2>
         <p style="color:rgba(255,255,255,0.5);" id="coo-date">Verse Group Hotels</p>
@@ -3577,12 +3577,35 @@
     } catch(e) {}
   }
 
+  // Kunci ulang (fingerprint) kalau app ditinggal di latar lebih dari 5 menit
+  const APP_RELOCK_MS = 5 * 60 * 1000;
+  let _appPausedAt = 0;
+  async function _onAppStateChange(state) {
+    if (!state) return;
+    if (!state.isActive) { _appPausedAt = Date.now(); return; }
+    const away = _appPausedAt ? Date.now() - _appPausedAt : 0;
+    _appPausedAt = 0;
+    if (away < APP_RELOCK_MS) return;
+    if (document.getElementById('app-lock-overlay') || document.getElementById('device-gate-overlay')) return;
+    const session = loadSessionToday();
+    if (!session) return;
+    const bio = _getNativeBiometric();
+    if (!bio) return;
+    let available = false;
+    try { available = !!(await bio.isAvailable()).available; } catch(e) {}
+    if (!available) return;
+    closePhotoViewer();
+    _showAppLock(session, true);
+    _appLockFingerprint();
+  }
+
   document.addEventListener('DOMContentLoaded', () => {
     _collectStaticOverlays();
     try {
       if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()
           && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
         window.Capacitor.Plugins.App.addListener('backButton', handleHardwareBack);
+        window.Capacitor.Plugins.App.addListener('appStateChange', _onAppStateChange);
       }
     } catch(e) { console.warn('backButton listener', e); }
   });
@@ -3616,7 +3639,9 @@
     _appLockFingerprint();
   }
 
-  function _showAppLock(session) {
+  let _appLockResumeMode = false;
+  function _showAppLock(session, resumeMode) {
+    _appLockResumeMode = !!resumeMode;
     document.getElementById('app-lock-overlay')?.remove();
     const el = document.createElement('div');
     el.id = 'app-lock-overlay';
@@ -3660,6 +3685,7 @@
       const res = await bio.verify({ title: 'Buka Verse Apps', subtitle: 'Tempelkan jari untuk masuk' });
       if (res && res.verified) {
         document.getElementById('app-lock-overlay')?.remove();
+        if (_appLockResumeMode && currentRole) { _appLockResumeMode = false; return; } // lanjut di layar terakhir
         tryAutoLogin();
       }
     } catch(e) {
@@ -5275,6 +5301,7 @@
   }
 
   function openCEOLogin() {
+    { const s = loadSessionToday(); if (s && s.role === 'CEO') { cooOpenedFrom = 'splash'; loginAsCEO(); return; } }
     loginScreenContext = 'splash';
     currentRole = 'CEO';
     pin = ''; updatePinDots();
@@ -5341,6 +5368,8 @@
 
     // Populate COO dashboard
     if (screen === 'coo') {
+      const cbb = document.getElementById('coo-back-btn');
+      if (cbb) cbb.style.visibility = (cooOpenedFrom === 'home') ? 'visible' : 'hidden';
       populateCOO();
       startLiveRefresh();
       // Tombol Manage User hanya untuk COO
@@ -5874,7 +5903,7 @@
   async function loadPetaLive() {
     try {
       const resp = await fetch(
-        SUPA_URL + '/rest/v1/location_log?select=*&order=recorded_at.desc&limit=200',
+        SUPA_URL + '/rest/v1/location_log?select=*&recorded_at=gte.' + encodeURIComponent(new Date(Date.now() - 12*3600000).toISOString()) + '&order=recorded_at.desc&limit=500',
         { headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY } }
       );
       if (!resp.ok) return;
@@ -6668,6 +6697,7 @@
   // ===== BIOMETRIC / WEBAUTHN LOGIN COO =====
   async function doLoginCOO() {
     cooOpenedFrom = 'splash';
+    { const s = loadSessionToday(); if (s && s.role === 'COO') { loginAsCOO(); return; } }
 
     // Cek apakah browser support WebAuthn (biometrik)
     if (window.PublicKeyCredential) {
@@ -23406,6 +23436,8 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
 
   async function sendLocationPing(lat, lng, source) {
     try {
+      const sess = loadSessionToday();
+      if (!sess || !sess.role || sess.role === 'COO' || sess.role === 'CEO') return;
       const today = new Date(Date.now() + 7*3600000).toISOString().split('T')[0];
       await fetch(SUPA_URL + '/rest/v1/location_log', {
         method: 'POST',
@@ -23416,8 +23448,8 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
         },
         body: JSON.stringify({
           tanggal: today,
-          role: currentRole,
-          hotel: currentHotel || '',
+          role: sess.role,
+          hotel: sess.hotel || currentHotel || '',
           task_id: 'auto-tracking',
           status: source || 'background',
           latitude: lat,

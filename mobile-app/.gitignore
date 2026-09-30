@@ -7,3 +7,4 @@ android/captures/
 android/.cxx/
 *.iml
 .DS_Store
+android/app/verse-release.jks

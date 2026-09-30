@@ -52,8 +52,21 @@ jobs:
       - name: Beri izin eksekusi ke Gradle wrapper
         run: chmod +x android/gradlew
 
+      - name: Pasang kunci tanda tangan tetap (dari GitHub Secrets)
+        env:
+          ANDROID_KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+        run: |
+          if [ -n "$ANDROID_KEYSTORE_B64" ]; then
+            echo "$ANDROID_KEYSTORE_B64" | base64 -d > android/app/verse-release.jks
+            echo "Keystore tetap terpasang"
+          else
+            echo "::warning::Secret ANDROID_KEYSTORE_B64 kosong — APK pakai kunci debug acak"
+          fi
+
       - name: Build APK (debug — cukup untuk install langsung/internal)
         working-directory: mobile-app/android
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
         run: ./gradlew assembleDebug --no-daemon
 
       - name: Beri nama APK sesuai tanggal build
