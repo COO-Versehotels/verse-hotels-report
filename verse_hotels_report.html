@@ -3368,18 +3368,7 @@
     if (oldId === newId) return;
     if (oldId) {
       try {
-        const h = { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY };
-        const oldRows = await (await fetch(SUPA_URL + '/rest/v1/device_approvals?device_id=eq.' + encodeURIComponent(oldId) + '&select=status,label', { headers: h })).json();
-        const newRows = await (await fetch(SUPA_URL + '/rest/v1/device_approvals?device_id=eq.' + encodeURIComponent(newId) + '&select=status', { headers: h })).json();
-        if (oldRows && oldRows[0] && oldRows[0].status === 'approved' && (!newRows || newRows.length === 0)) {
-          await fetch(SUPA_URL + '/rest/v1/device_approvals', {
-            method: 'POST',
-            headers: Object.assign({ 'Content-Type': 'application/json', 'Prefer': 'return=minimal' }, h),
-            body: JSON.stringify({ device_id: newId, status: 'approved', approved_at: new Date().toISOString(),
-              label: (oldRows[0].label || '') + (_nativeDeviceModel ? ' (' + _nativeDeviceModel + ')' : ''),
-              user_agent: navigator.userAgent })
-          });
-        }
+        await _rpc('device_migrate', { p_old_id: oldId, p_new_id: newId, p_model: _nativeDeviceModel, p_user_agent: navigator.userAgent });
       } catch(e) { console.warn('migrasi device id', e); }
     }
     localStorage.setItem(DEVICE_ID_KEY, newId);
@@ -3407,21 +3396,20 @@
     if (!/^\d{4,6}$/.test(val)) { msg.style.color = '#dc2626'; msg.textContent = 'Masukkan PIN Anda (angka).'; return; }
     btn.disabled = true; btn.textContent = '⏳ Mengirim…';
     try {
-      const h = { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY };
-      const rows = await (await fetch(SUPA_URL + '/rest/v1/report_users?pin=eq.' + encodeURIComponent(val) + '&select=role,nama', { headers: h })).json();
-      if (!rows || rows.length === 0) {
+      const deviceId = getOrCreateDeviceId();
+      const r = await _rpc('device_label_by_pin', { p_device_id: deviceId, p_pin: val, p_model: _deviceModelLabel() });
+      if (!r || !r.ok) {
         msg.style.color = '#dc2626'; msg.textContent = 'PIN tidak terdaftar. Periksa lagi PIN Anda.';
         btn.disabled = false; btn.textContent = 'Kirim ke COO'; return;
       }
-      const who = rows.map(r => (r.nama ? r.nama + ' – ' : '') + r.role).join(' / ');
-      const label = who + ' · ' + _deviceModelLabel();
-      const deviceId = getOrCreateDeviceId();
-      await fetch(SUPA_URL + '/rest/v1/device_approvals?device_id=eq.' + encodeURIComponent(deviceId), {
-        method: 'PATCH',
-        headers: Object.assign({ 'Content-Type': 'application/json', 'Prefer': 'return=minimal' }, h),
-        body: JSON.stringify({ label: label })
-      });
+      const rows = r.who || [];
+      const label = r.label || '';
       _gatePendingLogin = (rows.length === 1) ? { role: rows[0].role, nama: rows[0].nama || '' } : null;
+      if (r.approved) { // PIN COO: HP COO langsung disetujui
+        hideDeviceGateScreen();
+        _afterDeviceApproved();
+        return;
+      }
       // Notifikasi ke HP COO
       fetch('/api/send-push', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -3432,7 +3420,7 @@
       btn.textContent = '✅ Terkirim';
       inp.disabled = true;
     } catch(e) {
-      msg.style.color = '#dc2626'; msg.textContent = 'Gagal mengirim, periksa koneksi lalu coba lagi.';
+      msg.style.color = '#dc2626'; msg.textContent = /Terlalu banyak/.test(e.message) ? e.message : 'Gagal mengirim, periksa koneksi lalu coba lagi.';
       btn.disabled = false; btn.textContent = 'Kirim ke COO';
     }
   }
@@ -3522,43 +3510,11 @@
 
     const deviceId = getOrCreateDeviceId();
     try {
-      const resp = await fetch(SUPA_URL + '/rest/v1/device_approvals?device_id=eq.' + encodeURIComponent(deviceId) + '&select=status', {
-        headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY }
-      });
-      const rows = await resp.json();
-
-      if (!rows || rows.length === 0) {
-        // Device baru → daftarkan sebagai pending
-        await fetch(SUPA_URL + '/rest/v1/device_approvals', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'apikey': SUPA_KEY,
-            'Authorization': 'Bearer ' + SUPA_KEY,
-            'Prefer': 'return=minimal'
-          },
-          body: JSON.stringify({ device_id: deviceId, status: 'pending', user_agent: navigator.userAgent })
-        });
-        showDeviceGateScreen('pending', deviceId);
-        return;
-      }
-
-      const status = rows[0].status;
+      const status = await _rpc('device_check', { p_device_id: deviceId, p_user_agent: navigator.userAgent });
       if (status === 'approved') {
         hideDeviceGateScreen();
-        // Update last_seen_at diam-diam (tidak perlu ditunggu)
-        fetch(SUPA_URL + '/rest/v1/device_approvals?device_id=eq.' + encodeURIComponent(deviceId), {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-            'apikey': SUPA_KEY,
-            'Authorization': 'Bearer ' + SUPA_KEY,
-            'Prefer': 'return=minimal'
-          },
-          body: JSON.stringify({ last_seen_at: new Date().toISOString() })
-        }).catch(()=>{});
       } else {
-        showDeviceGateScreen(status, deviceId);
+        showDeviceGateScreen(status === 'revoked' ? 'revoked' : 'pending', deviceId);
       }
     } catch (e) {
       console.error('Device approval check error:', e);
@@ -5370,27 +5326,44 @@
     return '';
   }
 
-  const COO_PIN = '1986';
-  const ROLE_PINS = {
-    'Ops HR Manager': '0101',
-    'HR Officer': '0102',
-    'Chief Engineering Corporate': '0103',
-    'EHK Corporate': '0104',
-    'CRA Corporate': '0105',
-    'F&B Manager': '0110',
-    'F&B Manager Verse Luxe': '0110',
-    'F&B Manager Oak Tree': '0110',
-    'Team Kitchen Verse Luxe': '0120',
-    'Team Kitchen Oak Tree': '0121',
-    'F&B Attendant Verse Luxe': '0130',
-    'F&B Attendant Oak Tree': '0131',
-    'CEO': '0909',
-    'COO': '1986',
-    'HM Verse Lite': '1010',
-    'HM Verse Luxe': '1020',
-    'HM Verse Cirebon': '1030',
-    'HM Oak Tree': '1040',
-  };
+  // PIN tidak lagi disimpan di kode — semua dicek di server (fungsi verify_pin di Supabase).
+  async function _rpc(fn, params) {
+    const res = await fetch(SUPA_URL + '/rest/v1/rpc/' + fn, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY },
+      body: JSON.stringify(params || {})
+    });
+    const txt = await res.text();
+    let data = null;
+    try { data = txt ? JSON.parse(txt) : null; } catch(e) { data = txt; }
+    if (!res.ok) {
+      const msg = (data && (data.message || data.hint)) || ('HTTP ' + res.status);
+      const err = new Error(msg); err.status = res.status; throw err;
+    }
+    return data;
+  }
+
+  // Token admin COO (didapat saat login PIN COO) — dipakai untuk kelola device & user
+  const ADMIN_TOKEN_KEY = 'verse_admin_token';
+  async function _adminRpc(fn, params) {
+    for (let attempt = 0; attempt < 2; attempt++) {
+      let token = localStorage.getItem(ADMIN_TOKEN_KEY);
+      if (!token) {
+        const p = prompt('Masukkan PIN COO untuk membuka menu admin:');
+        if (!p) throw new Error('Dibatalkan');
+        const r = await _rpc('verify_pin', { p_role: 'COO', p_pin: p.trim(), p_device_id: getOrCreateDeviceId() });
+        if (!r || !r.ok || !r.token) throw new Error(r && r.reason === 'device' ? 'HP ini belum di-approve' : 'PIN COO salah');
+        localStorage.setItem(ADMIN_TOKEN_KEY, r.token);
+        token = r.token;
+      }
+      try {
+        return await _rpc(fn, Object.assign({ p_token: token }, params || {}));
+      } catch(e) {
+        if (/NOT_ADMIN/.test(e.message) && attempt === 0) { localStorage.removeItem(ADMIN_TOKEN_KEY); continue; }
+        throw e;
+      }
+    }
+  }
 
   // Navigation
   function goHome() {
@@ -5490,6 +5463,7 @@
     stopLiveRefresh();
     _rememberLastLogin();
     localStorage.removeItem('team_session');
+    localStorage.removeItem(ADMIN_TOKEN_KEY);
     currentRole = '';
     go('splash');
   }
@@ -5754,32 +5728,24 @@
   }
 
   // Verifikasi PIN: sumber utama tabel report_users di Supabase.
-  // Pengaman: (1) PIN COO 1986 selalu berlaku sebagai kunci cadangan,
+  // Pengaman: (1) PIN kunci cadangan COO tetap berlaku (dicek di server),
   //           (2) bila database tidak terjangkau, fallback ke daftar PIN tertanam.
   // Side effect: kalau PIN valid, set currentUserName dari tabel report_users.nama
   async function cekPinRole(role, p) {
     currentUserName = ''; // reset di setiap login attempt
-    if (role === 'COO' && p === COO_PIN) return true; // kunci cadangan
     try {
-      const res = await fetch(
-        SUPA_URL + '/rest/v1/report_users?role=eq.' + encodeURIComponent(role) + '&select=pin,nama',
-        { headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY } }
-      );
-      if (res.ok) {
-        const rows = await res.json();
-        if (rows.length > 0) {
-          const match = rows.find(r => r.pin === p);
-          if (match) {
-            currentUserName = match.nama || '';
-            return true;
-          }
-          return false;
-        }
-        // role belum ada di tabel (mis. SQL belum dijalankan) -> pakai daftar tertanam
-        return p === (ROLE_PINS[role] || '');
+      const r = await _rpc('verify_pin', { p_role: role, p_pin: p, p_device_id: getOrCreateDeviceId() });
+      if (r && r.ok) {
+        currentUserName = r.nama || '';
+        if (r.token) localStorage.setItem(ADMIN_TOKEN_KEY, r.token);
+        return true;
       }
-    } catch (e) { /* jaringan/DB bermasalah -> fallback di bawah */ }
-    return p === (ROLE_PINS[role] || '');
+      if (r && r.reason === 'device') showToast('HP ini belum di-approve COO');
+      return false;
+    } catch (e) {
+      showToast(/Terlalu banyak/.test(e.message) ? e.message : 'Gagal cek PIN — periksa koneksi internet');
+      return false;
+    }
   }
 
   async function autoLogin() {
@@ -6213,10 +6179,7 @@
     if (!listEl) return;
     listEl.innerHTML = '⏳ Memuat…';
     try {
-      const resp = await fetch(SUPA_URL + '/rest/v1/device_approvals?select=*&order=requested_at.desc&limit=200', {
-        headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY }
-      });
-      const rows = await resp.json();
+      const rows = await _adminRpc('admin_devices_list');
       if (!rows || rows.length === 0) {
         listEl.innerHTML = '<div style="text-align:center;color:#94a3b8;padding:20px;">Belum ada device yang pernah akses.</div>';
         return;
@@ -6274,28 +6237,15 @@
   async function devappApproveAllNamed() {
     if (!confirm('Approve semua HP pending yang sudah mengisi PIN (sudah ada nama)?')) return;
     try {
-      await fetch(SUPA_URL + '/rest/v1/device_approvals?status=eq.pending&label=not.is.null&label=neq.', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY, 'Prefer': 'return=minimal' },
-        body: JSON.stringify({ status: 'approved', approved_at: new Date().toISOString() })
-      });
-      showToast('✅ Semua HP bernama disetujui');
+      const n = await _adminRpc('admin_devices_approve_named');
+      showToast('✅ ' + (n || 0) + ' HP disetujui');
     } catch(e) { showToast('❌ Gagal: ' + e.message); }
     loadDeviceApprovalList();
   }
 
   async function devappSetStatus(id, status) {
     try {
-      await fetch(SUPA_URL + '/rest/v1/device_approvals?id=eq.' + id, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': SUPA_KEY,
-          'Authorization': 'Bearer ' + SUPA_KEY,
-          'Prefer': 'return=minimal'
-        },
-        body: JSON.stringify({ status: status, approved_at: status === 'approved' ? new Date().toISOString() : null })
-      });
+      await _adminRpc('admin_device_update', { p_id: id, p_status: status, p_label: null });
       showToast(status === 'approved' ? '✅ Device disetujui' : '🚫 Akses dicabut');
       loadDeviceApprovalList();
     } catch (e) {
@@ -6307,16 +6257,7 @@
     const input = document.getElementById('devapp-label-' + id);
     if (!input) return;
     try {
-      await fetch(SUPA_URL + '/rest/v1/device_approvals?id=eq.' + id, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': SUPA_KEY,
-          'Authorization': 'Bearer ' + SUPA_KEY,
-          'Prefer': 'return=minimal'
-        },
-        body: JSON.stringify({ label: input.value })
-      });
+      await _adminRpc('admin_device_update', { p_id: id, p_status: null, p_label: input.value });
       showToast('✅ Label disimpan');
     } catch (e) {
       showToast('❌ Gagal simpan label: ' + e.message);
@@ -7014,6 +6955,7 @@
     // Hapus session tersimpan (akun terakhir diingat untuk tombol fingerprint)
     _rememberLastLogin();
     localStorage.removeItem('team_session');
+    localStorage.removeItem(ADMIN_TOKEN_KEY);
     // Reset state
     currentRole = '';
     currentHotel = '';
@@ -25752,9 +25694,7 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
   async function muatReportUsers() {
     const el = document.getElementById('umr-list'); if (!el) return;
     try {
-      const res = await fetch(SUPA_URL + '/rest/v1/report_users?select=*&order=role,pin', { headers: _umrHeaders });
-      if (!res.ok) throw new Error('HTTP ' + res.status);
-      _umrData = await res.json();
+      _umrData = (await _adminRpc('admin_users_list')) || [];
       if (!_umrData.length) {
         el.innerHTML = 'Tabel user kosong. <span style="color:#c0564a;">Jalankan dulu skrip SQL <b>report_users.sql</b> di Supabase, lalu buka ulang menu ini.</span>';
         return;
@@ -25766,7 +25706,7 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
           <td><b>${_umrEsc(u.pin)}</b></td>
           <td>${_umrEsc(u.nama || '—')}</td>
           <td style="white-space:nowrap;text-align:right;">
-            ${u.pin === '1986' ? '<span style="font-size:11px;color:#aaa;">kunci utama</span>' : `
+            ${u.role === 'COO' ? '<span style="font-size:11px;color:#aaa;">kunci utama</span>' : `
             <button onclick="isiFormEditReportUser('${_umrEsc(u.pin)}')" style="padding:4px 9px;background:#f0f0f0;border:none;border-radius:6px;margin-right:4px;">Edit</button>
             <button onclick="hapusReportUser('${_umrEsc(u.pin)}')" style="padding:4px 9px;background:#fde8e8;color:#c0564a;border:none;border-radius:6px;">Hapus</button>`}
           </td></tr>`).join('') + '</table>';
@@ -25796,37 +25736,22 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
     const pinBaru = (document.getElementById('umr-pin').value || '').trim();
     const nama = (document.getElementById('umr-nama').value || '').trim();
     if (!/^\d{4}$/.test(pinBaru)) { showToast('PIN harus tepat 4 digit angka.'); return; }
-    if (editPin === '1986' || (!editPin && pinBaru === '1986')) { showToast('PIN COO 1986 tidak dapat diubah.'); return; }
+    { const eu = _umrData.find(x => x.pin === editPin); if (eu && eu.role === 'COO') { showToast('PIN kunci utama COO tidak dapat diubah dari sini.'); return; } }
     try {
       // PIN harus unik global
       const dup = _umrData.find(x => x.pin === pinBaru && x.pin !== editPin);
       if (dup) { showToast('PIN ' + pinBaru + ' sudah dipakai (' + dup.role + ').'); return; }
-      if (editPin) {
-        const res = await fetch(SUPA_URL + '/rest/v1/report_users?pin=eq.' + encodeURIComponent(editPin), {
-          method: 'PATCH', headers: _umrHeaders,
-          body: JSON.stringify({ pin: pinBaru, role: role, nama: nama || null })
-        });
-        if (!res.ok) throw new Error('HTTP ' + res.status);
-        showToast('✅ User diperbarui');
-      } else {
-        const res = await fetch(SUPA_URL + '/rest/v1/report_users', {
-          method: 'POST', headers: _umrHeaders,
-          body: JSON.stringify({ pin: pinBaru, role: role, nama: nama || null })
-        });
-        if (!res.ok) throw new Error('HTTP ' + res.status);
-        showToast('✅ User ditambahkan');
-      }
+      await _adminRpc('admin_user_save', { p_old_pin: editPin || null, p_pin: pinBaru, p_role: role, p_nama: nama });
+      showToast(editPin ? '✅ User diperbarui' : '✅ User ditambahkan');
       resetFormReportUser(); muatReportUsers();
     } catch (e) { showToast('Gagal menyimpan: ' + (e.message || e)); }
   }
   async function hapusReportUser(p) {
-    if (p === '1986') { showToast('PIN COO 1986 tidak dapat dihapus.'); return; }
     const u = _umrData.find(x => x.pin === p);
+    if (u && u.role === 'COO') { showToast('PIN kunci utama COO tidak dapat dihapus.'); return; }
     if (!confirm('Hapus PIN ' + p + (u ? ' (' + u.role + (u.nama ? ' — ' + u.nama : '') + ')' : '') + '?\n\nPemegang PIN ini tidak akan bisa login lagi.')) return;
     try {
-      const res = await fetch(SUPA_URL + '/rest/v1/report_users?pin=eq.' + encodeURIComponent(p), {
-        method: 'DELETE', headers: _umrHeaders });
-      if (!res.ok) throw new Error('HTTP ' + res.status);
+      await _adminRpc('admin_user_delete', { p_pin: p });
       showToast('✅ User dihapus'); muatReportUsers();
     } catch (e) { showToast('Gagal menghapus: ' + (e.message || e)); }
   }
