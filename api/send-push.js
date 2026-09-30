@@ -109,6 +109,24 @@ export default async function handler(req, res) {
   }
 
   const reqBody = req.body || {};
+  // Diagnosa kredensial (hanya bentuk, tanpa isi) — wajib kunci sistem
+  if (reqBody.diag) {
+    try {
+      const ok = await supaRpc('push_tokens_for', { p_auth: String(reqBody.auth || ''), p_target: 'role', p_value: '__diag__' });
+      if (!Array.isArray(ok)) throw new Error('x');
+    } catch (e) { return res.status(401).json({ error: 'NOT_AUTHORIZED' }); }
+    const raw = String(process.env.FIREBASE_PRIVATE_KEY || '');
+    const nk = creds.privateKey;
+    let parse = 'ok';
+    try { crypto.createPrivateKey(nk); } catch (e) { parse = String(e.message).slice(0, 80); }
+    return res.status(200).json({
+      envNames: Object.keys(process.env).filter(k => /FIREBASE|SUPABASE/.test(k)),
+      projectId: creds.projectId, clientEmail: creds.clientEmail,
+      raw: { length: raw.length, start: raw.slice(0, 12).replace(/[A-Za-z0-9+/=]/g, 'x'), hasBegin: raw.includes('BEGIN'), hasEnd: raw.includes('END'),
+             realNewlines: (raw.match(/\n/g) || []).length, escapedNewlines: (raw.match(/\\n/g) || []).length, quotes: /^["']/.test(raw.trim()) },
+      normalized: { length: nk.length, lines: nk.split('\n').length, parse },
+    });
+  }
   let tokens = [], title = '', body = '';
   try {
     if (reqBody.type === 'device_request') {
