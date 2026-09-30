@@ -129,7 +129,12 @@ export default async function handler(req, res) {
   }
   let tokens = [], title = '', body = '', notifId = null;
   try {
-    if (reqBody.type === 'device_request') {
+    if (reqBody.type === 'role_violation') {
+      const r = await supaRpc('push_role_violation', { p_device_id: String(reqBody.deviceId || '') });
+      tokens = (r && r.tokens) || [];
+      title = '⚠️ Percobaan masuk jabatan lain';
+      body = (r && r.body) || 'Ada HP yang mencoba masuk ke jabatan lain.';
+    } else if (reqBody.type === 'device_request') {
       const r = await supaRpc('push_device_request', { p_device_id: String(reqBody.deviceId || '') });
       tokens = (r && r.tokens) || [];
       title = '📱 Permintaan Approval HP';
