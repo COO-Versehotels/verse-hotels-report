@@ -1,0 +1,16 @@
+name: TMP push send
+on: workflow_dispatch
+permissions:
+  contents: write
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    steps:
+      - env:
+          PUSH_AUTH: ${{ secrets.PUSH_SYSTEM_SECRET }}
+        run: |
+          mkdir out
+          curl -s -X POST https://verse-hotels-report.vercel.app/api/send-push -H 'Content-Type: application/json' \
+            -d "{\"auth\":\"$PUSH_AUTH\",\"target\":\"role\",\"targetValue\":\"COO\",\"title\":\"✅ Tes Notifikasi Verse Apps (2)\",\"body\":\"Notifikasi ke HP COO berfungsi normal.\"}" > out/push-result-$GITHUB_RUN_ID.txt
+          cd out && git init -q && git checkout -q -b tmp-push-$GITHUB_RUN_ID && git config user.email a@b.c && git config user.name bot && git add . && git commit -qm r
+          git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" tmp-push-$GITHUB_RUN_ID
