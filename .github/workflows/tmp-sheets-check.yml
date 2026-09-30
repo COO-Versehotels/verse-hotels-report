@@ -1,0 +1,29 @@
+name: TMP Sheets check
+on: workflow_dispatch
+permissions:
+  contents: write
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - env:
+          SA: ${{ secrets.TMP_SA_JSON }}
+        run: |
+          pip install -q google-auth requests
+          mkdir out
+          python3 - << 'PY' > out/result.txt 2>&1
+          import json, os, requests
+          from google.oauth2 import service_account
+          from google.auth.transport.requests import Request
+          info = json.loads(os.environ['SA'])
+          cr = service_account.Credentials.from_service_account_info(info, scopes=['https://www.googleapis.com/auth/spreadsheets.readonly','https://www.googleapis.com/auth/drive.readonly','https://www.googleapis.com/auth/cloud-platform'])
+          cr.refresh(Request()); h={'Authorization':'Bearer '+cr.token}
+          sid='12orgfaQ4jY9mRUTQmH17cujtyAi2dr0j2ImaybWTmSs'
+          r=requests.get(f'https://sheets.googleapis.com/v4/spreadsheets/{sid}/values/REKAP%20BULANAN!A30:W36',headers=h); print('SHEETS', r.status_code, r.text[:500])
+          r=requests.get(f'https://www.googleapis.com/drive/v3/files/{sid}',headers=h); print('DRIVE', r.status_code, r.text[:300])
+          p=info['project_id']
+          for api in ['sheets.googleapis.com','drive.googleapis.com']:
+            r=requests.get(f'https://serviceusage.googleapis.com/v1/projects/{p}/services/{api}',headers=h); print('USAGE',api, r.status_code, r.text[:200])
+          PY
+          cd out && git init -q && git checkout -q -b tmp-result && git config user.email a@b.c && git config user.name bot && git add . && git commit -qm r
+          git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" tmp-result
