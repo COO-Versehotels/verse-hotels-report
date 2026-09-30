@@ -2594,7 +2594,7 @@
       <button class="topbar-back" onclick="go('coo')" style="color:white;background:rgba(255,255,255,0.15);">←</button>
       <div class="topbar-title">
         <h2 style="color:white;">📡 Peta Live</h2>
-        <p style="color:rgba(255,255,255,0.5);">Posisi Team saat ini (update tiap ~3 menit)</p>
+        <p style="color:rgba(255,255,255,0.5);">🟢 Live (&lt;15 menit) · ⚪ posisi terakhir · 6 jam terakhir</p>
       </div>
       <div class="topbar-right">
         <span style="font-size:20px;cursor:pointer;color:#fde68a;" onclick="loadPetaLive()" title="Refresh">🔄</span>
@@ -6196,7 +6196,7 @@
   async function loadPetaLive() {
     try {
       const resp = await fetch(
-        SUPA_URL + '/rest/v1/location_log?select=*&recorded_at=gte.' + encodeURIComponent(new Date(Date.now() - 12*3600000).toISOString()) + '&order=recorded_at.desc&limit=500',
+        SUPA_URL + '/rest/v1/location_log?select=*&recorded_at=gte.' + encodeURIComponent(new Date(Date.now() - 6*3600000).toISOString()) + '&order=recorded_at.desc&limit=500',
         { headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY } }
       );
       if (!resp.ok) return;
@@ -6219,14 +6219,31 @@
       petaLiveMarkers.forEach(m => petaLiveMap.removeLayer(m));
       petaLiveMarkers = [];
 
+      if (!document.getElementById('pl-pulse-style')) {
+        const st = document.createElement('style'); st.id = 'pl-pulse-style';
+        st.textContent = '@keyframes plPulse{0%{box-shadow:0 0 0 0 rgba(22,163,74,.6)}70%{box-shadow:0 0 0 12px rgba(22,163,74,0)}100%{box-shadow:0 0 0 0 rgba(22,163,74,0)}}';
+        document.head.appendChild(st);
+      }
       if (points.length === 0) return;
 
       points.forEach(r => {
         if (!r.latitude || !r.longitude) return;
         const wibTime = new Date(new Date(r.recorded_at).getTime() + 7*3600000);
         const timeStr = wibTime.toISOString().split('T')[1].substring(0,5);
-        const marker = L.marker([r.latitude, r.longitude]).addTo(petaLiveMap);
-        marker.bindPopup(`<b>${jvEsc(r.role || '-')}</b><br>${jvEsc(r.hotel || '-')}<br><span style="color:#888;font-size:11px;">Update ${timeStr} WIB</span>`);
+        // Hijau = live (< 15 menit), abu-abu = posisi terakhir yang sudah lama
+        const ageMin = Math.max(0, Math.round((Date.now() - new Date(r.recorded_at).getTime()) / 60000));
+        const live = ageMin < 15;
+        const ageTxt = ageMin < 1 ? 'baru saja' : ageMin < 60 ? ageMin + ' menit lalu' : Math.floor(ageMin / 60) + ' jam ' + (ageMin % 60) + ' menit lalu';
+        const color = live ? '#16a34a' : '#94a3b8';
+        const icon = L.divIcon({
+          className: '',
+          iconSize: [26, 26], iconAnchor: [13, 13], popupAnchor: [0, -12],
+          html: `<div style="width:22px;height:22px;border-radius:50%;background:${color};border:3px solid #fff;box-shadow:0 0 0 2px ${color}66,0 2px 6px rgba(0,0,0,.35);${live ? 'animation:plPulse 1.6s infinite;' : 'opacity:.85;'}"></div>`
+        });
+        const marker = L.marker([r.latitude, r.longitude], { icon }).addTo(petaLiveMap);
+        marker.bindPopup(`<b>${jvEsc(r.role || '-')}</b><br>${jvEsc(r.hotel || '-')}<br>` +
+          (live ? `<span style="color:#16a34a;font-weight:800;font-size:12px;">🟢 Live</span> <span style="color:#888;font-size:11px;">· update ${timeStr} WIB</span>`
+                : `<span style="color:#64748b;font-weight:700;font-size:12px;">⚪ Terakhir terlihat ${ageTxt}</span><br><span style="color:#888;font-size:11px;">${timeStr} WIB</span>`));
         petaLiveMarkers.push(marker);
       });
 
