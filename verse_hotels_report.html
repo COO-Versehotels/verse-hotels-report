@@ -4763,6 +4763,10 @@
     const today = new Date(Date.now() + 7*3600000).toISOString().split('T')[0];
     const item = document.getElementById(taskId);
     if (!item) return;
+    if (item.classList.contains('hod-task-item') && typeof hodFlushDraftNow === 'function') {
+      hodFlushDraftNow(taskId); // format jawaban HOD berbeda — jangan ditimpa format umum
+      return;
+    }
 
     const status = item.dataset.status || null;
     const noteEl = item.querySelector('.task-note');
@@ -5646,6 +5650,10 @@
       else { window._peekMode = null; document.getElementById('peek-banner')?.remove(); }
     }
     if (screen === 'home' || screen === 'coo') { setTimeout(() => { refreshNotifBadge(); }, 400); }
+    if (screen !== 'tasklist') {
+      try { if (typeof hodFlushAllPending === 'function') hodFlushAllPending(); } catch(e) {}
+      try { if (typeof flushAllPendingLegacyDrafts === 'function') flushAllPendingLegacyDrafts(); } catch(e) {}
+    }
     if (screen === 'pin') { Promise.resolve().then(_maybeShowNativeBioOnPin).catch(() => {}); }
     else { document.getElementById('native-bio-btn')?.remove(); }
 
@@ -23421,6 +23429,11 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
       document.querySelectorAll('#tasklist-content .task-note, #followup-list .task-note, #tasklist-scroll .task-note').forEach(textarea => {
         textarea.addEventListener('input', function() {
           const taskItem = this.closest('.task-item');
+          if (taskItem && taskItem.classList.contains('hod-task-item')) {
+            // Tugas HOD: simpan semua jawaban sebagai JSON lewat penyimpan HOD
+            if (!window._isRestoringDraft && typeof hodSaveDraft === 'function') hodSaveDraft(taskItem.id);
+            return;
+          }
           if (taskItem) {
             autoSaveDraft(taskItem.id);
             showTimestamp(taskItem.id, 'note');
@@ -28211,9 +28224,17 @@ async function hodUpsertDraft(taskId, status, keterangan, fileUrlsJson) {
 function hodFlushDraftNow(taskId) {
   const item = document.getElementById(taskId);
   if (!item) return;
+  if (window._hodRestoring) return; // sedang memuat draft — jangan simpan
   const status = item.dataset.status || null;
   let keterangan = null;
-  if (status === 'done') keterangan = JSON.stringify(hodCollectAnswers(taskId));
+  if (status === 'done') {
+    const answers = hodCollectAnswers(taskId);
+    const anyFilled = Object.values(answers).some(v => String(v).trim() !== '');
+    // Draft di server punya jawaban tapi layar kosong (belum termuat) -> jangan timpa
+    if (!anyFilled && item.dataset.hodHadAnswers === '1') return;
+    if (anyFilled) item.dataset.hodHadAnswers = '1';
+    keterangan = JSON.stringify(answers);
+  }
   else if (status === 'not') keterangan = JSON.stringify({ _alasan_tidak: hodGetReason(taskId) });
   hodUpsertDraft(taskId, status, keterangan, null);
 }
@@ -28270,6 +28291,7 @@ async function hodLoadDraft(role, hotel) {
     if (!data || !data.length) return;
 
     let restoredCount = 0;
+    window._hodRestoring = true;
     data.forEach(draft => {
       // Foto per-slot — task_id mengandung "__p"
       if (draft.task_id.indexOf('__p') > -1 && draft.file_urls) {
@@ -28287,16 +28309,19 @@ async function hodLoadDraft(role, hotel) {
             const ta = item.querySelector('.hod-reason');
             if (ta) ta.value = parsed._alasan_tidak;
           } else {
+            let had = false;
             item.querySelectorAll('.hod-qfield').forEach(el => {
               const key = el.dataset.qkey;
-              if (key && parsed[key] !== undefined) el.value = parsed[key];
+              if (key && parsed[key] !== undefined) { el.value = parsed[key]; if (String(parsed[key]).trim() !== '') had = true; }
             });
+            if (had) item.dataset.hodHadAnswers = '1';
           }
         } catch(e) {}
       }
     });
+    window._hodRestoring = false;
     if (restoredCount > 0) showToast('📂 Draft HOD dimuat (' + restoredCount + ' tugas)');
-  } catch(e) { console.error('hodLoadDraft error:', e); }
+  } catch(e) { window._hodRestoring = false; console.error('hodLoadDraft error:', e); }
 }
 
 // Gabungkan semua slot foto (task__p0, task__p1, ...) jadi 1 array, format
