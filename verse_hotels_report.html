@@ -2756,6 +2756,7 @@
         <span style="font-size:20px;cursor:pointer;color:var(--gold);margin-right:10px;" onclick="openBroadcast()" title="Broadcast Message">📢</span>
         <span id="coo-devapproval-btn" style="font-size:20px;cursor:pointer;color:var(--gold);margin-right:10px;display:none;" onclick="openDeviceApproval()" title="Device Approval">📱</span>
         <span style="font-size:20px;cursor:pointer;color:var(--gold);" onclick="exportDashboardPDF()" title="Export PDF Konsolidasi">📄</span>
+        <span style="font-size:20px;cursor:pointer;color:var(--gold);margin-left:10px;" onclick="openPeekPicker()" title="Intip tampilan user">👁️</span>
         <span style="font-size:20px;cursor:pointer;color:var(--gold);margin-left:10px;" onclick="cooLogout()" title="Keluar (Logout)">🚪</span>
       </div>
     </div>
@@ -3219,6 +3220,7 @@
   // Login sekali: session disimpan untuk SEMUA role dan tetap aktif sampai
   // user menekan tombol keluar (←). Di app Android dibuka pakai fingerprint.
   function saveSessionToday(role, hotel) {
+    if (window._peekMode) return; // Mode Intip: login COO tidak boleh tergantikan
     if (!role) return;
     const today = new Date(Date.now() + 7*3600000).toISOString().split('T')[0];
     let name = '';
@@ -3340,6 +3342,34 @@
   const SUPA_KEY = 'sb_publishable_KeAmOu9ex8r1PDRI1MRMsQ_40uiEkbM';
 
   // =============================================================
+  // MODE INTIP COO — lihat tampilan user tanpa mengubah data apa pun.
+  // Semua penyimpanan ke server diblokir selama window._peekMode aktif.
+  // =============================================================
+  window._peekMode = null;
+  (function () {
+    const _origFetch = window.fetch.bind(window);
+    let _lastPeekToast = 0;
+    window.fetch = function (input, init) {
+      try {
+        if (window._peekMode) {
+          const url = typeof input === 'string' ? input : ((input && input.url) || '');
+          const method = String((init && init.method) || (input && input.method) || 'GET').toUpperCase();
+          const ours = url.indexOf(SUPA_URL) === 0 || url.indexOf('/api/') === 0 || url.indexOf(location.origin + '/api/') === 0;
+          const readOnlyRpc = /\/rest\/v1\/rpc\/(device_check|admin_devices_list|admin_users_list)$/.test(url.split('?')[0]);
+          if (ours && method !== 'GET' && method !== 'HEAD' && !readOnlyRpc) {
+            if (Date.now() - _lastPeekToast > 3000) {
+              _lastPeekToast = Date.now();
+              try { showToast('👁️ Mode Intip — hanya lihat, tidak ada yang disimpan'); } catch(e) {}
+            }
+            return Promise.resolve(new Response('[]', { status: 200, headers: { 'Content-Type': 'application/json' } }));
+          }
+        }
+      } catch(e) {}
+      return _origFetch(input, init);
+    };
+  })();
+
+  // =============================================================
   // DEVICE APPROVAL GATE — HP baru wajib disetujui COO dulu
   // =============================================================
   const DEVICE_ID_KEY = 'verse_device_id';
@@ -3450,6 +3480,86 @@
   }
 
   // Jalur yang sama dengan PIN benar (dipakai juga oleh fingerprint & layar approval)
+  const PEEK_GROUPS = [
+    ['🏨 HM Unit', ['HM Verse Lite', 'HM Verse Luxe', 'HM Verse Cirebon', 'HM Oak Tree']],
+    ['👔 Corporate', ['Ops HR Manager', 'HR Officer', 'Chief Engineering Corporate', 'EHK Corporate', 'CRA Corporate']],
+    ['🍽️ F&B', ['F&B Manager', 'Team Kitchen Verse Luxe', 'Team Kitchen Oak Tree', 'F&B Attendant Verse Luxe', 'F&B Attendant Oak Tree']],
+  ];
+
+  function openPeekPicker() {
+    const s = loadSessionToday();
+    if (!s || (s.role !== 'COO' && s.role !== 'CEO')) { showToast('Mode Intip hanya untuk COO/CEO'); return; }
+    document.getElementById('peek-picker')?.remove();
+    const hod = (typeof HOD_HOTEL_MAP !== 'undefined') ? Object.keys(HOD_HOTEL_MAP) : [];
+    const groups = PEEK_GROUPS.concat(hod.length ? [['🧑‍💼 Head of Department', hod]] : []);
+    const ov = document.createElement('div');
+    ov.id = 'peek-picker';
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:100000;display:flex;align-items:flex-end;justify-content:center;';
+    ov.innerHTML = `<div style="background:#fff;border-radius:18px 18px 0 0;width:100%;max-width:520px;max-height:85vh;overflow-y:auto;padding:18px 16px calc(18px + env(safe-area-inset-bottom,0px));">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+        <div style="font-size:17px;font-weight:800;color:var(--navy);">👁️ Intip sebagai…</div>
+        <span style="cursor:pointer;font-size:20px;color:#94a3b8;" onclick="document.getElementById('peek-picker').remove()">✕</span>
+      </div>
+      <div style="font-size:12px;color:#888;margin-bottom:12px;">Hanya melihat — GPS, notifikasi, submit & simpan dinonaktifkan. Login COO tetap aman.</div>
+      ${groups.map(([title, roles]) => `
+        <div style="font-size:11px;font-weight:800;color:#94a3b8;letter-spacing:1px;margin:10px 0 6px;">${escapeHtml(title)}</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+          ${roles.map(r => `<button data-peek-role="${escapeHtml(r)}" style="padding:10px 8px;border:1.5px solid #e2e8f0;background:#f8fafc;border-radius:10px;font-size:12px;font-weight:700;color:#1a3a5c;cursor:pointer;text-align:left;">${escapeHtml(getDisplayRole(r))}</button>`).join('')}
+        </div>`).join('')}
+    </div>`;
+    document.body.appendChild(ov);
+    ov.querySelectorAll('[data-peek-role]').forEach(b => b.onclick = () => startPeekMode(b.getAttribute('data-peek-role')));
+  }
+
+  function startPeekMode(role) {
+    const s = loadSessionToday();
+    if (!s || (s.role !== 'COO' && s.role !== 'CEO')) return;
+    document.getElementById('peek-picker')?.remove();
+    try { stopLiveRefresh(); } catch(e) {}
+    // Catat di riwayat login sebagai COO yang mengintip (sebelum mode aktif)
+    try {
+      fetch(SUPA_URL + '/rest/v1/user_login_log', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY, 'Prefer': 'return=minimal' },
+        body: JSON.stringify({ user_name: s.role + ' (intip ' + role + ')', role: s.role, hotel: 'Corporate', device_info: _parseDeviceInfo(), user_agent: (navigator.userAgent || '').substring(0, 500) })
+      }).catch(() => {});
+    } catch(e) {}
+    window._peekMode = { role: role, by: s.role };
+    currentRole = role;
+    currentUserName = s.role + ' (intip)';
+    tasklistRendered = false; lastRenderedRole = '';
+    _completeLoginAfterAuth();
+    _showPeekBanner();
+  }
+
+  function _showPeekBanner() {
+    document.getElementById('peek-banner')?.remove();
+    if (!window._peekMode) return;
+    const b = document.createElement('div');
+    b.id = 'peek-banner';
+    b.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top,0px) + 6px);z-index:9500;background:#facc15;color:#1a1a1a;border-radius:999px;padding:6px 6px 6px 14px;font-size:12px;font-weight:800;box-shadow:0 4px 14px rgba(0,0,0,0.25);display:flex;align-items:center;gap:8px;max-width:94vw;white-space:nowrap;';
+    b.innerHTML = `<span style="overflow:hidden;text-overflow:ellipsis;">👁️ Intip: ${escapeHtml(getDisplayRole(window._peekMode.role))}</span>
+      <button style="border:none;background:#1a1a1a;color:#fff;border-radius:999px;padding:5px 12px;font-size:12px;font-weight:800;cursor:pointer;">Keluar</button>`;
+    b.querySelector('button').onclick = exitPeekMode;
+    document.body.appendChild(b);
+  }
+
+  function exitPeekMode() {
+    if (!window._peekMode) return;
+    const by = window._peekMode.by;
+    window._peekMode = null;
+    document.getElementById('peek-banner')?.remove();
+    document.getElementById('fbm-hotel-modal') && (document.getElementById('fbm-hotel-modal').style.display = 'none');
+    Object.keys(taskFiles).forEach(k => delete taskFiles[k]);
+    Object.keys(taskFileUrls).forEach(k => delete taskFileUrls[k]);
+    tasklistRendered = false; lastRenderedRole = '';
+    const s = loadSessionToday();
+    currentUserName = (s && s.name) || '';
+    currentHotel = 'Corporate';
+    cooOpenedFrom = 'splash';
+    if ((s && s.role) === 'CEO' || by === 'CEO') loginAsCEO(); else loginAsCOO();
+  }
+
   function _completeLoginAfterAuth() {
     try { logUserLogin(); } catch(e) {}
     if (currentRole === 'COO') loginAsCOO();
@@ -3598,6 +3708,7 @@
     const _origOpen = window.open;
     window.open = function (url, target, features) {
       if (_isImageUrl(url)) { openPhotoViewer(url); return null; }
+      if (window._peekMode && /whatsapp|wa\.me/i.test(String(url))) { showToast('👁️ Mode Intip — kirim WA dinonaktifkan'); return null; }
       return _origOpen.call(window, url, target, features);
     };
   })();
@@ -3657,6 +3768,8 @@
 
     const active = document.querySelector('.screen.active');
     const id = active ? active.id.replace('screen-', '') : 'splash';
+    // Mode Intip: dari Beranda user yang diintip -> kembali ke Dashboard COO
+    if (window._peekMode && (id === 'home' || id === 'splash')) { exitPeekMode(); return; }
     // Beranda team & Dashboard COO/CEO -> kembali ke halaman awal (login tetap tersimpan)
     if (id === 'home') { go('splash'); return; }
     if (id === 'coo' && cooOpenedFrom !== 'home') { try { stopLiveRefresh(); } catch(e) {} go('splash'); return; }
@@ -5512,6 +5625,10 @@
       populateSubmit();
     }
 
+    if (window._peekMode && (screen === 'splash' || screen === 'coo' || screen === 'pin' || screen === 'login')) {
+      if (screen !== 'coo') { setTimeout(exitPeekMode, 0); }
+      else { window._peekMode = null; document.getElementById('peek-banner')?.remove(); }
+    }
     if (screen === 'pin') { Promise.resolve().then(_maybeShowNativeBioOnPin).catch(() => {}); }
     else { document.getElementById('native-bio-btn')?.remove(); }
 
@@ -5791,6 +5908,7 @@
   }
 
   async function logUserLogin() {
+    if (window._peekMode) return;
     if (!currentRole) return;
     try {
       const payload = {
@@ -6955,6 +7073,7 @@
   }
 
   function logoutToSplash() {
+    if (window._peekMode) { exitPeekMode(); return; }
     // Hapus session tersimpan (akun terakhir diingat untuk tombol fingerprint)
     _rememberLastLogin();
     localStorage.removeItem('team_session');
@@ -8060,6 +8179,7 @@ function hodHasUploadForTask(item) {
 
   // Submit
   async function doSubmitReport() {
+    if (window._peekMode) { if (typeof showToast === 'function') showToast('👁️ Mode Intip — submit dinonaktifkan'); return; }
     if (!validateAndSubmit()) return;
 
     // Hitung data
@@ -23575,6 +23695,7 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
   }
 
   async function sendLocationPing(lat, lng, source) {
+    if (window._peekMode) return;
     try {
       const sess = loadSessionToday();
       if (!sess || !sess.role || sess.role === 'COO' || sess.role === 'CEO') return;
@@ -23603,6 +23724,7 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
   }
 
   async function startBackgroundGpsTracking() {
+    if (window._peekMode) return;
     if (!isRunningInCapacitorApp()) return; // cuma jalan di app Android
     if (!currentRole || currentRole === 'COO' || currentRole === 'CEO') return; // dashboard role tidak perlu
     if (bgGeoWatcherId) return; // sudah jalan
@@ -23648,6 +23770,7 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
   // token ke Supabase, supaya bisa dikirimi reminder & broadcast.
   // ======================================================
   async function registerPushNotifications() {
+    if (window._peekMode) return;
     if (!isRunningInCapacitorApp()) return;
     if (!currentRole || currentRole === 'COO' || currentRole === 'CEO') return;
 
@@ -23692,6 +23815,7 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
   }
 
   async function saveTeamLocation() {
+    if (window._peekMode) return;
     if (!currentRole || currentRole === 'COO' || currentRole === 'CEO') return; // dashboard role tidak perlu simpan lokasi
     if (!navigator.geolocation) return;
 
