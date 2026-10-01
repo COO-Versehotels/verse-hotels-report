@@ -6260,7 +6260,7 @@
         const timeStr = wibDate.toISOString().split('T')[1].substring(0, 5);
         const bgColor = idx % 2 === 0 ? 'white' : 'var(--gray-50)';
         const mapUrl = 'https://www.google.com/maps?q=' + r.latitude + ',' + r.longitude;
-        const statusLabel = r.status === 'done' ? '✅ Sudah' : (r.status === 'not' ? '❌ Tidak Dikerjakan' : (r.status || '-'));
+        const statusLabel = r.status === 'done' ? '✅ Sudah' : (r.status === 'not' ? '❌ Tidak Dikerjakan' : (r.status === 'logout' ? '🚪 Logout' : (r.status === 'gps_off' ? '🔴 GPS dimatikan' : (r.status === 'background' ? '📡 Otomatis' : (r.status || '-')))));
 
         html += `
           <div style="background:${bgColor};padding:10px 12px;display:grid;grid-template-columns:70px 1fr 60px;gap:8px;font-size:11px;border-bottom:1px solid var(--gray-100);align-items:start;">
@@ -6332,7 +6332,8 @@
         const timeStr = wibTime.toISOString().split('T')[1].substring(0,5);
         // Hijau = live (< 15 menit), abu-abu = posisi terakhir yang sudah lama
         const ageMin = Math.max(0, Math.round((Date.now() - new Date(r.recorded_at).getTime()) / 60000));
-        const live = ageMin < 15;
+        const kejadian = r.status === 'logout' ? 'logout' : (r.status === 'gps_off' ? 'gps_off' : '');
+        const live = ageMin < 15 && !kejadian;
         const ageTxt = ageMin < 1 ? 'baru saja' : ageMin < 60 ? ageMin + ' menit lalu' : Math.floor(ageMin / 60) + ' jam ' + (ageMin % 60) + ' menit lalu';
         const color = live ? '#16a34a' : '#94a3b8';
         const icon = L.divIcon({
@@ -6341,7 +6342,10 @@
           html: `<div style="width:22px;height:22px;border-radius:50%;background:${color};border:3px solid #fff;box-shadow:0 0 0 2px ${color}66,0 2px 6px rgba(0,0,0,.35);${live ? 'animation:plPulse 1.6s infinite;' : 'opacity:.85;'}"></div>`
         });
         const marker = L.marker([r.latitude, r.longitude], { icon }).addTo(petaLiveMap);
-        marker.bindPopup(`<b>${jvEsc(r.role || '-')}</b><br>${jvEsc(r.hotel || '-')}<br>` +
+        const infoTambahan = (kejadian === 'logout' ? `<br><span style="color:#64748b;font-weight:700;font-size:12px;">🚪 Logout pukul ${timeStr} WIB</span>` : '')
+          + (kejadian === 'gps_off' ? `<br><span style="color:#dc2626;font-weight:700;font-size:12px;">🔴 GPS dimatikan pukul ${timeStr} WIB</span>` : '')
+          + (r.baterai !== null && r.baterai !== undefined ? `<br><span style="color:${r.baterai <= 15 ? '#dc2626' : '#64748b'};font-size:11px;">🔋 Baterai terakhir ${r.baterai}%${r.baterai <= 10 ? ' — kemungkinan HP mati' : ''}</span>` : '');
+        marker.bindPopup(`<b>${jvEsc(r.role || '-')}</b><br>${jvEsc(r.hotel || '-')}<br>` + infoTambahan.replace(/^<br>/, '') + (infoTambahan ? '<br>' : '') +
           (live ? `<span style="color:#16a34a;font-weight:800;font-size:12px;">🟢 Live</span> <span style="color:#888;font-size:11px;">· update ${timeStr} WIB</span>`
                 : `<span style="color:#64748b;font-weight:700;font-size:12px;">⚪ Terakhir terlihat ${ageTxt}</span><br><span style="color:#888;font-size:11px;">${timeStr} WIB</span>`));
         petaLiveMarkers.push(marker);
@@ -7289,6 +7293,8 @@
 
   function logoutToSplash() {
     if (window._peekMode) { exitPeekMode(); return; }
+    try { catatKejadianLokasi('logout', currentRole, currentHotel); } catch (e) {}
+    tutupGpsGate();
     // Hapus session tersimpan (akun terakhir diingat untuk tombol fingerprint)
     _rememberLastLogin();
     _unregisterPushToken();
@@ -23925,11 +23931,89 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
     return typeof window.Capacitor !== 'undefined' && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform();
   }
 
+  // ===== GPS WAJIB (role lapangan) + catatan Peta Live (logout / GPS mati / baterai) =====
+  window._lastLoc = window._lastLoc || null;
+  async function bacaBaterai() {
+    try { if (navigator.getBattery) { const b = await navigator.getBattery(); return Math.round(b.level * 100); } } catch (e) {}
+    return null;
+  }
+  function wajibGps() {
+    return !window._peekMode && currentRole && currentRole !== 'COO' && currentRole !== 'CEO';
+  }
+  // Catat kejadian (logout / gps_off) di titik terakhir yang diketahui — tidak mengganggu alur bila gagal
+  async function catatKejadianLokasi(jenis, role, hotel) {
+    try {
+      if (window._peekMode || !window._lastLoc) return;
+      const r = role || currentRole, h = hotel || currentHotel;
+      if (!r || r === 'COO' || r === 'CEO') return;
+      const today = new Date(Date.now() + 7*3600000).toISOString().split('T')[0];
+      const body = { tanggal: today, role: r, hotel: h || '', task_id: 'auto-tracking', status: jenis,
+        latitude: window._lastLoc.lat, longitude: window._lastLoc.lng, recorded_at: new Date().toISOString() };
+      const bat = await bacaBaterai(); if (bat !== null) body.baterai = bat;
+      await fetch(SUPA_URL + '/rest/v1/location_log', { method: 'POST', keepalive: true,
+        headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY, 'Content-Type': 'application/json' },
+        body: JSON.stringify(body) });
+    } catch (e) {}
+  }
+  function tampilGpsGate() {
+    if (!wajibGps() || document.getElementById('gps-gate')) return;
+    const g = document.createElement('div');
+    g.id = 'gps-gate';
+    g.style.cssText = 'position:fixed;inset:0;z-index:99990;background:#0f1b2d;color:#eef3fb;display:flex;align-items:center;justify-content:center;padding:24px;overflow-y:auto;font-family:inherit;';
+    const bisaSetting = isRunningInCapacitorApp() && window.Capacitor.Plugins && window.Capacitor.Plugins.BackgroundGeolocation && window.Capacitor.Plugins.BackgroundGeolocation.openSettings;
+    g.innerHTML = `<div style="max-width:380px;width:100%;text-align:center;">
+      <div style="width:72px;height:72px;border-radius:20px;background:#3a2410;margin:0 auto 14px;display:flex;align-items:center;justify-content:center;font-size:34px;">📍</div>
+      <div style="display:inline-block;font-size:11px;padding:3px 10px;border-radius:999px;background:#1f2f4d;color:#c9d3e8;margin-bottom:10px;">${(currentRole||'')}${currentHotel ? ' · ' + currentHotel : ''}</div>
+      <div style="font-size:19px;font-weight:800;margin-bottom:8px;">Lokasi belum aktif</div>
+      <div style="color:#9fb0cf;font-size:13px;line-height:1.55;margin-bottom:16px;">Verse Apps menggunakan lokasi untuk mencatat kunjungan kerja Anda dan memastikan laporan sesuai dengan unit hotel yang dipilih. Aktifkan lokasi untuk melanjutkan.</div>
+      <div style="background:#172540;border:1px solid #2c3d5e;border-radius:12px;padding:12px 14px;text-align:left;margin-bottom:14px;font-size:13px;line-height:1.5;">
+        <div style="display:flex;gap:10px;margin:6px 0;"><b style="color:#c9a227;">1.</b><span>Nyalakan <b>Lokasi / GPS</b> di HP</span></div>
+        <div style="display:flex;gap:10px;margin:6px 0;"><b style="color:#c9a227;">2.</b><span>Saat diminta izin, pilih <b>Izinkan saat aplikasi digunakan</b>, atau <b>Izinkan sepanjang waktu</b> agar lokasi tetap tercatat saat aplikasi tidak dibuka</span></div>
+        <div style="display:flex;gap:10px;margin:6px 0;"><b style="color:#c9a227;">3.</b><span>Tekan <b>Coba lagi</b></span></div>
+      </div>
+      <button id="gps-gate-retry" onclick="cekGpsWajib(true)" style="width:100%;background:#c9a227;color:#1d1606;border:none;border-radius:12px;padding:13px;font-weight:800;font-size:14px;font-family:inherit;">🔄 Coba lagi</button>
+      ${bisaSetting ? `<button onclick="try{window.Capacitor.Plugins.BackgroundGeolocation.openSettings()}catch(e){}" style="width:100%;margin-top:8px;background:transparent;border:1px solid #2c3d5e;color:#c9d3e8;border-radius:12px;padding:11px;font-size:13px;font-family:inherit;">⚙️ Buka pengaturan izin aplikasi</button>` : ''}
+      <div id="gps-gate-msg" style="font-size:11px;color:#6f80a0;margin-top:12px;">Layar ini otomatis tertutup begitu lokasi terdeteksi.</div>
+    </div>`;
+    document.body.appendChild(g);
+  }
+  function tutupGpsGate() { document.getElementById('gps-gate')?.remove(); document.getElementById('gps-grace')?.remove(); }
+  let _gpsCekJalan = false;
+  // Cek lokasi: berhasil → tutup layar; ditolak / GPS mati → tampilkan layar wajib. Timeout (sinyal lemah) TIDAK mengunci.
+  function cekGpsWajib(dariTombol) {
+    if (!wajibGps() || !navigator.geolocation) { tutupGpsGate(); return; }
+    if (_gpsCekJalan) return; _gpsCekJalan = true;
+    const msg = document.getElementById('gps-gate-msg'); if (dariTombol && msg) msg.textContent = 'Mengecek lokasi...';
+    navigator.geolocation.getCurrentPosition(
+      (pos) => { _gpsCekJalan = false; window._lastLoc = { lat: pos.coords.latitude, lng: pos.coords.longitude }; window._gpsOffDicatat = false; tutupGpsGate(); },
+      (err) => {
+        _gpsCekJalan = false;
+        if (err && err.code === 3) { if (dariTombol && msg) msg.textContent = 'Sinyal lokasi lemah, coba lagi sebentar.'; return; }
+        tampilGpsGate();
+        const m2 = document.getElementById('gps-gate-msg'); if (dariTombol && m2) m2.textContent = 'Lokasi masih belum aktif. Ikuti langkah di atas lalu coba lagi.';
+      },
+      { timeout: 10000, maximumAge: 120000, enableHighAccuracy: false }
+    );
+  }
+  // GPS dimatikan di tengah pemakaian → peringatan 1 menit, lalu cek ulang
+  function gpsMatiSaatDipakai() {
+    if (!wajibGps()) return;
+    if (!window._gpsOffDicatat) { window._gpsOffDicatat = true; catatKejadianLokasi('gps_off'); }
+    if (document.getElementById('gps-gate') || document.getElementById('gps-grace')) return;
+    const w = document.createElement('div'); w.id = 'gps-grace';
+    w.style.cssText = 'position:fixed;left:12px;right:12px;top:calc(12px + env(safe-area-inset-top));z-index:99980;background:#3a1d1d;border:1px solid #7f2d2d;border-radius:12px;padding:12px 14px;color:#fde2e2;font-size:13px;box-shadow:0 10px 30px rgba(0,0,0,.4);';
+    w.innerHTML = '<b>⚠️ Lokasi dimatikan</b><div style="font-size:12px;color:#f3c4c4;margin-top:3px;">Aktifkan lagi dalam 1 menit. Setelah itu aplikasi terkunci sampai lokasi aktif.</div>';
+    document.body.appendChild(w);
+    setTimeout(() => { document.getElementById('gps-grace')?.remove(); cekGpsWajib(false); }, 60000);
+  }
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && wajibGps()) cekGpsWajib(false); });
+
   async function sendLocationPing(lat, lng, source) {
     if (window._peekMode) return;
     try {
       const sess = loadSessionToday();
       if (!sess || !sess.role || sess.role === 'COO' || sess.role === 'CEO') return;
+      window._lastLoc = { lat, lng };
       const today = new Date(Date.now() + 7*3600000).toISOString().split('T')[0];
       await fetch(SUPA_URL + '/rest/v1/location_log', {
         method: 'POST',
@@ -23947,6 +24031,7 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
           latitude: lat,
           longitude: lng,
           recorded_at: new Date().toISOString(),
+          ...(await (async () => { const b = await bacaBaterai(); return b === null ? {} : { baterai: b }; })()),
         }),
       });
     } catch (e) {
@@ -23973,8 +24058,9 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
           distanceFilter: 0, // kita atur sendiri jaraknya lewat interval waktu, bukan jarak
         },
         (location, error) => {
-          if (error) return;
+          if (error) { gpsMatiSaatDipakai(); return; }
           if (location) {
+            if (window._gpsOffDicatat) { window._gpsOffDicatat = false; tutupGpsGate(); }
             const now = Date.now();
             if (now - lastBgPingAt < BG_PING_MIN_INTERVAL_MS) return; // belum waktunya, lewati
             lastBgPingAt = now;
@@ -24161,6 +24247,7 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
     navigator.geolocation.getCurrentPosition(async (pos) => {
       const lat = pos.coords.latitude;
       const lng = pos.coords.longitude;
+      window._lastLoc = { lat, lng }; tutupGpsGate();
       const today = new Date(Date.now() + 7*3600000).toISOString().split('T')[0];
       const now = new Date().toISOString();
 
@@ -24232,6 +24319,7 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
       }
     }, (err) => {
       console.warn('Geolocation denied:', err.message);
+      if (err && err.code !== 3) tampilGpsGate();
       // Tampilkan notifikasi halus di beranda
       const showLocWarning = () => {
         const existing = document.getElementById('loc-warning-banner');
