@@ -71,7 +71,11 @@
   .screen.active { display: flex; }
   /* ===== TAMPILAN LAPTOP (≥1024px) untuk layar COO/CEO — HP tidak berubah ===== */
   @media (min-width: 1024px) {
-    #app:has(.screen.lebar.active) { max-width: 1180px; box-shadow: 0 0 0 1px rgba(26,58,92,0.06); }
+    /* Laptop/PC: SEMUA layar penuh selebar jendela, teks & ikon diperbesar proporsional (zoom).
+       HP / APK tidak terpengaruh (lebar < 1024px). Peta Live tanpa zoom agar klik peta tetap presisi. */
+    #app { max-width: none !important; width: 100%; zoom: 1.15; height: calc(100dvh / 1.15); }
+    #app:has(#screen-peta-live.active) { zoom: 1; height: 100dvh; }
+    #app:has(.screen.lebar.active) { box-shadow: none; }
     .screen.lebar .coo-stats { grid-template-columns: repeat(4, 1fr) !important; }
     #coo-role-summary { display: grid; grid-template-columns: 1fr 1fr; column-gap: 0; }
     #coo-role-summary > .submit-row:nth-child(odd) { border-right: 1px solid var(--gray-100, #f1f1f1); }
