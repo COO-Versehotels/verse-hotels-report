@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>GRPS Dashboard</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #0B5FC4; font-family: Arial, sans-serif; }
+  #app { position: fixed; inset: 0; width: 100%; height: 100%; border: 0; background: #fff; display: block; }
+  #wait { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #fff; text-align: center; padding: 24px; z-index: 2; background: #0B5FC4; }
+  #wait b { font-size: 20px; margin-bottom: 8px; }
+  #wait span { font-size: 13px; opacity: .9; }
+  #wait button { margin-top: 18px; padding: 10px 20px; border: 0; border-radius: 10px; font-weight: 700; font-size: 14px; display: none; }
+</style>
+</head>
+<body>
+<!--
+  Halaman pembungkus APK "GRPS Dashboard".
+  Isi dashboard dimuat LANGSUNG dari Google Apps Script (selalu versi terbaru,
+  tanpa perlu install ulang APK). Halaman ini hanya mengurus push notification.
+-->
+<div id="wait"><b>GRPS Dashboard</b><span id="waitMsg">Memuat…</span><button id="retry" onclick="location.reload()">Coba lagi</button></div>
+<iframe id="app" title="GRPS Dashboard"></iframe>
+<script>
+(function () {
+  var EXEC = 'https://script.google.com/macros/s/AKfycbwGs35ukef2BTg7ledVb0LdyWnnKmLhjOQ7pvO-8OeAg3AZ512hQ8-3UqD9cnk41IO4qQ/exec';
+  var frame = document.getElementById('app');
+  var inner = null, innerOrigin = null, token = null;
+  try { token = localStorage.getItem('grps_fcm'); } catch (e) {}
+
+  frame.addEventListener('load', function () { document.getElementById('wait').style.display = 'none'; });
+  setTimeout(function () {
+    if (document.getElementById('wait').style.display !== 'none') {
+      document.getElementById('waitMsg').textContent = 'Koneksi lambat atau tidak ada internet.';
+      document.getElementById('retry').style.display = 'inline-block';
+    }
+  }, 25000);
+  frame.src = EXEC;
+
+  function okOrigin(o) { try { return /(^|\.)googleusercontent\.com$/.test(new URL(o).hostname); } catch (e) { return false; } }
+  function tell(msg) { if (inner && innerOrigin) { try { inner.postMessage(msg, innerOrigin); } catch (e) {} } }
+  function sendToken() { if (token) tell({ grps: 'fcm', token: token }); }
+
+  // Dashboard (di dalam iframe) meminta token push setelah user login
+  window.addEventListener('message', function (e) {
+    if (!okOrigin(e.origin)) return;
+    var d = e.data || {};
+    if (d.grps === 'need-fcm') { inner = e.source; innerOrigin = e.origin; sendToken(); }
+  });
+
+  function setupPush() {
+    var C = window.Capacitor;
+    var P = C && C.Plugins && C.Plugins.PushNotifications;
+    if (!P) return;
+    try { P.createChannel({ id: 'grps_alerts', name: 'Complaint & Comment', description: 'Notifikasi complaint dan comment tamu', importance: 5, visibility: 1, vibration: true, lights: true, lightColor: '#0B5FC4' }); } catch (e) {}
+    P.addListener('registration', function (t) {
+      token = t && t.value;
+      try { localStorage.setItem('grps_fcm', token); } catch (e) {}
+      sendToken();
+    });
+    P.addListener('registrationError', function (e) { console.warn('push registrationError', e); });
+    P.addListener('pushNotificationReceived', function () { tell({ grps: 'push' }); });
+    P.addListener('pushNotificationActionPerformed', function () { tell({ grps: 'push' }); });
+    P.checkPermissions().then(function (s) {
+      return (s && s.receive === 'granted') ? s : P.requestPermissions();
+    }).then(function (s) {
+      if (s && s.receive === 'granted') P.register();
+    }).catch(function (e) { console.warn('push setup', e); });
+  }
+  if (document.readyState === 'complete') setTimeout(setupPush, 600);
+  else window.addEventListener('load', function () { setTimeout(setupPush, 600); });
+})();
+</script>
+</body>
+</html>
