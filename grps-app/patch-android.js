@@ -52,7 +52,7 @@ fs.writeFileSync(mf, m);
 // 3) Firebase
 fs.copyFileSync(path.join(__dirname, 'google-services.json'), path.join(app, 'google-services.json'));
 
-// 4) Ikon & splash: pakai milik Verse Apps (mobile-app) supaya seragam
+// 4) Ikon & splash dasar: salin milik Verse Apps (mobile-app); ikon lalu diganti di langkah 5
 const src = path.join(__dirname, '..', 'mobile-app', 'android', 'app', 'src', 'main', 'res');
 let copied = 0;
 if (fs.existsSync(src)) {
@@ -69,4 +69,18 @@ if (fs.existsSync(src)) {
     }
   }
 }
+// 5) Ikon khusus GRPS: gaya sama dengan Verse Recruitment / Verse Defect
+//    (logo Verse asli + pita biru bertulisan GRPS DASHBOARD). Dibuat oleh make-icons.py.
+const { execSync } = require('child_process');
+const sh = (c) => execSync(c, { stdio: 'inherit', cwd: __dirname });
+try { execSync('python3 -c "import PIL"', { stdio: 'ignore' }); }
+catch (e) {
+  try { sh('python3 -m pip install --quiet --user --break-system-packages pillow'); }
+  catch (e2) { sh('sudo apt-get install -y -qq python3-pil'); }
+}
+const font = path.join(__dirname, 'Poppins-Bold.ttf');
+if (!fs.existsSync(font)) sh('curl -fsSL --retry 3 -o Poppins-Bold.ttf https://github.com/google/fonts/raw/main/ofl/poppins/Poppins-Bold.ttf');
+must(fs.existsSync(font) && fs.statSync(font).size > 50000, 'font Poppins-Bold.ttf gagal diunduh');
+sh('python3 make-icons.py Poppins-Bold.ttf');
+
 console.log('Patch Android selesai. File ikon/splash disalin: ' + copied);
