@@ -17,7 +17,8 @@
 <!--
   Halaman pembungkus APK "GRPS Dashboard".
   Isi dashboard dimuat LANGSUNG dari Google Apps Script (selalu versi terbaru,
-  tanpa perlu install ulang APK). Halaman ini hanya mengurus push notification.
+  tanpa perlu install ulang APK). Halaman ini hanya mengurus push notification
+  dan tombol back HP.
 -->
 <div id="wait"><b>GRPS Dashboard</b><span id="waitMsg">Memuat…</span><button id="retry" onclick="location.reload()">Coba lagi</button></div>
 <iframe id="app" title="GRPS Dashboard"></iframe>
@@ -46,7 +47,25 @@
     if (!okOrigin(e.origin)) return;
     var d = e.data || {};
     if (d.grps === 'need-fcm') { inner = e.source; innerOrigin = e.origin; sendToken(); }
+    if (d.grps === 'back-result') { if (backWait) { clearTimeout(backWait); backWait = null; } if (!d.handled) minimize(); }
   });
+
+  // Tombol back HP: dashboard menutup popup / kembali ke Ringkasan dulu; kalau sudah tidak ada, aplikasi diperkecil
+  var backWait = null;
+  function minimize() {
+    var A = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App;
+    try { if (A && A.minimizeApp) A.minimizeApp(); else if (A && A.exitApp) A.exitApp(); } catch (e) {}
+  }
+  function setupBack() {
+    var A = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App;
+    if (!A || !A.addListener) return;
+    A.addListener('backButton', function () {
+      if (!inner) { minimize(); return; }
+      if (backWait) return;
+      tell({ grps: 'back' });
+      backWait = setTimeout(function () { backWait = null; minimize(); }, 800);
+    });
+  }
 
   function setupPush() {
     var C = window.Capacitor;
@@ -67,8 +86,9 @@
       if (s && s.receive === 'granted') P.register();
     }).catch(function (e) { console.warn('push setup', e); });
   }
-  if (document.readyState === 'complete') setTimeout(setupPush, 600);
-  else window.addEventListener('load', function () { setTimeout(setupPush, 600); });
+  function setupAll() { try { setupBack(); } catch (e) {} setupPush(); }
+  if (document.readyState === 'complete') setTimeout(setupAll, 600);
+  else window.addEventListener('load', function () { setTimeout(setupAll, 600); });
 })();
 </script>
 </body>
