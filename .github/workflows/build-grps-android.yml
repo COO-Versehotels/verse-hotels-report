@@ -1,0 +1,95 @@
+name: Build GRPS Dashboard APK
+
+# Dipicu manual dari tab "Actions" (Run workflow), atau otomatis kalau ada
+# perubahan di folder grps-app/. Terpisah dari build Verse Apps.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, master]
+    paths:
+      - 'grps-app/**'
+      - '.github/workflows/build-grps-android.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      ANDROID_HOME: /usr/local/lib/android/sdk
+      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+    defaults:
+      run:
+        working-directory: grps-app
+    steps:
+      - name: Checkout kode
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Setup Java (untuk Gradle/Android)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Install dependency npm
+        run: npm install
+
+      - name: Buat project Android (Capacitor)
+        run: npx cap add android
+
+      - name: Sesuaikan project Android (versi, tanda tangan, notifikasi, Firebase, ikon)
+        run: node patch-android.js
+
+      - name: Sinkronkan konfigurasi ke project Android
+        run: npx cap sync android
+
+      - name: Beri izin eksekusi ke Gradle wrapper
+        run: chmod +x android/gradlew
+
+      - name: Pasang kunci tanda tangan tetap (dari GitHub Secrets)
+        env:
+          ANDROID_KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+        run: |
+          if [ -n "$ANDROID_KEYSTORE_B64" ]; then
+            echo "$ANDROID_KEYSTORE_B64" | base64 -d > android/app/verse-release.jks
+            echo "Keystore tetap terpasang"
+          else
+            echo "::warning::Secret ANDROID_KEYSTORE_B64 kosong — APK pakai kunci debug acak"
+          fi
+
+      - name: Build APK
+        working-directory: grps-app/android
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: ./gradlew assembleDebug --no-daemon
+
+      - name: Beri nama APK sesuai nomor build
+        run: |
+          mkdir -p output
+          cp android/app/build/outputs/apk/debug/app-debug.apk "output/GRPS-Dashboard-Build${GITHUB_RUN_NUMBER}.apk"
+
+      - name: Upload APK sebagai artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: grps-dashboard-apk
+          path: grps-app/output/*.apk
+          retention-days: 90
+
+      - name: Buat GitHub Release dengan APK terlampir (link download permanen)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: grps-build-${{ github.run_number }}
+          name: "GRPS Dashboard — Build #${{ github.run_number }}"
+          files: grps-app/output/*.apk
+          make_latest: false
+          body: |
+            APK GRPS Dashboard hasil build otomatis dari commit ${{ github.sha }}.
+            Cara install: download file .apk di bawah ini ke HP Android,
+            buka file-nya, izinkan "instal dari sumber tidak dikenal" kalau diminta.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
