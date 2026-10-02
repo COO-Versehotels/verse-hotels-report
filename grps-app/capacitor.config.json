@@ -7,7 +7,7 @@
     "allowNavigation": ["script.google.com", "*.googleusercontent.com"]
   },
   "plugins": {
-    "SplashScreen": { "launchShowDuration": 400, "backgroundColor": "#0B5FC4", "showSpinner": false },
+    "SplashScreen": { "launchShowDuration": 400, "backgroundColor": "#1a3a5c", "androidSplashResourceName": "splash", "showSpinner": false },
     "StatusBar": { "style": "DARK", "backgroundColor": "#0B5FC4" }
   }
 }

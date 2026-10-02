@@ -83,4 +83,36 @@ if (!fs.existsSync(font)) sh('curl -fsSL --retry 3 -o Poppins-Bold.ttf https://g
 must(fs.existsSync(font) && fs.statSync(font).size > 50000, 'font Poppins-Bold.ttf gagal diunduh');
 sh('python3 make-icons.py Poppins-Bold.ttf');
 
+// 6) Splash sama seperti Verse Apps: splash sistem navy + logo, lalu splash penuh
+//    (logo Verse + 4 unit) minimal 2 detik sampai halaman siap.
+const stylesFile = path.join(res, 'values', 'styles.xml');
+must(fs.existsSync(stylesFile), 'styles.xml tidak ditemukan');
+must(fs.existsSync(path.join(res, 'drawable', 'splash.png')), 'drawable/splash.png tidak ada');
+must(fs.readdirSync(res).some((d) => d.startsWith('drawable') && fs.existsSync(path.join(res, d, 'splash_icon.png'))), 'splash_icon.png tidak ada');
+must(fs.readFileSync(path.join(res, 'values', 'ic_launcher_background.xml'), 'utf8').includes('splash_navy'), 'warna splash_navy tidak ada');
+fs.writeFileSync(stylesFile, [
+  '<?xml version="1.0" encoding="utf-8"?>',
+  '<resources>',
+  '    <style name="AppTheme" parent="Theme.AppCompat.Light.DarkActionBar">',
+  '        <item name="colorPrimary">@color/colorPrimary</item>',
+  '        <item name="colorPrimaryDark">@color/colorPrimaryDark</item>',
+  '        <item name="colorAccent">@color/colorAccent</item>',
+  '    </style>',
+  '    <style name="AppTheme.NoActionBar" parent="Theme.AppCompat.DayNight.NoActionBar">',
+  '        <item name="windowActionBar">false</item>',
+  '        <item name="windowNoTitle">true</item>',
+  '        <item name="android:background">@null</item>',
+  '    </style>',
+  '    <style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">',
+  '        <item name="windowSplashScreenBackground">@color/splash_navy</item>',
+  '        <item name="windowSplashScreenAnimatedIcon">@drawable/splash_icon</item>',
+  '        <item name="postSplashScreenTheme">@style/AppTheme.NoActionBar</item>',
+  '    </style>',
+  '</resources>',
+  '',
+].join('\n'));
+const mainJava = path.join(app, 'src', 'main', 'java', 'com', 'versehotels', 'grps', 'MainActivity.java');
+must(fs.existsSync(mainJava), 'MainActivity.java tidak ditemukan');
+fs.copyFileSync(path.join(__dirname, 'MainActivity.java'), mainJava);
+
 console.log('Patch Android selesai. File ikon/splash disalin: ' + copied);
