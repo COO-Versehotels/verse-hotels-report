@@ -1,0 +1,13 @@
+{
+  "appId": "com.versehotels.grps",
+  "appName": "GRPS Dashboard",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https",
+    "allowNavigation": ["script.google.com", "*.googleusercontent.com"]
+  },
+  "plugins": {
+    "SplashScreen": { "launchShowDuration": 400, "backgroundColor": "#0B5FC4", "showSpinner": false },
+    "StatusBar": { "style": "DARK", "backgroundColor": "#0B5FC4" }
+  }
+}

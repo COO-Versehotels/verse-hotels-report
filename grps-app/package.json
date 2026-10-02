@@ -1,0 +1,15 @@
+{
+  "name": "grps-dashboard-android",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Wrapper Android (Capacitor) untuk GRPS Dashboard Verse Hotels",
+  "dependencies": {
+    "@capacitor/android": "^8.5.2",
+    "@capacitor/app": "^8.1.1",
+    "@capacitor/cli": "^8.5.2",
+    "@capacitor/core": "^8.5.2",
+    "@capacitor/push-notifications": "^8.1.2",
+    "@capacitor/splash-screen": "^8.0.2",
+    "@capacitor/status-bar": "^8.0.3"
+  }
+}

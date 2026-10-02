@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "88992020459",
+    "project_id": "verse-app-98604",
+    "storage_bucket": "verse-app-98604.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:88992020459:android:278cdad784e53740704bae",
+        "android_client_info": {
+          "package_name": "com.versehotels.grps"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCzJ63JVeFEy4qjcAUZv8VnscV7kaOEK4o"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
