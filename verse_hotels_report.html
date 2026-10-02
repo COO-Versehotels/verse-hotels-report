@@ -23945,8 +23945,14 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
     try { if (navigator.getBattery) { const b = await navigator.getBattery(); return Math.round(b.level * 100); } } catch (e) {}
     return null;
   }
+  // GPS wajib hanya di HP (APK / browser HP). Di laptop/PC tidak dikunci — lokasi laptop tidak akurat
+  // dan tim sering membuka dari laptop untuk upload screenshot data.
+  function diHP() {
+    try { if (isRunningInCapacitorApp()) return true; } catch (e) {}
+    return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || '') || (navigator.maxTouchPoints > 1 && /Macintosh/.test(navigator.userAgent || ''));
+  }
   function wajibGps() {
-    return !window._peekMode && currentRole && currentRole !== 'COO' && currentRole !== 'CEO';
+    return !window._peekMode && currentRole && currentRole !== 'COO' && currentRole !== 'CEO' && diHP();
   }
   // Catat kejadian (logout / gps_off) di titik terakhir yang diketahui — tidak mengganggu alur bila gagal
   async function catatKejadianLokasi(jenis, role, hotel) {
