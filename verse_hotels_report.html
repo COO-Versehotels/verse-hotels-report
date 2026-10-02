@@ -69,6 +69,13 @@
     overflow: hidden;
   }
   .screen.active { display: flex; }
+  /* ===== TAMPILAN LAPTOP (≥1024px) untuk layar COO/CEO — HP tidak berubah ===== */
+  @media (min-width: 1024px) {
+    #app:has(.screen.lebar.active) { max-width: 1180px; box-shadow: 0 0 0 1px rgba(26,58,92,0.06); }
+    .screen.lebar .coo-stats { grid-template-columns: repeat(4, 1fr) !important; }
+    #coo-role-summary { display: grid; grid-template-columns: 1fr 1fr; column-gap: 0; }
+    #coo-role-summary > .submit-row:nth-child(odd) { border-right: 1px solid var(--gray-100, #f1f1f1); }
+  }
 
   /* ===== SCROLL AREA ===== */
   .scroll-area {
@@ -2438,7 +2445,7 @@
   </div>
 
   <!-- ===== JADWAL VISIT CORP ===== -->
-  <div class="screen" id="screen-jadwal-visit">
+  <div class="screen lebar" id="screen-jadwal-visit">
     <div class="topbar" style="padding:48px 16px 12px;">
       <button class="topbar-back" onclick="jvGoBack()">←</button>
       <div class="topbar-title">
@@ -2467,7 +2474,7 @@
   </div>
 
   <!-- ===== LOGIN HISTORY (COO Only) ===== -->
-  <div class="screen" id="screen-login-history">
+  <div class="screen lebar" id="screen-login-history">
     <div class="topbar" style="padding:48px 16px 12px;background:linear-gradient(135deg,#4c1d95,#7c3aed);">
       <button class="topbar-back" onclick="go('coo')" style="color:white;background:rgba(255,255,255,0.15);">←</button>
       <div class="topbar-title">
@@ -2532,7 +2539,7 @@
   </div>
 
   <!-- ===== LOCATION TRACKING (COO Only) ===== -->
-  <div class="screen" id="screen-location-tracking">
+  <div class="screen lebar" id="screen-location-tracking">
     <div class="topbar" style="padding:48px 16px 12px;background:linear-gradient(135deg,#0f4c3a,#1a7a5e);">
       <button class="topbar-back" onclick="go('coo')" style="color:white;background:rgba(255,255,255,0.15);">←</button>
       <div class="topbar-title">
@@ -2589,7 +2596,7 @@
   </div>
 
   <!-- ===== PETA LIVE (GPS Realtime) ===== -->
-  <div class="screen" id="screen-peta-live">
+  <div class="screen lebar" id="screen-peta-live">
     <div class="topbar" style="padding:48px 16px 12px;background:linear-gradient(135deg,#0f4c3a,#1a7a5e);">
       <button class="topbar-back" onclick="go('coo')" style="color:white;background:rgba(255,255,255,0.15);">←</button>
       <div class="topbar-title">
@@ -2604,7 +2611,7 @@
   </div>
 
   <!-- ===== BROADCAST MESSAGE ===== -->
-  <div class="screen" id="screen-broadcast">
+  <div class="screen lebar" id="screen-broadcast">
     <div class="topbar" style="padding:48px 16px 12px;background:linear-gradient(135deg,#6d28d9,#8b5cf6);">
       <button class="topbar-back" onclick="go('coo')" style="color:white;background:rgba(255,255,255,0.15);">←</button>
       <div class="topbar-title">
@@ -2640,7 +2647,7 @@
   </div>
 
   <!-- ===== ARSIP LAPORAN ===== -->
-  <div class="screen" id="screen-arsip">
+  <div class="screen lebar" id="screen-arsip">
     <div class="topbar" style="padding:48px 16px 12px;background:linear-gradient(135deg,#1a4a1a,#2d6a2d);">
       <button class="topbar-back" onclick="go('splash')" style="color:white;background:rgba(255,255,255,0.15);">←</button>
       <div class="topbar-title">
@@ -2745,7 +2752,7 @@
   </div>
 
   <!-- ===== COO DASHBOARD ===== -->
-  <div class="screen" id="screen-coo">
+  <div class="screen lebar" id="screen-coo">
     <div class="topbar" style="padding:48px 16px 12px;background:linear-gradient(135deg,var(--navy),#0e2340);">
       <button class="topbar-back" id="coo-back-btn" onclick="cooBack()" style="color:white;background:rgba(255,255,255,0.15);">←</button>
       <div class="topbar-title">
@@ -6311,6 +6318,7 @@
 
       if (!petaLiveMap) {
         petaLiveMap = L.map('peta-live-map').setView([-6.2088, 106.8456], 11);
+        try { window.addEventListener('resize', () => { try { petaLiveMap && petaLiveMap.invalidateSize(); } catch (e) {} }); setTimeout(() => { try { petaLiveMap.invalidateSize(); } catch (e) {} }, 300); } catch (e) {}
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
           attribution: '© OpenStreetMap',
         }).addTo(petaLiveMap);
