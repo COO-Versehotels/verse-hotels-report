@@ -24025,6 +24025,27 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
     setTimeout(() => { document.getElementById('gps-grace')?.remove(); cekGpsWajib(false); }, 60000);
   }
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && wajibGps()) cekGpsWajib(false); });
+  // Data terbaru saat app dibuka lagi dari background — HANYA layar pantauan COO/CEO (Dashboard & Peta Live).
+  // Layar isian tim (tasklist/submit/room check) TIDAK dimuat ulang supaya ketikan & foto tidak hilang.
+  (function () {
+    let _tinggal = 0;
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') { _tinggal = Date.now(); return; }
+      if (!_tinggal || Date.now() - _tinggal < 5000) { _tinggal = 0; return; }
+      _tinggal = 0;
+      try {
+        const aktif = document.querySelector('.screen.active');
+        const id = aktif ? aktif.id : '';
+        if (id === 'screen-coo') {
+          if (typeof populateCOO === 'function') populateCOO();
+          if (typeof loadLiveProgress === 'function') loadLiveProgress();
+          if (typeof rcLoadCOORoomCheckSummary === 'function') rcLoadCOORoomCheckSummary();
+        } else if (id === 'screen-peta-live') {
+          if (typeof loadPetaLive === 'function') loadPetaLive();
+        }
+      } catch (e) {}
+    });
+  })();
 
   async function sendLocationPing(lat, lng, source) {
     if (window._peekMode) return;
