@@ -7482,7 +7482,7 @@
               body: JSON.stringify({
                 tanggal: today,
                 role: currentRole,
-                hotel: currentHotel,
+                hotel: (tandaiUnitCorp_(currentHotel), currentRole === 'CRA Corporate' ? 'Corporate' : currentHotel),
                 task_id: taskId,
                 status: status,
                 latitude: pos.coords.latitude,
@@ -23669,6 +23669,7 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
     el.classList.add('active');
     document.getElementById('tasklist-hotel').textContent = hotelName;
     currentHotel = hotelName;
+    tandaiUnitCorp_(hotelName);
 
     // Reset tasklist DOM dulu — hapus semua status sebelum load draft baru
     document.querySelectorAll('#tasklist-content .task-item').forEach(item => {
@@ -23959,13 +23960,25 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
     return !window._peekMode && currentRole && currentRole !== 'COO' && currentRole !== 'CEO' && diHP();
   }
   // Catat kejadian (logout / gps_off) di titik terakhir yang diketahui — tidak mengganggu alur bila gagal
+  // Peta Live: role Corporate tampil "Corporate", kecuali hari ini memang memilih / mengerjakan unit tertentu
+  function hotelLokasi_(role, hotel) {
+    const CORP = ['Ops HR Manager','HR Officer','Chief Engineering Corporate','EHK Corporate','CRA Corporate'];
+    if (!CORP.includes(role)) return hotel || '';
+    if (role === 'CRA Corporate') return 'Corporate';   // CRA bekerja terpusat untuk semua unit
+    const today = new Date(Date.now() + 7*3600000).toISOString().split('T')[0];
+    try { const v = localStorage.getItem('corp_unit_' + today); if (v) return v; } catch (e) {}
+    return 'Corporate';
+  }
+  function tandaiUnitCorp_(hotel) {
+    try { if (hotel) localStorage.setItem('corp_unit_' + new Date(Date.now() + 7*3600000).toISOString().split('T')[0], hotel); } catch (e) {}
+  }
   async function catatKejadianLokasi(jenis, role, hotel) {
     try {
       if (window._peekMode || !window._lastLoc) return;
       const r = role || currentRole, h = hotel || currentHotel;
       if (!r || r === 'COO' || r === 'CEO') return;
       const today = new Date(Date.now() + 7*3600000).toISOString().split('T')[0];
-      const body = { tanggal: today, role: r, hotel: h || '', task_id: 'auto-tracking', status: jenis,
+      const body = { tanggal: today, role: r, hotel: hotelLokasi_(r, h), task_id: 'auto-tracking', status: jenis,
         latitude: window._lastLoc.lat, longitude: window._lastLoc.lng, recorded_at: new Date().toISOString() };
       const bat = await bacaBaterai(); if (bat !== null) body.baterai = bat;
       await fetch(SUPA_URL + '/rest/v1/location_log', { method: 'POST', keepalive: true,
@@ -24064,7 +24077,7 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
         body: JSON.stringify({
           tanggal: today,
           role: sess.role,
-          hotel: sess.hotel || currentHotel || '',
+          hotel: hotelLokasi_(sess.role, sess.hotel || currentHotel || ''),
           task_id: 'auto-tracking',
           status: source || 'background',
           latitude: lat,
