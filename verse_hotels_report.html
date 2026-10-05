@@ -6278,7 +6278,7 @@
             <div style="color:var(--gray-600);font-weight:600;">${timeStr}</div>
             <div>
               <div style="font-weight:700;color:var(--navy);font-size:12px;">🎫 ${r.role || '-'}</div>
-              <div style="color:var(--gray-500);font-size:10px;margin-top:1px;">🏨 ${r.hotel || '-'}</div>
+              <div style="color:var(--gray-500);font-size:10px;margin-top:1px;">🏨 ${unitPendekPeta_(r.hotel)}</div>
               <div style="color:#7c3aed;font-size:10px;margin-top:1px;">${r.task_id || '-'} — ${statusLabel}</div>
             </div>
             <div><a href="${mapUrl}" target="_blank" style="font-size:16px;text-decoration:none;">📍</a></div>
@@ -6315,7 +6315,8 @@
 
       const latestByPerson = {};
       data.forEach(r => {
-        const key = (r.role || '') + '|' + (r.hotel || '');
+        // satu jabatan = satu orang → ambil posisi TERBARU per jabatan (walau nama unitnya pernah tercatat beda format)
+        const key = (r.role || '');
         if (!latestByPerson[key]) latestByPerson[key] = r;
       });
       const points = Object.values(latestByPerson);
@@ -6357,7 +6358,7 @@
         const infoTambahan = (kejadian === 'logout' ? `<br><span style="color:#64748b;font-weight:700;font-size:12px;">🚪 Logout pukul ${timeStr} WIB</span>` : '')
           + (kejadian === 'gps_off' ? `<br><span style="color:#dc2626;font-weight:700;font-size:12px;">🔴 GPS dimatikan pukul ${timeStr} WIB</span>` : '')
           + (r.baterai !== null && r.baterai !== undefined ? `<br><span style="color:${r.baterai <= 15 ? '#dc2626' : '#64748b'};font-size:11px;">🔋 Baterai terakhir ${r.baterai}%${r.baterai <= 10 ? ' — kemungkinan HP mati' : ''}</span>` : '');
-        marker.bindPopup(`<b>${jvEsc(r.role || '-')}</b><br>${jvEsc(r.hotel || '-')}<br>` + infoTambahan.replace(/^<br>/, '') + (infoTambahan ? '<br>' : '') +
+        marker.bindPopup(`<b>${jvEsc(r.role || '-')}</b><br>${jvEsc(unitPendekPeta_(r.hotel))}<br>` + infoTambahan.replace(/^<br>/, '') + (infoTambahan ? '<br>' : '') +
           (live ? `<span style="color:#16a34a;font-weight:800;font-size:12px;">🟢 Live</span> <span style="color:#888;font-size:11px;">· update ${timeStr} WIB</span>`
                 : `<span style="color:#64748b;font-weight:700;font-size:12px;">⚪ Terakhir terlihat ${ageTxt}</span><br><span style="color:#888;font-size:11px;">${timeStr} WIB</span>`));
         petaLiveMarkers.push(marker);
@@ -23961,6 +23962,17 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
   }
   // Catat kejadian (logout / gps_off) di titik terakhir yang diketahui — tidak mengganggu alur bila gagal
   // Peta Live: role Corporate tampil "Corporate", kecuali hari ini memang memilih / mengerjakan unit tertentu
+  // Nama unit seragam di Peta Live (data lama kadang nama panjang, kadang pendek)
+  function unitPendekPeta_(h) {
+    const t = String(h || '').toLowerCase();
+    if (!t) return '-';
+    if (t.indexOf('corporate') >= 0) return 'Corporate';
+    if (t.indexOf('lite') >= 0) return 'Verse Lite';
+    if (t.indexOf('luxe') >= 0) return 'Verse Luxe';
+    if (t.indexOf('cirebon') >= 0) return 'Verse Cirebon';
+    if (t.indexOf('oak') >= 0) return 'Oak Tree';
+    return h;
+  }
   function hotelLokasi_(role, hotel) {
     const CORP = ['Ops HR Manager','HR Officer','Chief Engineering Corporate','EHK Corporate','CRA Corporate'];
     if (!CORP.includes(role)) return hotel || '';
