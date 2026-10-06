@@ -1,0 +1,17 @@
+name: tmp-cek-peta
+on:
+  push:
+    branches: [tmp-cek-peta]
+jobs:
+  cek:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          curl -sL "https://verse-hotels-report.vercel.app/?t=$RANDOM" -o p.html
+          ls -l p.html
+          grep -c "ketuk nama untuk jejak" p.html
+          grep -c "function plSusunOrang_" p.html
+          grep -c "peta_live_data" p.html
+          grep -c "function pingLatarDepan" p.html
+          grep -c "cekVersiBaruVA" p.html
+          curl -sI "https://verse-hotels-report.vercel.app/?cek=1" | grep -i "^etag"
