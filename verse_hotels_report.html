@@ -2601,17 +2601,88 @@
 
   <!-- ===== PETA LIVE (GPS Realtime) ===== -->
   <div class="screen lebar" id="screen-peta-live">
+    <style>
+      #pl-body { flex: 1; min-height: 0; display: flex; flex-direction: column; background: #fff; }
+      #pl-sisi { display: contents; }
+      #pl-chips { order: 1; display: flex; gap: 6px; overflow-x: auto; padding: 8px 10px; background: #fff; border-bottom: 1px solid #e5e7eb; flex-shrink: 0; align-items: center; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+      #pl-chips::-webkit-scrollbar { display: none; }
+      #pl-mapbox { order: 2; flex: 1; min-height: 0; position: relative; }
+      #peta-live-map { position: absolute; inset: 0; }
+      #pl-detail { order: 3; flex-shrink: 0; max-height: 48%; overflow-y: auto; background: #fff; border-top: 2px solid #0f4c3a; display: none; -webkit-overflow-scrolling: touch; }
+      #pl-detail.buka { display: block; }
+      .pl-chip { flex-shrink: 0; display: flex; align-items: center; gap: 6px; border: 1px solid #e2e8f0; border-radius: 999px; padding: 6px 10px; font-weight: 700; font-size: 12px; line-height: 1.2; font-family: inherit; background: #fff; color: #0f172a; cursor: pointer; white-space: nowrap; text-align: left; }
+      .pl-chip.aktif { background: #0f4c3a; color: #fff; border-color: #0f4c3a; }
+      .pl-chip.kosong { color: #94a3b8; font-weight: 600; }
+      .pl-chip .ttk { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; box-sizing: border-box; }
+      .pl-chip .wkt { font-weight: 500; font-size: 11px; color: #64748b; }
+      .pl-chip.aktif .wkt { color: #bbf7d0; }
+      .pl-chip .pj { display: none; }
+      .pl-sep { flex-shrink: 0; font-size: 10.5px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: .4px; padding: 0 4px 0 8px; border-left: 2px solid #e2e8f0; white-space: nowrap; }
+      .pl-dh { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px 6px; position: sticky; top: 0; background: #fff; z-index: 2; }
+      .pl-dh b { font-size: 14px; color: #0f172a; }
+      .pl-ds { font-size: 12px; color: #475569; margin-top: 2px; line-height: 1.45; }
+      .pl-x { margin-left: auto; border: none; background: #f1f5f9; color: #334155; width: 30px; height: 30px; border-radius: 50%; font-size: 14px; cursor: pointer; flex-shrink: 0; font-family: inherit; }
+      .pl-tgl { display: flex; align-items: center; gap: 6px; padding: 4px 12px 8px; }
+      .pl-tgl button { border: 1px solid #cbd5e1; background: #fff; color: #0f172a; border-radius: 8px; padding: 7px 10px; font-weight: 700; font-size: 12px; font-family: inherit; cursor: pointer; }
+      .pl-tgl button:disabled { opacity: .35; }
+      .pl-tgl input { flex: 1; min-width: 0; border: 1px solid #cbd5e1; border-radius: 8px; padding: 6px 8px; font-weight: 600; font-size: 12px; font-family: inherit; color: #0f172a; background: #fff; }
+      #pl-riwayat { padding: 0 12px 14px; }
+      .pl-rk { font-size: 12px; font-weight: 700; padding: 8px 10px; border-radius: 10px; margin-bottom: 8px; }
+      .pl-rk.aman { background: #ecfdf5; color: #065f46; }
+      .pl-rk.keluar { background: #fff7ed; color: #9a3412; }
+      .pl-rk.info { background: #f1f5f9; color: #475569; font-weight: 600; }
+      .pl-seg { display: flex; gap: 9px; padding: 8px 9px; border-radius: 10px; margin-bottom: 5px; cursor: pointer; border: 1px solid #eef2f7; background: #fff; align-items: flex-start; }
+      .pl-seg .ik { font-size: 16px; line-height: 1.2; flex-shrink: 0; width: 20px; text-align: center; }
+      .pl-seg .jm { font-weight: 800; font-size: 12.5px; color: #0f172a; }
+      .pl-seg .ket { font-size: 12px; color: #334155; margin-top: 1px; line-height: 1.4; }
+      .pl-seg .kcl { font-size: 10.5px; color: #94a3b8; margin-top: 2px; }
+      .pl-seg.luar { background: #fff7ed; border-color: #fdba74; }
+      .pl-seg.luar .ket { color: #9a3412; font-weight: 700; }
+      .pl-seg.jeda { background: #f8fafc; border-style: dashed; cursor: default; }
+      .pl-seg.jeda .jm, .pl-seg.jeda .ket { color: #94a3b8; font-weight: 600; }
+      .pl-seg.kejadian { background: #fef2f2; border-color: #fecaca; cursor: default; }
+      .pl-unitbar { position: absolute; left: 8px; bottom: 22px; z-index: 500; display: flex; gap: 5px; flex-wrap: wrap; max-width: calc(100% - 16px); }
+      .pl-unitbar button { border: none; background: rgba(255,255,255,.96); color: #0f172a; border-radius: 999px; padding: 7px 11px; font-weight: 700; font-size: 11.5px; font-family: inherit; box-shadow: 0 1px 5px rgba(0,0,0,.3); cursor: pointer; }
+      .pl-unitbar button.utama { background: #0f4c3a; color: #fff; }
+      .pl-ikon { overflow: visible !important; }
+      .pl-tip { background: rgba(15,23,42,.88); color: #fff; border: none; box-shadow: none; font-weight: 700; font-size: 10.5px; padding: 2px 6px; border-radius: 6px; }
+      .pl-tip::before { display: none; }
+      @keyframes plPulse { 0% { box-shadow: 0 0 0 0 rgba(22,163,74,.6); } 70% { box-shadow: 0 0 0 12px rgba(22,163,74,0); } 100% { box-shadow: 0 0 0 0 rgba(22,163,74,0); } }
+      @media (min-width: 1024px) {
+        #pl-body { flex-direction: row; }
+        #pl-sisi { display: flex; flex-direction: column; width: 350px; flex-shrink: 0; border-right: 1px solid #e5e7eb; min-height: 0; background: #fff; }
+        #pl-chips { order: 0; flex-direction: column; align-items: stretch; overflow-x: hidden; overflow-y: auto; flex: 1; min-height: 120px; border-bottom: none; gap: 4px; padding: 10px; scrollbar-width: thin; }
+        #pl-mapbox { order: 0; }
+        #pl-detail { order: 0; max-height: 58%; }
+        .pl-chip { border-radius: 10px; padding: 8px 10px; white-space: normal; }
+        .pl-chip .pd { display: none; }
+        .pl-chip .pj { display: block; flex: 1; min-width: 0; }
+        .pl-chip .pj small { display: block; font-weight: 500; font-size: 11px; color: #64748b; margin-top: 2px; }
+        .pl-chip.aktif .pj small { color: #bbf7d0; }
+        .pl-chip .wkt { display: none; }
+        .pl-sep { border-left: none; padding: 8px 2px 2px; }
+      }
+    </style>
     <div class="topbar" style="padding:48px 16px 12px;background:linear-gradient(135deg,#0f4c3a,#1a7a5e);">
       <button class="topbar-back" onclick="go('coo')" style="color:white;background:rgba(255,255,255,0.15);">←</button>
       <div class="topbar-title">
         <h2 style="color:white;">📡 Peta Live</h2>
-        <p style="color:rgba(255,255,255,0.5);">🟢 Live (&lt;15 menit) · ⚪ posisi terakhir · 6 jam terakhir</p>
+        <p id="pl-ringkas" style="color:rgba(255,255,255,0.65);">🟢 Live · ⚪ posisi terakhir · ketuk nama untuk jejak</p>
       </div>
       <div class="topbar-right">
-        <span style="font-size:20px;cursor:pointer;color:#fde68a;" onclick="loadPetaLive()" title="Refresh">🔄</span>
+        <span style="font-size:20px;cursor:pointer;color:#fde68a;" onclick="loadPetaLive(true)" title="Refresh">🔄</span>
       </div>
     </div>
-    <div id="peta-live-map" style="width:100%;height:calc(100% - 92px);"></div>
+    <div id="pl-body">
+      <div id="pl-sisi">
+        <div id="pl-chips"><div class="pl-sep" style="border:none;">Memuat posisi tim…</div></div>
+        <div id="pl-detail"></div>
+      </div>
+      <div id="pl-mapbox">
+        <div id="peta-live-map"></div>
+        <div class="pl-unitbar" id="pl-unitbar"></div>
+      </div>
+    </div>
   </div>
 
   <!-- ===== BROADCAST MESSAGE ===== -->
@@ -6271,14 +6342,14 @@
         const timeStr = wibDate.toISOString().split('T')[1].substring(0, 5);
         const bgColor = idx % 2 === 0 ? 'white' : 'var(--gray-50)';
         const mapUrl = 'https://www.google.com/maps?q=' + r.latitude + ',' + r.longitude;
-        const statusLabel = r.status === 'done' ? '✅ Sudah' : (r.status === 'not' ? '❌ Tidak Dikerjakan' : (r.status === 'logout' ? '🚪 Logout' : (r.status === 'gps_off' ? '🔴 GPS dimatikan' : (r.status === 'background' ? '📡 Otomatis' : (r.status || '-')))));
+        const statusLabel = r.status === 'done' ? '✅ Sudah' : (r.status === 'not' ? '❌ Tidak Dikerjakan' : (r.status === 'logout' ? '🚪 Logout' : (r.status === 'gps_off' ? '🔴 GPS dimatikan' : (r.status === 'background' ? '📡 Otomatis' : (r.status === 'foreground' ? '📍 Otomatis (aplikasi terbuka)' : (r.status || '-'))))));
 
         html += `
           <div style="background:${bgColor};padding:10px 12px;display:grid;grid-template-columns:70px 1fr 60px;gap:8px;font-size:11px;border-bottom:1px solid var(--gray-100);align-items:start;">
             <div style="color:var(--gray-600);font-weight:600;">${timeStr}</div>
             <div>
               <div style="font-weight:700;color:var(--navy);font-size:12px;">🎫 ${r.role || '-'}</div>
-              <div style="color:var(--gray-500);font-size:10px;margin-top:1px;">🏨 ${unitPendekPeta_(r.hotel)}</div>
+              <div style="color:var(--gray-500);font-size:10px;margin-top:1px;">🏨 ${unitPendekPeta_(r.hotel)}${(r.latitude != null && r.longitude != null) ? ' · 📍 ' + plEsc_(plLokasi_(r.latitude, r.longitude, r.accuracy_m).teks) : ''}</div>
               <div style="color:#7c3aed;font-size:10px;margin-top:1px;">${r.task_id || '-'} — ${statusLabel}</div>
             </div>
             <div><a href="${mapUrl}" target="_blank" style="font-size:16px;text-decoration:none;">📍</a></div>
@@ -6293,82 +6364,504 @@
   }
 
   // === Peta Live (GPS Realtime) ===
+  // Satu titik per ORANG (bukan per kombinasi jabatan+unit), lokasi dibaca dari GPS,
+  // peta tidak mengubah zoom saat refresh, dan riwayat pergerakan (keluar/masuk hotel) per orang per tanggal.
   let petaLiveMap = null;
-  let petaLiveMarkers = [];
   let petaLiveAutoRefreshTimer = null;
+  const PL = { orang: [], marker: {}, ikonKey: {}, pilih: null, tgl: null, jejakLayer: null, sudahFit: false, segmen: [], req: 0, gagal: false };
+  const PL_UNIT = [
+    { n: 'Verse Lite', lat: -6.16138, lng: 106.81696 },
+    { n: 'Verse Luxe', lat: -6.18735, lng: 106.82146 },
+    { n: 'Oak Tree', lat: -6.24536, lng: 106.79563 },
+    { n: 'Verse Cirebon', lat: -6.71126, lng: 108.53451 },
+  ];
+  const PL_RADIUS_UNIT = 200;      // meter dari titik hotel yang masih dianggap "di hotel"
+  const PL_AKURASI_BURUK = 300;    // akurasi GPS > 300 m = lokasi perkiraan (laptop / sinyal lemah)
+  const PL_JEDA_MENIT = 30;        // tidak ada data lebih lama dari ini → ditulis sebagai jeda
+
+  function plEsc_(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
+  function plJarak_(a, b, c, d) {
+    const R = 6371000, r = Math.PI / 180;
+    const x = Math.sin((c - a) * r / 2), y = Math.sin((d - b) * r / 2);
+    return 2 * R * Math.asin(Math.sqrt(x * x + Math.cos(a * r) * Math.cos(c * r) * y * y));
+  }
+  function plJarakTxt_(m) { return m < 1000 ? (Math.max(10, Math.round(m / 10) * 10)) + ' m' : (m / 1000).toFixed(1).replace('.', ',') + ' km'; }
+  // Lokasi dari GPS: di hotel mana / di luar / hanya perkiraan
+  function plLokasi_(lat, lng, acc) {
+    let unit = '', m = Infinity;
+    PL_UNIT.forEach(u => { const j = plJarak_(lat, lng, u.lat, u.lng); if (j < m) { m = j; unit = u.n; } });
+    let zona, teks;
+    if (m <= PL_RADIUS_UNIT) { zona = 'di'; teks = 'di ' + unit; }
+    else if (acc != null && acc > PL_AKURASI_BURUK) { zona = 'kira'; teks = 'lokasi perkiraan (±' + plJarakTxt_(acc) + ') · sekitar ' + plJarakTxt_(m) + ' dari ' + unit; }
+    else { zona = 'luar'; teks = 'di luar hotel · ' + plJarakTxt_(m) + ' dari ' + unit; }
+    return { unit, m, zona, teks };
+  }
+  function plWib_(iso) { return new Date(new Date(iso).getTime() + 7 * 3600000); }
+  function plJam_(iso) { return plWib_(iso).toISOString().substring(11, 16); }
+  function plTglWib_(iso) { return plWib_(iso).toISOString().substring(0, 10); }
+  function plHariIni_() { return new Date(Date.now() + 7 * 3600000).toISOString().substring(0, 10); }
+  function plGeserHari_(tgl, n) { const d = new Date(tgl + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().substring(0, 10); }
+  function plTglTxt_(tgl) {
+    const B = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+    const p = String(tgl).split('-'); return parseInt(p[2], 10) + ' ' + B[parseInt(p[1], 10) - 1];
+  }
+  function plDurasi_(menit) {
+    menit = Math.max(0, Math.round(menit));
+    if (menit < 60) return menit + ' mnt';
+    return Math.floor(menit / 60) + ' j' + (menit % 60 ? ' ' + (menit % 60) + ' mnt' : '');
+  }
+  function plKapan_(iso) {
+    const tgl = plTglWib_(iso), hari = plHariIni_();
+    if (tgl === hari) return plJam_(iso);
+    if (tgl === plGeserHari_(hari, -1)) return 'kemarin ' + plJam_(iso);
+    return plTglTxt_(tgl) + ' ' + plJam_(iso);
+  }
+  function plRolePendek_(role) {
+    return String(role || '')
+      .replace('Engineering Supervisor', 'ENG SPV').replace('Housekeeping Supervisor', 'HK SPV').replace('Front Office Supervisor', 'FO SPV')
+      .replace('Chief Engineering Corporate', 'CE Corp').replace('CRA Corporate', 'CRA').replace('EHK Corporate', 'EHK')
+      .replace('Ops HR Manager', 'HR Manager').replace('F&B Manager', 'FBM').replace('F&B Attendant', 'FB Att')
+      .replace('Verse Lite Gajah Mada', 'Lite').replace('Verse Luxe Wahid Hasyim', 'Luxe').replace('Verse Hotel Cirebon', 'Cirebon').replace('Oak Tree Mahakam Blok M', 'Oak Tree')
+      .replace(/^HM Verse /, 'HM ').replace(/Verse (Lite|Luxe|Cirebon)/, '$1').trim();
+  }
+  // Kunci orang pada satu baris lokasi (untuk jabatan yang dipegang lebih dari satu orang, mis. CRA)
+  function plKunciBaris_(r, role) {
+    const nm = (r.nama && r.nama !== role) ? String(r.nama) : '';
+    return nm ? 'n:' + nm : (r.perangkat ? 'd:' + r.perangkat : '');
+  }
+
+  // Susun daftar ORANG dari posisi terbaru (per jabatan + perangkat) dan daftar tim
+  function plSusunOrang_(posisi, tim) {
+    tim = tim || [];
+    const info = {}; tim.forEach(t => { info[t.role] = t; });
+    const cariTim = role => info[role] || tim.find(t => role.indexOf(t.role + ' ') === 0) || null;
+    const perRole = {};
+    (posisi || []).forEach(r => { if (!r || !r.role || r.latitude == null || r.longitude == null) return; (perRole[r.role] = perRole[r.role] || []).push(r); });
+    const orang = [], ketemu = {};
+    const tambah = (o) => {
+      const r = o.r;
+      if (r) {
+        const umur = Math.max(0, Math.round((Date.now() - new Date(r.recorded_at).getTime()) / 60000));
+        o.umur = umur;
+        o.kejadian = r.status === 'logout' ? 'logout' : (r.status === 'gps_off' ? 'gps_off' : '');
+        o.live = umur < 15 && !o.kejadian;
+        o.hariIni = plTglWib_(r.recorded_at) === plHariIni_() || umur < 12 * 60;
+        o.lok = plLokasi_(r.latitude, r.longitude, r.accuracy_m);
+      } else { o.umur = Infinity; o.kejadian = ''; o.live = false; o.hariIni = false; o.lok = null; }
+      orang.push(o);
+    };
+    Object.keys(perRole).forEach(role => {
+      const rows = perRole[role].slice().sort((a, b) => new Date(b.recorded_at) - new Date(a.recorded_at));
+      const t = cariTim(role);
+      const n = (info[role] && info[role].n) || 1;
+      const pendek = plRolePendek_(role);
+      if (n <= 1) {
+        // Satu jabatan = satu orang → ambil posisi TERBARU, apa pun perangkat / nama unit yang tercatat
+        const nm = (t && t.nama) || '';
+        if (t) ketemu[t.role] = (ketemu[t.role] || 0) + 1;
+        tambah({ id: role + '|', role, kunci: null, multi: false, nama: nm || role, label: nm ? nm.split(' - ')[0] : pendek, r: rows[0] });
+        return;
+      }
+      // Jabatan dipegang beberapa orang → dipisah per nama (bila diisi) atau per perangkat
+      const grup = {}, urut = [];
+      rows.forEach(r => { const k = plKunciBaris_(r, role); if (!k) return; if (!grup[k]) { grup[k] = r; urut.push(k); } });
+      const daftar = urut.slice(0, n).map(k => ({ k, r: grup[k] }));
+      const polos = rows.find(r => !plKunciBaris_(r, role));
+      const tagAwal = info[role].tag_awal ? new Date(info[role].tag_awal) : null;
+      if (polos && daftar.length < n && (!daftar.length || !tagAwal || new Date(polos.recorded_at) > tagAwal)) daftar.push({ k: '', r: polos });
+      ketemu[role] = daftar.length;
+      daftar.forEach(d => {
+        let nm, lb;
+        if (d.k.indexOf('n:') === 0) { nm = d.k.slice(2); const p = nm.split(' - '); lb = p.length > 1 ? pendek + ' ' + p.slice(1).join(' - ') : nm; }
+        else { const sfx = d.r.jenis ? ' (' + d.r.jenis + ')' : ''; nm = role + sfx; lb = pendek + sfx; }
+        tambah({ id: role + '|' + d.k, role, kunci: d.k, multi: true, nama: nm, label: lb, r: d.r });
+      });
+    });
+    // Anggota tim yang belum punya data lokasi sama sekali (7 hari)
+    tim.forEach(t => {
+      const kurang = (t.n || 1) - (ketemu[t.role] || 0);
+      for (let i = 0; i < kurang; i++) {
+        tambah({ id: t.role + '|kosong' + i, role: t.role, kunci: null, multi: (t.n || 1) > 1, kosong: true, nama: t.nama || t.role, label: t.nama ? t.nama.split(' - ')[0] : plRolePendek_(t.role), r: null });
+      }
+    });
+    // Label kembar (mis. dua CRA dengan jenis perangkat sama) → diberi nomor
+    const hit = {}; orang.forEach(o => { hit[o.nama] = (hit[o.nama] || 0) + 1; });
+    const ke = {};
+    orang.forEach(o => { if (hit[o.nama] > 1) { ke[o.nama] = (ke[o.nama] || 0) + 1; o.label += ' ' + ke[o.nama]; o.nama += ' ' + ke[o.nama]; } });
+    const kelas = o => o.live ? 0 : (o.r && o.hariIni ? 1 : (o.r ? 2 : 3));
+    orang.sort((a, b) => kelas(a) - kelas(b) || a.umur - b.umur || a.nama.localeCompare(b.nama));
+    return orang;
+  }
+
+  function plWarna_(o) {
+    if (!o.r) return '#e2e8f0';
+    if (o.kejadian === 'gps_off') return '#dc2626';
+    if (o.live) return '#16a34a';
+    return o.hariIni ? '#64748b' : '#cbd5e1';
+  }
+  function plStatusTxt_(o) {
+    if (!o.r) return '⚫ Belum ada data lokasi (7 hari terakhir)';
+    const jam = plKapan_(o.r.recorded_at) + ' WIB';
+    if (o.kejadian === 'logout') return '🚪 Logout ' + jam;
+    if (o.kejadian === 'gps_off') return '🔴 GPS dimatikan ' + jam;
+    if (o.live) return '🟢 Live · update ' + jam;
+    if (o.hariIni) return '⚪ Terakhir terlihat ' + jam + (o.umur < 600 ? ' (' + plDurasi_(o.umur) + ' lalu)' : '');
+    return '⚫ Hari ini belum ada lokasi · terakhir ' + jam;
+  }
+  function plWaktuPendek_(o) {
+    if (!o.r) return '—';
+    if (o.live) return o.umur < 1 ? 'baru saja' : o.umur + ' mnt';
+    return plKapan_(o.r.recorded_at);
+  }
+
+  function plRenderDaftar_() {
+    const el = document.getElementById('pl-chips'); if (!el) return;
+    const kiri = el.scrollLeft, atas = el.scrollTop;
+    const nLive = PL.orang.filter(o => o.live).length;
+    const nHari = PL.orang.filter(o => o.r && o.hariIni && !o.live).length;
+    const nLain = PL.orang.length - nLive - nHari;
+    const rk = document.getElementById('pl-ringkas');
+    if (rk) rk.textContent = PL.gagal ? '⚠️ Gagal memuat data — tekan 🔄 untuk coba lagi' : ('🟢 ' + nLive + ' live · ⚪ ' + nHari + ' posisi terakhir · ⚫ ' + nLain + ' belum ada hari ini');
+    let html = '', sudahSep = false;
+    PL.orang.forEach(o => {
+      const tanpa = !(o.r && o.hariIni);
+      if (tanpa && !sudahSep) { sudahSep = true; html += '<div class="pl-sep">Belum ada lokasi hari ini (' + nLain + ')</div>'; }
+      const w = plWarna_(o);
+      const sub = o.r ? ((o.hariIni ? plEsc_(o.lok.teks) + ' · ' : '') + plEsc_(plStatusTxt_(o))) : 'Belum ada data lokasi';
+      html += '<button type="button" class="pl-chip' + (o.id === PL.pilih ? ' aktif' : '') + (tanpa ? ' kosong' : '') + '" data-id="' + plEsc_(o.id) + '" onclick="plPilih(this.dataset.id, true)">'
+        + '<span class="ttk" style="background:' + (o.r ? w : 'transparent') + ';' + (o.r ? '' : 'border:2px solid #cbd5e1;') + '"></span>'
+        + '<span class="pd">' + plEsc_(o.label) + '</span>'
+        + '<span class="pj">' + plEsc_(o.nama) + '<small>' + sub + '</small></span>'
+        + '<span class="wkt">' + plEsc_(plWaktuPendek_(o)) + '</span></button>';
+    });
+    if (!PL.orang.length) html = '<div class="pl-sep" style="border:none;">Belum ada data lokasi</div>';
+    el.innerHTML = html;
+    el.scrollLeft = kiri; el.scrollTop = atas;
+  }
+
+  function plPopupHtml_(o) {
+    const r = o.r;
+    const bat = (r.baterai !== null && r.baterai !== undefined)
+      ? '<br><span style="color:' + (r.baterai <= 15 ? '#dc2626' : '#64748b') + ';font-size:11px;">🔋 Baterai terakhir ' + r.baterai + '%' + (r.baterai <= 10 ? ' — kemungkinan HP mati' : '') + '</span>' : '';
+    return '<div style="min-width:170px;"><b>' + plEsc_(o.nama) + '</b><br>'
+      + '<span style="font-size:12px;">📍 ' + plEsc_(o.lok.teks) + '</span><br>'
+      + '<span style="font-size:12px;font-weight:700;color:' + (o.live ? '#16a34a' : (o.kejadian === 'gps_off' ? '#dc2626' : '#64748b')) + ';">' + plEsc_(plStatusTxt_(o)) + '</span>'
+      + bat
+      + '<br><button type="button" data-id="' + plEsc_(o.id) + '" onclick="plPilih(this.dataset.id, false)" style="margin-top:8px;width:100%;border:none;background:#0f4c3a;color:#fff;border-radius:8px;padding:8px 10px;font-weight:700;font-size:12px;font-family:inherit;cursor:pointer;">🧭 Riwayat pergerakan</button></div>';
+  }
+
+  // Titik di peta — diperbarui DI TEMPAT (tanpa hapus-buat ulang) supaya popup & zoom tidak berubah saat refresh.
+  // Titik yang bertumpuk di gedung yang sama disebar melingkar supaya semuanya terlihat.
+  function plRenderMarker_() {
+    if (!petaLiveMap) return;
+    const tampil = PL.orang.filter(o => o.r && (o.hariIni || o.id === PL.pilih));
+    Object.keys(PL.marker).forEach(id => {
+      if (!tampil.some(o => o.id === id)) { petaLiveMap.removeLayer(PL.marker[id]); delete PL.marker[id]; delete PL.ikonKey[id]; }
+    });
+    const zoom = petaLiveMap.getZoom();
+    const grup = [];
+    tampil.slice().sort((a, b) => a.id.localeCompare(b.id)).forEach(o => {
+      const p = petaLiveMap.latLngToContainerPoint([o.r.latitude, o.r.longitude]);
+      const g = grup.find(x => Math.hypot(x.x - p.x, x.y - p.y) < 34);
+      if (g) g.a.push(o); else grup.push({ x: p.x, y: p.y, a: [o] });
+    });
+    grup.forEach(g => {
+      const n = g.a.length;
+      g.a.forEach((o, i) => {
+        let dx = 0, dy = 0;
+        if (n === 2) { dx = i === 0 ? -15 : 15; }
+        else if (n > 2) { const rad = 12 + 5 * n, sudut = (-90 + i * 360 / n) * Math.PI / 180; dx = Math.round(rad * Math.cos(sudut)); dy = Math.round(rad * Math.sin(sudut)); }
+        const dipilih = o.id === PL.pilih;
+        const adaLabel = zoom >= 12 || dipilih;
+        const warna = plWarna_(o);
+        const kira = !!(o.lok && o.lok.zona === 'kira');   // lokasi perkiraan (laptop / sinyal lemah) → diberi tanda ≈
+        const key = [dx, dy, warna, o.live ? 1 : 0, dipilih ? 1 : 0, adaLabel ? 1 : 0, kira ? 1 : 0, o.label].join('|');
+        const ll = [o.r.latitude, o.r.longitude];
+        let m = PL.marker[o.id];
+        if (!m) {
+          m = L.marker(ll, { icon: plIkon_(o, dx, dy, adaLabel, dipilih, warna, kira), zIndexOffset: dipilih ? 1000 : (o.live ? 500 : 0) }).addTo(petaLiveMap);
+          m.bindPopup(plPopupHtml_(o), { maxWidth: 260 });
+          PL.marker[o.id] = m; PL.ikonKey[o.id] = key;
+        } else {
+          const lama = m.getLatLng();
+          if (lama.lat !== ll[0] || lama.lng !== ll[1]) m.setLatLng(ll);
+          if (PL.ikonKey[o.id] !== key) { m.setIcon(plIkon_(o, dx, dy, adaLabel, dipilih, warna, kira)); m.setZIndexOffset(dipilih ? 1000 : (o.live ? 500 : 0)); PL.ikonKey[o.id] = key; }
+          const pp = m.getPopup(), isi = plPopupHtml_(o);
+          if (pp && pp.getContent() !== isi) pp.setContent(isi);
+        }
+      });
+    });
+  }
+  function plIkon_(o, dx, dy, adaLabel, dipilih, warna, kira) {
+    const d = dipilih ? 26 : 22;
+    const garis = (dx || dy)
+      ? '<svg width="1" height="1" style="position:absolute;left:0;top:0;overflow:visible;pointer-events:none;"><line x1="0" y1="0" x2="' + dx + '" y2="' + dy + '" stroke="#334155" stroke-width="1.5" opacity=".55"/><circle cx="0" cy="0" r="2.5" fill="#334155" opacity=".75"/></svg>' : '';
+    const titik = '<div style="position:absolute;left:' + dx + 'px;top:' + dy + 'px;width:' + d + 'px;height:' + d + 'px;margin:-' + (d / 2) + 'px 0 0 -' + (d / 2) + 'px;border-radius:50%;background:' + warna + ';border:3px ' + (kira ? 'dashed' : 'solid') + ' ' + (dipilih ? '#fde68a' : '#fff') + ';box-sizing:border-box;' + (kira ? 'opacity:.8;' : '') + 'box-shadow:0 0 0 2px ' + warna + '66,0 2px 6px rgba(0,0,0,.35);' + (o.live ? 'animation:plPulse 1.6s infinite;' : '') + '"></div>';
+    const kanan = dx >= -1;
+    const label = adaLabel
+      ? '<div style="position:absolute;top:' + dy + 'px;' + (kanan ? 'left:' + (dx + d / 2 + 4) + 'px;' : 'right:' + (-dx + d / 2 + 4) + 'px;') + 'transform:translateY(-50%);white-space:nowrap;background:' + (dipilih ? '#0f4c3a' : 'rgba(255,255,255,.96)') + ';color:' + (dipilih ? '#fff' : '#0f172a') + ';font-weight:700;font-size:11px;line-height:1;padding:4px 7px;border-radius:999px;box-shadow:0 1px 4px rgba(0,0,0,.3);">' + (kira ? '≈ ' : '') + plEsc_(o.label) + '</div>' : '';
+    return L.divIcon({ className: 'pl-ikon', iconSize: [0, 0], iconAnchor: [0, 0], popupAnchor: [dx, dy - d / 2 - 2], html: garis + titik + label });
+  }
+
+  function plSiapkanPeta_() {
+    if (petaLiveMap) return;
+    petaLiveMap = L.map('peta-live-map').setView([-6.2088, 106.8456], 11);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap', maxZoom: 19 }).addTo(petaLiveMap);
+    // Area "di hotel" (radius 200 m) sebagai acuan keluar/masuk
+    PL_UNIT.forEach(u => {
+      L.circle([u.lat, u.lng], { radius: PL_RADIUS_UNIT, color: '#0f766e', weight: 1, dashArray: '4 5', fillColor: '#14b8a6', fillOpacity: 0.05, interactive: false }).addTo(petaLiveMap);
+    });
+    petaLiveMap.on('zoomend', plRenderMarker_);
+    try { window.addEventListener('resize', () => { try { petaLiveMap && petaLiveMap.invalidateSize(); } catch (e) {} }); } catch (e) {}
+    try { if (window.ResizeObserver) new ResizeObserver(() => { try { petaLiveMap.invalidateSize({ pan: false }); } catch (e) {} }).observe(document.getElementById('pl-mapbox')); } catch (e) {}
+    const bar = document.getElementById('pl-unitbar');
+    if (bar) {
+      bar.innerHTML = '<button type="button" class="utama" onclick="plFitSemua(false)">🎯 Semua</button>'
+        + PL_UNIT.map((u, i) => '<button type="button" onclick="plKeUnit(' + i + ')">' + plEsc_(u.n.replace('Verse ', '')) + '</button>').join('');
+    }
+  }
+  // utama = true → hanya kelompok terbesar (mis. unit-unit Jakarta) supaya nama tetap terbaca; false → benar-benar semua titik
+  function plFitSemua(utama) {
+    if (!petaLiveMap) return;
+    let ll = PL.orang.filter(o => o.r && o.hariIni).map(o => [o.r.latitude, o.r.longitude]);
+    if (!ll.length) { petaLiveMap.setView([-6.2088, 106.8456], 11); return; }
+    if (utama && ll.length > 2) {
+      const urut = k => ll.map(p => p[k]).sort((a, b) => a - b)[Math.floor(ll.length / 2)];
+      const tLat = urut(0), tLng = urut(1);
+      const dekat = ll.filter(p => plJarak_(p[0], p[1], tLat, tLng) < 60000);
+      if (dekat.length) ll = dekat;
+    }
+    petaLiveMap.fitBounds(L.latLngBounds(ll).pad(0.25), { maxZoom: 16, paddingTopLeft: [10, 10], paddingBottomRight: [10, 56] });
+  }
+  function plKeUnit(i) { const u = PL_UNIT[i]; if (petaLiveMap && u) petaLiveMap.setView([u.lat, u.lng], 17); }
 
   function openPetaLive() {
     go('peta-live');
-    loadPetaLive();
+    plSiapkanPeta_();
+    setTimeout(() => { try { petaLiveMap.invalidateSize(); } catch (e) {} }, 300);
+    loadPetaLive(true);
     if (petaLiveAutoRefreshTimer) clearInterval(petaLiveAutoRefreshTimer);
-    petaLiveAutoRefreshTimer = setInterval(loadPetaLive, 30000); // auto-refresh tiap 30 detik
+    petaLiveAutoRefreshTimer = setInterval(() => loadPetaLive(false), 30000); // auto-refresh tiap 30 detik
   }
 
-  async function loadPetaLive() {
-    try {
-      const resp = await fetch(
-        SUPA_URL + '/rest/v1/location_log?select=*&recorded_at=gte.' + encodeURIComponent(new Date(Date.now() - 6*3600000).toISOString()) + '&order=recorded_at.desc&limit=500',
-        { headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY } }
-      );
-      if (!resp.ok) return;
-      const data = await resp.json();
-
-      const latestByPerson = {};
-      data.forEach(r => {
-        // satu jabatan = satu orang → ambil posisi TERBARU per jabatan (walau nama unitnya pernah tercatat beda format)
-        const key = (r.role || '');
-        if (!latestByPerson[key]) latestByPerson[key] = r;
-      });
-      const points = Object.values(latestByPerson);
-
-      if (!petaLiveMap) {
-        petaLiveMap = L.map('peta-live-map').setView([-6.2088, 106.8456], 11);
-        try { window.addEventListener('resize', () => { try { petaLiveMap && petaLiveMap.invalidateSize(); } catch (e) {} }); setTimeout(() => { try { petaLiveMap.invalidateSize(); } catch (e) {} }, 300); } catch (e) {}
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          attribution: '© OpenStreetMap',
-        }).addTo(petaLiveMap);
-      }
-
-      petaLiveMarkers.forEach(m => petaLiveMap.removeLayer(m));
-      petaLiveMarkers = [];
-
-      if (!document.getElementById('pl-pulse-style')) {
-        const st = document.createElement('style'); st.id = 'pl-pulse-style';
-        st.textContent = '@keyframes plPulse{0%{box-shadow:0 0 0 0 rgba(22,163,74,.6)}70%{box-shadow:0 0 0 12px rgba(22,163,74,0)}100%{box-shadow:0 0 0 0 rgba(22,163,74,0)}}';
-        document.head.appendChild(st);
-      }
-      if (points.length === 0) return;
-
-      points.forEach(r => {
-        if (!r.latitude || !r.longitude) return;
-        const wibTime = new Date(new Date(r.recorded_at).getTime() + 7*3600000);
-        const timeStr = wibTime.toISOString().split('T')[1].substring(0,5);
-        // Hijau = live (< 15 menit), abu-abu = posisi terakhir yang sudah lama
-        const ageMin = Math.max(0, Math.round((Date.now() - new Date(r.recorded_at).getTime()) / 60000));
-        const kejadian = r.status === 'logout' ? 'logout' : (r.status === 'gps_off' ? 'gps_off' : '');
-        const live = ageMin < 15 && !kejadian;
-        const ageTxt = ageMin < 1 ? 'baru saja' : ageMin < 60 ? ageMin + ' menit lalu' : Math.floor(ageMin / 60) + ' jam ' + (ageMin % 60) + ' menit lalu';
-        const color = live ? '#16a34a' : '#94a3b8';
-        const icon = L.divIcon({
-          className: '',
-          iconSize: [26, 26], iconAnchor: [13, 13], popupAnchor: [0, -12],
-          html: `<div style="width:22px;height:22px;border-radius:50%;background:${color};border:3px solid #fff;box-shadow:0 0 0 2px ${color}66,0 2px 6px rgba(0,0,0,.35);${live ? 'animation:plPulse 1.6s infinite;' : 'opacity:.85;'}"></div>`
-        });
-        const marker = L.marker([r.latitude, r.longitude], { icon }).addTo(petaLiveMap);
-        const infoTambahan = (kejadian === 'logout' ? `<br><span style="color:#64748b;font-weight:700;font-size:12px;">🚪 Logout pukul ${timeStr} WIB</span>` : '')
-          + (kejadian === 'gps_off' ? `<br><span style="color:#dc2626;font-weight:700;font-size:12px;">🔴 GPS dimatikan pukul ${timeStr} WIB</span>` : '')
-          + (r.baterai !== null && r.baterai !== undefined ? `<br><span style="color:${r.baterai <= 15 ? '#dc2626' : '#64748b'};font-size:11px;">🔋 Baterai terakhir ${r.baterai}%${r.baterai <= 10 ? ' — kemungkinan HP mati' : ''}</span>` : '');
-        marker.bindPopup(`<b>${jvEsc(r.role || '-')}</b><br>${jvEsc(unitPendekPeta_(r.hotel))}<br>` + infoTambahan.replace(/^<br>/, '') + (infoTambahan ? '<br>' : '') +
-          (live ? `<span style="color:#16a34a;font-weight:800;font-size:12px;">🟢 Live</span> <span style="color:#888;font-size:11px;">· update ${timeStr} WIB</span>`
-                : `<span style="color:#64748b;font-weight:700;font-size:12px;">⚪ Terakhir terlihat ${ageTxt}</span><br><span style="color:#888;font-size:11px;">${timeStr} WIB</span>`));
-        petaLiveMarkers.push(marker);
-      });
-
-      const group = L.featureGroup(petaLiveMarkers);
-      if (petaLiveMarkers.length > 0) petaLiveMap.fitBounds(group.getBounds().pad(0.3));
-    } catch (e) {
-      // Diam saja kalau gagal
+  // Muat ulang data. TIDAK PERNAH mengubah zoom/posisi peta kecuali saat pertama kali dibuka.
+  async function loadPetaLive(manual) {
+    const layar = document.getElementById('screen-peta-live');
+    if (!layar || !layar.classList.contains('active')) {
+      if (petaLiveAutoRefreshTimer) { clearInterval(petaLiveAutoRefreshTimer); petaLiveAutoRefreshTimer = null; }
+      return;
     }
+    if (!manual && document.visibilityState === 'hidden') return;
+    try {
+      plSiapkanPeta_();
+      const d = await _rpc('peta_live_data', {});
+      PL.gagal = false;
+      PL.orang = plSusunOrang_((d && d.posisi) || [], (d && d.tim) || []);
+      if (PL.pilih && !PL.orang.some(o => o.id === PL.pilih)) plTutupDetail();
+      plRenderDaftar_();
+      plRenderMarker_();
+      if (!PL.sudahFit && PL.orang.some(o => o.r && o.hariIni)) { PL.sudahFit = true; plFitSemua(true); }
+      if (PL.pilih) { plRenderKepala_(); if ((PL.tgl || plHariIni_()) === plHariIni_()) plMuatJejak_(false); }
+    } catch (e) {
+      PL.gagal = true; plRenderDaftar_();
+    }
+  }
+
+  // ---------- Riwayat pergerakan per orang ----------
+  function plPilih(id, fokus) {
+    const o = PL.orang.find(x => x.id === id); if (!o) return;
+    PL.pilih = id; PL.tgl = plHariIni_();
+    const el = document.getElementById('pl-detail');
+    if (el) {
+      el.classList.add('buka');
+      el.innerHTML = '<div class="pl-dh"><div style="min-width:0;"><b id="pl-dnama"></b><div class="pl-ds" id="pl-dstatus"></div></div><button type="button" class="pl-x" onclick="plTutupDetail()" title="Tutup">✕</button></div>'
+        + '<div class="pl-tgl"><button type="button" onclick="plGeserTgl(-1)" title="Hari sebelumnya">◀</button>'
+        + '<input type="date" id="pl-tgl" value="' + PL.tgl + '" max="' + PL.tgl + '" onchange="plSetTgl(this.value)">'
+        + '<button type="button" id="pl-tgl-maju" onclick="plGeserTgl(1)" title="Hari berikutnya" disabled>▶</button>'
+        + '<button type="button" onclick="plSetTgl(plHariIni_())">Hari ini</button></div>'
+        + '<div id="pl-riwayat"><div class="pl-rk info">⏳ Memuat riwayat…</div></div>';
+      el.scrollTop = 0;
+    }
+    plRenderKepala_(); plRenderDaftar_();
+    try { petaLiveMap.closePopup(); } catch (e) {}
+    setTimeout(() => {
+      try { petaLiveMap.invalidateSize(); } catch (e) {}
+      plRenderMarker_();
+      plMuatJejak_(true);
+    }, 80);
+  }
+  function plRenderKepala_() {
+    const o = PL.orang.find(x => x.id === PL.pilih); if (!o) return;
+    const n = document.getElementById('pl-dnama'), s = document.getElementById('pl-dstatus');
+    if (n) n.textContent = o.nama;
+    if (s) s.innerHTML = (o.r ? '📍 ' + plEsc_(o.lok.teks) + '<br>' : '') + plEsc_(plStatusTxt_(o))
+      + (o.r && o.r.baterai != null ? ' · 🔋 ' + o.r.baterai + '%' : '')
+      + (o.r ? ' · <a href="https://www.google.com/maps?q=' + o.r.latitude + ',' + o.r.longitude + '" target="_blank" rel="noopener" style="color:#0f766e;font-weight:700;text-decoration:none;">Google Maps ↗</a>' : '');
+  }
+  function plTutupDetail() {
+    PL.pilih = null; PL.segmen = []; PL.req++;
+    if (PL.jejakLayer && petaLiveMap) { petaLiveMap.removeLayer(PL.jejakLayer); PL.jejakLayer = null; }
+    const el = document.getElementById('pl-detail'); if (el) { el.classList.remove('buka'); el.innerHTML = ''; }
+    plRenderDaftar_();
+    setTimeout(() => { try { petaLiveMap.invalidateSize(); } catch (e) {} plRenderMarker_(); }, 80);
+  }
+  function plSetTgl(v) {
+    if (!v || !/^\d{4}-\d{2}-\d{2}$/.test(v)) return;
+    const hari = plHariIni_(); if (v > hari) v = hari;
+    PL.tgl = v;
+    const inp = document.getElementById('pl-tgl'); if (inp && inp.value !== v) inp.value = v;
+    const maju = document.getElementById('pl-tgl-maju'); if (maju) maju.disabled = v >= hari;
+    const rw = document.getElementById('pl-riwayat'); if (rw) rw.innerHTML = '<div class="pl-rk info">⏳ Memuat riwayat…</div>';
+    plMuatJejak_(true);
+  }
+  function plGeserTgl(n) { plSetTgl(plGeserHari_(PL.tgl || plHariIni_(), n)); }
+
+  // Kelompokkan titik sehari menjadi segmen: di hotel X / di luar hotel / lokasi perkiraan / jeda tanpa data
+  function plSusunSegmen_(rows) {
+    const seg = [], kejadian = [];
+    let tAkhir = null;
+    rows.forEach(r => {
+      if (r.latitude == null || r.longitude == null) return;
+      const t = new Date(r.recorded_at).getTime();
+      const lk = plLokasi_(r.latitude, r.longitude, r.accuracy_m);
+      if (r.status === 'logout' || r.status === 'gps_off') kejadian.push({ jenis: 'kejadian', apa: r.status, t0: t, t1: t });
+      let s = seg[seg.length - 1];
+      const adaJeda = tAkhir !== null && (t - tAkhir) > PL_JEDA_MENIT * 60000;
+      if (adaJeda) { seg.push({ jenis: 'jeda', t0: tAkhir, t1: t }); s = null; }
+      const zona = lk.zona === 'di' ? 'di:' + lk.unit : lk.zona;
+      // titik "perkiraan" di tengah segmen lain tidak memecah segmen (hanya sinyal lemah sesaat)
+      if (s && s.jenis === 'titik' && (s.zona === zona || (lk.zona === 'kira' && s.zona !== 'kira'))) {
+        s.t1 = t; s.pts.push([r.latitude, r.longitude, t]); if (lk.zona !== 'kira' && lk.m > s.maks) { s.maks = lk.m; s.unitJauh = lk.unit; }
+      } else {
+        s = { jenis: 'titik', zona, unit: lk.unit, unitJauh: lk.unit, maks: lk.m, akurasi: r.accuracy_m, t0: t, t1: t, pts: [[r.latitude, r.longitude, t]], tugas: 0 };
+        seg.push(s);
+      }
+      if (r.task_id && r.task_id !== 'auto-tracking' && r.task_id !== 'defect-app') s.tugas++;
+      tAkhir = t;
+    });
+    // GPS meleset sesaat: satu titik "di luar" < 350 m yang diapit segmen hotel yang sama → dianggap masih di hotel
+    for (let i = 1; i < seg.length - 1; i++) {
+      const a = seg[i - 1], b = seg[i], c = seg[i + 1];
+      if (b.jenis === 'titik' && b.zona === 'luar' && b.pts.length === 1 && b.maks < 350 && a.jenis === 'titik' && c.jenis === 'titik' && a.zona === c.zona && a.zona.indexOf('di:') === 0) {
+        a.t1 = c.t1; a.pts = a.pts.concat(c.pts); a.tugas += b.tugas + c.tugas; seg.splice(i, 2); i--;
+      }
+    }
+    return { seg, kejadian };
+  }
+
+  async function plMuatJejak_(fokus) {
+    const o = PL.orang.find(x => x.id === PL.pilih); if (!o || !petaLiveMap) return;
+    const tgl = PL.tgl || plHariIni_();
+    const req = ++PL.req;
+    let rows = [];
+    try {
+      const resp = await fetch(SUPA_URL + '/rest/v1/location_log?select=task_id,status,latitude,longitude,accuracy_m,recorded_at,perangkat,nama&tanggal=eq.' + tgl
+        + '&role=eq.' + encodeURIComponent(o.role) + '&order=recorded_at.asc&limit=3000',
+        { headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY } });
+      if (!resp.ok) throw new Error('HTTP ' + resp.status);
+      rows = await resp.json();
+    } catch (e) {
+      if (req !== PL.req) return;
+      const rw = document.getElementById('pl-riwayat'); if (rw) rw.innerHTML = '<div class="pl-rk keluar">⚠️ Gagal memuat riwayat. Coba lagi.</div>';
+      return;
+    }
+    if (req !== PL.req || PL.pilih !== o.id) return;
+    let campur = false;
+    if (o.multi) {
+      const adaTanda = rows.some(r => plKunciBaris_(r, o.role));
+      if (adaTanda) rows = rows.filter(r => plKunciBaris_(r, o.role) === (o.kunci || ''));
+      else campur = rows.length > 0;      // data lama: belum dibedakan per orang
+    }
+    const hasil = plSusunSegmen_(rows);
+    PL.segmen = hasil.seg;
+    plRenderRiwayat_(hasil, rows.length, campur, tgl, o);      // panel dulu (tinggi peta berubah), baru gambar & atur tampilan peta
+    if (fokus) { try { petaLiveMap.invalidateSize({ pan: false }); } catch (e) {} }
+    plGambarJejak_(hasil.seg, campur, fokus, o);
+  }
+
+  function plGambarJejak_(seg, campur, fokus, o) {
+    if (PL.jejakLayer) { petaLiveMap.removeLayer(PL.jejakLayer); PL.jejakLayer = null; }
+    const grp = L.layerGroup(); const garis = []; const semua = [];
+    const titikSeg = seg.filter(s => s.jenis === 'titik');
+    const nLuar = titikSeg.filter(s => s.zona.indexOf('di:') !== 0).reduce((n, s) => n + s.pts.length, 0);
+    titikSeg.forEach((s, idx) => {
+      const jam = t => plJam_(new Date(t).toISOString());
+      if (s.zona.indexOf('di:') === 0) {
+        const lat = s.pts.reduce((a, p) => a + p[0], 0) / s.pts.length, lng = s.pts.reduce((a, p) => a + p[1], 0) / s.pts.length;
+        s.pusat = [lat, lng]; garis.push([lat, lng]); semua.push([lat, lng]);
+        L.circleMarker([lat, lng], { radius: 8, color: '#fff', weight: 2, fillColor: '#2563eb', fillOpacity: 1 })
+          .bindTooltip(jam(s.t0) + (s.t1 > s.t0 ? '–' + jam(s.t1) : '') + ' · ' + s.zona.slice(3), { direction: 'top', className: 'pl-tip' }).addTo(grp);
+      } else {
+        s.pts.forEach(p => {
+          garis.push([p[0], p[1]]); semua.push([p[0], p[1]]);
+          L.circleMarker([p[0], p[1]], { radius: 6, color: '#fff', weight: 2, fillColor: s.zona === 'luar' ? '#ea580c' : '#94a3b8', fillOpacity: 1 })
+            .bindTooltip(jam(p[2]), { permanent: nLuar <= 14, direction: 'top', className: 'pl-tip', offset: [0, -4] }).addTo(grp);
+        });
+      }
+    });
+    if (garis.length > 1 && !campur) L.polyline(garis, { color: '#2563eb', weight: 4, opacity: 0.7, lineJoin: 'round' }).addTo(grp);
+    grp.addTo(petaLiveMap); PL.jejakLayer = grp;
+    if (fokus) {
+      if (o.r && (PL.tgl || plHariIni_()) === plHariIni_()) semua.push([o.r.latitude, o.r.longitude]);
+      if (!semua.length && o.r) semua.push([o.r.latitude, o.r.longitude]);
+      if (semua.length) petaLiveMap.fitBounds(L.latLngBounds(semua).pad(0.2), { maxZoom: 17, paddingTopLeft: [40, 36], paddingBottomRight: [40, 64] });
+    }
+  }
+
+  function plRenderRiwayat_(hasil, nBaris, campur, tgl, o) {
+    const rw = document.getElementById('pl-riwayat'); if (!rw) return;
+    const jam = t => plJam_(new Date(t).toISOString());
+    const seg = hasil.seg, hariIni = tgl === plHariIni_();
+    const maju = document.getElementById('pl-tgl-maju'); if (maju) maju.disabled = tgl >= plHariIni_();
+    if (!nBaris || !seg.length) {
+      rw.innerHTML = '<div class="pl-rk info">📭 Tidak ada catatan lokasi pada ' + plTglTxt_(tgl) + '.' + (hariIni ? ' Posisi baru terekam setelah aplikasi dibuka hari ini.' : '') + '</div>';
+      return;
+    }
+    const titik = seg.filter(s => s.jenis === 'titik');
+    const luar = titik.filter(s => s.zona === 'luar');
+    const menitLuar = luar.reduce((a, s) => a + (s.t1 - s.t0) / 60000, 0);
+    let html = '';
+    if (campur) html += '<div class="pl-rk info">ℹ️ Data tanggal ini belum dibedakan per orang (jabatan ini dipegang lebih dari satu orang), jadi titik semua pemegang jabatan tampil bersama tanpa garis rute.</div>';
+    if (luar.length) html += '<div class="pl-rk keluar">🚶 Tercatat ' + luar.length + '× di luar hotel' + (menitLuar >= 1 ? ' · total ±' + plDurasi_(menitLuar) : '') + '</div>';
+    else html += '<div class="pl-rk aman">✅ Tidak tercatat keluar hotel pada ' + plTglTxt_(tgl) + '</div>';
+    html += '<div style="font-size:10.5px;color:#94a3b8;margin:0 2px 6px;">' + nBaris + ' titik · ' + jam(titik[0].t0) + '–' + jam(titik[titik.length - 1].t1) + ' WIB · terbaru di atas · ketuk baris untuk lihat di peta</div>';
+    const semua = seg.map((s, i) => ({ s, i })).concat(hasil.kejadian.map(k => ({ s: k, i: -1 })));
+    semua.sort((a, b) => (b.s.t0 - a.s.t0) || (b.i - a.i));
+    const idxAkhir = seg.length - 1;
+    semua.forEach(x => {
+      const s = x.s;
+      if (s.jenis === 'kejadian') {
+        html += '<div class="pl-seg kejadian"><div class="ik">' + (s.apa === 'logout' ? '🚪' : '🔴') + '</div><div><div class="jm">' + jam(s.t0) + '</div><div class="ket">' + (s.apa === 'logout' ? 'Logout dari aplikasi' : 'GPS dimatikan') + '</div></div></div>';
+        return;
+      }
+      if (s.jenis === 'jeda') {
+        html += '<div class="pl-seg jeda"><div class="ik">⏸</div><div><div class="jm">' + jam(s.t0) + ' – ' + jam(s.t1) + '</div><div class="ket">Tidak ada data lokasi ' + plDurasi_((s.t1 - s.t0) / 60000) + ' (aplikasi tertutup / HP tidak mengirim posisi)</div></div></div>';
+        return;
+      }
+      const berjalan = hariIni && x.i === idxAkhir && (Date.now() - s.t1) < 15 * 60000;
+      const rentang = s.t1 > s.t0 || berjalan ? jam(s.t0) + ' – ' + (berjalan ? 'sekarang' : jam(s.t1)) : jam(s.t0);
+      const lama = ((berjalan ? Date.now() : s.t1) - s.t0) / 60000;
+      let ik, ket, kls = ''; const tambahan = [];
+      if (s.zona.indexOf('di:') === 0) { ik = '🏨'; ket = 'Di ' + plEsc_(s.zona.slice(3)); }
+      else if (s.zona === 'luar') {
+        ik = '🚶'; kls = ' luar'; ket = 'DI LUAR HOTEL · terjauh ' + plJarakTxt_(s.maks) + ' dari ' + plEsc_(s.unitJauh);
+        const sblm = seg[x.i - 1], ssdh = seg[x.i + 1];
+        if (sblm && sblm.jenis === 'titik' && sblm.zona.indexOf('di:') === 0) tambahan.push('terakhir tercatat di hotel ' + jam(sblm.t1));
+        if (ssdh && ssdh.jenis === 'titik' && ssdh.zona.indexOf('di:') === 0) tambahan.push('tercatat kembali ' + jam(ssdh.t0));
+      }
+      else { ik = '📶'; ket = 'Lokasi perkiraan' + (s.akurasi ? ' (±' + plJarakTxt_(s.akurasi) + ')' : '') + ' · sekitar ' + plJarakTxt_(s.maks) + ' dari ' + plEsc_(s.unit) + ' — laptop / sinyal lemah'; }
+      html += '<div class="pl-seg' + kls + '" onclick="plKeSegmen(' + x.i + ')"><div class="ik">' + ik + '</div><div style="min-width:0;"><div class="jm">' + rentang + (lama >= 1 ? ' <span style="font-weight:600;color:#64748b;">· ' + plDurasi_(lama) + '</span>' : '') + '</div>'
+        + '<div class="ket">' + ket + '</div><div class="kcl">' + s.pts.length + ' titik' + (s.tugas ? ' · ' + s.tugas + ' tugas dikerjakan' : '') + (tambahan.length ? ' · ' + tambahan.join(' · ') : '') + '</div></div></div>';
+    });
+    const atas = document.getElementById('pl-detail') ? document.getElementById('pl-detail').scrollTop : 0;
+    rw.innerHTML = html;
+    if (document.getElementById('pl-detail')) document.getElementById('pl-detail').scrollTop = atas;
+  }
+  function plKeSegmen(i) {
+    const s = PL.segmen[i]; if (!s || !s.pts || !petaLiveMap) return;
+    const ll = s.pts.map(p => [p[0], p[1]]);
+    if (ll.length === 1 || s.zona.indexOf('di:') === 0) petaLiveMap.setView(s.pusat || ll[0], Math.max(petaLiveMap.getZoom(), 17));
+    else petaLiveMap.fitBounds(L.latLngBounds(ll).pad(0.2), { maxZoom: 17, paddingTopLeft: [40, 36], paddingBottomRight: [40, 64] });
   }
 
   // === Broadcast Message (COO only) ===
@@ -7472,6 +7965,8 @@
         async (pos) => {
           try {
             const today = new Date(Date.now() + 7*3600000).toISOString().split('T')[0];
+            const tandaOrg = await tandaOrang_();
+            window._lokTerkirim = { lat: pos.coords.latitude, lng: pos.coords.longitude, t: Date.now() };
             await fetch(SUPA_URL + '/rest/v1/location_log', {
               method: 'POST',
               headers: {
@@ -7483,13 +7978,14 @@
               body: JSON.stringify({
                 tanggal: today,
                 role: currentRole,
-                hotel: (tandaiUnitCorp_(currentHotel), currentRole === 'CRA Corporate' ? 'Corporate' : currentHotel),
+                hotel: (currentRole === 'CRA Corporate' ? 'Corporate' : currentHotel),
                 task_id: taskId,
                 status: status,
                 latitude: pos.coords.latitude,
                 longitude: pos.coords.longitude,
                 accuracy_m: pos.coords.accuracy ? Math.round(pos.coords.accuracy) : null,
-                recorded_at: new Date().toISOString()
+                recorded_at: new Date().toISOString(),
+                ...tandaOrg
               })
             });
           } catch (e) { console.error('logTaskLocation insert error:', e); }
@@ -23981,6 +24477,30 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
     try { const v = localStorage.getItem('corp_unit_' + today); if (v) return v; } catch (e) {}
     return 'Corporate';
   }
+  // Tanda orang pada catatan lokasi: potongan SHA-256 dari ID perangkat (ID asli tidak pernah dikirim ke location_log) + nama pemegang PIN.
+  // Dipakai Peta Live untuk membedakan dua orang yang memegang jabatan sama (mis. CRA).
+  const _devHashMemo = {};
+  async function idPerangkat_() {
+    try {
+      const id = getOrCreateDeviceId();
+      if (_devHashMemo[id]) return _devHashMemo[id];
+      const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(id));
+      const hex = Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('').slice(0, 12);
+      _devHashMemo[id] = hex;
+      return hex;
+    } catch (e) { return null; }
+  }
+  async function tandaOrang_() {
+    const o = {};
+    try { const p = await idPerangkat_(); if (p) o.perangkat = p; } catch (e) {}
+    try {
+      let n = '';
+      try { n = currentUserName || ''; } catch (e) {}
+      if (!n) { const ss = loadSessionToday(); n = (ss && ss.name) || ''; }
+      if (n && n.indexOf('(intip)') < 0) o.nama = n;
+    } catch (e) {}
+    return o;
+  }
   function tandaiUnitCorp_(hotel) {
     try { if (hotel) localStorage.setItem('corp_unit_' + new Date(Date.now() + 7*3600000).toISOString().split('T')[0], hotel); } catch (e) {}
   }
@@ -23993,6 +24513,7 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
       const body = { tanggal: today, role: r, hotel: hotelLokasi_(r, h), task_id: 'auto-tracking', status: jenis,
         latitude: window._lastLoc.lat, longitude: window._lastLoc.lng, recorded_at: new Date().toISOString() };
       const bat = await bacaBaterai(); if (bat !== null) body.baterai = bat;
+      Object.assign(body, await tandaOrang_());
       await fetch(SUPA_URL + '/rest/v1/location_log', { method: 'POST', keepalive: true,
         headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY, 'Content-Type': 'application/json' },
         body: JSON.stringify(body) });
@@ -24072,12 +24593,13 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
     });
   })();
 
-  async function sendLocationPing(lat, lng, source) {
+  async function sendLocationPing(lat, lng, source, akurasi) {
     if (window._peekMode) return;
     try {
       const sess = loadSessionToday();
       if (!sess || !sess.role || sess.role === 'COO' || sess.role === 'CEO') return;
       window._lastLoc = { lat, lng };
+      window._lokTerkirim = { lat, lng, t: Date.now() };
       const today = new Date(Date.now() + 7*3600000).toISOString().split('T')[0];
       await fetch(SUPA_URL + '/rest/v1/location_log', {
         method: 'POST',
@@ -24095,6 +24617,8 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
           latitude: lat,
           longitude: lng,
           recorded_at: new Date().toISOString(),
+          ...((akurasi != null && isFinite(akurasi)) ? { accuracy_m: Math.round(akurasi) } : {}),
+          ...(await tandaOrang_()),
           ...(await (async () => { const b = await bacaBaterai(); return b === null ? {} : { baterai: b }; })()),
         }),
       });
@@ -24102,6 +24626,82 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
       // Diam saja kalau gagal kirim — jangan ganggu pemakaian app
     }
   }
+
+  // Lokasi otomatis untuk pengguna BROWSER (iPhone / HP / laptop) dan cadangan bila pelacakan latar APK tidak mengirim:
+  // selama aplikasi TERBUKA di layar, posisi dikirim tiap ±5 menit, atau segera bila berpindah > 150 m.
+  const FG_PING_INTERVAL_MS = 5 * 60 * 1000;
+  let _fgCekJalan = false;
+  function pingLatarDepan() {
+    try {
+      if (window._peekMode || document.visibilityState !== 'visible' || !navigator.geolocation || _fgCekJalan) return;
+      const sess = loadSessionToday();
+      if (!sess || !sess.role || sess.role === 'COO' || sess.role === 'CEO') return;
+      const hp = diHP();
+      const tk = window._lokTerkirim;
+      const usia = tk ? Date.now() - tk.t : Infinity;
+      if ((!hp || bgGeoWatcherId) && usia < FG_PING_INTERVAL_MS) return;   // laptop / APK yang pelacakannya jalan: cukup tiap 5 menit
+      if (usia < 55000) return;
+      const jalan = () => {
+        _fgCekJalan = true;
+        navigator.geolocation.getCurrentPosition((pos) => {
+          _fgCekJalan = false;
+          const lat = pos.coords.latitude, lng = pos.coords.longitude, acc = pos.coords.accuracy;
+          const t = window._lokTerkirim;
+          const pindah = !!t && (acc == null || acc < 100) && plJarak_(t.lat, t.lng, lat, lng) > 150;
+          if (!t || Date.now() - t.t >= FG_PING_INTERVAL_MS || pindah) sendLocationPing(lat, lng, 'foreground', acc);
+        }, () => { _fgCekJalan = false; }, { enableHighAccuracy: hp, timeout: 20000, maximumAge: 10000 });
+      };
+      if (hp) { jalan(); return; }
+      // Laptop/PC: hanya bila izin lokasi SUDAH diberikan (tidak memunculkan permintaan izin baru)
+      if (navigator.permissions && navigator.permissions.query) {
+        navigator.permissions.query({ name: 'geolocation' }).then(p => { if (p && p.state === 'granted') jalan(); }).catch(() => {});
+      }
+    } catch (e) { _fgCekJalan = false; }
+  }
+  setInterval(pingLatarDepan, 60000);
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') setTimeout(pingLatarDepan, 1500); });
+  setTimeout(pingLatarDepan, 9000);
+
+  // Versi baru di server → dimuat otomatis, HANYA di layar pantauan (Dashboard COO/CEO, Peta Live, Location Tracking,
+  // Login History) dan hanya saat tidak ada isian / jendela terbuka. Layar isian tim TIDAK PERNAH dimuat ulang otomatis.
+  let _versiAwalVA = null;
+  function layarAmanVA_() {
+    if (window._peekMode) return false;
+    const a = document.querySelector('.screen.active'); const id = a ? a.id : '';
+    if (['screen-coo', 'screen-peta-live', 'screen-location-tracking', 'screen-login-history'].indexOf(id) < 0) return false;
+    const el = document.activeElement; if (el && /INPUT|TEXTAREA|SELECT/.test(el.tagName)) return false;
+    if (document.querySelector('.modal-overlay.show')) return false;
+    return true;
+  }
+  async function cekVersiBaruVA() {
+    try {
+      if (document.visibilityState !== 'visible') return;
+      const r = await fetch('/?cek=' + Date.now(), { method: 'HEAD', cache: 'no-store' });
+      if (!r.ok) return;
+      const v = r.headers.get('etag') || r.headers.get('last-modified'); if (!v) return;
+      if (!_versiAwalVA) { _versiAwalVA = v; return; }
+      if (v !== _versiAwalVA && layarAmanVA_()) {
+        try { const a = document.querySelector('.screen.active'); if (a && a.id === 'screen-peta-live') sessionStorage.setItem('va_buka_peta', '1'); } catch (e) {}
+        location.reload();
+      }
+    } catch (e) {}
+  }
+  setTimeout(cekVersiBaruVA, 5000);
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') setTimeout(cekVersiBaruVA, 800); });
+  setInterval(cekVersiBaruVA, 5 * 60 * 1000);
+  // Setelah dimuat ulang dari Peta Live → kembali ke Peta Live begitu Dashboard COO/CEO terbuka
+  (function () {
+    let mau = false;
+    try { mau = sessionStorage.getItem('va_buka_peta') === '1'; sessionStorage.removeItem('va_buka_peta'); } catch (e) {}
+    if (!mau) return;
+    let n = 0;
+    const t = setInterval(() => {
+      n++;
+      const a = document.querySelector('.screen.active');
+      if (a && a.id === 'screen-coo') { clearInterval(t); try { openPetaLive(); } catch (e) {} }
+      else if (n > 40) clearInterval(t);
+    }, 500);
+  })();
 
   async function startBackgroundGpsTracking() {
     if (window._peekMode) return;
@@ -24126,9 +24726,13 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
           if (location) {
             if (window._gpsOffDicatat) { window._gpsOffDicatat = false; tutupGpsGate(); }
             const now = Date.now();
-            if (now - lastBgPingAt < BG_PING_MIN_INTERVAL_MS) return; // belum waktunya, lewati
+            // Berpindah > 150 m dari titik terakhir yang terkirim (mis. keluar hotel) → kirim segera, tidak menunggu jadwal
+            const tk = window._lokTerkirim;
+            const pindah = !!tk && (location.accuracy == null || location.accuracy < 100)
+              && plJarak_(tk.lat, tk.lng, location.latitude, location.longitude) > 150;
+            if (pindah ? (now - lastBgPingAt < 20000) : (now - lastBgPingAt < BG_PING_MIN_INTERVAL_MS)) return; // belum waktunya, lewati
             lastBgPingAt = now;
-            sendLocationPing(location.latitude, location.longitude, 'background');
+            sendLocationPing(location.latitude, location.longitude, 'background', location.accuracy);
           }
         }
       );
