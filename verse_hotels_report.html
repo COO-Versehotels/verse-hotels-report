@@ -4240,14 +4240,77 @@
     });
   }
 
-  async function stampImageTimestamp(file) {
+  // Cap tanggal-jam WIB + hotel/role di pojok kiri atas foto (dipakai upload & salinan galeri)
+  function _gambarCapWaktu(ctx, lebar, waktuMs) {
+    const now = new Date((waktuMs || Date.now()) + 7 * 3600000); // WIB
+    const pad = n => String(n).padStart(2, '0');
+    const bulan = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+    const dateStr = pad(now.getUTCDate()) + ' ' + bulan[now.getUTCMonth()] + ' ' + now.getUTCFullYear();
+    const timeStr = pad(now.getUTCHours()) + ':' + pad(now.getUTCMinutes()) + ' WIB';
+    const line1 = dateStr + ', ' + timeStr;
+    const line2 = (currentHotel || '') + (currentRole ? ' — ' + currentRole : '');
+
+    const fontSize = Math.max(14, Math.round(lebar * 0.028));
+    const padding = Math.round(fontSize * 0.6);
+    ctx.font = 'bold ' + fontSize + 'px system-ui, sans-serif';
+    const w1 = ctx.measureText(line1).width;
+    ctx.font = fontSize * 0.8 + 'px system-ui, sans-serif';
+    const w2 = ctx.measureText(line2).width;
+    const boxW = Math.max(w1, w2) + padding * 2;
+    const boxH = fontSize * 2.4 + padding;
+
+    ctx.fillStyle = 'rgba(0,0,0,0.55)';
+    ctx.fillRect(0, 0, boxW, boxH);
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold ' + fontSize + 'px system-ui, sans-serif';
+    ctx.textBaseline = 'top';
+    ctx.fillText(line1, padding, padding * 0.6);
+    ctx.font = (fontSize * 0.8) + 'px system-ui, sans-serif';
+    ctx.fillStyle = '#e5e7eb';
+    ctx.fillText(line2, padding, padding * 0.6 + fontSize * 1.25);
+  }
+  // Satu langkah: baca foto (objectURL, tanpa base64) → kecilkan → cap waktu → kompres sampai ≤ maxKB.
+  // Dulu: cap di 1600 px → simpan JPEG 92% → dibaca ulang → kompres; langkah tengah itu yang paling makan waktu di HP.
+  // Ukuran, posisi & besar tulisan cap hasil akhirnya sama dengan cara lama.
+  async function prosesFotoUpload(file, maxKB = 150, maxW = 1024, waktuMs) {
+    if (!file || !file.type || !file.type.startsWith('image/')) return file;
+    const caraLama = async () => { try { return await compressImage(await stampImageTimestamp(file, waktuMs), maxKB, maxW); } catch (e) { return file; } };
+    try {
+      const img = await new Promise((res, rej) => {
+        const u = URL.createObjectURL(file); const im = new Image();
+        im.onload = () => { URL.revokeObjectURL(u); res(im); };
+        im.onerror = (e) => { URL.revokeObjectURL(u); rej(e); };
+        im.src = u;
+      });
+      let w = img.width, h = img.height;
+      if (!w || !h) return await caraLama();
+      if (w > maxW) { h = Math.round((h * maxW) / w); w = maxW; }
+      const c = document.createElement('canvas'); c.width = w; c.height = h;
+      const ctx = c.getContext('2d'); ctx.drawImage(img, 0, 0, w, h);
+      _gambarCapWaktu(ctx, w, waktuMs);
+      let q = 0.8, blob = null;
+      for (;;) {
+        blob = await new Promise(r => c.toBlob(r, 'image/jpeg', q));
+        if (!blob) break;
+        if (blob.size / 1024 > maxKB && q > 0.2) q -= 0.1; else break;
+      }
+      if (!blob) return await caraLama();
+      return new File([blob], file.name, { type: 'image/jpeg' });
+    } catch (e) { console.warn('prosesFotoUpload:', e); return await caraLama(); }
+  }
+
+  async function stampImageTimestamp(file, waktuMs) {
     if (!file.type || !file.type.startsWith('image/')) return file;
     try {
       return await new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = (e) => {
+        // Dibaca lewat objectURL — JAUH lebih ringan daripada FileReader→base64 (foto kamera 4–12 MB
+        // dulu jadi teks ±16 MB dulu sebelum digambar; itu yang bikin HP lambat).
+        const objUrl = URL.createObjectURL(file);
+        {
           const img = new Image();
           img.onload = () => {
+            URL.revokeObjectURL(objUrl);
             // Batasi ukuran kanvas — HP tertentu gagal render kanvas raksasa
             // (foto asli kamera bisa 4000x3000+) sehingga sebagian gambar jadi hitam.
             const MAX_DIM = 1600;
@@ -4269,44 +4332,16 @@
             const ctx = canvas.getContext('2d');
             ctx.drawImage(img, 0, 0, width, height);
 
-            const now = new Date(Date.now() + 7 * 3600000); // WIB
-            const pad = n => String(n).padStart(2, '0');
-            const bulan = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
-            const dateStr = pad(now.getUTCDate()) + ' ' + bulan[now.getUTCMonth()] + ' ' + now.getUTCFullYear();
-            const timeStr = pad(now.getUTCHours()) + ':' + pad(now.getUTCMinutes()) + ' WIB';
-            const line1 = dateStr + ', ' + timeStr;
-            const line2 = (currentHotel || '') + (currentRole ? ' — ' + currentRole : '');
-
-            const fontSize = Math.max(14, Math.round(canvas.width * 0.028));
-            const padding = Math.round(fontSize * 0.6);
-            ctx.font = 'bold ' + fontSize + 'px system-ui, sans-serif';
-            const w1 = ctx.measureText(line1).width;
-            ctx.font = fontSize * 0.8 + 'px system-ui, sans-serif';
-            const w2 = ctx.measureText(line2).width;
-            const boxW = Math.max(w1, w2) + padding * 2;
-            const boxH = fontSize * 2.4 + padding;
-
-            ctx.fillStyle = 'rgba(0,0,0,0.55)';
-            ctx.fillRect(0, 0, boxW, boxH);
-
-            ctx.fillStyle = '#ffffff';
-            ctx.font = 'bold ' + fontSize + 'px system-ui, sans-serif';
-            ctx.textBaseline = 'top';
-            ctx.fillText(line1, padding, padding * 0.6);
-            ctx.font = (fontSize * 0.8) + 'px system-ui, sans-serif';
-            ctx.fillStyle = '#e5e7eb';
-            ctx.fillText(line2, padding, padding * 0.6 + fontSize * 1.25);
+            _gambarCapWaktu(ctx, canvas.width, waktuMs);
 
             canvas.toBlob((blob) => {
               if (!blob) { resolve(file); return; }
               resolve(new File([blob], file.name, { type: 'image/jpeg' }));
             }, 'image/jpeg', 0.92);
           };
-          img.onerror = () => resolve(file);
-          img.src = e.target.result;
-        };
-        reader.onerror = () => resolve(file);
-        reader.readAsDataURL(file);
+          img.onerror = () => { URL.revokeObjectURL(objUrl); resolve(file); };
+          img.src = objUrl;
+        }
       });
     } catch (e) {
       console.error('Stamp timestamp error:', e);
@@ -4319,10 +4354,11 @@
     if (!file.type.startsWith('image/')) return file;
 
     return new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
+      const objUrl = URL.createObjectURL(file);
+      {
         const img = new Image();
         img.onload = () => {
+          URL.revokeObjectURL(objUrl);
           const canvas = document.createElement('canvas');
           let width = img.width;
           let height = img.height;
@@ -4354,9 +4390,9 @@
           };
           compress();
         };
-        img.src = e.target.result;
-      };
-      reader.readAsDataURL(file);
+        img.onerror = () => { URL.revokeObjectURL(objUrl); resolve(file); };
+        img.src = objUrl;
+      }
     });
   }
 
@@ -4951,7 +4987,7 @@
     if (!item) return;
     if (item.classList.contains('hod-task-item') && typeof hodFlushDraftNow === 'function') {
       hodFlushDraftNow(taskId); // format jawaban HOD berbeda — jangan ditimpa format umum
-      return;
+      return true;
     }
 
     const status = item.dataset.status || null;
@@ -5027,10 +5063,12 @@
       if (!saveRes.ok) {
         const err = await saveRes.text();
         console.error('Draft save error:', saveRes.status, err);
+        return false;
       } else {
         console.log('Draft saved OK:', taskId, 'status:', status, 'fileUrls:', fileUrls ? 'yes' : 'null');
+        return true;
       }
-    } catch(e) { console.error('Auto-save error:', e); }
+    } catch(e) { console.error('Auto-save error:', e); return false; }
   }
 
   // Load draft dari Supabase saat masuk tasklist
@@ -5192,6 +5230,7 @@
 
       window._isRestoringDraft = false;
       if (restoredCount > 0) showToast('📂 Draft dimuat (' + restoredCount + ' task)');
+      setTimeout(() => { try { antreanLanjut(); } catch(e) {} }, 300);
     } catch(e) {
       window._isRestoringDraft = false;
       console.error('Load draft error:', e);
@@ -8113,6 +8152,224 @@
     }
   }
 
+  // =============================================================
+  // ANTREAN UPLOAD FOTO — tahan pindah WiFi ↔ data seluler.
+  // Tiap foto disimpan dulu di HP (IndexedDB), lalu diupload dengan batas waktu + coba ulang otomatis
+  // + menunggu sinyal. Kalau app tertutup, antrean dilanjutkan saat app dibuka lagi.
+  // =============================================================
+  const _UPL_URL = 'https://api.cloudinary.com/v1_1/bojm1fah/auto/upload';
+  const _tidur = (ms) => new Promise(r => setTimeout(r, ms));
+  function _tungguOnline(maks) {
+    if (navigator.onLine !== false) return Promise.resolve();
+    return new Promise(res => {
+      const t = setTimeout(selesai, maks || 60000);
+      function selesai() { clearTimeout(t); window.removeEventListener('online', selesai); res(); }
+      window.addEventListener('online', selesai);
+    });
+  }
+  // Upload satu file ke Cloudinary: batas waktu (sesuai ukuran) + coba ulang s/d 5x + tunggu sinyal.
+  // Public ID yang sama dipakai di setiap percobaan, jadi kalau percobaan sebelumnya ternyata sampai, tidak dobel.
+  async function uploadCloudinaryAman(file, publicId, onStatus) {
+    const JEDA = window.__uplJeda || [1500, 4000, 8000, 15000];
+    let galat = null;
+    for (let i = 0; i < 5; i++) {
+      if (navigator.onLine === false) { if (onStatus) onStatus('sinyal', i); await _tungguOnline(60000); }
+      const ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+      const batas = Math.max(60000, Math.round(((file && file.size) || 0) / 30000) * 1000);
+      const t = ctrl ? setTimeout(() => ctrl.abort(), batas) : null;
+      try {
+        const fd = new FormData();
+        fd.append('file', file);
+        fd.append('upload_preset', 'verse_hotels');
+        if (publicId) fd.append('public_id', publicId);
+        const r = await fetch(_UPL_URL, { method: 'POST', body: fd, signal: ctrl ? ctrl.signal : undefined });
+        if (t) clearTimeout(t);
+        if (r.ok) return await r.json();
+        let pesan = r.statusText || ('HTTP ' + r.status);
+        try { const j = await r.json(); pesan = (j && j.error && j.error.message) || pesan; } catch(e) {}
+        if (r.status >= 400 && r.status < 500 && r.status !== 408 && r.status !== 429) { const e = new Error(pesan); e.permanen = true; throw e; }
+        galat = new Error(pesan);
+      } catch (e) {
+        if (t) clearTimeout(t);
+        if (e && e.permanen) throw e;
+        galat = e;
+      }
+      if (i < 4) { if (onStatus) onStatus(navigator.onLine === false ? 'sinyal' : 'ulang', i + 1); await _tidur(JEDA[i]); }
+    }
+    throw galat || new Error('Upload gagal');
+  }
+  // --- penyimpanan antrean di HP (IndexedDB) ---
+  let _antreanDB = null;
+  function _antreanBuka() {
+    if (_antreanDB) return _antreanDB;
+    _antreanDB = new Promise((res, rej) => {
+      try {
+        const r = indexedDB.open('verse_upload', 1);
+        r.onupgradeneeded = () => { r.result.createObjectStore('antrean', { keyPath: 'qid' }); };
+        r.onsuccess = () => res(r.result);
+        r.onerror = () => rej(r.error);
+      } catch (e) { rej(e); }
+    });
+    _antreanDB.catch(() => { _antreanDB = null; });
+    return _antreanDB;
+  }
+  async function _antreanOp(mode, fn) {
+    try {
+      const db = await _antreanBuka();
+      return await new Promise((res, rej) => {
+        const tx = db.transaction('antrean', mode); const req = fn(tx.objectStore('antrean'));
+        tx.oncomplete = () => res(req ? req.result : undefined);
+        tx.onerror = () => rej(tx.error); tx.onabort = () => rej(tx.error);
+      });
+    } catch (e) { console.warn('antrean upload:', e); return undefined; }
+  }
+  const _jobUntukDisimpan = (j) => ({ qid: j.qid, taskId: j.taskId, role: j.role, hotel: j.hotel, tanggal: j.tanggal, name: j.name, type: j.type, publicId: j.publicId, blob: j.blob, url: j.url || null, galeriNama: j.galeriNama || null, dibuat: j.dibuat });
+  const antreanSimpan = (j) => _antreanOp('readwrite', st => st.put(_jobUntukDisimpan(j)));
+  const antreanHapus = (qid) => _antreanOp('readwrite', st => st.delete(qid));
+  const antreanSemua = () => _antreanOp('readonly', st => st.getAll());
+  // --- status di layar ---
+  const _uplJob = {};           // qid → job
+  const _uplRunner = { jalan: 0, antri: [] };
+  const _hariIniTL = () => new Date(Date.now() + 7*3600000).toISOString().split('T')[0];
+  function _jobTugasIni(taskId) { return Object.values(_uplJob).filter(j => j.taskId === taskId && j.role === currentRole && j.hotel === currentHotel); }
+  function _jobBelumSelesai() { return Object.values(_uplJob).filter(j => j.role === currentRole && j.hotel === currentHotel); }
+  function _segarkanJob(job) { if (job && job.role === currentRole && job.hotel === currentHotel) renderFilePreview(job.taskId); }
+  function _jadwalkanUpload(job) {
+    if (_uplRunner.antri.includes(job) || job.berjalan) return;
+    _uplRunner.antri.push(job); _pompaUpload();
+  }
+  function _pompaUpload() {
+    while (_uplRunner.jalan < 2 && _uplRunner.antri.length) {
+      const job = _uplRunner.antri.shift(); _uplRunner.jalan++; job.berjalan = true;
+      _kerjakanJob(job).finally(() => { job.berjalan = false; _uplRunner.jalan--; if (_uplJob[job.qid]) _segarkanJob(job); _pompaUpload(); });
+    }
+  }
+  async function _kerjakanJob(job) {
+    job.status = 'proses'; job.pesan = ''; _segarkanJob(job);
+    try {
+      if (!job.url) {
+        const d = await uploadCloudinaryAman(job.blob, job.publicId, (st, n) => { job.status = st; job.coba = n; _segarkanJob(job); });
+        job.url = d.secure_url;
+        await antreanSimpan(job); // URL dicatat dulu: kalau simpan draf gagal, foto tidak diupload ulang
+      }
+      job.status = 'simpan'; _segarkanJob(job);
+      const ok = await _pasangKeDraft(job);
+      if (!ok) throw new Error('Foto sudah terupload, tapi belum tersimpan ke draft');
+      await antreanHapus(job.qid);
+      delete _uplJob[job.qid];
+      if (job.thumb) { try { URL.revokeObjectURL(job.thumb); } catch(e) {} }
+      if (job.role === currentRole && job.hotel === currentHotel) _areaSesudahUpload(job.taskId);
+      _galeriSesudahUpload(job);
+    } catch (e) {
+      job.status = 'gagal'; job.pesan = (e && e.permanen) ? String(e.message || '').slice(0, 60) : '';
+      _segarkanJob(job);
+      _galeriSesudahUpload(job); // foto kamera tetap disimpan ke galeri walau upload belum berhasil
+      if (job.role === currentRole && job.hotel === currentHotel) _areaSesudahUpload(job.taskId);
+    }
+  }
+  async function _galeriSesudahUpload(job) {
+    if (job.galeriSelesai) return; job.galeriSelesai = true;
+    let g = job.galeri;
+    // Salinan galeri (1600 px, cap jam yang SAMA dengan foto upload) dibuat sesudah upload — tidak berebut tenaga HP
+    if (!g && job.galeriSumber) { try { g = await stampImageTimestamp(job.galeriSumber, job.galeriWaktu); if (g === job.galeriSumber) g = null; } catch(e) { g = null; } }
+    job.galeri = null; job.galeriSumber = null;
+    if (!g) return;
+    try { if (job.url) _rememberGalleryUri(job.url, g.name); } catch(e) {}
+    try { triggerAutoDownload(g); } catch(e) {}
+  }
+  function _syncTaskFiles(taskId) {
+    taskFiles[taskId] = (taskFileUrls[taskId] || []).map(u => {
+      const name = typeof u === 'string' ? u.split('/').pop() : (u.name || 'file');
+      const type = typeof u === 'string' ? 'image/jpeg' : (u.type || 'image/jpeg');
+      try { return new File(['x'], name, { type }); } catch(e) { return { name, type }; }
+    });
+  }
+  async function _pasangKeDraft(job) {
+    const fileObj = { name: job.name, url: job.url, type: job.type };
+    if (job.role === currentRole && job.hotel === currentHotel && job.tanggal === _hariIniTL() && document.getElementById(job.taskId)) {
+      if (!taskFileUrls[job.taskId]) taskFileUrls[job.taskId] = [];
+      if (!taskFileUrls[job.taskId].some(u => (typeof u === 'string' ? u : u.url) === job.url)) taskFileUrls[job.taskId].push(fileObj);
+      _syncTaskFiles(job.taskId);
+      for (let i = 0; i < 5; i++) {
+        if (await saveDraftNow(job.taskId)) return true;
+        await _tungguOnline(30000); await _tidur(2000 * (i + 1));
+      }
+      return false;
+    }
+    // Sudah ganti role/hotel/hari: tambahkan langsung ke draft milik foto itu
+    return await _tambahUrlKeDraftLangsung(job, fileObj);
+  }
+  async function _tambahUrlKeDraftLangsung(job, fileObj) {
+    const H = { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY, 'Content-Type': 'application/json' };
+    const q = 'tanggal=eq.' + job.tanggal + '&role=eq.' + encodeURIComponent(job.role) + '&hotel=eq.' + encodeURIComponent(job.hotel) + '&task_id=eq.' + encodeURIComponent(job.taskId);
+    for (let i = 0; i < 4; i++) {
+      try {
+        const r = await fetch(SUPA_URL + '/rest/v1/draft_tasklist?' + q + '&select=id,file_urls', { headers: H });
+        if (!r.ok) throw new Error('baca draft');
+        const rows = await r.json();
+        let urls = []; try { urls = rows[0] && rows[0].file_urls ? JSON.parse(rows[0].file_urls) : []; } catch(e) { urls = []; }
+        if (!urls.some(u => (typeof u === 'string' ? u : u.url) === job.url)) urls.push(fileObj);
+        const body = JSON.stringify({ file_urls: JSON.stringify(urls), updated_at: new Date().toISOString() });
+        const w = rows.length
+          ? await fetch(SUPA_URL + '/rest/v1/draft_tasklist?' + q, { method: 'PATCH', headers: H, body })
+          : await fetch(SUPA_URL + '/rest/v1/draft_tasklist', { method: 'POST', headers: H, body: JSON.stringify({ tanggal: job.tanggal, role: job.role, hotel: job.hotel, task_id: job.taskId, status: null, keterangan: null, file_urls: JSON.stringify(urls), updated_at: new Date().toISOString() }) });
+        if (w.ok) return true;
+      } catch (e) {}
+      await _tungguOnline(30000); await _tidur(2000 * (i + 1));
+    }
+    return false;
+  }
+  function _areaSesudahUpload(taskId) {
+    const area = document.getElementById(taskId + '-upload-area');
+    const nUrl = (taskFileUrls[taskId] || []).length;
+    const pending = _jobTugasIni(taskId);
+    renderFilePreview(taskId);
+    if (!area) return;
+    const strong = area.querySelector('.task-upload-text strong');
+    const span = area.querySelector('.task-upload-text span');
+    if (nUrl > 0) {
+      showTimestamp(taskId, 'upload');
+      area.classList.add('has-file'); area.classList.remove('required-alert');
+      if (strong) strong.textContent = _uploadAreaDoneText(area, taskFiles[taskId].length);
+      if (span) span.textContent = pending.length ? ('⏳ ' + pending.length + ' foto lagi masih diproses') : _uploadAreaDoneSub(area, taskFiles[taskId].map(f => f.name).join(', ').substring(0, 40) + (taskFiles[taskId].length > 1 ? '...' : ''));
+    } else if (pending.length) {
+      const gagal = pending.filter(j => j.status === 'gagal').length;
+      area.classList.remove('has-file');
+      if (gagal) {
+        area.classList.add('required-alert');
+        if (strong) strong.textContent = '⚠️ Foto belum terkirim' + (area.dataset.label ? ' — ' + area.dataset.label : '');
+        if (span) span.textContent = 'Foto aman tersimpan di HP — ketuk "Coba lagi" di bawah';
+      } else {
+        area.classList.remove('required-alert');
+        if (strong) strong.textContent = '⏳ Mengupload ' + pending.length + ' foto…';
+        if (span) span.textContent = 'Foto sudah tersimpan di HP, jangan khawatir pindah jaringan';
+      }
+    }
+  }
+  function ulangUpload(qid) { const j = _uplJob[qid]; if (j && !j.berjalan) _jadwalkanUpload(j); }
+  async function batalUpload(qid) {
+    const j = _uplJob[qid]; if (!j) return;
+    if (j.berjalan) { showToast('⏳ Foto sedang dikirim, tunggu sebentar'); return; }
+    if (!confirm('Hapus foto yang belum terkirim ini?')) return;
+    delete _uplJob[qid]; await antreanHapus(qid);
+    if (j.thumb) { try { URL.revokeObjectURL(j.thumb); } catch(e) {} }
+    _areaSesudahUpload(j.taskId);
+  }
+  // Lanjutkan antrean yang tersisa (app dibuka lagi / sinyal kembali)
+  async function antreanLanjut() {
+    const semua = (await antreanSemua()) || [];
+    semua.forEach(r => {
+      if (_uplJob[r.qid]) return;
+      const job = Object.assign({}, r, { status: 'proses' });
+      try { if (job.blob && (job.type || '').startsWith('image/')) job.thumb = URL.createObjectURL(job.blob); } catch(e) {}
+      _uplJob[job.qid] = job;
+      _segarkanJob(job);
+    });
+    Object.values(_uplJob).forEach(j => { if (!j.berjalan) _jadwalkanUpload(j); });
+  }
+  window.addEventListener('online', () => { Object.values(_uplJob).forEach(j => { if (!j.berjalan && j.status === 'gagal') _jadwalkanUpload(j); }); });
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') Object.values(_uplJob).forEach(j => { if (!j.berjalan && j.status === 'gagal') _jadwalkanUpload(j); }); });
+
   async function handleFileUpload(input, taskId, isCamera) {
     const files = Array.from(input.files);
     if (!files.length) return;
@@ -8122,109 +8379,40 @@
     const isForcedCamera = input.hasAttribute('capture');
 
     if (!taskFiles[taskId]) taskFiles[taskId] = [];
-    const remaining = 10 - taskFiles[taskId].length;
-    if (remaining <= 0) { showToast('Maksimal 10 file per task!'); return; }
+    const remaining = 10 - taskFiles[taskId].length - _jobTugasIni(taskId).length;
+    if (remaining <= 0) { showToast('Maksimal 10 file per task!'); try { input.value = ''; } catch(e) {} return; }
     const toAdd = files.slice(0, remaining);
     if (files.length > remaining) showToast('Hanya ' + remaining + ' file lagi yang bisa ditambahkan');
+    else showToast('⏳ Memproses ' + toAdd.length + ' foto...');
 
-    showToast('⏳ Mengupload file...');
-
-    // Upload ke Supabase Storage
-    const today = new Date(Date.now() + 7*3600000).toISOString().split('T')[0];
-    const uploadedUrls = [];
-
+    const today = _hariIniTL();
     for (const file of toAdd) {
-      // Foto (dari kamera maupun galeri) → cap timestamp+hotel/role dulu, baru kompres
-      // (stampImageTimestamp otomatis skip file non-gambar, misal PDF/Word/Video)
-      const stamped = await stampImageTimestamp(file);
-      // Auto-simpan ke HP (tanpa perlu tap apapun) — cuma untuk foto Wajib Kamera
-      if (isForcedCamera) {
-        if (stamped !== file) {
-          triggerAutoDownload(stamped);
-        } else if (file.type && file.type.startsWith('video/')) {
-          triggerAutoDownload(file);
-        }
-      }
-      // Kompres foto sebelum upload (video dilewati apa adanya)
-      const processedFile = await compressImage(stamped, 150, 1024);
+      // Foto (dari kamera maupun galeri) → cap timestamp+hotel/role + kompres dalam SATU langkah
+      // (file non-gambar seperti PDF/Word/Video dikirim apa adanya)
+      const waktu = Date.now();
+      const processedFile = await prosesFotoUpload(file, 150, 1024, waktu);
       const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
       // Bersihkan karakter yang TIDAK diterima Cloudinary di public_id (misal "&" di "F&B Manager")
-      // — bukan cuma spasi, semua karakter selain huruf/angka/titik/underscore/strip harus diganti.
       const safeRole = currentRole.replace(/[^a-zA-Z0-9]+/g, '_');
       const safeHotel = currentHotel.replace(/[^a-zA-Z0-9]+/g, '_');
       const publicId = today + '/' + safeRole + '/' + safeHotel + '/' + taskId + '/' + Date.now() + '_' + safeName.replace(/\.[^.]+$/, '');
-      try {
-        // Upload ke Cloudinary (unsigned) — menggantikan Supabase Storage supaya tidak numpuk kuota lagi
-        const formData = new FormData();
-        formData.append('file', processedFile);
-        formData.append('upload_preset', 'verse_hotels');
-        formData.append('public_id', publicId);
-        const response = await fetch('https://api.cloudinary.com/v1_1/bojm1fah/auto/upload', {
-          method: 'POST',
-          body: formData
-        });
-        console.log('Upload response status:', response.status);
-        if (response.ok) {
-          const data = await response.json();
-          console.log('Upload success, URL:', data.secure_url);
-          uploadedUrls.push({ name: file.name, url: data.secure_url, type: file.type });
-          try { _rememberGalleryUri(data.secure_url, stamped && stamped.name); } catch(e) {}
-          // taskFiles di-sync dari taskFileUrls setelah loop
-        } else {
-          let errMsg = response.statusText;
-          try { const errJson = await response.json(); errMsg = errJson?.error?.message || errMsg; } catch(e) {}
-          console.error('Upload failed:', response.status, errMsg);
-          showToast('❌ Gagal upload: ' + errMsg.substring(0,50));
-          // file push skipped - sync from taskFileUrls
-        }
-      } catch(e) {
-        console.error('Upload exception:', e);
-        // file push skipped - sync from taskFileUrls
-      }
+      const job = {
+        qid: 'q' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
+        taskId, role: currentRole, hotel: currentHotel, tanggal: today,
+        name: file.name, type: file.type, publicId, blob: processedFile, url: null, dibuat: Date.now(),
+        status: 'proses',
+        // Simpan ke galeri HP (khusus "Wajib Foto Langsung") dilakukan SESUDAH upload, supaya tidak berebut tenaga HP
+        galeri: (isForcedCamera && (file.type || '').startsWith('video/')) ? file : null,
+        galeriSumber: (isForcedCamera && (file.type || '').startsWith('image/')) ? file : null, galeriWaktu: waktu,
+      };
+      job.galeriNama = (job.galeri || job.galeriSumber) ? file.name : null;
+      try { if ((processedFile.type || '').startsWith('image/')) job.thumb = URL.createObjectURL(processedFile); } catch(e) {}
+      _uplJob[job.qid] = job;
+      await antreanSimpan(job);           // aman di HP dulu, baru dikirim
+      _areaSesudahUpload(taskId);
+      _jadwalkanUpload(job);              // langsung jalan (maks 2 foto sekaligus) sambil foto berikutnya diproses
     }
-
-    // Simpan URL ke storage dan draft
-    if (uploadedUrls.length > 0) {
-      if (!taskFileUrls[taskId]) taskFileUrls[taskId] = [];
-      taskFileUrls[taskId].push(...uploadedUrls);
-      // Sync taskFiles dari taskFileUrls (SATU-SATUNYA sumber, supaya tidak dobel dihitung)
-      taskFiles[taskId] = taskFileUrls[taskId].map(u => {
-        try { return new File(['x'], u.name, { type: u.type || 'image/jpeg' }); } catch(e) { return null; }
-      }).filter(Boolean);
-      // Simpan ke draft database dengan file_urls terbaru
-      console.log('Saving draft after upload, fileUrls:', taskFileUrls[taskId].length);
-      await saveDraftNow(taskId);
-      console.log('Draft saved after upload');
-    }
-
-    showToast(uploadedUrls.length + '/' + toAdd.length + ' file berhasil diupload!');
-    renderFilePreview(taskId);
-
-    const area = document.getElementById(taskId + '-upload-area');
-    if (uploadedUrls.length > 0) {
-      showTimestamp(taskId, 'upload');
-      // Mark upload area as has-file — CUMA kalau beneran ada yang berhasil diupload
-      if (area) {
-        area.classList.add('has-file');
-        area.classList.remove('required-alert');
-        const strong = area.querySelector('.task-upload-text strong');
-        const span = area.querySelector('.task-upload-text span');
-        if (strong) strong.textContent = _uploadAreaDoneText(area, taskFiles[taskId].length);
-        if (span) span.textContent = _uploadAreaDoneSub(area, taskFiles[taskId].map(f => f.name).join(', ').substring(0, 40) + (taskFiles[taskId].length > 1 ? '...' : ''));
-      }
-    } else {
-      // GAGAL total — jangan ditandai sukses. Tampilkan status gagal yang jelas & tetap kelihatan
-      // (bukan cuma toast sekilas) supaya user tahu harus coba upload ulang.
-      showToast('❌ Upload gagal, coba lagi (cek koneksi internet)');
-      if (area) {
-        area.classList.remove('has-file');
-        area.classList.add('required-alert');
-        const strong = area.querySelector('.task-upload-text strong');
-        const span = area.querySelector('.task-upload-text span');
-        if (strong) strong.textContent = '❌ Upload gagal' + (area.dataset.label ? ' — ' + area.dataset.label : '');
-        if (span) span.textContent = 'Coba lagi — cek koneksi internet';
-      }
-    }
+    try { input.value = ''; } catch(e) {}
   }
 
   function renderFilePreview(taskId) {
@@ -8235,6 +8423,20 @@
     // Prioritas: pakai taskFileUrls (ada URL storage) jika ada
     const urls = taskFileUrls[taskId];
     const files = taskFiles[taskId];
+    const antre = (typeof _jobTugasIni === 'function') ? _jobTugasIni(taskId) : [];
+    const htmlAntre = antre.map(j => {
+      const st = j.status === 'gagal' ? ('⚠️ Belum terkirim' + (j.pesan ? ' (' + j.pesan + ')' : ' — tersimpan di HP'))
+        : j.status === 'sinyal' ? '📶 Menunggu sinyal…'
+        : j.status === 'ulang' ? ('🔁 Koneksi putus, mencoba lagi (' + (j.coba || 1) + '/4)…')
+        : j.status === 'simpan' ? '💾 Menyimpan…' : '⏳ Mengupload…';
+      const warna = j.status === 'gagal' ? '#b91c1c' : (j.status === 'ulang' || j.status === 'sinyal') ? '#b45309' : 'var(--navy)';
+      return '<div class="file-preview-item" data-qid="' + j.qid + '" style="display:flex;align-items:center;gap:8px;padding:6px 8px;max-width:100%;width:100%;box-sizing:border-box;border-color:' + (j.status === 'gagal' ? '#fecaca' : '#e2e8f0') + ';background:' + (j.status === 'gagal' ? '#fef2f2' : '#f8fafc') + ';">' +
+        (j.thumb ? '<img src="' + j.thumb + '" style="width:44px;height:44px;object-fit:cover;border-radius:6px;border:1px dashed #94a3b8;opacity:.75;display:block;flex-shrink:0;">' : '<span style="font-size:20px;">📄</span>') +
+        '<span style="font-size:12px;font-weight:600;color:' + warna + ';flex:1;min-width:0;line-height:1.3;white-space:normal;">' + st + '</span>' +
+        (j.status === 'gagal' && !j.berjalan ? '<button onclick="ulangUpload(\'' + j.qid + '\')" style="font-size:12px;font-weight:700;padding:8px 10px;min-height:36px;white-space:nowrap;border-radius:8px;border:1px solid #b91c1c;background:#fff;color:#b91c1c;cursor:pointer;flex-shrink:0;">Coba lagi</button>' : '') +
+        (!j.berjalan ? '<button class="file-remove-btn" onclick="batalUpload(\'' + j.qid + '\')">🗑️</button>' : '') +
+        '</div>';
+    }).join('');
 
     if (urls && urls.length > 0) {
       list.innerHTML = urls.map((f, i) => {
@@ -8249,7 +8451,9 @@
           '<a href="' + fileUrl + '" target="_blank" style="font-size:12px;color:var(--navy);text-decoration:none;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + fileName + '</a>' +
           '<button class="file-remove-btn" onclick="removeFile(\'' + taskId + '\',' + i + ')">🗑️</button>' +
           '</div>';
-      }).join('') + '<div style="font-size:10px;color:var(--gray-400);margin-top:4px;font-weight:600;">🕐 Upload pukul ' + time + ' WIB</div>';
+      }).join('') + htmlAntre + '<div style="font-size:10px;color:var(--gray-400);margin-top:4px;font-weight:600;">🕐 Upload pukul ' + time + ' WIB</div>';
+    } else if (antre.length > 0) {
+      list.innerHTML = htmlAntre;
     } else if (files && files.length > 0) {
       list.innerHTML = files.map((f, i) => {
         const ext = (f.name || '').split('.').pop().toUpperCase();
@@ -8270,7 +8474,7 @@
       const strong = area.querySelector('.task-upload-text strong');
       if (strong) strong.textContent = _uploadAreaDoneText(area, totalFiles);
     }
-    if (wrap && totalFiles > 0) wrap.classList.add('show');
+    if (wrap && (totalFiles > 0 || antre.length > 0)) wrap.classList.add('show');
   }
 
   function removeFile(taskId, idx) {
@@ -8315,6 +8519,15 @@
   }
 
   function validateAndSubmit() {
+    const _belum = (typeof _jobBelumSelesai === 'function') ? _jobBelumSelesai() : [];
+    if (_belum.length) {
+      const gagal = _belum.filter(j => j.status === 'gagal').length;
+      showToast(gagal ? ('⚠️ ' + gagal + ' foto belum terkirim. Ketuk "Coba lagi" di task-nya, atau hapus fotonya.') : ('⏳ Tunggu sebentar, ' + _belum.length + ' foto masih diupload.'));
+      const el = document.querySelector('.file-preview-item[data-qid="' + _belum[0].qid + '"]');
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      _belum.forEach(j => { if (!j.berjalan && j.status === 'gagal') _jadwalkanUpload(j); });
+      return;
+    }
     const taskItems = document.querySelectorAll('#tasklist-content .task-item');
     let errors = [];
     let firstErrorEl = null;
@@ -27665,9 +27878,10 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
     event.target.value = ''; // reset input
     for (const f of files) {
       try {
-        const stamped = await stampImageTimestamp(f);
-        if (stamped !== f) triggerAutoDownload(stamped);
-        const compressed = await compressImage(stamped, 200, 1280);
+        const waktu = Date.now();
+        const compressed = await prosesFotoUpload(f, 200, 1280, waktu);
+        // salinan galeri dibuat sebentar kemudian, supaya foto berikutnya tidak menunggu
+        if ((f.type || '').startsWith('image/')) setTimeout(() => { stampImageTimestamp(f, waktu).then(st => { if (st !== f) triggerAutoDownload(st); }).catch(() => {}); }, 1200);
         const dataUrl = await new Promise((resolve) => {
           const reader = new FileReader();
           reader.onload = (e) => resolve(e.target.result);
@@ -27734,9 +27948,10 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
     for (const f of files) {
       if (rcDefectFormPhotos.length >= 5) { showToast('Maksimal 5 foto per defect'); break; }
       try {
-        const stamped = await stampImageTimestamp(f);
-        if (stamped !== f) triggerAutoDownload(stamped);
-        const compressed = await compressImage(stamped, 200, 1280);
+        const waktu = Date.now();
+        const compressed = await prosesFotoUpload(f, 200, 1280, waktu);
+        // salinan galeri dibuat sebentar kemudian, supaya foto berikutnya tidak menunggu
+        if ((f.type || '').startsWith('image/')) setTimeout(() => { stampImageTimestamp(f, waktu).then(st => { if (st !== f) triggerAutoDownload(st); }).catch(() => {}); }, 1200);
         const dataUrl = await new Promise((resolve) => {
           const reader = new FileReader();
           reader.onload = (e) => resolve(e.target.result);
@@ -27861,19 +28076,18 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
         const photos = rcFormPhotos[area] || [];
         for (let i = 0; i < photos.length; i++) {
           const p = photos[i];
-          const publicId = 'room-check/' + rcCurrentHotel.replace(/[^a-zA-Z0-9]/g, '_') + '/' + rcCurrentMonthKey + '/rc_' + area + '_' + Date.now() + '_' + i;
-          const formData = new FormData();
-          formData.append('file', p.file);
-          formData.append('upload_preset', 'verse_hotels');
-          formData.append('public_id', publicId);
-          const resp = await fetch('https://api.cloudinary.com/v1_1/bojm1fah/auto/upload', { method: 'POST', body: formData });
-          if (!resp.ok) {
-            let errMsg = resp.statusText;
-            try { const errJson = await resp.json(); errMsg = errJson?.error?.message || errMsg; } catch(e) {}
-            throw new Error('Upload foto gagal: ' + errMsg);
+          // Sudah terkirim di percobaan Simpan sebelumnya → pakai lagi (tidak upload dobel)
+          if (!p.url) {
+            if (!p.publicId) p.publicId = 'room-check/' + rcCurrentHotel.replace(/[^a-zA-Z0-9]/g, '_') + '/' + rcCurrentMonthKey + '/rc_' + area + '_' + Date.now() + '_' + i;
+            saveBtn.textContent = '⏳ Upload foto ' + area + '...';
+            try {
+              const data = await uploadCloudinaryAman(p.file, p.publicId, (st) => { saveBtn.textContent = st === 'sinyal' ? '📶 Menunggu sinyal...' : '🔁 Mencoba lagi...'; });
+              p.url = data.secure_url;
+            } catch (upErr) {
+              throw new Error('Upload foto gagal (' + (upErr.message || 'koneksi') + '). Foto masih ada di form — ketuk Simpan lagi.');
+            }
           }
-          const data = await resp.json();
-          photoUrls.push({ url: data.secure_url, area: area });
+          photoUrls.push({ url: p.url, area: area });
         }
       }
 
@@ -27882,22 +28096,24 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
       const userEmail = rcGetUserEmail();
       const todayStr = new Date(Date.now() + 7*3600000).toISOString().split('T')[0];
       for (const d of rcFormDefects) {
-        // Upload defect photos terlebih dahulu
+        // Defect ini sudah tersimpan di percobaan Simpan sebelumnya → jangan dibuat dobel
+        if (d.savedId) { defectIds.push(d.savedId); continue; }
+        // Upload defect photos terlebih dahulu (dulu: foto yang gagal dilewati diam-diam)
         const defectPhotoUrls = [];
         if (d.photos && d.photos.length > 0) {
           for (let pi = 0; pi < d.photos.length; pi++) {
             const ph = d.photos[pi];
-            try {
-              const publicId = 'room-check/' + rcCurrentHotel.replace(/[^a-zA-Z0-9]/g, '_') + '/' + rcCurrentMonthKey + '/defect_' + Date.now() + '_' + pi;
-              const formData = new FormData();
-              formData.append('file', ph.file);
-              formData.append('upload_preset', 'verse_hotels');
-              formData.append('public_id', publicId);
-              const resp = await fetch('https://api.cloudinary.com/v1_1/bojm1fah/auto/upload', { method: 'POST', body: formData });
-              if (!resp.ok) { console.error('Defect photo upload error:', resp.statusText); continue; }
-              const data = await resp.json();
-              defectPhotoUrls.push(data.secure_url);
-            } catch(uperr) { console.error('Defect photo error:', uperr); }
+            if (!ph.url) {
+              if (!ph.publicId) ph.publicId = 'room-check/' + rcCurrentHotel.replace(/[^a-zA-Z0-9]/g, '_') + '/' + rcCurrentMonthKey + '/defect_' + Date.now() + '_' + pi;
+              saveBtn.textContent = '⏳ Upload foto defect...';
+              try {
+                const data = await uploadCloudinaryAman(ph.file, ph.publicId, (st) => { saveBtn.textContent = st === 'sinyal' ? '📶 Menunggu sinyal...' : '🔁 Mencoba lagi...'; });
+                ph.url = data.secure_url;
+              } catch (upErr) {
+                throw new Error('Upload foto defect gagal (' + (upErr.message || 'koneksi') + '). Foto masih ada di form — ketuk Simpan lagi.');
+              }
+            }
+            defectPhotoUrls.push(ph.url);
           }
         }
         const defectRow = {
@@ -27923,6 +28139,7 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
           // Lanjut, tidak fatal
         } else if (defOut) {
           defectIds.push(defOut.id);
+          d.savedId = defOut.id;
         }
       }
 
@@ -27943,6 +28160,10 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
       };
       const { error: insErr } = await supa.from('room_checks').insert(row);
       if (insErr) throw insErr;
+      // Notifikasi Defect untuk defect yang dibuat dari Room Check (dulu tidak ada notifikasinya)
+      if (defectIds.length) {
+        try { fetch('https://verse-defect.vercel.app/api/defect-push', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids: defectIds, event: 'new' }) }).catch(() => {}); } catch(e) {}
+      }
 
       showToast('✅ Pengecekan tersimpan' + (defectIds.length > 0 ? ' (+ ' + defectIds.length + ' defect)' : ''));
       rcCloseForm();
