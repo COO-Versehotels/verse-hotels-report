@@ -8286,7 +8286,17 @@
   }
   async function _pasangKeDraft(job) {
     const fileObj = { name: job.name, url: job.url, type: job.type };
-    if (job.role === currentRole && job.hotel === currentHotel && job.tanggal === _hariIniTL() && document.getElementById(job.taskId)) {
+    const konteksSama = job.role === currentRole && job.hotel === currentHotel && job.tanggal === _hariIniTL();
+    // Slot foto HOD (taskId__p0, __p1, ...) tidak punya elemen ber-id slot itu sendiri — hanya "-upload-area".
+    const areaHod = konteksSama && !document.getElementById(job.taskId) && document.querySelector('[id="' + job.taskId + '-upload-area"][data-hod-photo-slot]');
+    if (areaHod) {
+      if (!taskFileUrls[job.taskId]) taskFileUrls[job.taskId] = [];
+      if (!taskFileUrls[job.taskId].some(u => (typeof u === 'string' ? u : u.url) === job.url)) taskFileUrls[job.taskId].push(fileObj);
+      _syncTaskFiles(job.taskId);
+      try { if (typeof hodRefreshUploadAreaLabel === 'function') hodRefreshUploadAreaLabel(job.taskId); } catch (e) {}
+      return await _tambahUrlKeDraftLangsung(job, fileObj);   // simpan ke draft slot (dengan coba ulang)
+    }
+    if (konteksSama && document.getElementById(job.taskId)) {
       if (!taskFileUrls[job.taskId]) taskFileUrls[job.taskId] = [];
       if (!taskFileUrls[job.taskId].some(u => (typeof u === 'string' ? u : u.url) === job.url)) taskFileUrls[job.taskId].push(fileObj);
       _syncTaskFiles(job.taskId);
