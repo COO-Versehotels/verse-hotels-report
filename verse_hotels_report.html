@@ -3356,6 +3356,88 @@
       try { localStorage.removeItem(CAM_RESUME_KEY); } catch(err) {}
     }
   }, true);
+  // =============================================================
+  // KAMERA BAWAAN APP (APK Verse Apps) — 8 Okt 2026
+  // Di APK, tombol "foto kamera" (input capture) memakai plugin Camera Capacitor, bukan kamera
+  // lewat WebView. Kalau Android menutup app saat kamera terbuka (RAM kecil), hasil foto tetap
+  // dikirim kembali lewat event 'appRestoredResult' setelah app dibuka ulang → foto dimasukkan
+  // ke tombol yang sama (task/slot yang sama) dan ikut antrean upload seperti biasa.
+  // =============================================================
+  const CAM_NATIVE_KEY = 'verse_cam_native';
+  function _kameraNative() {
+    try {
+      const C = window.Capacitor;
+      if (!C || !C.isNativePlatform || !C.isNativePlatform()) return null;
+      if (C.isPluginAvailable && !C.isPluginAvailable('Camera')) return null;
+      return (C.Plugins && C.Plugins.Camera && typeof C.Plugins.Camera.getPhoto === 'function') ? C.Plugins.Camera : null;
+    } catch (e) { return null; }
+  }
+  function _kunciInput(inp) {
+    const all = [...document.querySelectorAll('input[type="file"]')].filter(x => x.getAttribute('onchange') === inp.getAttribute('onchange'));
+    return { oc: inp.getAttribute('onchange') || '', id: inp.id || '', idx: Math.max(0, all.indexOf(inp)) };
+  }
+  function _cariInput(k) {
+    if (!k) return null;
+    if (k.id) { const el = document.getElementById(k.id); if (el) return el; }
+    const all = [...document.querySelectorAll('input[type="file"]')].filter(x => (x.getAttribute('onchange') || '') === k.oc);
+    return all[k.idx] || all[0] || null;
+  }
+  async function _fotoKeInput(inp, foto) {
+    const src = foto.webPath || (foto.path && window.Capacitor && window.Capacitor.convertFileSrc ? window.Capacitor.convertFileSrc(foto.path) : null);
+    if (!src) throw new Error('foto kosong');
+    const blob = await (await fetch(src)).blob();
+    const ext = (foto.format || 'jpeg').replace('jpg', 'jpeg');
+    const file = new File([blob], 'IMG_' + Date.now() + '.' + (ext === 'jpeg' ? 'jpg' : ext), { type: blob.type || ('image/' + ext), lastModified: Date.now() });
+    const dt = new DataTransfer(); dt.items.add(file);
+    inp.files = dt.files;
+    inp.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+  document.addEventListener('click', async function (e) {
+    const inp = e.target && e.target.closest ? e.target.closest('input[type="file"][capture]') : null;
+    if (!inp || inp.disabled) return;
+    const Cam = _kameraNative(); if (!Cam) return;            // browser biasa: tetap cara lama
+    e.preventDefault(); e.stopPropagation();
+    if (inp._kameraJalan) return; inp._kameraJalan = true;
+    try { localStorage.setItem(CAM_NATIVE_KEY, JSON.stringify({ k: _kunciInput(inp), role: currentRole, hotel: currentHotel, ts: Date.now() })); } catch (err) {}
+    try {
+      const foto = await Cam.getPhoto({ source: 'CAMERA', resultType: 'uri', quality: 85, correctOrientation: true, saveToGallery: false, width: 2000 });
+      try { localStorage.removeItem(CAM_NATIVE_KEY); localStorage.removeItem(CAM_RESUME_KEY); } catch (err) {}
+      await _fotoKeInput(inp, foto);
+    } catch (err) {
+      try { localStorage.removeItem(CAM_NATIVE_KEY); } catch (e2) {}
+      const msg = String((err && err.message) || err || '');
+      if (!/cancel|batal|dismiss/i.test(msg)) showToast('📷 Kamera gagal dibuka: ' + msg.slice(0, 80));
+    } finally { inp._kameraJalan = false; }
+  }, true);
+  // App sempat ditutup Android saat kamera terbuka → foto dikirim ulang oleh plugin setelah app hidup lagi
+  (function () {
+    try {
+      const C = window.Capacitor;
+      const App = C && C.isNativePlatform && C.isNativePlatform() && C.Plugins && C.Plugins.App;
+      if (!App || !App.addListener) return;
+      App.addListener('appRestoredResult', function (r) {
+        if (!r || r.pluginId !== 'Camera' || !r.success || !r.data) return;
+        let m = null; try { m = JSON.parse(localStorage.getItem(CAM_NATIVE_KEY) || 'null'); } catch (e) {}
+        if (!m || Date.now() - m.ts > CAM_RESUME_TTL) return;
+        window._fotoNativeTertunda = true;
+        const t0 = Date.now();
+        const coba = async function () {
+          const siap = currentRole && currentRole === m.role;
+          const inp = siap ? _cariInput(m.k) : null;
+          if (inp) {
+            try { localStorage.removeItem(CAM_NATIVE_KEY); } catch (e) {}
+            try { await _fotoKeInput(inp, r.data); showToast('📷 Foto tadi berhasil dipulihkan dan sedang diupload'); }
+            catch (e) { showToast('📷 Foto tadi gagal dipulihkan — silakan foto ulang'); }
+            try { const it = inp.closest('.task-item'); if (it) it.scrollIntoView({ block: 'center' }); } catch (e) {}
+            return;
+          }
+          if (Date.now() - t0 < 30000) setTimeout(coba, 700);
+          else showToast('📷 Foto tadi belum bisa dipulihkan — silakan foto ulang');
+        };
+        setTimeout(coba, 800);
+      });
+    } catch (e) {}
+  })();
   function _takeCamResume(role) {
     try {
       const raw = localStorage.getItem(CAM_RESUME_KEY);
@@ -3380,7 +3462,7 @@
         el.style.transition = 'box-shadow .3s'; el.style.boxShadow = '0 0 0 3px #f59e0b';
         setTimeout(() => { el.style.boxShadow = ''; }, 4000);
       }
-      showToast('📷 HP sempat menutup browser saat kamera dibuka — foto tadi belum masuk. Isian aman, silakan ambil foto ulang di task ini.');
+      if (!window._fotoNativeTertunda) showToast('📷 HP sempat menutup browser saat kamera dibuka — foto tadi belum masuk. Isian aman, silakan ambil foto ulang di task ini.');
     }, 1500);
     return true;
   }
