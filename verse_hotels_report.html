@@ -1349,6 +1349,33 @@
     border-color: var(--navy);
   }
 
+  /* ===== Arsip Laporan di halaman utama ===== */
+  .ars-box{background:#fff;border:1px solid #eef0f4;border-radius:16px;padding:14px;box-shadow:0 2px 10px rgba(26,58,92,0.06)}
+  .ars-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}.ars-h b{font-size:14px;color:var(--navy)}.ars-h span{font-size:11px;color:var(--gray-400)}
+  .ars-chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+  .ars-chips button,.ars-chips label{font:inherit;font-size:11.5px;font-weight:600;padding:6px 11px;border-radius:999px;border:none;background:#eef2f7;color:#475569;cursor:pointer;position:relative}
+  .ars-chips .on{background:var(--navy);color:#fff}
+  .ars-chips label input{position:absolute;inset:0;opacity:0;width:100%;cursor:pointer}
+  .ars-sum{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:4px 0 8px}.ars-sum div{background:#f4f6fa;border-radius:10px;padding:7px 4px;text-align:center;font-size:10.5px;color:var(--gray-500)}.ars-sum b{display:block;font-size:17px;color:var(--navy)}
+  .ars-it{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid #eef2f7;cursor:pointer}
+  .ars-sum + .ars-it{border-top:none}
+  .ars-ic{width:34px;height:34px;border-radius:10px;background:#eef2f7;display:flex;align-items:center;justify-content:center;font-size:17px;flex:none}
+  .ars-tx{flex:1;min-width:0}.ars-tx b{display:block;font-size:13px;color:#111827}.ars-tx small{font-size:11px;color:var(--gray-500)}
+  .ars-ok{color:#15803d;font-weight:700}
+  .ars-pc{font-size:11px;font-weight:800;padding:3px 8px;border-radius:7px;flex:none}.ars-pc.g{background:#dcfce7;color:#15803d}.ars-pc.a{background:#fef3c7;color:#b45309}.ars-pc.r{background:#fee2e2;color:#b91c1c}
+  .ars-more{display:block;width:100%;margin-top:6px;padding:8px;border:none;background:none;color:var(--navy);font:inherit;font-size:12.5px;font-weight:700;cursor:pointer}
+  .ars-miss{background:#fff7ed;border:1px dashed #fdba74;border-radius:10px;padding:8px 10px;font-size:11.5px;color:#9a3412;margin-top:8px;line-height:1.5}
+  .ars-kosong{text-align:center;color:var(--gray-400);font-size:12.5px;padding:14px 4px}
+  .ars-ov{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100002;display:flex;align-items:flex-end;justify-content:center}
+  .ars-sheet{background:#fff;width:100%;max-width:640px;max-height:92vh;overflow-y:auto;border-radius:20px 20px 0 0;padding:12px 16px calc(16px + env(safe-area-inset-bottom))}
+  .ars-grab{width:40px;height:4px;border-radius:4px;background:#d1d5db;margin:0 auto 10px}
+  .ars-st{font-weight:800;font-size:16px;color:var(--navy)}.ars-ss{font-size:12px;color:var(--gray-500);margin:2px 0 10px}
+  .ars-isi{font-size:13.5px;color:#333}
+  .ars-pdf{text-align:right;margin:8px 0}.ars-pdf button{padding:7px 12px;background:var(--gold);color:#fff;border:none;border-radius:8px;font:inherit;font-size:12px;font-weight:700}
+  .ars-cekbox{border-top:1px solid #eef2f7;margin-top:8px;padding-top:10px}.ars-cekbox label{font-size:11.5px;color:var(--gray-500);display:block;margin-bottom:4px}
+  .ars-cekbox textarea{width:100%;border:1px solid #e5e7eb;border-radius:10px;padding:9px;font:inherit;font-size:13px;resize:vertical}
+  .ars-btn{display:block;width:100%;margin-top:8px;padding:12px;border:none;border-radius:12px;font:inherit;font-weight:800;font-size:13.5px;background:#eef2f7;color:var(--navy);cursor:pointer}
+  .ars-btn.ok{background:#15803d;color:#fff}
   /* ===== ARSIP SCREEN ===== */
   #screen-arsip {
     background: var(--cream);
@@ -2073,6 +2100,9 @@
         </div>
         <div class="rc-arrow">›</div>
       </div>
+
+      <!-- Arsip Laporan (HR Officer & Ops HR Manager) -->
+      <div id="ars-home" style="display:none;margin:0 16px 14px;"></div>
 
       <!-- KPI Utama card -->
       <div id="kpi-home-card" style="display:none;margin:0 16px 14px;background:#fff;border:1px solid #eef0f4;border-radius:16px;padding:16px;box-shadow:0 2px 10px rgba(26,58,92,0.06);">
@@ -2899,6 +2929,9 @@
           <!-- Diisi JS -->
         </div>
       </div>
+
+      <!-- Arsip Laporan (COO) -->
+      <div id="ars-coo" style="margin:0 16px 16px;"></div>
 
       <!-- Detail per Hotel -->
       <div style="padding:0 16px 6px;font-size:11px;color:var(--gray-400);font-weight:700;text-transform:uppercase;letter-spacing:1px;">Detail per Hotel</div>
@@ -6104,6 +6137,9 @@
 
       // Show/hide Jadwal Visit Corp menu card based on role
       if (typeof jvMaybeShowHomeMenu === 'function') jvMaybeShowHomeMenu();
+
+      // Arsip Laporan semua role (HR Officer & Ops HR Manager)
+      if (typeof arsMaybeShowHome === 'function') arsMaybeShowHome();
 
       // Show/hide KPI Utama card based on role
       if (typeof kpiMaybeShowHomeCard === 'function') kpiMaybeShowHomeCard();
@@ -24517,6 +24553,131 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
     setTimeout(() => loadDraft(currentRole, hotelName), 300);
   }
 
+  // =====================================================================
+  // ARSIP LAPORAN DI HALAMAN UTAMA (13 Okt 2026) — HR Officer & Ops HR Manager (Beranda) + COO (Dashboard COO).
+  // Daftar laporan semua role per tanggal, yang belum kirim, detail di atas halaman, "Tandai sudah dicek" + catatan HR
+  // (catatan -> notifikasi ke role pemilik laporan lewat /api/send-push type laporan_cek).
+  // =====================================================================
+  const ARS = { tgl: null, grup: 'semua', semua: false, data: [], cek: {}, aktif: [], el: null };
+  const ARS_CORP = ['Ops HR Manager','HR Officer','Chief Engineering Corporate','EHK Corporate','CRA Corporate'];
+  function _arsEsc(s){ return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+  function _arsHariIni(){ return new Date(Date.now()+7*3600000).toISOString().slice(0,10); }
+  function _arsGeser(t, n){ const d=new Date(t+'T00:00:00Z'); d.setUTCDate(d.getUTCDate()+n); return d.toISOString().slice(0,10); }
+  function _arsGrup(role){
+    if (ARS_CORP.includes(role)) return 'corp';
+    if (/^HM /.test(role)) return 'hm';
+    if (typeof HOD_ROLE_SET!=='undefined' && HOD_ROLE_SET.has(role)) return 'hod';
+    if (/F&B|Kitchen/i.test(role)) return 'fb';
+    return 'lain';
+  }
+  function _arsIkon(role){
+    const g=_arsGrup(role);
+    if (role==='Ops HR Manager') return '👔'; if (role==='HR Officer') return '🧑‍💼'; if (/Chief Engineering/.test(role)) return '⚙️';
+    if (/EHK/.test(role)) return '🛏️'; if (/CRA/.test(role)) return '🌐'; if (g==='hm') return '🏨';
+    if (/^Housekeeping/.test(role)) return '🧹'; if (/^Engineering/.test(role)) return '🔧'; if (/^Front Office/.test(role)) return '🛎️';
+    if (/Kitchen/.test(role)) return '👨‍🍳'; if (/Attendant/.test(role)) return '🥂'; if (/F&B/.test(role)) return '🍽️'; return '👤';
+  }
+  function _arsPendek(role){
+    return String(role||'').replace(' Corporate','').replace('Housekeeping Supervisor','HK Spv').replace('Engineering Supervisor','Eng Spv')
+      .replace('Front Office Supervisor','FO Spv').replace(' Wahid Hasyim','').replace(' Gajah Mada','').replace(' Mahakam Blok M','').replace('Verse Hotel ','Verse ');
+  }
+  function _arsTglLabel(t){ const d=new Date(t+'T00:00:00Z'); const h=['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'], b=['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des']; return h[d.getUTCDay()]+', '+d.getUTCDate()+' '+b[d.getUTCMonth()]+' '+d.getUTCFullYear(); }
+  function _arsJam(iso){ if(!iso) return '—'; const d=new Date(new Date(iso).getTime()+7*3600000); return String(d.getUTCHours()).padStart(2,'0')+':'+String(d.getUTCMinutes()).padStart(2,'0'); }
+  function arsBoleh(){ return ['HR Officer','Ops HR Manager','COO'].includes(currentRole); }
+  function arsMaybeShowHome(){
+    const el=document.getElementById('ars-home'); if(!el) return;
+    if (!['HR Officer','Ops HR Manager'].includes(currentRole)) { el.style.display='none'; el.innerHTML=''; return; }
+    el.style.display='block'; arsMuat('ars-home');
+  }
+  async function arsMuat(elId){
+    ARS.el = elId || ARS.el; const el=document.getElementById(ARS.el); if(!el || !arsBoleh()) return;
+    if (!ARS.tgl) ARS.tgl=_arsHariIni();
+    if (!el.dataset.siap) { el.innerHTML='<div class="ars-box"><div class="ars-h"><b>📁 Arsip Laporan</b></div><div class="ars-kosong">⏳ Memuat…</div></div>'; el.dataset.siap='1'; }
+    const t=ARS.tgl, dari=_arsGeser(t,-14);
+    try{
+      const [a,l,c,akt1,akt2]=await Promise.all([
+        supa.from('arsip').select('role,hotel,tanggal,pct,task_done,task_total,fu_count,submitted_at').eq('tanggal',t),
+        supa.from('laporan').select('role,hotel,tanggal,pct,task_done,task_total,fu_count,submitted_at').eq('tanggal',t),
+        supa.from('laporan_cek').select('*').eq('tanggal',t),
+        supa.from('arsip').select('role').gte('tanggal',dari).lt('tanggal',t).limit(2000),
+        supa.from('laporan').select('role').gte('tanggal',dari).lt('tanggal',t).limit(500)
+      ]);
+      const dd={}; [...(a.data||[]),...(l.data||[])].forEach(r=>{ if(!r.role) return; const o=dd[r.role]; if(!o || (r.submitted_at||'')>(o.submitted_at||'')) dd[r.role]=r; });
+      ARS.data=Object.values(dd).sort((x,y)=>(y.submitted_at||'').localeCompare(x.submitted_at||''));
+      ARS.cek={}; (c.data||[]).forEach(r=>ARS.cek[r.role]=r);
+      ARS.aktif=[...new Set([...(akt1.data||[]),...(akt2.data||[])].map(r=>r.role).filter(Boolean))];
+    }catch(e){ console.warn('arsip laporan', e); }
+    arsRender();
+  }
+  function arsRender(){
+    const el=document.getElementById(ARS.el); if(!el) return;
+    const g=ARS.grup, cocok=r=>g==='semua' || _arsGrup(r)===g;
+    const list=ARS.data.filter(r=>cocok(r.role));
+    const kirim=new Set(ARS.data.map(r=>r.role));
+    const belum=ARS.aktif.filter(r=>!kirim.has(r) && cocok(r)).sort();
+    const nCek=list.filter(r=>ARS.cek[r.role]).length;
+    const hari=_arsHariIni(), kmrn=_arsGeser(hari,-1);
+    const tampil=ARS.semua ? list : list.slice(0,5);
+    const chip=(on,txt,fn)=>`<button type="button" class="${on?'on':''}" onclick="${fn}">${txt}</button>`;
+    el.innerHTML=`<div class="ars-box">
+      <div class="ars-h"><b>📁 Arsip Laporan</b><span>${_arsTglLabel(ARS.tgl)}</span></div>
+      <div class="ars-chips">${chip(ARS.tgl===hari,'Hari ini',`arsTgl('${hari}')`)}${chip(ARS.tgl===kmrn,'Kemarin',`arsTgl('${kmrn}')`)}
+        <label class="${ARS.tgl!==hari&&ARS.tgl!==kmrn?'on':''}">📅 Pilih tanggal<input type="date" max="${hari}" value="${ARS.tgl}" onchange="if(this.value)arsTgl(this.value)"></label></div>
+      <div class="ars-chips">${[['semua','Semua'],['corp','Corporate'],['hm','HM'],['hod','HOD'],['fb','F&amp;B']].map(([k,l])=>chip(g===k,l,`ARS.grup='${k}';ARS.semua=false;arsRender()`)).join('')}</div>
+      <div class="ars-sum"><div><b>${list.length}</b>Terkirim</div><div><b>${belum.length}</b>Belum kirim</div><div><b>${nCek}</b>Sudah dicek HR</div></div>
+      ${tampil.length ? tampil.map(r=>{ const ck=ARS.cek[r.role], p=r.pct||0;
+        return `<div class="ars-it" onclick="arsBuka('${encodeURIComponent(r.role)}')"><div class="ars-ic">${_arsIkon(r.role)}</div>
+          <div class="ars-tx"><b>${_arsEsc(_arsPendek(r.role))}</b><small>${_arsEsc(_arsPendek(r.hotel||'-'))} · kirim ${_arsJam(r.submitted_at)}${ck?` · <span class="ars-ok">✓ dicek ${_arsEsc(ck.oleh)}</span>`:''}${ck&&ck.catatan?' 📝':''}</small></div>
+          <span class="ars-pc ${p>=100?'g':p>=70?'a':'r'}">${p}%</span></div>`; }).join('') : '<div class="ars-kosong">Belum ada laporan terkirim untuk tanggal ini.</div>'}
+      ${list.length>5?`<button type="button" class="ars-more" onclick="ARS.semua=!ARS.semua;arsRender()">${ARS.semua?'Ringkas ▴':'Tampilkan '+(list.length-5)+' laporan lainnya ▾'}</button>`:''}
+      ${belum.length?`<div class="ars-miss">⏳ <b>Belum kirim (${belum.length}):</b> ${belum.map(r=>_arsEsc(_arsPendek(r))).join(' · ')}</div>`:''}
+    </div>`;
+  }
+  function arsTgl(t){ ARS.tgl=t; ARS.semua=false; arsMuat(); }
+  async function arsBuka(roleEnc){
+    const role=decodeURIComponent(roleEnc); const r=ARS.data.find(x=>x.role===role); if(!r) return;
+    document.getElementById('ars-ov')?.remove();
+    const ov=document.createElement('div'); ov.id='ars-ov'; ov.className='ars-ov';
+    ov.onclick=e=>{ if(e.target===ov) arsTutup(); };
+    const ck=ARS.cek[role];
+    ov.innerHTML=`<div class="ars-sheet"><div class="ars-grab"></div>
+      <div class="ars-st">${_arsIkon(role)} ${_arsEsc(role)}</div>
+      <div class="ars-ss">${_arsEsc(r.hotel||'-')} · ${_arsTglLabel(r.tanggal)} · kirim ${_arsJam(r.submitted_at)} · ${r.pct||0}%</div>
+      <div id="ars-isi" class="ars-isi"><div class="ars-kosong">⏳ Memuat detail…</div></div>
+      <div class="ars-pdf"><button type="button" onclick="exportDetailPDF('${_arsEsc(role).replace(/'/g,"\\'")}','${_arsEsc(r.hotel||'').replace(/'/g,"\\'")}','${r.tanggal}')">📄 PDF</button></div>
+      ${['HR Officer','Ops HR Manager','COO'].includes(currentRole)?`
+      <div class="ars-cekbox">${ck?`<div class="ars-ok" style="margin-bottom:6px">✓ Sudah dicek ${_arsEsc(ck.oleh)} · ${_arsJam(ck.dicek_at)}</div>`:''}
+        <label>Catatan HR (opsional — dikirim ke ${_arsEsc(_arsPendek(role))})</label>
+        <textarea id="ars-cat" rows="2" maxlength="450" placeholder="cth. Morning briefing tidak diikuti — mohon konfirmasi">${_arsEsc(ck&&ck.catatan||'')}</textarea>
+        <button type="button" class="ars-btn ok" onclick="arsCek('${encodeURIComponent(role)}')">✓ ${ck?'Simpan perubahan':'Tandai sudah dicek'}</button></div>`:''}
+      <button type="button" class="ars-btn" onclick="arsTutup()">Tutup</button></div>`;
+    document.body.appendChild(ov);
+    try{
+      const res=await fetch(SUPA_URL+'/rest/v1/laporan_detail?tanggal=eq.'+r.tanggal+'&role=eq.'+encodeURIComponent(role)+'&hotel=eq.'+encodeURIComponent(r.hotel||'')+'&select=*',{headers:{apikey:SUPA_KEY,Authorization:'Bearer '+SUPA_KEY}});
+      const items=res.ok?await res.json():[];
+      const rc=await _fetchRoomChecksForDate(role, r.hotel, r.tanggal);
+      const ids=[]; rc.forEach(x=>{ try{ (Array.isArray(x.defect_ids)?x.defect_ids:(typeof x.defect_ids==='string'?JSON.parse(x.defect_ids):[])).forEach(d=>ids.push(d)); }catch(e){} });
+      const dm=await _fetchDefectsMap(ids);
+      const box=document.getElementById('ars-isi'); if(!box) return;
+      box.innerHTML=(items.length||rc.length) ? _buildDetailUnifiedHTML(role, r.hotel, items, rc, dm) : '<div class="ars-kosong">Detail tugas tidak tersedia untuk laporan ini.</div>';
+    }catch(e){ const box=document.getElementById('ars-isi'); if(box) box.innerHTML='<div class="ars-kosong">Gagal memuat detail.</div>'; }
+  }
+  function arsTutup(){ document.getElementById('ars-ov')?.remove(); }
+  async function arsCek(roleEnc){
+    const role=decodeURIComponent(roleEnc); const r=ARS.data.find(x=>x.role===role); if(!r) return;
+    const cat=((document.getElementById('ars-cat')||{}).value||'').trim();
+    const lama=ARS.cek[role];
+    const rec={tanggal:r.tanggal, role, hotel:r.hotel||null, oleh:currentRole, catatan:cat||null, dicek_at:new Date().toISOString()};
+    if (lama && (lama.catatan||'')!==cat) rec.notified_at=null;
+    const {data,error}=await supa.from('laporan_cek').upsert(rec,{onConflict:'tanggal,role'}).select().single();
+    if(error){ showToast('Gagal menyimpan: '+error.message); return; }
+    ARS.cek[role]=data; arsTutup(); arsRender();
+    if (cat && (!lama || (lama.catatan||'')!==cat)) {
+      try{ fetch('/api/send-push',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:'laporan_cek', id:data.id})}).catch(()=>{}); }catch(e){}
+      showToast('✓ Ditandai dicek — catatan dikirim ke '+_arsPendek(role));
+    } else showToast('✓ Laporan ditandai sudah dicek');
+  }
+
   // ===== COO DASHBOARD =====
   // Storage untuk laporan yang sudah di-submit
   const submittedReports = [];
@@ -24621,6 +24782,7 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
           ${submitted > 0 ? `<span style="font-size:12px;color:var(--gray-400);margin-left:8px;">${avgRolePct}%</span>` : ''}
         </div>`;
     });
+    try { if (currentRole === 'COO') arsMuat('ars-coo'); } catch(e) {}
     document.getElementById('coo-role-summary').innerHTML = roleSummaryHtml ||
       '<div style="padding:16px;text-align:center;color:var(--gray-400);font-size:13px;">Belum ada laporan masuk</div>';
 

@@ -134,6 +134,12 @@ export default async function handler(req, res) {
       tokens = (r && r.tokens) || [];
       title = '⚠️ Percobaan masuk jabatan lain';
       body = (r && r.body) || 'Ada HP yang mencoba masuk ke jabatan lain.';
+    } else if (reqBody.type === 'laporan_cek') {
+      // Catatan HR saat mengecek laporan -> notifikasi ke role pemilik laporan (sekali per catatan, dicek di database)
+      const r = await supaRpc('push_laporan_cek', { p_id: String(reqBody.id || '') });
+      tokens = (r && r.tokens) || [];
+      title = (r && r.title) || '📝 Catatan HR untuk laporan Anda';
+      body = (r && r.body) || '';
     } else if (reqBody.type === 'device_request') {
       const r = await supaRpc('push_device_request', { p_device_id: String(reqBody.deviceId || '') });
       tokens = (r && r.tokens) || [];
