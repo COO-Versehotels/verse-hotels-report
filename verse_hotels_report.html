@@ -2488,6 +2488,7 @@
       </div>
     </div>
 
+    <div id="jv-period-tabs" style="display:none;background:white;border-bottom:1px solid var(--gray-100);padding:10px 16px;gap:8px;flex-shrink:0;"></div>
     <div id="jv-date-strip" style="background:white;border-bottom:1px solid var(--gray-100);padding:14px 0 14px 16px;display:flex;gap:8px;overflow-x:auto;flex-shrink:0;"></div>
 
     <div style="padding:14px 16px 4px;font-size:12px;font-weight:700;color:var(--gray-400);letter-spacing:0.5px;flex-shrink:0;" id="jv-selected-date-label">—</div>
@@ -28690,6 +28691,9 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
   const JV_API_KEY = 'verse-corp-visit-2026';
 
   let jvData = null;
+  let jvNextData = null;   // periode berikutnya (21 bln ini – 20 bln depan), dimuat saat tab dibuka
+  let jvView = 'current';  // 'current' | 'next' — periode yang sedang ditampilkan
+  function jvShown() { return jvView === 'next' ? jvNextData : jvData; }
   let jvSelectedDateIdx = 0;
   let jvPickerEmployeeIdx = null;
 
@@ -28872,6 +28876,8 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
   }
 
   async function jvLoad() {
+    jvView = 'current';
+    jvNextData = null;
     const listEl = document.getElementById('jv-member-list');
     if (listEl) listEl.innerHTML = '<div style="text-align:center;padding:24px;color:var(--gray-400);font-size:13px;">Memuat jadwal...</div>';
     try {
@@ -28882,32 +28888,74 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
         return;
       }
       jvData = data;
-      const periodEl = document.getElementById('jv-period-label');
-      if (periodEl) periodEl.textContent = data.periodLabel + (data.isLocked ? ' 🔒 Terkunci' : '');
-
-      const todayStr = new Date(Date.now() + 7*3600000).toISOString().split('T')[0];
-      const todayIdx = data.dates.findIndex(d => d.date === todayStr);
-      jvSelectedDateIdx = todayIdx >= 0 ? todayIdx : 0;
-
-      jvRenderDateStrip();
-      jvRenderSelectedDateLabel();
-      jvRenderMemberList();
-      jvRenderLegend();
+      jvRenderAll(true);
     } catch(err) {
       if (listEl) listEl.innerHTML = '<div style="text-align:center;padding:24px;color:#e74c3c;font-size:13px;">Gagal terhubung ke server: ' + jvEsc(err.message) + '</div>';
     }
   }
 
+  // Render semua bagian layar untuk periode yang sedang ditampilkan.
+  // pickToday = true -> pilih tanggal hari ini (kalau ada di periode itu), selain itu tanggal pertama.
+  function jvRenderAll(pickToday) {
+    const D = jvShown();
+    if (!D) return;
+    const periodEl = document.getElementById('jv-period-label');
+    if (periodEl) periodEl.textContent = D.periodLabel + (D.isLocked ? ' 🔒 Terkunci' : '');
+    const todayStr = new Date(Date.now() + 7*3600000).toISOString().split('T')[0];
+    const todayIdx = D.dates.findIndex(d => d.date === todayStr);
+    jvSelectedDateIdx = (pickToday && todayIdx >= 0) ? todayIdx : 0;
+    jvRenderPeriodTabs();
+    jvRenderDateStrip();
+    jvRenderSelectedDateLabel();
+    jvRenderMemberList();
+    jvRenderLegend();
+  }
+
+  // Tab periode: muncul otomatis begitu tab periode berikutnya sudah dibuat di Google Sheet (tgl 13).
+  function jvRenderPeriodTabs() {
+    const el = document.getElementById('jv-period-tabs');
+    if (!el) return;
+    if (!jvData || !jvData.nextAvailable) { el.style.display = 'none'; el.innerHTML = ''; return; }
+    el.style.display = 'flex';
+    const mk = (which, label) => {
+      const on = jvView === which;
+      return '<button onclick="jvSwitchPeriod(\'' + which + '\')" style="flex:1;border:none;border-radius:10px;padding:9px 6px;font-size:12px;font-weight:700;cursor:pointer;background:' + (on ? 'var(--navy)' : '#F0F0EE') + ';color:' + (on ? '#fff' : '#8A8A92') + ';">' + jvEsc(label) + '</button>';
+    };
+    el.innerHTML = mk('current', jvData.periodLabel) + mk('next', jvData.nextLabel || 'Periode berikutnya');
+  }
+
+  async function jvSwitchPeriod(which) {
+    if (which === jvView) return;
+    if (which === 'next' && !jvNextData) {
+      const listEl = document.getElementById('jv-member-list');
+      if (listEl) listEl.innerHTML = '<div style="text-align:center;padding:24px;color:var(--gray-400);font-size:13px;">Memuat jadwal...</div>';
+      try {
+        const resp = await fetch(JV_API_URL + '?key=' + encodeURIComponent(JV_API_KEY) + '&period=next');
+        const data = await resp.json();
+        if (!data.success) {
+          if (listEl) listEl.innerHTML = '<div style="text-align:center;padding:24px;color:#e74c3c;font-size:13px;">' + jvEsc(data.error || 'Gagal memuat jadwal') + '</div>';
+          return;
+        }
+        jvNextData = data;
+      } catch(err) {
+        if (listEl) listEl.innerHTML = '<div style="text-align:center;padding:24px;color:#e74c3c;font-size:13px;">Gagal terhubung ke server: ' + jvEsc(err.message) + '</div>';
+        return;
+      }
+    }
+    jvView = which;
+    jvRenderAll(which === 'current');
+  }
+
   function jvCodeInfo(code) {
-    if (!jvData) return null;
-    return jvData.codes.find(c => c.code === code) || null;
+    if (!jvShown()) return null;
+    return jvShown().codes.find(c => c.code === code) || null;
   }
 
   function jvRenderDateStrip() {
     const strip = document.getElementById('jv-date-strip');
-    if (!strip || !jvData) return;
+    if (!strip || !jvShown()) return;
     const dowShort = { 'Sunday':'Min','Monday':'Sen','Tuesday':'Sel','Wednesday':'Rab','Thursday':'Kam','Friday':'Jum','Saturday':'Sab' };
-    strip.innerHTML = jvData.dates.map((d, idx) => {
+    strip.innerHTML = jvShown().dates.map((d, idx) => {
       const isSel = idx === jvSelectedDateIdx;
       const isSpecial = d.isWeekend || d.isPH;
       let bg = '#F0F0EE', color = '#8A8A92';
@@ -28926,8 +28974,8 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
 
   function jvRenderSelectedDateLabel() {
     const el = document.getElementById('jv-selected-date-label');
-    if (!el || !jvData) return;
-    const d = jvData.dates[jvSelectedDateIdx];
+    if (!el || !jvShown()) return;
+    const d = jvShown().dates[jvSelectedDateIdx];
     const dowFull = { 'Sunday':'MINGGU','Monday':'SENIN','Tuesday':'SELASA','Wednesday':'RABU','Thursday':'KAMIS','Friday':'JUMAT','Saturday':'SABTU' };
     const monthNames = ['','JANUARI','FEBRUARI','MARET','APRIL','MEI','JUNI','JULI','AGUSTUS','SEPTEMBER','OKTOBER','NOVEMBER','DESEMBER'];
     const dt = new Date(d.date + 'T00:00:00');
@@ -28949,8 +28997,8 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
 
   function jvRenderMemberList() {
     const listEl = document.getElementById('jv-member-list');
-    if (!listEl || !jvData) return;
-    listEl.innerHTML = jvData.roster.map(emp => {
+    if (!listEl || !jvShown()) return;
+    listEl.innerHTML = jvShown().roster.map(emp => {
       const code = emp.codes[jvSelectedDateIdx] || '';
       const info = jvCodeInfo(code);
       const initials = jvInitials(emp.name);
@@ -28962,7 +29010,7 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
       }
       // Master schedule cuma boleh diubah oleh COO — Corp Team (5 PIN) hanya bisa LIHAT
       // di layar ini. Mereka ubah punya diri sendiri lewat "Unit Visit Tomorrow" saja.
-      const canEdit = (currentRole === 'COO') && !jvData.isLocked;
+      const canEdit = (currentRole === 'COO') && !jvShown().isLocked;
       const disabled = !canEdit;
       return '<button ' + (disabled ? 'disabled' : ('onclick="jvOpenPicker(' + emp.employeeIndex + ')"')) + ' style="display:flex;align-items:center;gap:12px;background:#FFFFFF;border:1px solid #EDEDE9;border-radius:16px;padding:12px 14px;text-align:left;width:100%;font-family:inherit;' + (disabled ? '' : 'cursor:pointer;') + '">' +
         '<div style="width:40px;height:40px;border-radius:12px;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0;">' + jvEsc(initials) + '</div>' +
@@ -28977,19 +29025,19 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
 
   function jvRenderLegend() {
     const el = document.getElementById('jv-legend');
-    if (!el || !jvData) return;
-    el.innerHTML = jvData.codes.map(c =>
+    if (!el || !jvShown()) return;
+    el.innerHTML = jvShown().codes.map(c =>
       '<div style="display:flex;align-items:center;gap:5px;"><span style="width:8px;height:8px;border-radius:50%;background:' + c.color + ';"></span><span style="font-size:11px;color:#6B6B72;font-weight:600;">' + jvEsc(c.label) + '</span></div>'
     ).join('');
   }
 
   function jvOpenPicker(employeeIndex) {
-    if (!jvData || jvData.isLocked) return;
+    if (!jvShown() || jvShown().isLocked) return;
     if (currentRole !== 'COO') return; // hanya COO yang boleh ubah jadwal master di layar ini
     jvPickerEmployeeIdx = employeeIndex;
-    const emp = jvData.roster.find(e => e.employeeIndex === employeeIndex);
+    const emp = jvShown().roster.find(e => e.employeeIndex === employeeIndex);
     if (!emp) return;
-    const d = jvData.dates[jvSelectedDateIdx];
+    const d = jvShown().dates[jvSelectedDateIdx];
     const currentCode = emp.codes[jvSelectedDateIdx] || '';
 
     const headerEl = document.getElementById('jv-picker-header');
@@ -29002,7 +29050,7 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
 
     const optsEl = document.getElementById('jv-picker-options');
     if (optsEl) {
-      optsEl.innerHTML = jvData.codes.map(c => {
+      optsEl.innerHTML = jvShown().codes.map(c => {
         const isSel = c.code === currentCode;
         return '<button onclick="jvSaveCode(' + employeeIndex + ',\'' + c.code + '\')" style="display:flex;align-items:center;gap:12px;padding:13px 14px;border-radius:14px;border:' + (isSel ? '2px solid ' + c.color : '1.5px solid #EDEDE9') + ';background:' + (isSel ? c.color + '22' : '#FFFFFF') + ';text-align:left;width:100%;font-family:inherit;cursor:pointer;">' +
           '<span style="width:10px;height:10px;border-radius:50%;background:' + c.color + ';flex-shrink:0;"></span>' +
@@ -29023,13 +29071,13 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
   }
 
   async function jvSaveCode(employeeIndex, code) {
-    const emp = jvData.roster.find(e => e.employeeIndex === employeeIndex);
+    const emp = jvShown().roster.find(e => e.employeeIndex === employeeIndex);
     if (!emp) return;
     try {
       const resp = await fetch(JV_API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ key: JV_API_KEY, row: emp.row, dateIndex: jvSelectedDateIdx, code: code })
+        body: JSON.stringify({ key: JV_API_KEY, period: jvView, row: emp.row, dateIndex: jvSelectedDateIdx, code: code })
       });
       const result = await resp.json();
       if (!result.success) {
