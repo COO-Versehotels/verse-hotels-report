@@ -28991,6 +28991,24 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
     jvRenderMemberList();
   }
 
+  // Foto Corp Team (file di /jv-photos). Kunci = nama persis seperti di Google Sheet (huruf kecil).
+  // Kalau nama belum punya foto, atau fotonya gagal dimuat, otomatis kembali ke kotak inisial.
+  const JV_PHOTOS = {
+    'eben nainggolan': 'jv-photos/eben-nainggolan.jpg',
+    'sri masnun savitri': 'jv-photos/sri-masnun-savitri.jpg',
+    'nanda istiyarini': 'jv-photos/nanda-istiyarini.jpg',
+    'gaby pristia sitorus': 'jv-photos/gaby-pristia-sitorus.jpg'
+  };
+  function jvAvatarHtml(name, size) {
+    size = size || 52;
+    const initials = jvEsc(jvInitials(name));
+    const base = 'width:' + size + 'px;height:' + size + 'px;border-radius:' + Math.round(size * 0.3) + 'px;flex-shrink:0;overflow:hidden;display:flex;align-items:center;justify-content:center;box-sizing:border-box;';
+    const url = JV_PHOTOS[String(name || '').trim().toLowerCase()];
+    if (!url) return '<div style="' + base + 'background:var(--navy);color:#fff;font-weight:700;font-size:' + Math.round(size * 0.32) + 'px;">' + initials + '</div>';
+    return '<div style="' + base + 'background:#EDEDE9;border:2px solid #fff;box-shadow:0 0 0 1px #E3E3DE,0 2px 8px rgba(23,23,26,0.14);">' +
+      '<img src="' + url + '" alt="' + jvEsc(name) + '" loading="lazy" style="width:100%;height:100%;object-fit:cover;object-position:center top;display:block;" onerror="this.parentNode.style.cssText+=\';background:var(--navy);color:#fff;font-weight:700\';this.parentNode.textContent=\'' + initials + '\'"></div>';
+  }
+
   function jvInitials(name) {
     return (name || '').split(' ').filter(Boolean).slice(0,2).map(w => w[0].toUpperCase()).join('');
   }
@@ -29001,7 +29019,6 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
     listEl.innerHTML = jvShown().roster.map(emp => {
       const code = emp.codes[jvSelectedDateIdx] || '';
       const info = jvCodeInfo(code);
-      const initials = jvInitials(emp.name);
       let badgeHtml;
       if (info) {
         badgeHtml = '<div style="display:flex;align-items:center;gap:6px;background:' + info.color + ';color:' + info.fontColor + ';border-radius:10px;padding:7px 12px;flex-shrink:0;font-size:12px;font-weight:700;">' + jvEsc(info.label === 'Libur' ? 'Libur' : code) + '</div>';
@@ -29013,7 +29030,7 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
       const canEdit = (currentRole === 'COO') && !jvShown().isLocked;
       const disabled = !canEdit;
       return '<button ' + (disabled ? 'disabled' : ('onclick="jvOpenPicker(' + emp.employeeIndex + ')"')) + ' style="display:flex;align-items:center;gap:12px;background:#FFFFFF;border:1px solid #EDEDE9;border-radius:16px;padding:12px 14px;text-align:left;width:100%;font-family:inherit;' + (disabled ? '' : 'cursor:pointer;') + '">' +
-        '<div style="width:40px;height:40px;border-radius:12px;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0;">' + jvEsc(initials) + '</div>' +
+        jvAvatarHtml(emp.name) +
         '<div style="flex:1;min-width:0;">' +
           '<div style="font-size:14px;font-weight:600;color:#17171A;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + jvEsc(emp.name) + '</div>' +
           '<div style="font-size:12px;color:#9A9AA4;margin-top:1px;">' + jvEsc(emp.position) + '</div>' +
@@ -29043,7 +29060,7 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
     const headerEl = document.getElementById('jv-picker-header');
     if (headerEl) {
       headerEl.innerHTML =
-        '<div style="width:40px;height:40px;border-radius:12px;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0;">' + jvEsc(jvInitials(emp.name)) + '</div>' +
+        jvAvatarHtml(emp.name) +
         '<div><div style="font-size:15px;font-weight:700;color:#17171A;">' + jvEsc(emp.name) + '</div>' +
         '<div style="font-size:12px;color:#9A9AA4;">' + jvEsc(d.dow) + ', ' + d.day + '</div></div>';
     }
