@@ -1376,6 +1376,22 @@
   .ars-cekbox textarea{width:100%;border:1px solid #e5e7eb;border-radius:10px;padding:9px;font:inherit;font-size:13px;resize:vertical}
   .ars-btn{display:block;width:100%;margin-top:8px;padding:12px;border:none;border-radius:12px;font:inherit;font-weight:800;font-size:13.5px;background:#eef2f7;color:var(--navy);cursor:pointer}
   .ars-btn.ok{background:#15803d;color:#fff}
+  .dva-tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px}
+  .dva-tabs button{padding:9px;border-radius:10px;border:1px solid #e5e7eb;background:#f8fafc;font-weight:700;font-size:12.5px;color:#475569;cursor:pointer}
+  .dva-tabs button.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .dva-sec{font-size:11.5px;font-weight:800;color:#1a3a5c;letter-spacing:.3px;margin:12px 2px 6px;text-transform:uppercase}
+  .dva-sec.kuning{color:#b45309}
+  .dva-it{border:1px solid #e5e7eb;border-radius:10px;margin-bottom:6px;background:#fff}
+  .dva-it.lama{background:#f8fafc;opacity:.75}
+  .dva-row{display:flex;gap:8px;align-items:center;padding:9px 10px;cursor:pointer}
+  .dva-tx{flex:1;min-width:0}.dva-tx b{display:block;font-size:12.5px;color:var(--navy);line-height:1.3}
+  .dva-tx small{display:block;font-size:11px;color:#64748b;margin-top:2px;line-height:1.3}
+  .dva-act{display:flex;gap:5px;flex:none}
+  .dva-b{padding:7px 10px;border:none;border-radius:8px;font-size:11.5px;font-weight:700;cursor:pointer}
+  .dva-b.hijau{background:#16a34a;color:#fff}.dva-b.merah{background:#fee2e2;color:#b91c1c}.dva-b.abu{background:#f1f5f9;color:#334155}
+  .dva-badge{color:#94a3b8;font-weight:800;font-size:16px;padding:0 4px}
+  .dva-det{border-top:1px dashed #e5e7eb;padding:9px 10px}
+  .dva-note{font-size:11px;color:#64748b;background:#f8fafc;border-radius:8px;padding:8px 10px;margin:6px 0;line-height:1.45}
   /* ===== ARSIP SCREEN ===== */
   #screen-arsip {
     background: var(--cream);
@@ -7141,6 +7157,40 @@
     loadDeviceApprovalList();
   }
 
+  // Daftar device dirapikan (15 Okt 2026): Menunggu persetujuan di atas, Aktif dikelompokkan per unit, Dicabut di folder terpisah.
+  function _devUnit(r) {
+    const t = ((r.allowed_roles || []).join(' ') + ' ' + (r.label || ''));
+    if (/Lite/i.test(t)) return 'Verse Lite';
+    if (/Luxe/i.test(t)) return 'Verse Luxe';
+    if (/Cirebon/i.test(t)) return 'Verse Cirebon';
+    if (/Oak\s*Tree/i.test(t)) return 'Oak Tree';
+    if ((r.allowed_roles || []).length) return 'Corporate';
+    return 'Belum ada jabatan';
+  }
+  function _devJenis(ua) {
+    ua = ua || '';
+    if (/HeadlessChrome/i.test(ua)) return '🤖 Browser uji';
+    if (/iPhone/i.test(ua)) return '📱 iPhone';
+    if (/iPad/i.test(ua)) return '📱 iPad';
+    if (/; wv\)/i.test(ua)) return '📱 Android (aplikasi)';
+    if (/Android/i.test(ua)) return '📱 Android';
+    if (/Windows/i.test(ua)) return '💻 Laptop Windows';
+    if (/Macintosh/i.test(ua)) return '💻 Mac';
+    if (/X11|Linux/i.test(ua)) return '💻 Linux';
+    return '📱 Perangkat';
+  }
+  function _devLalu(ts) {
+    if (!ts) return 'belum pernah dipakai';
+    const m = Math.floor((Date.now() - new Date(ts).getTime()) / 60000);
+    if (m < 60) return m <= 1 ? 'baru saja' : m + ' menit lalu';
+    const h = Math.floor(m / 60); if (h < 24) return h + ' jam lalu';
+    const d = Math.floor(h / 24); return d === 1 ? 'kemarin' : d + ' hari lalu';
+  }
+  function _devTgl(ts) {
+    if (!ts) return '-';
+    const w = new Date(new Date(ts).getTime() + 7*3600000).toISOString();
+    return w.slice(8,10) + '/' + w.slice(5,7) + ' ' + w.slice(11,16);
+  }
   async function loadDeviceApprovalList() {
     const listEl = document.getElementById('devapp-list');
     if (!listEl) return;
@@ -7148,57 +7198,62 @@
     try {
       const rows = await _adminRpc('admin_devices_list');
       window._devappRows = rows || [];
-      if (!rows || rows.length === 0) {
-        listEl.innerHTML = '<div style="text-align:center;color:#94a3b8;padding:20px;">Belum ada device yang pernah akses.</div>';
-        return;
-      }
-      const statusBadge = (s) => {
-        if (s === 'approved') return '<span style="background:#dcfce7;color:#16a34a;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;">✅ Approved</span>';
-        if (s === 'revoked') return '<span style="background:#fee2e2;color:#dc2626;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;">🚫 Revoked</span>';
-        return '<span style="background:#fef3c7;color:#d97706;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;">⏳ Pending</span>';
-      };
-      // Device yang sudah dicabut (revoked) disembunyikan supaya daftar tidak penuh.
-      // Tetap bisa dibuka lewat tombol di bawah (kalau perlu disetujui ulang).
-      const revokedCount = rows.filter(r => r.status === 'revoked').length;
-      const namedPending = rows.filter(r => r.status === 'pending' && r.label);
-      const showRevoked = !!window._devappShowRevoked;
-      const visibleRows = showRevoked ? rows : rows.filter(r => r.status !== 'revoked');
-      let html = '';
-      if (namedPending.length > 0) {
-        html += `<button onclick="devappApproveAllNamed()" style="width:100%;padding:10px;margin-bottom:10px;background:#16a34a;color:white;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;">✅ Approve semua yang sudah bernama (${namedPending.length})</button>`;
-      }
-      if (visibleRows.length === 0) html += '<div style="text-align:center;color:#94a3b8;padding:20px;">Tidak ada device aktif / pending.</div>';
-      visibleRows.forEach(r => {
-        const dt = new Date(r.requested_at);
-        const wib = new Date(dt.getTime() + 7*3600000);
-        const dateStr = wib.toISOString().split('T')[0] + ' ' + wib.toISOString().split('T')[1].substring(0,5) + ' WIB';
-        const uaShort = (r.user_agent || '').substring(0, 60);
-        html += `
-          <div style="border:1px solid #e5e7eb;border-radius:10px;padding:10px 12px;margin-bottom:8px;">
-            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
-              <div style="flex:1;min-width:0;">
-                <div style="font-weight:700;font-size:12px;color:var(--navy);">${r.label ? _umrEsc(r.label) : '(belum diberi label)'}</div>
-                <div style="font-size:11px;color:#1a3a5c;margin-top:3px;">🔒 Jabatan: <b>${r.allowed_roles && r.allowed_roles.length ? _umrEsc(r.allowed_roles.map(x => getDisplayRole(x)).join(', ')) : '<span style="color:#94a3b8;font-weight:400;">belum terkunci (terkunci otomatis saat login pertama)</span>'}</b>
-                  <a onclick="devappEditRoles(${r.id})" style="margin-left:6px;color:#2563eb;cursor:pointer;font-weight:700;">✏️ Ubah</a></div>
-                ${r.last_violation_at ? `<div style="font-size:10.5px;color:#dc2626;margin-top:2px;">⚠️ Terakhir coba masuk jabatan lain: ${new Date(new Date(r.last_violation_at).getTime() + 7*3600000).toISOString().replace('T',' ').slice(0,16)} WIB</div>` : ''}
-                <div style="font-size:10px;color:#94a3b8;margin-top:2px;">Diminta: ${dateStr}</div>
-                <div style="font-size:9px;color:#cbd5e1;margin-top:2px;word-break:break-all;">${_umrEsc(uaShort)}</div>
-                <div style="font-size:9px;color:#cbd5e1;margin-top:2px;word-break:break-all;">ID: ${_umrEsc(r.device_id)}</div>
-              </div>
-              <div>${statusBadge(r.status)}</div>
-            </div>
-            <div style="display:flex;gap:6px;margin-top:8px;">
-              <input type="text" placeholder="Label (misal: HP Dinal - HM Lite)" value="${r.label ? _umrEsc(r.label) : ''}" id="devapp-label-${r.id}" style="flex:1;padding:6px 8px;border:1px solid #ddd;border-radius:6px;font-size:11px;">
-              ${r.status !== 'approved' ? `<button onclick="devappSetStatus(${r.id}, 'approved')" style="padding:6px 10px;background:#16a34a;color:white;border:none;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;">Setujui</button>` : ''}
-              ${r.status !== 'revoked' ? `<button onclick="devappSetStatus(${r.id}, 'revoked')" style="padding:6px 10px;background:#dc2626;color:white;border:none;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;">Cabut</button>` : ''}
-              <button onclick="devappSaveLabel(${r.id})" style="padding:6px 10px;background:#f1f5f9;color:#475569;border:none;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;">Simpan Label</button>
-            </div>
+      const now = Date.now(), H = 86400000;
+      const pend = (rows || []).filter(r => r.status === 'pending');
+      const pendBaru = pend.filter(r => r.label || (now - new Date(r.requested_at).getTime()) < 7*H);
+      const pendLama = pend.length - pendBaru.length;
+      const aktif = (rows || []).filter(r => r.status === 'approved');
+      const cabut = (rows || []).filter(r => r.status === 'revoked' && (now - new Date(r.revoked_at || r.requested_at).getTime()) < 90*H);
+      const tab = window._devappTab || 'aktif';
+      const nama = r => r.label ? _umrEsc(r.label) : '<span style="color:#94a3b8;">(belum ada nama — belum isi PIN)</span>';
+      const jab = r => (r.allowed_roles && r.allowed_roles.length) ? _umrEsc(r.allowed_roles.map(x => getDisplayRole(x)).join(', ')) : '<span style="color:#94a3b8;">belum terkunci</span>';
+      const baris = (r, aksi) => {
+        const lama = r.status === 'approved' && (!r.last_seen_at || now - new Date(r.last_seen_at).getTime() > 14*H);
+        const buka = window._devappOpen === r.id;
+        return `<div class="dva-it${lama ? ' lama' : ''}">
+          <div class="dva-row" onclick="window._devappOpen=${buka ? 'null' : r.id};loadDeviceApprovalList()">
+            <div class="dva-tx"><b>${nama(r)}</b>
+              <small>🔒 ${jab(r)}</small>
+              <small>${_devJenis(r.user_agent)} · ${r.status === 'approved' ? (lama ? '⚠️ ' : '') + 'dipakai ' + _devLalu(r.last_seen_at) : r.status === 'pending' ? 'meminta ' + _devLalu(r.requested_at) : 'dicabut ' + _devTgl(r.revoked_at)}</small></div>
+            <div class="dva-act" onclick="event.stopPropagation()">${aksi}</div>
           </div>
-        `;
-      });
-      if (revokedCount > 0) {
-        html += `<div style="text-align:center;margin-top:10px;"><button onclick="window._devappShowRevoked=!window._devappShowRevoked;loadDeviceApprovalList()" style="padding:6px 12px;background:none;border:1px dashed #cbd5e1;border-radius:8px;color:#64748b;font-size:11px;font-weight:600;cursor:pointer;">${showRevoked ? 'Sembunyikan' : 'Tampilkan'} ${revokedCount} device yang sudah dicabut</button></div>`;
+          ${buka ? `<div class="dva-det">
+            <div style="display:flex;gap:6px;"><input type="text" placeholder="Nama (misal: Dinal – HM Verse Lite)" value="${r.label ? _umrEsc(r.label) : ''}" id="devapp-label-${r.id}" style="flex:1;padding:8px;border:1px solid #ddd;border-radius:8px;font-size:12px;">
+              <button onclick="devappSaveLabel(${r.id})" class="dva-b abu">Simpan</button></div>
+            <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">
+              <button onclick="devappEditRoles(${r.id})" class="dva-b abu">✏️ Ubah jabatan</button>
+              ${r.status === 'approved' ? `<button onclick="if(confirm('Cabut akses perangkat ini?'))devappSetStatus(${r.id},'revoked')" class="dva-b merah">🚫 Cabut akses</button>` : ''}
+            </div>
+            ${r.last_violation_at ? `<div style="font-size:11px;color:#dc2626;margin-top:6px;">⚠️ Terakhir coba masuk jabatan lain: ${_devTgl(r.last_violation_at)} WIB</div>` : ''}
+            <div style="font-size:10px;color:#94a3b8;margin-top:6px;word-break:break-all;">Diminta ${_devTgl(r.requested_at)}${r.approved_at ? ' · disetujui ' + _devTgl(r.approved_at) : ''} · ${_umrEsc((r.user_agent || '').substring(0, 80))}<br>ID: ${_umrEsc(r.device_id)}</div>
+          </div>` : ''}
+        </div>`;
+      };
+      let html = `<div class="dva-tabs">
+          <button class="${tab === 'aktif' ? 'on' : ''}" onclick="window._devappTab='aktif';loadDeviceApprovalList()">✅ Aktif <b>${aktif.length}</b></button>
+          <button class="${tab === 'cabut' ? 'on' : ''}" onclick="window._devappTab='cabut';loadDeviceApprovalList()">🚫 Dicabut <b>${cabut.length}</b></button></div>`;
+      if (pendBaru.length) {
+        const named = pendBaru.filter(r => r.label);
+        html += `<div class="dva-sec kuning">⏳ Menunggu persetujuan (${pendBaru.length})</div>`;
+        if (named.length > 1) html += `<button onclick="devappApproveAllNamed()" class="dva-b hijau" style="width:100%;margin-bottom:8px;padding:9px;">✅ Setujui semua yang sudah bernama (${named.length})</button>`;
+        pendBaru.forEach(r => { html += baris(r, `<button onclick="devappSetStatus(${r.id},'approved')" class="dva-b hijau">Setujui</button><button onclick="devappSetStatus(${r.id},'revoked')" class="dva-b merah">Tolak</button>`); });
+        html += `<div class="dva-note">Yang belum ada nama = belum mengisi PIN. Sebaiknya minta staff mengisi PIN dulu supaya namanya muncul.</div>`;
       }
+      if (tab === 'aktif') {
+        const grup = {};
+        aktif.forEach(r => { const u = _devUnit(r); (grup[u] = grup[u] || []).push(r); });
+        const urut = ['Corporate', 'Verse Lite', 'Verse Luxe', 'Verse Cirebon', 'Oak Tree', 'Belum ada jabatan'];
+        urut.filter(u => grup[u]).forEach(u => {
+          html += `<div class="dva-sec">${u} (${grup[u].length})</div>`;
+          grup[u].sort((a, b) => String(a.label || '').localeCompare(String(b.label || ''))).forEach(r => { html += baris(r, `<span class="dva-badge">⋯</span>`); });
+        });
+        if (!aktif.length) html += '<div class="dva-note">Belum ada device aktif.</div>';
+      } else {
+        html += `<div class="dva-note">Perangkat yang dicabut (mis. karyawan resign) tidak bisa membuka aplikasi. Disimpan di sini 90 hari, setelah itu tidak ditampilkan lagi tetapi <b>tetap terblokir</b>. Bisa disetujui ulang bila keliru.</div>`;
+        cabut.sort((a, b) => String(b.revoked_at || '').localeCompare(String(a.revoked_at || ''))).forEach(r => { html += baris(r, `<button onclick="devappSetStatus(${r.id},'approved')" class="dva-b abu">Setujui ulang</button>`); });
+        if (!cabut.length) html += '<div class="dva-note">Tidak ada.</div>';
+      }
+      if (pendLama) html += `<div class="dva-note" style="text-align:center;">${pendLama} permintaan lama tanpa nama (lebih dari 7 hari tidak mencoba lagi) disembunyikan. Bila orangnya membuka aplikasi lagi, permintaannya muncul kembali di atas.</div>`;
       listEl.innerHTML = html;
     } catch (e) {
       listEl.innerHTML = `<div style="color:#ef4444;text-align:center;padding:20px;">❌ Gagal memuat: ${e.message}</div>`;
@@ -7262,7 +7317,7 @@
     if (!input) return;
     try {
       await _adminRpc('admin_device_update', { p_id: id, p_status: null, p_label: input.value });
-      showToast('✅ Label disimpan');
+      showToast('✅ Label disimpan'); loadDeviceApprovalList();
     } catch (e) {
       showToast('❌ Gagal simpan label: ' + e.message);
     }
