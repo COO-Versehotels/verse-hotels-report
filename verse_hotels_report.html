@@ -3811,12 +3811,12 @@
         <div style="font-size:13px;color:#64748b;line-height:1.5;margin-bottom:16px;">${desc}</div>
         ${status === 'pending' ? `
         <div style="text-align:left;background:#f1f5f9;border-radius:12px;padding:12px;margin-bottom:12px;">
-          <div style="font-size:12px;font-weight:700;color:#1a3a5c;margin-bottom:6px;">Isi PIN Anda supaya COO tahu HP ini milik siapa</div>
+          <div style="font-size:12px;font-weight:700;color:#1a3a5c;margin-bottom:6px;">Isi PIN jabatan Anda untuk meminta akses ke COO</div>
           <div style="display:flex;gap:6px;">
             <input id="gate-pin-input" type="password" inputmode="numeric" maxlength="6" placeholder="PIN" style="flex:1;min-width:0;padding:10px;border:1.5px solid #cbd5e1;border-radius:10px;font-size:16px;letter-spacing:4px;text-align:center;">
             <button id="gate-pin-btn" style="padding:10px 12px;background:#16a34a;color:white;border:none;border-radius:10px;font-weight:700;font-size:12px;cursor:pointer;white-space:nowrap;">Kirim ke COO</button>
           </div>
-          <div id="gate-pin-msg" style="font-size:11px;margin-top:6px;color:#64748b;">PIN tidak langsung membuka akses — COO tetap harus menyetujui.</div>
+          <div id="gate-pin-msg" style="font-size:11px;margin-top:6px;color:#64748b;">Permintaan baru terkirim ke COO setelah PIN benar. COO tetap harus menyetujui.</div>
         </div>` : ''}
         <div style="font-size:10px;color:#94a3b8;background:#f8fafc;border-radius:8px;padding:8px;margin-bottom:16px;word-break:break-all;">Device ID: ${deviceId}</div>
         <button id="device-gate-recheck" style="width:100%;padding:12px;background:#1a3a5c;color:white;border:none;border-radius:10px;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;">🔄 Cek Status Lagi</button>
@@ -7200,9 +7200,10 @@
       window._devappRows = rows || [];
       const now = Date.now(), H = 86400000;
       // browser uji otomatis (HeadlessChrome) tidak perlu ditampilkan — tidak pernah perlu disetujui
-      const pend = (rows || []).filter(r => r.status === 'pending' && !/HeadlessChrome/i.test(r.user_agent || ''));
-      const pendBaru = pend.filter(r => r.label || (now - new Date(r.requested_at).getTime()) < 7*H);
-      const pendLama = pend.length - pendBaru.length;
+      // sejak 15 Okt 2026 permintaan baru hanya tercatat setelah PIN jabatan benar -> yang tanpa nama (alur lama / robot) tidak ditampilkan
+      const pend = (rows || []).filter(r => r.status === 'pending' && r.label && !/HeadlessChrome/i.test(r.user_agent || ''));
+      const pendBaru = pend;
+      const pendLama = 0;
       const aktif = (rows || []).filter(r => r.status === 'approved');
       const cabut = (rows || []).filter(r => r.status === 'revoked' && (now - new Date(r.revoked_at || r.requested_at).getTime()) < 90*H);
       const tab = window._devappTab || 'aktif';
@@ -7238,7 +7239,7 @@
         html += `<div class="dva-sec kuning">⏳ Menunggu persetujuan (${pendBaru.length})</div>`;
         if (named.length > 1) html += `<button onclick="devappApproveAllNamed()" class="dva-b hijau" style="width:100%;margin-bottom:8px;padding:9px;">✅ Setujui semua yang sudah bernama (${named.length})</button>`;
         pendBaru.forEach(r => { html += baris(r, `<button onclick="devappSetStatus(${r.id},'approved')" class="dva-b hijau">Setujui</button><button onclick="devappSetStatus(${r.id},'revoked')" class="dva-b merah">Tolak</button>`); });
-        html += `<div class="dva-note">Yang belum ada nama = belum mengisi PIN. Sebaiknya minta staff mengisi PIN dulu supaya namanya muncul.</div>`;
+        html += `<div class="dva-note">Nama & jabatan di atas berasal dari PIN yang diisi di HP tersebut. Setujui hanya bila HP-nya memang milik orang itu.</div>`;
       }
       if (tab === 'aktif') {
         const grup = {};
