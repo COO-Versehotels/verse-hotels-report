@@ -7199,7 +7199,8 @@
       const rows = await _adminRpc('admin_devices_list');
       window._devappRows = rows || [];
       const now = Date.now(), H = 86400000;
-      const pend = (rows || []).filter(r => r.status === 'pending');
+      // browser uji otomatis (HeadlessChrome) tidak perlu ditampilkan — tidak pernah perlu disetujui
+      const pend = (rows || []).filter(r => r.status === 'pending' && !/HeadlessChrome/i.test(r.user_agent || ''));
       const pendBaru = pend.filter(r => r.label || (now - new Date(r.requested_at).getTime()) < 7*H);
       const pendLama = pend.length - pendBaru.length;
       const aktif = (rows || []).filter(r => r.status === 'approved');
