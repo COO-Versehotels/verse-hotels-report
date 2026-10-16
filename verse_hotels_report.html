@@ -3876,6 +3876,19 @@
     let icon = '⏳', title = 'Menunggu Persetujuan Admin', desc = 'HP/browser ini belum terdaftar. Minta COO untuk menyetujui akses dari Dashboard COO → Device Approval.';
     if (status === 'revoked') {
       icon = '🚫'; title = 'Akses Dicabut'; desc = 'Akses untuk HP/browser ini sudah dicabut oleh Admin. Hubungi COO kalau ini keliru.';
+      // HP Android lewat browser (bukan aplikasi) -> arahkan ke aplikasi Verse Apps
+      const nativeApp = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+      if (!nativeApp && /Android/i.test(navigator.userAgent)) {
+        icon = '📱'; title = 'Gunakan Aplikasi Verse Apps';
+        desc = 'Tasklist di HP Android sekarang dibuka lewat <b>aplikasi Verse Apps</b>, bukan lewat Chrome/browser. Buka aplikasi Verse Apps di HP ini. Kalau belum terpasang, unduh di bawah.';
+        setTimeout(async () => {
+          try {
+            const v = await (await fetch('/app-version.json?_=' + Date.now())).json();
+            const box = document.getElementById('gate-apk');
+            if (box && v && v.url) { box.href = v.url; box.style.display = 'block'; }
+          } catch (e) {}
+        }, 50);
+      }
     }
 
     overlay.innerHTML = `
@@ -3892,6 +3905,7 @@
           </div>
           <div id="gate-pin-msg" style="font-size:11px;margin-top:6px;color:#64748b;">Permintaan baru terkirim ke COO setelah PIN benar. COO tetap harus menyetujui.</div>
         </div>` : ''}
+        <a id="gate-apk" href="#" style="display:none;padding:12px;background:#16a34a;color:white;border-radius:10px;font-size:14px;font-weight:700;text-decoration:none;margin-bottom:12px;">⬇️ Unduh Aplikasi Verse Apps</a>
         <div style="font-size:10px;color:#94a3b8;background:#f8fafc;border-radius:8px;padding:8px;margin-bottom:16px;word-break:break-all;">Device ID: ${deviceId}</div>
         <button id="device-gate-recheck" style="width:100%;padding:12px;background:#1a3a5c;color:white;border:none;border-radius:10px;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;">🔄 Cek Status Lagi</button>
       </div>
