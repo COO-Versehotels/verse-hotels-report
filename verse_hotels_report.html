@@ -1390,6 +1390,16 @@
   .dva-b{padding:7px 10px;border:none;border-radius:8px;font-size:11.5px;font-weight:700;cursor:pointer}
   .dva-b.hijau{background:#16a34a;color:#fff}.dva-b.merah{background:#fee2e2;color:#b91c1c}.dva-b.abu{background:#f1f5f9;color:#334155}
   .dva-badge{color:#94a3b8;font-weight:800;font-size:16px;padding:0 4px}
+  .dva-dot{width:36px;height:32px;border:none;border-radius:8px;background:transparent;color:#64748b;font-weight:900;font-size:18px;line-height:1;cursor:pointer}
+  .dva-dot:hover,.dva-dot.on{background:#eef2f7;color:var(--navy)}
+  .dva-menu{display:flex;gap:6px;flex-wrap:wrap;padding:0 10px 10px;animation:dvaIn .12s ease-out}
+  .dva-menu button{flex:1;min-width:90px;padding:9px 8px;border:1px solid #e5e7eb;border-radius:9px;background:#f8fafc;font:inherit;font-size:12px;font-weight:700;color:#334155;cursor:pointer}
+  .dva-menu button.merah{background:#fee2e2;border-color:#fecaca;color:#b91c1c}
+  .dva-menu.konfirm{display:block;background:#fff7f7;border-top:1px solid #fee2e2;padding:10px}
+  .dva-mq{font-size:12px;color:#7f1d1d;line-height:1.4;margin-bottom:8px}
+  .dva-mb{display:flex;gap:6px}.dva-mb .dva-b{flex:1;padding:10px}
+  .dva-b.merah.kuat{background:#dc2626;color:#fff}
+  @keyframes dvaIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
   .dva-det{border-top:1px dashed #e5e7eb;padding:9px 10px}
   .dva-note{font-size:11px;color:#64748b;background:#f8fafc;border-radius:8px;padding:8px 10px;margin:6px 0;line-height:1.45}
   /* ===== ARSIP SCREEN ===== */
@@ -7477,6 +7487,7 @@
       </div>
     `;
     document.body.appendChild(ov);
+    window._devappMenu = null; window._devappKonfirm = null; window._devappOpen = null;
     loadDeviceApprovalList();
   }
 
@@ -7514,13 +7525,35 @@
     const w = new Date(new Date(ts).getTime() + 7*3600000).toISOString();
     return w.slice(8,10) + '/' + w.slice(5,7) + ' ' + w.slice(11,16);
   }
+  // Wadah yang di-scroll (supaya posisi scroll tidak lompat ke atas saat daftar digambar ulang)
+  function _devappScroller() {
+    let el = document.getElementById('devapp-list');
+    while (el && el !== document.body) {
+      const cs = getComputedStyle(el);
+      if (/(auto|scroll)/.test(cs.overflowY) && el.scrollHeight > el.clientHeight) return el;
+      el = el.parentElement;
+    }
+    return null;
+  }
+  // Ambil data dari server lalu gambar. Klik buka/tutup/menu hanya menggambar ulang (instan, tanpa memuat ulang).
   async function loadDeviceApprovalList() {
     const listEl = document.getElementById('devapp-list');
     if (!listEl) return;
-    listEl.innerHTML = '⏳ Memuat…';
+    if (!window._devappRows || !listEl.querySelector('.dva-tabs')) listEl.innerHTML = '⏳ Memuat…';
     try {
       const rows = await _adminRpc('admin_devices_list');
       window._devappRows = rows || [];
+      _devappRender();
+    } catch (e) {
+      listEl.innerHTML = `<div style="color:#ef4444;text-align:center;padding:20px;">❌ Gagal memuat: ${e.message}</div>`;
+    }
+  }
+  function _devappRender() {
+    const listEl = document.getElementById('devapp-list');
+    if (!listEl) return;
+    const sc = _devappScroller(), top = sc ? sc.scrollTop : 0;
+    try {
+      const rows = window._devappRows || [];
       const now = Date.now(), H = 86400000;
       // browser uji otomatis (HeadlessChrome) tidak perlu ditampilkan — tidak pernah perlu disetujui
       // sejak 15 Okt 2026 permintaan baru hanya tercatat setelah PIN jabatan benar -> yang tanpa nama (alur lama / robot) tidak ditampilkan
@@ -7536,18 +7569,19 @@
         const lama = r.status === 'approved' && (!r.last_seen_at || now - new Date(r.last_seen_at).getTime() > 14*H);
         const buka = window._devappOpen === r.id;
         return `<div class="dva-it${lama ? ' lama' : ''}">
-          <div class="dva-row" onclick="window._devappOpen=${buka ? 'null' : r.id};loadDeviceApprovalList()">
+          <div class="dva-row" onclick="window._devappMenu=null;window._devappOpen=${buka ? 'null' : r.id};_devappRender()">
             <div class="dva-tx"><b>${nama(r)}</b>
               <small>🔒 ${jab(r)}</small>
               <small>${_devJenis(r.user_agent)} · ${r.status === 'approved' ? (lama ? '⚠️ ' : '') + 'dipakai ' + _devLalu(r.last_seen_at) : r.status === 'pending' ? 'meminta ' + _devLalu(r.requested_at) : 'dicabut ' + _devTgl(r.revoked_at)}</small></div>
             <div class="dva-act" onclick="event.stopPropagation()">${aksi}</div>
           </div>
+          ${window._devappMenu === r.id ? _devappMenuHtml(r) : ''}
           ${buka ? `<div class="dva-det">
             <div style="display:flex;gap:6px;"><input type="text" placeholder="Nama (misal: Dinal – HM Verse Lite)" value="${r.label ? _umrEsc(r.label) : ''}" id="devapp-label-${r.id}" style="flex:1;padding:8px;border:1px solid #ddd;border-radius:8px;font-size:12px;">
               <button onclick="devappSaveLabel(${r.id})" class="dva-b abu">Simpan</button></div>
             <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">
               <button onclick="devappEditRoles(${r.id})" class="dva-b abu">✏️ Ubah jabatan</button>
-              ${r.status === 'approved' ? `<button onclick="if(confirm('Cabut akses perangkat ini?'))devappSetStatus(${r.id},'revoked')" class="dva-b merah">🚫 Cabut akses</button>` : ''}
+              ${r.status === 'approved' ? `<button onclick="window._devappMenu=${r.id};window._devappKonfirm=${r.id};_devappRender()" class="dva-b merah">🚫 Cabut akses</button>` : ''}
             </div>
             ${r.last_violation_at ? `<div style="font-size:11px;color:#dc2626;margin-top:6px;">⚠️ Terakhir coba masuk jabatan lain: ${_devTgl(r.last_violation_at)} WIB</div>` : ''}
             <div style="font-size:10px;color:#94a3b8;margin-top:6px;word-break:break-all;">Diminta ${_devTgl(r.requested_at)}${r.approved_at ? ' · disetujui ' + _devTgl(r.approved_at) : ''} · ${_umrEsc((r.user_agent || '').substring(0, 80))}<br>ID: ${_umrEsc(r.device_id)}</div>
@@ -7555,8 +7589,8 @@
         </div>`;
       };
       let html = `<div class="dva-tabs">
-          <button class="${tab === 'aktif' ? 'on' : ''}" onclick="window._devappTab='aktif';loadDeviceApprovalList()">✅ Aktif <b>${aktif.length}</b></button>
-          <button class="${tab === 'cabut' ? 'on' : ''}" onclick="window._devappTab='cabut';loadDeviceApprovalList()">🚫 Dicabut <b>${cabut.length}</b></button></div>`;
+          <button class="${tab === 'aktif' ? 'on' : ''}" onclick="window._devappTab='aktif';window._devappMenu=null;_devappRender()">✅ Aktif <b>${aktif.length}</b></button>
+          <button class="${tab === 'cabut' ? 'on' : ''}" onclick="window._devappTab='cabut';window._devappMenu=null;_devappRender()">🚫 Dicabut <b>${cabut.length}</b></button></div>`;
       if (pendBaru.length) {
         const named = pendBaru.filter(r => r.label);
         html += `<div class="dva-sec kuning">⏳ Menunggu persetujuan (${pendBaru.length})</div>`;
@@ -7570,7 +7604,7 @@
         const urut = ['Corporate', 'Verse Lite', 'Verse Luxe', 'Verse Cirebon', 'Oak Tree', 'Belum ada jabatan'];
         urut.filter(u => grup[u]).forEach(u => {
           html += `<div class="dva-sec">${u} (${grup[u].length})</div>`;
-          grup[u].sort((a, b) => String(a.label || '').localeCompare(String(b.label || ''))).forEach(r => { html += baris(r, `<span class="dva-badge">⋯</span>`); });
+          grup[u].sort((a, b) => String(a.label || '').localeCompare(String(b.label || ''))).forEach(r => { html += baris(r, `<button class="dva-dot${window._devappMenu === r.id ? ' on' : ''}" title="Pilihan" onclick="_devappToggleMenu(${r.id})">⋯</button>`); });
         });
         if (!aktif.length) html += '<div class="dva-note">Belum ada device aktif.</div>';
       } else {
@@ -7580,9 +7614,27 @@
       }
       if (pendLama) html += `<div class="dva-note" style="text-align:center;">${pendLama} permintaan lama tanpa nama (lebih dari 7 hari tidak mencoba lagi) disembunyikan. Bila orangnya membuka aplikasi lagi, permintaannya muncul kembali di atas.</div>`;
       listEl.innerHTML = html;
+      if (sc) sc.scrollTop = top;
     } catch (e) {
-      listEl.innerHTML = `<div style="color:#ef4444;text-align:center;padding:20px;">❌ Gagal memuat: ${e.message}</div>`;
+      listEl.innerHTML = `<div style="color:#ef4444;text-align:center;padding:20px;">❌ Gagal menampilkan: ${e.message}</div>`;
     }
+  }
+  function _devappToggleMenu(id) {
+    window._devappMenu = window._devappMenu === id ? null : id;
+    window._devappKonfirm = null;
+    _devappRender();
+  }
+  function _devappMenuHtml(r) {
+    if (window._devappKonfirm === r.id) {
+      return `<div class="dva-menu konfirm" onclick="event.stopPropagation()">
+        <div class="dva-mq">Cabut akses <b>${_umrEsc(r.label || 'HP ini')}</b>? HP ini tidak bisa membuka Tasklist lagi (bisa disetujui ulang dari tab Dicabut).</div>
+        <div class="dva-mb"><button class="dva-b abu" onclick="window._devappKonfirm=null;window._devappMenu=null;_devappRender()">Batal</button>
+          <button class="dva-b merah kuat" onclick="devappSetStatus(${r.id},'revoked')">🚫 Ya, cabut</button></div></div>`;
+    }
+    return `<div class="dva-menu" onclick="event.stopPropagation()">
+      <button onclick="window._devappMenu=null;window._devappOpen=${r.id};_devappRender();setTimeout(()=>document.getElementById('devapp-label-${r.id}')?.focus(),50)">✏️ Ganti nama</button>
+      <button onclick="window._devappMenu=null;_devappRender();devappEditRoles(${r.id})">🔒 Ubah jabatan</button>
+      <button class="merah" onclick="window._devappKonfirm=${r.id};_devappRender()">🚫 Cabut akses</button></div>`;
   }
 
   function _allRoleNames() {
@@ -7628,11 +7680,23 @@
   }
 
   async function devappSetStatus(id, status) {
+    // Langsung terlihat di layar (tanpa menunggu server), posisi scroll tetap
+    const row = (window._devappRows || []).find(x => x.id === id);
+    const lama = row ? { status: row.status, revoked_at: row.revoked_at, approved_at: row.approved_at } : null;
+    if (row) {
+      row.status = status;
+      if (status === 'revoked') row.revoked_at = new Date().toISOString();
+      else { row.revoked_at = null; row.approved_at = row.approved_at || new Date().toISOString(); }
+    }
+    window._devappMenu = null; window._devappKonfirm = null;
+    if (window._devappOpen === id) window._devappOpen = null;
+    _devappRender();
     try {
       await _adminRpc('admin_device_update', { p_id: id, p_status: status, p_label: null });
-      showToast(status === 'approved' ? '✅ Device disetujui' : '🚫 Akses dicabut');
+      showToast(status === 'approved' ? '✅ Device disetujui' : '🚫 Akses dicabut — pindah ke tab Dicabut');
       loadDeviceApprovalList();
     } catch (e) {
+      if (row && lama) { Object.assign(row, lama); _devappRender(); }
       showToast('❌ Gagal update: ' + e.message);
     }
   }
