@@ -145,6 +145,18 @@ export default async function handler(req, res) {
       tokens = (r && r.tokens) || [];
       title = '📱 Permintaan Approval HP';
       body = ((r && r.label) || 'HP baru') + ' — buka Dashboard COO → Device Approval';
+    } else if (reqBody.type === 'jadwal') {
+      // Broadcast terjadwal — dipicu pg_cron (kunci sistem), isi pesan diambil dari database
+      try {
+        const r = await supaRpc('bjadwal_prepare', { p_auth: String(reqBody.auth || ''), p_id: Number(reqBody.jadwalId) || 0 });
+        tokens = (r && r.tokens) || [];
+        title = (r && r.title) || '';
+        body = (r && r.body) || '';
+        notifId = r && r.id;
+      } catch (e) {
+        if (/NOT_AUTHORIZED/.test(e.message)) return res.status(401).json({ success: false, error: 'NOT_AUTHORIZED' });
+        throw e;
+      }
     } else {
       title = String(reqBody.title || '').slice(0, 120);
       body = String(reqBody.body || '').slice(0, 500);
