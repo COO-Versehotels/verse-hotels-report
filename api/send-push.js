@@ -145,6 +145,12 @@ export default async function handler(req, res) {
       tokens = (r && r.tokens) || [];
       title = '📱 Permintaan Approval HP';
       body = ((r && r.label) || 'HP baru') + ' — buka Dashboard COO → Device Approval';
+    } else if (reqBody.type === 'notif_balas') {
+      // Team membalas broadcast -> kabari COO (sekali per balasan, dicek di database)
+      const r = await supaRpc('push_notif_balas', { p_device_id: String(reqBody.deviceId || ''), p_role: String(reqBody.role || ''), p_id: Number(reqBody.id) || 0 });
+      tokens = (r && r.tokens) || [];
+      title = (r && r.title) || '';
+      body = (r && r.body) || '';
     } else if (reqBody.type === 'jadwal') {
       // Broadcast terjadwal — dipicu pg_cron (kunci sistem), isi pesan diambil dari database
       try {

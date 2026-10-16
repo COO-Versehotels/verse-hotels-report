@@ -1865,6 +1865,24 @@
   .role-cat-label { font-size:10px; font-weight:700; color:rgba(255,255,255,0.55); text-transform:uppercase; letter-spacing:1px; padding:0 20px 6px; margin-top:6px; }
 
 
+  /* Balasan broadcast (kotak notifikasi) */
+  .nb-rep{margin-top:10px}
+  .nb-qr{display:flex;gap:6px;flex-wrap:wrap}
+  .nb-qr span{font-size:12px;padding:7px 11px;border-radius:999px;border:1px solid #c7d2fe;background:#eef2ff;color:#3730a3;font-weight:700;cursor:pointer;user-select:none}
+  .nb-in{display:flex;gap:6px;margin-top:8px}
+  .nb-in input{flex:1;min-width:0;border:1px solid #d1d5db;border-radius:10px;padding:9px;font-family:inherit;font-size:13px}
+  .nb-in button{background:#1a3a5c;color:#fff;border:none;border-radius:10px;padding:9px 14px;font-family:inherit;font-weight:700;font-size:12.5px;cursor:pointer}
+  .nb-sent{background:#ecfdf5;border-radius:10px;padding:8px 10px;font-size:12px;color:#065f46}
+  .nb-sent a{color:#1a3a5c;font-weight:800;margin-left:6px;cursor:pointer;text-decoration:underline}
+  .bc-st{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
+  .bc-st span{font-size:11px;padding:3px 9px;border-radius:999px;background:#f1f5f9;color:#334155;font-weight:700}
+  .bc-st .g{background:#dcfce7;color:#166534}.bc-st .b{background:#e0e7ff;color:#3730a3}
+  .bc-pl{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-top:1px solid #f1f1f1}
+  .bc-pl:first-child{border-top:none}
+  .bc-pl .i{font-size:16px;width:22px;text-align:center}
+  .bc-pl b{font-size:13px;display:block;color:#1a2744}
+  .bc-pl small{font-size:11.5px;color:#6b7280}
+  .bc-pl .rp{margin-top:4px;background:#eef2ff;border-radius:8px;padding:6px 9px;font-size:12.5px;color:#1e1b4b;white-space:pre-wrap}
   /* Broadcast */
   .bc-tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px}
   .bc-tabs button{padding:10px;border-radius:10px;border:1px solid #e5e7eb;background:#fff;font-family:inherit;font-weight:700;font-size:12.5px;color:#555;cursor:pointer}
@@ -7225,15 +7243,55 @@
     try {
       const rows = (await _adminRpc('notif_history')) || [];
       if (!rows.length) { el.textContent = 'Belum ada broadcast.'; return; }
+      const stat = {};
+      try { ((await _adminRpc('notif_stat')) || []).forEach(x => { stat[x.notif_id] = x; }); } catch (e) {}
       el.innerHTML = rows.map(r => {
         const d = new Date(new Date(r.created_at).getTime() + 7 * 3600000).toISOString();
-        return `<div style="background:#fff;border:1px solid #eef0f3;border-radius:10px;padding:9px 11px;margin-bottom:6px;">
+        const st = r.source === 'broadcast' ? (stat[r.id] || { penerima: 0, dibaca: 0, balasan: 0 }) : null;
+        return `<div ${st ? `data-bcd="${r.id}"` : ''} style="background:#fff;border:1px solid #eef0f3;border-radius:10px;padding:9px 11px;margin-bottom:6px;${st ? 'cursor:pointer;' : ''}">
           <div style="display:flex;justify-content:space-between;gap:8px;color:#94a3b8;font-size:10.5px;"><span>${r.source === 'reminder' ? '⏰ Reminder' : '📢 ' + escapeHtml(r.sender || '')} → ${escapeHtml(_bcTargetText(r.target, r.target_value))}</span><span style="white-space:nowrap;">${d.slice(8,10)}/${d.slice(5,7)} ${d.slice(11,16)}</span></div>
           <div style="font-weight:700;color:#1a2744;font-size:12.5px;margin-top:2px;">${escapeHtml(r.title)}</div>
           <div style="color:#64748b;font-size:11.5px;">${escapeHtml(r.body)}</div>
-          <div style="color:#16a34a;font-size:10.5px;margin-top:3px;">✓ diterima ${r.sent || 0} HP</div></div>`;
+          <div style="color:#16a34a;font-size:10.5px;margin-top:3px;">✓ diterima ${r.sent || 0} HP</div>
+          ${st ? `<div class="bc-st"><span class="${st.dibaca && st.dibaca >= st.penerima ? 'g' : ''}">👁 ${st.dibaca}/${st.penerima} dibaca</span><span class="${st.balasan ? 'b' : ''}">💬 ${st.balasan} balasan</span><span style="background:none;color:#6d28d9;">Detail ›</span></div>` : ''}</div>`;
       }).join('');
+      el.querySelectorAll('[data-bcd]').forEach(x => x.onclick = () => bcDetail(+x.dataset.bcd));
     } catch (e) { el.textContent = e.message === 'Dibatalkan' ? '—' : 'Gagal memuat riwayat.'; }
+  }
+
+  async function bcDetail(id) {
+    document.getElementById('bc-detail')?.remove();
+    const ov = document.createElement('div');
+    ov.id = 'bc-detail';
+    ov.style.cssText = 'position:fixed;inset:0;z-index:100000;background:var(--cream,#f7f5f0);display:flex;flex-direction:column;';
+    ov.innerHTML = `<div style="background:linear-gradient(120deg,#6d28d9,#8b5cf6);color:#fff;padding:calc(env(safe-area-inset-top,0px) + 16px) 16px 16px;display:flex;align-items:center;gap:12px;">
+        <button id="bc-detail-x" style="width:38px;height:38px;border-radius:50%;border:none;background:rgba(255,255,255,0.18);color:#fff;font-size:18px;cursor:pointer;flex:none;">←</button>
+        <div style="min-width:0;"><div id="bc-detail-t" style="font-size:17px;font-weight:800;">⏳ Memuat…</div><div id="bc-detail-s" style="font-size:11px;opacity:.8;"></div></div></div>
+      <div style="flex:1;overflow-y:auto;padding:12px 14px calc(20px + env(safe-area-inset-bottom,0px));max-width:640px;width:100%;margin:0 auto;"><div id="bc-detail-b"></div></div>`;
+    document.body.appendChild(ov);
+    document.getElementById('bc-detail-x').onclick = () => ov.remove();
+    const fmt = (t) => { const d = new Date(new Date(t).getTime() + 7 * 3600000).toISOString(); return d.slice(11, 16); };
+    const fmtTgl = (t) => { const d = new Date(new Date(t).getTime() + 7 * 3600000).toISOString(); return d.slice(8,10) + '/' + d.slice(5,7) + ' ' + d.slice(11,16); };
+    let r;
+    try { r = await _adminRpc('notif_detail', { p_id: id }); } catch (e) { document.getElementById('bc-detail-t').textContent = 'Gagal memuat'; return; }
+    if (!r || !document.getElementById('bc-detail')) return;
+    const n = r.notif, ps = r.penerima || [];
+    const sama = (a, b) => a && b && a.slice(0, 10) === b.slice(0, 10);
+    document.getElementById('bc-detail-t').textContent = n.title;
+    document.getElementById('bc-detail-s').textContent = fmtTgl(n.created_at) + ' · terkirim ke ' + (n.sent || 0) + ' HP';
+    const nb = ps.filter(p => p.dibaca_at).length, nr = ps.filter(p => p.balasan).length;
+    document.getElementById('bc-detail-b').innerHTML = `
+      <div class="bc-box"><div style="font-size:13px;color:#475569;white-space:pre-wrap;">${escapeHtml(n.body)}</div>
+        <div class="bc-st" style="margin-top:10px;"><span class="g">👁 ${nb}/${ps.length} dibaca</span><span class="b">💬 ${nr} balasan</span></div></div>
+      <div class="bc-box"><div class="bc-lbl">PENERIMA</div>
+        ${ps.length ? ps.map(p => {
+          const when = (t) => (sama(t, n.created_at) ? '' : fmtTgl(t).slice(0, 5) + ' ') + fmt(t);
+          return `<div class="bc-pl"><div class="i">${p.dibaca_at ? '✅' : '⚪'}</div><div style="flex:1;min-width:0;">
+            <b>${escapeHtml(p.role)}</b>
+            <small>${p.dibaca_at ? 'dibaca ' + when(p.dibaca_at) + (p.balasan ? '' : ' · belum membalas') : (p.punya_hp ? '<span style="color:#b91c1c;">belum dibaca</span>' : '<span style="color:#b45309;">belum dibaca · HP belum terdaftar notifikasi</span>')}</small>
+            ${p.balasan ? `<div class="rp">${escapeHtml(p.balasan)} <span style="color:#6b7280;font-size:11px;">· ${when(p.balas_at)}</span></div>` : ''}</div></div>`;
+        }).join('') : '<div style="color:#94a3b8;font-size:12.5px;">Belum ada penerima tercatat.</div>'}</div>
+      <div class="bc-note" style="line-height:1.5;padding:0 4px;">"Dibaca" = pesan sudah dibuka di 🔔 Notifikasi atau notifikasinya diketuk. Hanya terlihat di layar kunci belum terhitung.</div>`;
   }
 
   async function bcLoadJadwal() {
@@ -25612,6 +25670,9 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
     if (n.source === 'approval' || n.source === 'security') {
       return isAdmin ? { label: 'Buka Device Approval', run: () => openDeviceApproval() } : null;
     }
+    if (n.source === 'balasan') {
+      return isAdmin ? { label: 'Lihat balasan di Broadcast', run: () => openBroadcast() } : null;
+    }
     if (window._peekMode || isAdmin) return null;
     if (/jadwal visit|visit/i.test(t)) return { label: 'Lihat Beranda & Jadwal Visit', run: () => go('home') };
     if (/tasklist|laporan|submit/i.test(t)) return { label: 'Buka Tasklist', run: () => go('tasklist') };
@@ -25635,11 +25696,21 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
     await refreshNotifBadge();
     const list = document.getElementById('notif-list');
     if (!list) return;
+    const _id = _notifIdentity();
+    const bisaBalas = !!_id && !window._peekMode && !['COO','CEO'].includes(_id.role);
+    _nbMine = {};
+    if (bisaBalas) {
+      const ids = _notifCache.filter(n => n.source === 'broadcast').map(n => n.id);
+      if (ids.length) _rpc('notif_tandai_baca', { p_device_id: getOrCreateDeviceId(), p_role: _id.role, p_hotel: _id.hotel, p_ids: ids }).catch(() => {});
+      try {
+        ((await _rpc('notif_balasan_saya', { p_device_id: getOrCreateDeviceId(), p_role: _id.role })) || []).forEach(r => { _nbMine[r.notif_id] = r; });
+      } catch (e) {}
+    }
     if (!_notifCache.length) {
       list.innerHTML = '<div style="text-align:center;padding:50px 20px;color:#94a3b8;"><div style="font-size:40px;">📭</div>Belum ada notifikasi</div>';
     } else {
-      const icon = { broadcast: '📢', reminder: '⏰', approval: '📱', security: '⚠️' };
-      const from = { broadcast: 'Broadcast', reminder: 'Reminder otomatis', approval: 'Approval HP', security: 'Keamanan' };
+      const icon = { broadcast: '📢', reminder: '⏰', approval: '📱', security: '⚠️', balasan: '💬' };
+      const from = { broadcast: 'Broadcast', reminder: 'Reminder otomatis', approval: 'Approval HP', security: 'Keamanan', balasan: 'Balasan broadcast' };
       list.innerHTML = _notifCache.map(n => {
         const d = new Date(new Date(n.created_at).getTime() + 7 * 3600000).toISOString();
         const when = d.slice(8,10) + '/' + d.slice(5,7) + ' ' + d.slice(11,16) + ' WIB';
@@ -25651,8 +25722,10 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
           <div style="font-size:14px;color:#1a2744;font-weight:${isNew ? 800 : 600};">${escapeHtml(n.title)}</div>
           <div style="font-size:13px;color:#475569;margin-top:3px;white-space:pre-wrap;">${escapeHtml(n.body)}</div>
           ${act ? `<div style="margin-top:8px;font-size:12px;font-weight:800;color:#1a3a5c;">${act.label} ›</div>` : ''}
+          ${bisaBalas && n.source === 'broadcast' ? `<div class="nb-rep" data-rep="${n.id}">${_nbRepHtml(n.id)}</div>` : ''}
         </div>`;
       }).join('');
+      list.querySelectorAll('.nb-rep').forEach(el => _nbBind(el));
       list.querySelectorAll('[data-notif-id]').forEach(card => {
         const n = _notifCache.find(x => String(x.id) === card.getAttribute('data-notif-id'));
         const act = n && _notifAction(n);
@@ -25661,6 +25734,46 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
     }
     if (!window._peekMode) localStorage.setItem(_notifLastReadKey(), new Date().toISOString());
     document.querySelectorAll('.notif-badge').forEach(b => { b.style.display = 'none'; });
+  }
+
+  // Balasan broadcast dari HP team
+  let _nbMine = {};
+  const NB_CEPAT = ['👍 Siap', '✅ Sudah dikerjakan', '⏳ Sedang proses'];
+  function _nbRepHtml(id, ubah) {
+    const m = _nbMine[id];
+    if (m && !ubah) {
+      const d = new Date(new Date(m.balas_at).getTime() + 7 * 3600000).toISOString().slice(11, 16);
+      return `<div class="nb-sent">✓ Balasan kamu (${d}): "${escapeHtml(m.balasan)}" <a data-ubah>Ubah</a></div>`;
+    }
+    return `<div class="nb-qr">${NB_CEPAT.map(t => `<span data-q="${escapeHtml(t)}">${escapeHtml(t)}</span>`).join('')}</div>
+      <div class="nb-in"><input type="text" maxlength="300" placeholder="Tulis balasan…" value="${m && ubah ? escapeHtml(m.balasan) : ''}"><button>Kirim</button></div>`;
+  }
+  function _nbBind(el) {
+    const id = Number(el.dataset.rep);
+    el.onclick = (e) => e.stopPropagation();
+    const ub = el.querySelector('[data-ubah]');
+    if (ub) ub.onclick = () => { el.innerHTML = _nbRepHtml(id, true); _nbBind(el); };
+    el.querySelectorAll('[data-q]').forEach(q => q.onclick = () => _nbKirim(el, id, q.dataset.q));
+    const btn = el.querySelector('.nb-in button'), inp = el.querySelector('.nb-in input');
+    if (btn) btn.onclick = () => _nbKirim(el, id, inp.value);
+    if (inp) inp.onkeydown = (e) => { if (e.key === 'Enter') _nbKirim(el, id, inp.value); };
+  }
+  async function _nbKirim(el, id, teks) {
+    teks = String(teks || '').trim();
+    if (!teks) { showToast('Tulis balasan dulu'); return; }
+    const _id = _notifIdentity(); if (!_id || window._peekMode) return;
+    el.querySelectorAll('button,span,input').forEach(x => { x.disabled = true; x.style.opacity = '.6'; });
+    try {
+      await _rpc('notif_balas', { p_device_id: getOrCreateDeviceId(), p_role: _id.role, p_hotel: _id.hotel, p_id: id, p_text: teks });
+      _nbMine[id] = { notif_id: id, balasan: teks.slice(0, 300), balas_at: new Date().toISOString() };
+      el.innerHTML = _nbRepHtml(id); _nbBind(el);
+      showToast('✅ Balasan terkirim ke COO');
+      fetch('/api/send-push', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'notif_balas', deviceId: getOrCreateDeviceId(), role: _id.role, id }) }).catch(() => {});
+    } catch (e) {
+      showToast('Gagal mengirim balasan — coba lagi');
+      el.querySelectorAll('button,span,input').forEach(x => { x.disabled = false; x.style.opacity = ''; });
+    }
   }
 
   function _showInAppNotif(title, body) {
