@@ -29074,7 +29074,7 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
     const listEl = document.getElementById('jv-member-list');
     if (!listEl || !jvShown()) return;
     // baris tanpa nama (mis. karyawan resign, jabatan kosong) tidak ditampilkan
-    listEl.innerHTML = jvShown().roster.filter(emp => String(emp.name || '').trim()).map(emp => {
+    listEl.innerHTML = jvShown().roster.filter(emp => !/^[\s\-–—.]*$/.test(String(emp.name || ''))).map(emp => {
       const code = emp.codes[jvSelectedDateIdx] || '';
       const info = jvCodeInfo(code);
       let badgeHtml;
