@@ -3673,9 +3673,63 @@
           }
         }
       } catch(e) {}
-      return _origFetch(input, init);
+      return _sesiFetch_(_origFetch, input, init);
     };
   })();
+
+  // =============================================================
+  // KARTU AKSES (sesi) — 17 Okt 2026. Data Verse Apps dikunci di database:
+  // setiap permintaan ke Supabase wajib membawa kartu akses (header x-sesi).
+  // Kartu didapat saat login PIN (verify_pin), atau — untuk yang sudah login sebelum
+  // pembaruan ini — otomatis dari HP yang sudah disetujui COO (tasklist_sesi_device).
+  // =============================================================
+  const SESI_VA_KEY = 'verse_sesi';
+  let SESI_VA = ''; try { SESI_VA = localStorage.getItem(SESI_VA_KEY) || ''; } catch(e) {}
+  function setSesiVA(t) { SESI_VA = t || ''; try { if (t) localStorage.setItem(SESI_VA_KEY, t); else localStorage.removeItem(SESI_VA_KEY); } catch(e) {} }
+  const _RPC_TANPA_SESI = /\/rest\/v1\/rpc\/(verify_pin|device_check|device_migrate|device_label_by_pin|tasklist_sesi_device|laporan_publik)$/;
+  let _sesiJanji = null;
+  function _roleSesiAktif() {
+    try { if (typeof currentRole !== 'undefined' && currentRole) return currentRole; } catch(e) {}
+    try { const s = JSON.parse(localStorage.getItem('team_session') || 'null'); return (s && s.role) || ''; } catch(e) { return ''; }
+  }
+  function _ambilSesiVA(origFetch) {
+    if (_sesiJanji) return _sesiJanji;
+    const role = _roleSesiAktif();
+    if (!role) return Promise.resolve('');
+    let dev = ''; try { dev = getOrCreateDeviceId(); } catch(e) {}
+    _sesiJanji = origFetch(SUPA_URL + '/rest/v1/rpc/tasklist_sesi_device', {
+      method: 'POST', headers: { 'Content-Type': 'application/json', 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY },
+      body: JSON.stringify({ p_device_id: dev, p_role: role })
+    }).then(r => r.ok ? r.json() : null).then(j => { if (j && j.ok && j.sesi) setSesiVA(j.sesi); return SESI_VA; })
+      .catch(() => SESI_VA).finally(() => { setTimeout(() => { _sesiJanji = null; }, 0); });
+    return _sesiJanji;
+  }
+  function _denganSesi(input, init, token) {
+    init = Object.assign({}, init || {});
+    const h = new Headers(init.headers || ((typeof Request !== 'undefined' && input instanceof Request) ? input.headers : undefined));
+    if (token) h.set('x-sesi', token); else h.delete('x-sesi');
+    init.headers = h;
+    return init;
+  }
+  async function _sesiFetch_(origFetch, input, init) {
+    let url = '';
+    try { url = typeof input === 'string' ? input : ((input && input.url) || String(input || '')); } catch(e) {}
+    if (url.indexOf(SUPA_URL + '/rest/v1/') !== 0 || _RPC_TANPA_SESI.test(url.split('?')[0])) return origFetch(input, init);
+    if (!SESI_VA && _roleSesiAktif()) await _ambilSesiVA(origFetch);
+    let res = await origFetch(input, _denganSesi(input, init, SESI_VA));
+    // Kartu kedaluwarsa / dicabut → minta kartu baru sekali, lalu ulangi
+    if ((res.status === 401 || res.status === 403) && _roleSesiAktif() && !(init && init.keepalive)) {
+      const lama = SESI_VA; setSesiVA('');
+      const baru = await _ambilSesiVA(origFetch);
+      if (baru && baru !== lama) res = await origFetch(input, _denganSesi(input, init, baru));
+    }
+    return res;
+  }
+  function _keluarSesiVA() {
+    const t = SESI_VA; setSesiVA('');
+    if (!t) return;
+    try { fetch(SUPA_URL + '/rest/v1/rpc/app_keluar', { method: 'POST', keepalive: true, headers: { 'Content-Type': 'application/json', 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY, 'x-sesi': t }, body: '{}' }).catch(() => {}); } catch(e) {}
+  }
 
   // =============================================================
   // DEVICE APPROVAL GATE — HP baru wajib disetujui COO dulu
@@ -5940,6 +5994,7 @@
     const r = await _rpc('verify_pin', { p_role: role, p_pin: p.trim(), p_device_id: getOrCreateDeviceId() });
     if (!r || !r.ok || !r.token) throw new Error(r && r.reason === 'device' ? 'HP ini belum di-approve' : 'PIN ' + role + ' salah');
     localStorage.setItem(ADMIN_TOKEN_KEY, r.token);
+    if (r.sesi) setSesiVA(r.sesi);
     return r.token;
   }
 
@@ -6055,6 +6110,7 @@
     _unregisterPushToken();
     localStorage.removeItem('team_session');
     localStorage.removeItem(ADMIN_TOKEN_KEY);
+    setTimeout(_keluarSesiVA, 1500);
     currentRole = '';
     go('splash');
   }
@@ -6341,6 +6397,7 @@
       if (r && r.ok) {
         currentUserName = r.nama || '';
         if (r.token) localStorage.setItem(ADMIN_TOKEN_KEY, r.token);
+        if (r.sesi) setSesiVA(r.sesi);
         return true;
       }
       if (r && r.reason === 'device') showToast('HP ini belum di-approve COO');
@@ -8409,6 +8466,7 @@
     localStorage.removeItem('team_session');
     localStorage.removeItem(ADMIN_TOKEN_KEY);
     localStorage.removeItem('verse_role_bound');
+    setTimeout(_keluarSesiVA, 1500);
     // Reset state
     currentRole = '';
     currentHotel = '';
@@ -27740,18 +27798,15 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
     content.innerHTML = '<div style="text-align:center;padding:40px;color:#aaa;">⏳ Memuat data...</div>';
 
     try {
-      // Fetch laporan_detail
-      const res = await fetch(
-        SUPA_URL + '/rest/v1/laporan_detail?tanggal=eq.' + tanggal +
-        '&role=eq.' + encodeURIComponent(role) +
-        '&hotel=eq.' + encodeURIComponent(hotel) +
-        '&select=*',
-        { headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY } }
-      );
-      const items = res.ok ? await res.json() : [];
-
-      // Fetch room_checks
-      const rcItems = await _fetchRoomChecksForDate(role, hotel, tanggal);
+      // Data laporan lewat fungsi database khusus link publik (tabel laporan dikunci untuk umum — 17 Okt 2026)
+      let pd = window._pubData;
+      if (!pd || pd.role !== role || pd.hotel !== hotel || String(pd.tanggal) !== String(tanggal)) {
+        pd = await _rpc('laporan_publik', { p_role: role, p_hotel: hotel, p_tanggal: tanggal });
+      }
+      if (!pd || !pd.ok) { content.innerHTML = '<div style="text-align:center;padding:40px;color:#aaa;">Link laporan tidak valid atau sudah tidak berlaku.</div>'; return; }
+      const items = pd.items || [];
+      const rcItems = pd.rc || [];
+      const _defPub = {}; (pd.defects || []).forEach(x => { _defPub[x.id] = x; });
 
       // Fetch defects detail untuk defect_ids di rcItems
       const allDefectIds = [];
@@ -27761,7 +27816,7 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
           dids.forEach(d => allDefectIds.push(d));
         } catch(e) {}
       });
-      const defectsMap = await _fetchDefectsMap(allDefectIds);
+      const defectsMap = _defPub;
 
       if ((!items || items.length === 0) && rcItems.length === 0) {
         content.innerHTML = '<div style="text-align:center;padding:40px;color:#aaa;">Tidak ada data dokumentasi.</div>';
@@ -27790,11 +27845,12 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
     const kodePendek = params.get('r');
     if (kodePendek) {
       try {
-        const { data } = await supa.from('wa_report_links').select('role,hotel,tanggal').eq('kode', kodePendek).maybeSingle();
-        if (data) {
+        const data = await _rpc('laporan_publik', { p_kode: kodePendek });
+        if (data && data.ok) {
           role = data.role;
           hotel = data.hotel;
           tanggal = data.tanggal;
+          window._pubData = data;
         }
       } catch(e) { console.error('Gagal baca kode link pendek:', e); }
     }
