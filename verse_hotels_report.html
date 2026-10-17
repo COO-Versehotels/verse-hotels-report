@@ -3686,7 +3686,7 @@
   const SESI_VA_KEY = 'verse_sesi';
   let SESI_VA = ''; try { SESI_VA = localStorage.getItem(SESI_VA_KEY) || ''; } catch(e) {}
   function setSesiVA(t) { SESI_VA = t || ''; try { if (t) localStorage.setItem(SESI_VA_KEY, t); else localStorage.removeItem(SESI_VA_KEY); } catch(e) {} }
-  const _RPC_TANPA_SESI = /\/rest\/v1\/rpc\/(verify_pin|device_check|device_migrate|device_label_by_pin|tasklist_sesi_device|laporan_publik)$/;
+  const _RPC_TANPA_SESI = /\/rest\/v1\/rpc\/(app_sesi_cek|verify_pin|device_check|device_migrate|device_label_by_pin|tasklist_sesi_device|laporan_publik)$/;
   let _sesiJanji = null;
   function _roleSesiAktif() {
     try { if (typeof currentRole !== 'undefined' && currentRole) return currentRole; } catch(e) {}
@@ -3700,7 +3700,7 @@
     _sesiJanji = origFetch(SUPA_URL + '/rest/v1/rpc/tasklist_sesi_device', {
       method: 'POST', headers: { 'Content-Type': 'application/json', 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY },
       body: JSON.stringify({ p_device_id: dev, p_role: role })
-    }).then(r => r.ok ? r.json() : null).then(j => { if (j && j.ok && j.sesi) setSesiVA(j.sesi); return SESI_VA; })
+    }).then(r => r.ok ? r.json() : null).then(j => { if (j && j.ok && j.sesi) { setSesiVA(j.sesi); _sesiDicekT = Date.now(); } return SESI_VA; })
       .catch(() => SESI_VA).finally(() => { setTimeout(() => { _sesiJanji = null; }, 0); });
     return _sesiJanji;
   }
@@ -3711,10 +3711,24 @@
     init.headers = h;
     return init;
   }
+  // Kartu dicek sah/tidak saat app dibuka & tiap 10 menit (kartu tidak sah → data tampil kosong, jadi diganti otomatis)
+  let _sesiDicekT = 0, _cekJanji = null;
+  function _cekSesiVA(origFetch) {
+    if (_cekJanji) return _cekJanji;
+    const t = SESI_VA;
+    _cekJanji = origFetch(SUPA_URL + '/rest/v1/rpc/app_sesi_cek', {
+      method: 'POST', headers: { 'Content-Type': 'application/json', 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY, 'x-sesi': t }, body: '{}'
+    }).then(r => r.ok ? r.json() : null).then(ok => {
+      if (ok === true) _sesiDicekT = Date.now();
+      else if (ok === false && SESI_VA === t) { setSesiVA(''); _sesiDicekT = Date.now(); }
+    }).catch(() => {}).finally(() => { setTimeout(() => { _cekJanji = null; }, 0); });
+    return _cekJanji;
+  }
   async function _sesiFetch_(origFetch, input, init) {
     let url = '';
     try { url = typeof input === 'string' ? input : ((input && input.url) || String(input || '')); } catch(e) {}
     if (url.indexOf(SUPA_URL + '/rest/v1/') !== 0 || _RPC_TANPA_SESI.test(url.split('?')[0])) return origFetch(input, init);
+    if (SESI_VA && _roleSesiAktif() && Date.now() - _sesiDicekT > 600000) await _cekSesiVA(origFetch);
     if (!SESI_VA && _roleSesiAktif()) await _ambilSesiVA(origFetch);
     let res = await origFetch(input, _denganSesi(input, init, SESI_VA));
     // Kartu kedaluwarsa / dicabut → minta kartu baru sekali, lalu ulangi
