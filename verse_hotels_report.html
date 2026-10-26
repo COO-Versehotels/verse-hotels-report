@@ -4027,6 +4027,12 @@
   // =============================================================
   // VIEWER FOTO DI DALAM APP — foto/dokumentasi tidak lagi dilempar ke Chrome
   // =============================================================
+  // 26 Okt 2026: lampiran PDF (mis. Night Audit Report) → thumbnail halaman 1 dari Cloudinary; tautan tetap membuka PDF-nya
+  function thumbSrc_(u) {
+    if (typeof u !== 'string') return u;
+    if (/res\.cloudinary\.com\/[^/]+\/image\/upload\/.+\.pdf(\?|$)/i.test(u)) return u.replace('/image/upload/', '/image/upload/pg_1,w_300,c_limit/').replace(/\.pdf(\?|$)/i, '.jpg$1');
+    return u;
+  }
   function _isImageUrl(u) {
     if (!u || typeof u !== 'string') return false;
     if (u.startsWith('data:image/')) return true;
@@ -5562,7 +5568,7 @@
           const isImg = f.type && f.type.startsWith('image/');
           return '<div class="file-preview-item" style="display:flex;align-items:center;gap:6px;padding:4px 0;">' +
             (isImg
-              ? '<a href="' + f.url + '" target="_blank" style="flex-shrink:0;"><img src="' + f.url + '" style="width:44px;height:44px;object-fit:cover;border-radius:6px;border:1px solid var(--gray-200);display:block;"></a>'
+              ? '<a href="' + f.url + '" target="_blank" style="flex-shrink:0;"><img src="' + thumbSrc_(f.url) + '" style="width:44px;height:44px;object-fit:cover;border-radius:6px;border:1px solid var(--gray-200);display:block;"></a>'
               : '<span style="font-size:20px;">📄</span>') +
             '<a href="' + f.url + '" target="_blank" style="font-size:12px;color:var(--navy);text-decoration:none;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + (f.name || 'File ' + (i+1)) + '</a>' +
             '<button class="file-remove-btn" onclick="removeFile(\'' + taskId + '\',' + i + ')">🗑️</button>' +
@@ -9088,10 +9094,11 @@
         // f bisa berupa string URL atau object {url, name, type}
         const fileUrl = typeof f === 'string' ? f : (f.url || '');
         const fileName = typeof f === 'string' ? f.split('/').pop().substring(0,30) : (f.name || 'File ' + (i+1));
-        const isImg = /\.(jpg|jpeg|png|gif|webp|heic)$/i.test(fileUrl) || (f.type && f.type.startsWith('image/'));
+        const isPdf = /\.pdf(\?|$)/i.test(fileUrl) || f.type === 'application/pdf';
+        const isImg = /\.(jpg|jpeg|png|gif|webp|heic)$/i.test(fileUrl) || (f.type && f.type.startsWith('image/')) || (isPdf && thumbSrc_(fileUrl) !== fileUrl);
         return '<div class="file-preview-item" style="display:flex;align-items:center;gap:6px;padding:4px 0;">' +
           (isImg
-            ? '<a href="' + fileUrl + '" target="_blank" style="flex-shrink:0;"><img src="' + fileUrl + '" style="width:44px;height:44px;object-fit:cover;border-radius:6px;border:1px solid var(--gray-200);display:block;"></a>'
+            ? '<a href="' + fileUrl + '" target="_blank" style="flex-shrink:0;"><img src="' + thumbSrc_(fileUrl) + '" style="width:44px;height:44px;object-fit:cover;border-radius:6px;border:1px solid var(--gray-200);display:block;"></a>'
             : '<span style="font-size:20px;">📄</span>') +
           '<a href="' + fileUrl + '" target="_blank" style="font-size:12px;color:var(--navy);text-decoration:none;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + fileName + '</a>' +
           '<button class="file-remove-btn" onclick="removeFile(\'' + taskId + '\',' + i + ')">🗑️</button>' +
@@ -12081,11 +12088,11 @@ const ROLE_TASKS = {
             <div class="task-upload-wrap" id="task_3-upload">
               <div class="task-upload-area" id="task_3-upload-area">
                 <label class="task-upload-btn">
-                  <input type="file" accept="image/*" multiple onchange="handleFileUpload(this,'task_3',true)">
+                  <input type="file" accept="image/*,application/pdf,.pdf" multiple onchange="handleFileUpload(this,'task_3',true)">
                   <span class="task-upload-icon">🖼️</span>
                   <div class="task-upload-text">
-                    <strong>Upload Foto</strong>
-                    <span>Boleh kamera langsung / pilih dari galeri</span>
+                    <strong>Upload Foto / PDF</strong>
+                    <span>Foto dari kamera / galeri, atau file PDF report</span>
                   </div>
                 </label>
               </div>
@@ -12857,11 +12864,11 @@ const ROLE_TASKS = {
             <div class="task-upload-wrap" id="task_3-upload">
               <div class="task-upload-area" id="task_3-upload-area">
                 <label class="task-upload-btn">
-                  <input type="file" accept="image/*" multiple onchange="handleFileUpload(this,'task_3',true)">
+                  <input type="file" accept="image/*,application/pdf,.pdf" multiple onchange="handleFileUpload(this,'task_3',true)">
                   <span class="task-upload-icon">🖼️</span>
                   <div class="task-upload-text">
-                    <strong>Upload Foto</strong>
-                    <span>Boleh kamera langsung / pilih dari galeri</span>
+                    <strong>Upload Foto / PDF</strong>
+                    <span>Foto dari kamera / galeri, atau file PDF report</span>
                   </div>
                 </label>
               </div>
@@ -13633,11 +13640,11 @@ const ROLE_TASKS = {
             <div class="task-upload-wrap" id="task_3-upload">
               <div class="task-upload-area" id="task_3-upload-area">
                 <label class="task-upload-btn">
-                  <input type="file" accept="image/*" multiple onchange="handleFileUpload(this,'task_3',true)">
+                  <input type="file" accept="image/*,application/pdf,.pdf" multiple onchange="handleFileUpload(this,'task_3',true)">
                   <span class="task-upload-icon">🖼️</span>
                   <div class="task-upload-text">
-                    <strong>Upload Foto</strong>
-                    <span>Boleh kamera langsung / pilih dari galeri</span>
+                    <strong>Upload Foto / PDF</strong>
+                    <span>Foto dari kamera / galeri, atau file PDF report</span>
                   </div>
                 </label>
               </div>
@@ -14409,11 +14416,11 @@ const ROLE_TASKS = {
             <div class="task-upload-wrap" id="task_3-upload">
               <div class="task-upload-area" id="task_3-upload-area">
                 <label class="task-upload-btn">
-                  <input type="file" accept="image/*" multiple onchange="handleFileUpload(this,'task_3',true)">
+                  <input type="file" accept="image/*,application/pdf,.pdf" multiple onchange="handleFileUpload(this,'task_3',true)">
                   <span class="task-upload-icon">🖼️</span>
                   <div class="task-upload-text">
-                    <strong>Upload Foto</strong>
-                    <span>Boleh kamera langsung / pilih dari galeri</span>
+                    <strong>Upload Foto / PDF</strong>
+                    <span>Foto dari kamera / galeri, atau file PDF report</span>
                   </div>
                 </label>
               </div>
@@ -26692,7 +26699,7 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
             const isImg = f.type && f.type.startsWith('image/');
             if (isImg) {
               html += '<a href="' + f.url + '" target="_blank">' +
-                '<img src="' + f.url + '" style="width:56px;height:56px;object-fit:cover;border-radius:8px;border:1.5px solid var(--gray-200);">' +
+                '<img src="' + thumbSrc_(f.url) + '" style="width:56px;height:56px;object-fit:cover;border-radius:8px;border:1.5px solid var(--gray-200);">' +
                 '</a>';
             } else {
               html += '<a href="' + f.url + '" target="_blank" style="display:flex;align-items:center;gap:4px;padding:4px 8px;background:var(--gray-50);border:1.5px solid var(--gray-200);border-radius:8px;font-size:11px;color:var(--navy);text-decoration:none;">📄 ' + f.name.substring(0,15) + '</a>';
@@ -27332,7 +27339,7 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
             try { urls = Array.isArray(d.file_urls) ? d.file_urls : (typeof d.file_urls === 'string' && d.file_urls ? JSON.parse(d.file_urls) : []); } catch(e) {}
             urls = urls.filter(f => { const u = typeof f === 'string' ? f : (f && f.url); return u && /^http/.test(u); });
             const used = new Set();
-            const thumbs = list => list.map(f => { const u = typeof f === 'string' ? f : f.url; return `<a href="${u}" target="_blank" style="display:block;"><img src="${u}" style="width:80px;height:80px;object-fit:cover;border-radius:8px;border:1px solid #e0e0e0;" loading="lazy" onerror="this.style.display='none'"></a>`; }).join('');
+            const thumbs = list => list.map(f => { const u = typeof f === 'string' ? f : f.url; return `<a href="${u}" target="_blank" style="display:block;"><img src="${thumbSrc_(u)}" style="width:80px;height:80px;object-fit:cover;border-radius:8px;border:1px solid #e0e0e0;" loading="lazy" onerror="this.style.display='none'"></a>`; }).join('');
             const pending = txt => `<div style="font-size:12px;color:#92400e;font-style:italic;padding:4px 0 4px 10px;border-left:2px solid #f59e0b;">⏳ ${txt}</div>`;
             let h = `<div style="margin-top:10px;margin-left:38px;padding:12px;background:white;border-radius:8px;border:1px solid #e0e0e0;">`;
             t.hodLayout.forEach(x => {
@@ -27459,7 +27466,7 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
                 const url = typeof f === 'string' ? f : f.url;
                 const isImg = (typeof f === 'object' && f.type && f.type.startsWith('image/')) || /\.(jpg|jpeg|png|gif|webp|heic)/i.test(url) || /supabase\.co.*storage/i.test(url);
                 if (isImg) {
-                  html += `<a href="${url}" target="_blank" style="display:block;"><img src="${url}" style="width:80px;height:80px;object-fit:cover;border-radius:8px;border:1px solid #e0e0e0;" loading="lazy" onerror="this.style.display='none'"></a>`;
+                  html += `<a href="${url}" target="_blank" style="display:block;"><img src="${thumbSrc_(url)}" style="width:80px;height:80px;object-fit:cover;border-radius:8px;border:1px solid #e0e0e0;" loading="lazy" onerror="this.style.display='none'"></a>`;
                 } else {
                   html += `<a href="${url}" target="_blank" style="display:inline-flex;align-items:center;gap:4px;background:#e8f4fd;color:#2980b9;padding:8px 12px;border-radius:8px;font-size:12px;text-decoration:none;">📎 File</a>`;
                 }
@@ -27601,7 +27608,7 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
             const validDp = dPhotos.filter(u => u && typeof u === 'string' && u.startsWith('http'));
             if (validDp.length > 0) {
               html += `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;">`;
-              validDp.forEach(url => html += `<a href="${url}" target="_blank"><img src="${url}" style="width:60px;height:60px;object-fit:cover;border-radius:6px;border:1px solid #e0e0e0;" loading="lazy"></a>`);
+              validDp.forEach(url => html += `<a href="${url}" target="_blank"><img src="${thumbSrc_(url)}" style="width:60px;height:60px;object-fit:cover;border-radius:6px;border:1px solid #e0e0e0;" loading="lazy"></a>`);
               html += `</div>`;
             }
             html += `</div>`;
@@ -27631,7 +27638,7 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
           if (!urls || urls.length === 0) return;
           html += `<div style="margin-top:10px;"><div style="font-size:11px;font-weight:600;color:#1a3a5c;margin-bottom:5px;">${cfg.label}</div>`;
           html += `<div style="display:flex;flex-wrap:wrap;gap:6px;">`;
-          urls.forEach(u => html += `<a href="${u}" target="_blank"><img src="${u}" style="width:80px;height:80px;object-fit:cover;border-radius:8px;border:1px solid #e0e0e0;" loading="lazy"></a>`);
+          urls.forEach(u => html += `<a href="${u}" target="_blank"><img src="${thumbSrc_(u)}" style="width:80px;height:80px;object-fit:cover;border-radius:8px;border:1px solid #e0e0e0;" loading="lazy"></a>`);
           html += `</div></div>`;
         });
         html += `</div>`;
@@ -28609,7 +28616,7 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
               '<div style="margin-top:6px;">' +
                 '<div style="font-size:11px;color:#1a3a5c;font-weight:600;margin-bottom:3px;">' + cfg.label + '</div>' +
                 '<div class="rc-history-photos">' +
-                  urls.map(u => '<img src="' + u + '" onclick="window.open(\'' + u + '\',\'_blank\')">').join('') +
+                  urls.map(u => '<img src="' + thumbSrc_(u) + '" onclick="window.open(\'' + u + '\',\'_blank\')">').join('') +
                 '</div>' +
               '</div>'
             );
@@ -29192,7 +29199,7 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
         const photos = Array.isArray(photosRaw) ? photosRaw : (typeof photosRaw === 'string' ? JSON.parse(photosRaw) : []);
         if (photos.length === 0) return '';
         return '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:6px;">' +
-          photos.map(p => '<img src="' + (p.url || p) + '" style="width:100%;height:70px;object-fit:cover;border-radius:8px;border:1px solid #e5e7eb;" onclick="window.open(this.src,\'_blank\')">').join('') +
+          photos.map(p => '<img src="' + thumbSrc_(p.url || p) + '" style="width:100%;height:70px;object-fit:cover;border-radius:8px;border:1px solid #e5e7eb;" onclick="window.open(this.src,\'_blank\')">').join('') +
           '</div>';
       } catch(e) { return ''; }
     };
