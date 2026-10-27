@@ -1603,6 +1603,49 @@
   #kdu-cv .kdu-cvmsg { color:#e2e8f0; text-align:center; padding:30px 14px; font-size:13px; }
   #kdu-cv .kdu-cvmsg a { color:#fcd34d; }
 
+  .kdu-fcs { display:flex; flex-wrap:wrap; gap:5px; margin-top:9px; }
+  .kdu-fc { font-size:11px; font-weight:700; border-radius:8px; padding:3px 7px; background:#f1f5f9; color:#94a3b8; }
+  .kdu-fc.ok { background:#dcfce7; color:#166534; } .kdu-fc.wj { background:#fee2e2; color:#b91c1c; }
+  .kdu-jd { margin-top:9px; background:#eff6ff; border:1px solid #bfdbfe; border-radius:9px; padding:8px 9px; font-size:12px; color:#1e3a8a; line-height:1.5; }
+  .kdu-jp { margin-top:8px; } .kdu-jp input { width:100%; box-sizing:border-box; border:1px solid #cbd5e1; border-radius:8px; padding:8px; font-size:13px; margin-top:4px; background:#fff; }
+  .kdu-last { margin-top:8px; font-size:11.5px; color:#475569; background:#f8fafc; border-radius:8px; padding:6px 8px; }
+  .kdu-btn.ok { background:#16a34a; color:#fff; border-color:#16a34a; } .kdu-btn.wj { border-color:#dc2626; color:#b91c1c; background:#fff5f5; }
+  .kdu-btn.dk { border-color:#93c5fd; color:#1d4ed8; background:#eff6ff; position:relative; }
+  .kdu-dot { position:absolute; top:-7px; right:-7px; background:#ef4444; color:#fff; border-radius:999px; font-size:10px; padding:1px 6px; }
+  .kdu-lap { position:fixed; inset:0; z-index:10003; background:#f5f7fa; display:flex; flex-direction:column; }
+  .kdu-lt { display:flex; align-items:center; gap:10px; background:linear-gradient(135deg,#1a3a5c,#0e2340); color:#fff; padding:calc(env(safe-area-inset-top,0px) + 12px) 12px 10px; flex-shrink:0; }
+  .kdu-lt b { font-size:15px; } .kdu-lt p { margin:2px 0 0; font-size:11.5px; opacity:.7; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .kdu-lt button { background:rgba(255,255,255,0.15); color:#fff; border:none; border-radius:9px; padding:8px 11px; font-size:13px; font-weight:700; cursor:pointer; flex-shrink:0; }
+  .kdu-lb { flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:12px; max-width:720px; width:100%; margin:0 auto; box-sizing:border-box; }
+  .kdu-tb { width:100%; border-collapse:collapse; background:#fff; font-size:11.5px; }
+  .kdu-tb td, .kdu-tb th { border:1px solid #cbd5e1; padding:5px 4px; text-align:center; } .kdu-tb td:first-child { text-align:left; } .kdu-tb th { background:#f1f5f9; font-size:11px; }
+  .kdu-tb tr.r td { font-weight:800; background:#f8fafc; } .kdu-tb small { color:#64748b; }
+  .kdu-legend { font-size:10.5px; color:#64748b; margin:5px 0 8px; }
+  .kdu-isi { background:#fff; border:1.5px solid #1a3a5c; border-radius:13px; padding:11px; margin-top:12px; }
+  .kdu-isih { font-weight:800; color:#1a3a5c; font-size:13.5px; margin-bottom:6px; }
+  .kdu-asp { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:6px 0; border-bottom:1px dashed #eef0f4; font-size:12.5px; }
+  .kdu-asp small { display:block; font-size:10.5px; color:#94a3b8; }
+  .kdu-sc { display:flex; gap:4px; flex-shrink:0; } .kdu-sc i { font-style:normal; width:30px; height:30px; border-radius:8px; border:1px solid #cbd5e1; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; color:#475569; background:#fff; cursor:pointer; }
+  .kdu-sc i.on { background:#1a3a5c; color:#fff; border-color:#1a3a5c; }
+  .kdu-rt { text-align:right; font-size:13px; color:#1a3a5c; margin-top:6px; }
+  .kdu-lbl { font-size:11px; font-weight:800; color:#64748b; text-transform:uppercase; letter-spacing:.4px; margin:11px 0 5px; }
+  .kdu-rm { display:grid; grid-template-columns:1fr 1fr; gap:6px; } .kdu-rm button { border:1px solid #cbd5e1; border-radius:9px; padding:8px 5px; font-size:12px; font-weight:700; background:#fff; color:#0f172a; cursor:pointer; }
+  .kdu-rm button.on { background:#dcfce7; border-color:#16a34a; color:#166534; }
+  .kdu-isi textarea { width:100%; box-sizing:border-box; border:1px solid #cbd5e1; border-radius:9px; padding:8px; font-size:13px; font-family:inherit; }
+  .kdu-ttd { font-size:11.5px; color:#475569; background:#f8fafc; border:1px solid #e5e7eb; border-radius:9px; padding:7px; margin-top:8px; }
+  .kdu-simpan { width:100%; margin-top:10px; padding:11px; font-size:13.5px; }
+  .kdu-msgs { flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:12px; display:flex; flex-direction:column; gap:8px; max-width:720px; width:100%; margin:0 auto; box-sizing:border-box; }
+  .kdu-m { max-width:82%; border-radius:13px; padding:7px 10px; font-size:13px; line-height:1.4; background:#fff; border:1px solid #e5e7eb; align-self:flex-start; }
+  .kdu-m.out { background:#dbeafe; border-color:#bfdbfe; align-self:flex-end; }
+  .kdu-m.sys { background:#f1f5f9; border-color:#e2e8f0; font-size:12px; }
+  .kdu-m .w { font-size:10.5px; font-weight:800; color:#7c3aed; margin-bottom:2px; } .kdu-m.out .w { color:#1d4ed8; }
+  .kdu-m .t { white-space:pre-wrap; word-break:break-word; } .kdu-m .q { font-size:11px; color:#64748b; border-left:3px solid #cbd5e1; padding-left:6px; margin-bottom:3px; }
+  .kdu-m .j { font-size:10px; color:#94a3b8; text-align:right; margin-top:2px; } .kdu-m .j button { border:none; background:none; color:#2563eb; font-size:10.5px; font-weight:700; cursor:pointer; padding:0; }
+  .kdu-inp { display:flex; flex-wrap:wrap; gap:8px; padding:9px 10px calc(env(safe-area-inset-bottom,0px) + 9px); background:#fff; border-top:1px solid #e5e7eb; flex-shrink:0; }
+  .kdu-inp [data-kdu-ubah] { width:100%; align-items:center; justify-content:space-between; font-size:11.5px; color:#1d4ed8; } .kdu-inp [data-kdu-ubah] button { border:none; background:none; color:#b91c1c; font-weight:700; }
+  .kdu-inp textarea { flex:1; border:1px solid #cbd5e1; border-radius:18px; padding:9px 12px; font-size:13.5px; resize:none; font-family:inherit; max-height:110px; }
+  .kdu-inp > button { background:#1a3a5c; color:#fff; border:none; border-radius:50%; width:40px; height:40px; font-size:16px; cursor:pointer; flex-shrink:0; align-self:flex-end; }
+
   /* ===== ROOM CHECK STYLES ===== */
   /* ===== ROOM CHECK FEATURE — Tambahan ===== */
   .rc-menu-card {
@@ -29335,6 +29378,7 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
   function kduMode() {
     const r = (typeof currentRole !== 'undefined' && currentRole) || '';
     if (KDU_HM[r]) return { hm:true, unit:KDU_HM[r] };
+    if (r === 'Chief Engineering Corporate') return { hm:false, ce:true, unit:'' };   // kandidat Engineering semua unit
     if (KDU_SEMUA.includes(r)) return { hm:false, unit:'' };
     return null;
   }
@@ -29367,11 +29411,12 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
     if (KDU.janji && KDU.kunci === kunci) return KDU.janji;
     KDU.kunci = kunci;
     KDU.janji = kduPanggil(m.unit).then(j => {
-      if (j && j.ok && Array.isArray(j.data)) { KDU.data = j.data; KDU.t = Date.now(); KDU.err = ''; return KDU.data; }
+      if (j && j.ok && Array.isArray(j.data)) { KDU.data = j.data; KDU.form = j.form || ''; KDU.nama = j.nama || ''; KDU.t = Date.now(); KDU.err = ''; return KDU.data; }
       KDU.err = (j && j.error) || 'gagal'; return null;
     }).catch(e => { KDU.err = 'jaringan'; return null; }).finally(() => { KDU.janji = null; });
     return KDU.janji;
   }
+  function kduJudul(m) { return m.hm ? 'Kandidat Unit Saya' : m.ce ? 'Kandidat Engineering' : 'Kandidat per Unit'; }
   function kduUnitDari(k) { const u = Array.isArray(k.units) ? k.units : []; return u.length ? u : ['belum']; }
   function kduRingkas(data, unit) {
     const d = (data || []).filter(k => !unit || kduUnitDari(k).includes(unit));
@@ -29386,21 +29431,26 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
     const el = document.getElementById(elId); if (!el) return;
     const m = kduMode();
     // Beranda: HM + HR. Dashboard COO: COO/CEO (dan HR bila membuka dashboard).
-    if (!m || (beranda && !m.hm && !['HR Officer','Ops HR Manager'].includes(currentRole)) || (!beranda && m.hm)) { el.style.display = 'none'; el.innerHTML = ''; return; }
+    if (!m || (beranda && !m.hm && !m.ce && !['HR Officer','Ops HR Manager'].includes(currentRole)) || (!beranda && (m.hm || m.ce))) { el.style.display = 'none'; el.innerHTML = ''; return; }
+    const judul = kduJudul(m), ikon = m.ce ? '🔧' : '👥';
     el.style.display = 'block';
-    if (!el.innerHTML) el.innerHTML = `<div class="kdu-card"><div class="kdu-h"><div class="kdu-ic">👥</div><div class="kdu-t"><b>${m.hm ? 'Kandidat Unit Saya' : 'Kandidat per Unit'}</b><span>⏳ Memuat…</span></div></div></div>`;
+    if (!el.innerHTML) el.innerHTML = `<div class="kdu-card"><div class="kdu-h"><div class="kdu-ic">${ikon}</div><div class="kdu-t"><b>${judul}</b><span>⏳ Memuat…</span></div></div></div>`;
     const data = await kduMuat();
     if (kduMode() === null || document.getElementById(elId) !== el) return;
     if (!data) {
-      el.innerHTML = `<div class="kdu-card"><div class="kdu-h"><div class="kdu-ic">👥</div><div class="kdu-t"><b>${m.hm ? 'Kandidat Unit Saya' : 'Kandidat per Unit'}</b><span>⚠️ Gagal memuat — ketuk untuk coba lagi</span></div></div></div>`;
+      el.innerHTML = `<div class="kdu-card"><div class="kdu-h"><div class="kdu-ic">${ikon}</div><div class="kdu-t"><b>${judul}</b><span>⚠️ Gagal memuat — ketuk untuk coba lagi</span></div></div></div>`;
       el.firstElementChild.onclick = () => { KDU.t = 0; KDU.data = null; kduKartu(elId, beranda); };
       return;
     }
     const s = kduRingkas(data, '');
     let sub = s.proses ? `${s.proses} dalam proses` : 'Belum ada kandidat dalam proses';
     if (s.trial) sub += ` · ${s.trial} trial`;
-    let html = `<div class="kdu-card" data-kdu-buka=""><div class="kdu-h"><div class="kdu-ic">👥</div><div class="kdu-t"><b>${m.hm ? 'Kandidat Unit Saya' : 'Kandidat per Unit'}</b><span>${sub}</span></div><div class="kdu-ar">›</div></div>`;
+    let html = `<div class="kdu-card" data-kdu-buka=""><div class="kdu-h"><div class="kdu-ic">${ikon}</div><div class="kdu-t"><b>${judul}</b><span>${sub}</span></div><div class="kdu-ar">›</div></div>`;
     if (s.hm) html += `<div class="kdu-merah">🔴 ${s.hm} menunggu interview ${m.hm ? 'Anda' : 'HM'}</div>`;
+    const belumForm = m.hm ? data.filter(k => k.tahap === 'hm' && k.hm_form_wajib && !(k.forms || []).some(f => f.tahap === 'hm')).length : 0;
+    if (belumForm) html += ` <div class="kdu-merah" style="background:#fff7ed;color:#9a3412;border-color:#fed7aa">📝 ${belumForm} Interview Form belum diisi</div>`;
+    const pesanBaru = data.reduce((a, k) => a + (+k.chat_belum || 0), 0);
+    if (pesanBaru) html += ` <div class="kdu-merah" style="background:#eff6ff;color:#1d4ed8;border-color:#bfdbfe">💬 ${pesanBaru} pesan baru</div>`;
     if (!m.hm) {
       const chips = KDU_URUT_UNIT.map(u => { const r = kduRingkas(data, u); return (r.proses || r.batal) ? `<button class="kdu-uchip" data-kdu-buka="${u}">${KDU_UNIT[u]} ${r.proses}${r.hm ? `<i>● ${r.hm}</i>` : ''}</button>` : ''; }).join('');
       if (chips) html += `<div class="kdu-uchips">${chips}</div>`;
@@ -29415,7 +29465,7 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
     KDU.unit = unit || '';
     document.getElementById('kdu-ov')?.remove();
     const ov = document.createElement('div'); ov.id = 'kdu-ov';
-    ov.innerHTML = `<div class="kdu-top"><div class="kdu-row"><button class="kdu-back" aria-label="Kembali">←</button><div style="flex:1;min-width:0"><h2></h2><p>Info dari HR · hanya untuk dilihat</p></div><button class="kdu-back" data-kdu-segar aria-label="Muat ulang" title="Muat ulang">⟳</button></div><div class="kdu-uchips" data-kdu-unit></div></div><div class="kdu-body"><div class="kdu-kosong">⏳ Memuat…</div></div>`;
+    ov.innerHTML = `<div class="kdu-top"><div class="kdu-row"><button class="kdu-back" aria-label="Kembali">←</button><div style="flex:1;min-width:0"><h2></h2><p>Info dari HR</p></div><button class="kdu-back" data-kdu-segar aria-label="Muat ulang" title="Muat ulang">⟳</button></div><div class="kdu-uchips" data-kdu-unit></div></div><div class="kdu-body"><div class="kdu-kosong">⏳ Memuat…</div></div>`;
     document.body.appendChild(ov);
     ov.querySelector('.kdu-back').onclick = kduTutup;
     ov.querySelector('[data-kdu-segar]').onclick = () => { ov.querySelector('.kdu-body').innerHTML = '<div class="kdu-kosong">⏳ Memuat…</div>'; kduMuat(true).then(kduRender); };
@@ -29424,12 +29474,13 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
   }
   function kduTutup() {
     const ov = document.getElementById('kdu-ov'); if (!ov) return;
-    ov.remove(); document.getElementById('kdu-cv')?.remove();
+    ov.remove(); ['kdu-cv','kdu-fm','kdu-dk'].forEach(x => document.getElementById(x)?.remove()); clearInterval(KDU.dkT);
     try { if (history.state && history.state.kdu) { KDU.abaikanPop = 1; history.go(-history.state.kdu); } } catch(e) {}
   }
   window.addEventListener('popstate', () => {
     if (KDU.abaikanPop) { KDU.abaikanPop = 0; return; }   // kembali yang dipicu tombol ← / ✕ sendiri
-    const cv = document.getElementById('kdu-cv'); if (cv) { cv.remove(); return; }
+    const sub = ['kdu-cv','kdu-fm','kdu-dk'].map(x => document.getElementById(x)).filter(Boolean);
+    if (sub.length) { sub.forEach(x => x.remove()); clearInterval(KDU.dkT); if (document.getElementById('kdu-ov')) { kduMuat(true).then(() => { kduRender(); kduSegarKartu(); }); } return; }
     document.getElementById('kdu-ov')?.remove();
   });
   function kduTgl(v, jam) {
@@ -29501,12 +29552,13 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
     }
     if (L.length) h += `<div class="kdu-btns">${L.map((x, i) => `<button class="kdu-btn${x.cv ? ' cv' : ''}" data-kdu-cv="${i}">${x.cv ? '📄 Lihat CV' : '📎 ' + escapeHtml(String(x.nama).replace(/\.[a-z0-9]+$/i, '').slice(0, 24))}</button>`).join('')}</div>`;
     else h += `<div class="kdu-tg" style="color:#94a3b8">CV tidak tersedia</div>`;
+    h += kduItemTambahan(k);
     return h + `</div>`;
   }
   function kduRender() {
     const ov = document.getElementById('kdu-ov'); if (!ov) return;
     const m = kduMode(); const body = ov.querySelector('.kdu-body');
-    ov.querySelector('h2').textContent = m && m.hm ? '👥 Kandidat Unit Saya' : '👥 Kandidat per Unit';
+    ov.querySelector('h2').textContent = m ? (m.ce ? '🔧 ' : '👥 ') + kduJudul(m) : '';
     if (!m) { kduTutup(); return; }
     if (!KDU.data) { body.innerHTML = `<div class="kdu-kosong">⚠️ Gagal memuat data kandidat${KDU.err === 'akses' ? ' (akses tidak diizinkan)' : ''}.<br><button class="kdu-btn" style="margin-top:10px" onclick="kduMuat(true).then(kduRender)">Coba lagi</button></div>`; return; }
     const semua = !m.hm;
@@ -29517,7 +29569,7 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
       uBox.querySelectorAll('[data-u]').forEach(b => b.onclick = () => { KDU.unit = b.getAttribute('data-u'); kduRender(); });
     } else uBox.style.display = 'none';
     const d = KDU.data.filter(k => !semua || !KDU.unit || kduUnitDari(k).includes(KDU.unit));
-    ov.querySelector('.kdu-top p').textContent = (semua ? (KDU.unit ? KDU_UNIT[KDU.unit] : 'Semua unit') + ' · ' : '') + kduRingkas(d, '').proses + ' dalam proses · info dari HR, hanya untuk dilihat';
+    ov.querySelector('.kdu-top p').textContent = (semua ? (KDU.unit ? KDU_UNIT[KDU.unit] : 'Semua unit') + ' · ' : '') + kduRingkas(d, '').proses + ' dalam proses · info dari HR';
     let html = '';
     kduTahapList(m.hm).forEach(([t, judul, merah]) => {
       const a = d.filter(k => k.tahap === t);
@@ -29528,6 +29580,257 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
     body.innerHTML = html || '<div class="kdu-kosong">Belum ada kandidat yang sedang diproses HR untuk unit ini.</div>';
     body.querySelectorAll('[data-kdu-jw]').forEach(b => b.onclick = () => { const s = b.previousElementSibling; const buka = s.style.display === 'none'; s.style.display = buka ? 'block' : 'none'; b.textContent = buka ? '▴ Tutup' : '▾ Lihat semua (' + (b.parentNode.querySelectorAll('.q').length) + ')'; });
     body.querySelectorAll('[data-kdu-cv]').forEach(b => b.onclick = () => { const id = b.closest('.kdu-item').getAttribute('data-id'); kduCV(id, +b.getAttribute('data-kdu-cv')); });
+    kduPasangItem(body);
+  }
+
+  // ---------- Interview Form, Diskusi kandidat & jadwal interview HM (27 Okt 2026) ----------
+  const KDU_AKSI_URL = 'https://bfqxsbyqaewdjstkrmsb.supabase.co/rest/v1/rpc/rec_kandidat_aksi';
+  const KDU_ASPEK = [['appearance','Appearance'],['personality','Personality'],['manner','Manner'],['language','Language'],['motivation','Motivation'],
+                     ['general','General Knowledge'],['technical','Technical Knowledge'],['tech_bg','Technical Background'],['school','School Background']];
+  const KDU_RM = { not_suitable:['❌','Not Suitable'], considered:['🤔','Can Be Considered'], suitable:['✅','Suitable'], potensial:['⭐','Potensial'] };
+  const KDU_TF = [['hr','HR','First Interview'],['hm','HM','Second Interview'],['corp','Corp','Third Interview'],['coo','COO/CEO','Fourth Interview']];
+  const KDU_KODE = ['','Not Suitable','Below Average','Average','Good','Outstanding'];
+  function kduKoma(n) { return n == null ? '–' : String(n).replace('.', ','); }
+  function kduJam(iso) {
+    if (!iso) return '';
+    const d = new Date(new Date(iso).getTime() + 7 * 3600000); if (isNaN(d)) return '';
+    return ['Min','Sen','Sel','Rab','Kam','Jum','Sab'][d.getUTCDay()] + ' ' + d.getUTCDate() + ' ' + ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'][d.getUTCMonth()]
+      + ' ' + String(d.getUTCHours()).padStart(2, '0') + ':' + String(d.getUTCMinutes()).padStart(2, '0');
+  }
+  function kduForm(k, t) { return (Array.isArray(k.forms) ? k.forms : []).find(f => f.tahap === t) || null; }
+  function kduCari(id) { return (KDU.data || []).find(x => x.id === id) || null; }
+  async function kduAksi(id, aksi, data) {
+    const kirim = () => fetch(KDU_AKSI_URL, { method:'POST', headers:{ 'Content-Type':'application/json', 'apikey':KDU_KEY, 'Authorization':'Bearer ' + KDU_KEY },
+      body: JSON.stringify({ p_sesi: SESI_VA || '', p_id: id, p_aksi: aksi, p_data: data || {} }) }).then(r => r.ok ? r.json() : { ok:false, error:'Gagal (' + r.status + ')' });
+    if (window._peekMode && aksi !== 'diskusi') return { ok:false, error:'Mode Intip — hanya lihat' };
+    try {
+      if (!SESI_VA) { try { await _ambilSesiVA(window.fetch); } catch(e) {} }
+      let j = await kirim();
+      if (j && j.ok === false && j.error === 'sesi') { setSesiVA(''); try { await _ambilSesiVA(window.fetch); } catch(e) {} if (SESI_VA) j = await kirim(); }
+      return j || { ok:false, error:'Gagal' };
+    } catch(e) { return { ok:false, error:'Tidak ada koneksi internet' }; }
+  }
+  function kduToast(t) { try { showToast(t); } catch(e) {} }
+  // boleh mengisi / mengubah form tahap milik jabatan ini?
+  function kduBolehIsi(k) {
+    const t = KDU.form; if (!t) return { ok:false, alasan:'' };
+    const ada = kduForm(k, t), hr = kduForm(k, 'hr'), hm = kduForm(k, 'hm'), corp = kduForm(k, 'corp'), coo = kduForm(k, 'coo');
+    if (['batal'].includes(k.tahap)) return { ok:false, alasan:'Kandidat sudah tidak lanjut', ada };
+    if (t === 'hm') {
+      if (!hr && k.hm_form_wajib) return { ok:false, alasan:'Menunggu Interview Form HR', ada };
+      if (ada && (corp || coo)) return { ok:false, alasan:'Terkunci — tahap berikutnya sudah mengisi', ada };
+      if (!ada && k.status !== 'lanjut_hm') return { ok:false, alasan:'Kandidat belum di tahap Interview HM', ada };
+      return { ok:true, ada };
+    }
+    if (!(hm || (k.corp && hr))) return { ok:false, alasan:'Terbuka setelah HM mengisi Interview Form', ada };
+    if (t === 'corp' && ada && coo) return { ok:false, alasan:'Terkunci — COO/CEO sudah mengisi', ada };
+    return { ok:true, ada };
+  }
+  function kduChipForm(k) {
+    return KDU_TF.filter(([t]) => t !== 'corp' || k.eng || kduForm(k, 'corp')).map(([t, lbl]) => {
+      const f = kduForm(k, t);
+      if (f) return `<span class="kdu-fc ok">${lbl} ${kduKoma(f.rata)} ${KDU_RM[f.remarks] ? KDU_RM[f.remarks][0] : ''}</span>`;
+      if (t === 'hr') return `<span class="kdu-fc">${lbl} · belum</span>`;
+      if (t === 'hm') return (k.tahap === 'hm' && k.hm_form_wajib) ? `<span class="kdu-fc wj">${lbl} · wajib diisi</span>` : `<span class="kdu-fc">${lbl} · belum</span>`;
+      return `<span class="kdu-fc">${lbl} · opsional</span>`;
+    }).join('');
+  }
+  function kduJadwalHtml(k) {
+    if (k.tahap !== 'hm' || !k.hm_jadwal_usul) return '';
+    const sayaHM = KDU.form === 'hm';
+    let h = '<div class="kdu-jd">';
+    if (k.hm_jadwal_status === 'ok') h += `🗓️ Interview HM: <b>${kduJam(k.hm_jadwal)} WIB</b> <span class="kdu-pill" style="background:#dcfce7;color:#166534">✅ terkonfirmasi</span>`;
+    else if (k.hm_jadwal_status === 'tunggu_kandidat') h += `⏳ HM minta jadwal <b>${kduJam(k.hm_jadwal)} WIB</b> (usulan HR ${kduJam(k.hm_jadwal_usul)}) — menunggu HR konfirmasi ke kandidat`;
+    else {
+      h += `🗓️ Usulan jadwal HR: <b>${kduJam(k.hm_jadwal_usul)} WIB</b>`;
+      if (sayaHM) h += `<div class="kdu-btns" style="margin-top:7px"><button class="kdu-btn ok" data-kdu-jok>✅ Bisa</button><button class="kdu-btn" data-kdu-jganti>🔄 Ganti jam</button></div><div data-kdu-jpanel></div>`;
+      else h += ' <span class="kdu-pill" style="background:#fef3c7;color:#92400e">menunggu konfirmasi HM</span>';
+    }
+    return h + '</div>';
+  }
+  function kduItemTambahan(k) {
+    let h = `<div class="kdu-fcs">${kduChipForm(k)}</div>`;
+    h += kduJadwalHtml(k);
+    if (k.chat_akhir && k.chat_akhir.isi) h += `<div class="kdu-last">💬 <b>${escapeHtml(k.chat_akhir.oleh || '')}:</b> ${escapeHtml(String(k.chat_akhir.isi).replace(/\s+/g, ' ').slice(0, 110))}</div>`;
+    const b = kduBolehIsi(k), wajib = KDU.form === 'hm' && k.tahap === 'hm' && k.hm_form_wajib && !kduForm(k, 'hm') && b.ok;
+    h += `<div class="kdu-btns"><button class="kdu-btn${wajib ? ' wj' : ''}" data-kdu-form>📝 Interview Form${wajib ? ' (wajib)' : ''}</button>`
+       + `<button class="kdu-btn dk" data-kdu-dk>💬 Diskusi${k.chat_n ? ' (' + k.chat_n + ')' : ''}${k.chat_belum ? `<span class="kdu-dot">${k.chat_belum}</span>` : ''}</button></div>`;
+    return h;
+  }
+  function kduPasangItem(body) {
+    body.querySelectorAll('[data-kdu-form]').forEach(b => b.onclick = () => kduBukaForm(b.closest('.kdu-item').getAttribute('data-id')));
+    body.querySelectorAll('[data-kdu-dk]').forEach(b => b.onclick = () => kduBukaDiskusi(b.closest('.kdu-item').getAttribute('data-id')));
+    body.querySelectorAll('[data-kdu-jok]').forEach(b => b.onclick = async () => {
+      const id = b.closest('.kdu-item').getAttribute('data-id'); b.disabled = true;
+      const j = await kduAksi(id, 'jadwal_ok');
+      if (j.ok) { kduToast('✅ Jadwal dikonfirmasi — HR sudah dikabari'); await kduMuat(true); kduRender(); kduSegarKartu(); }
+      else { b.disabled = false; kduToast('⚠️ ' + (j.error || 'Gagal')); }
+    });
+    body.querySelectorAll('[data-kdu-jganti]').forEach(b => b.onclick = () => {
+      const it = b.closest('.kdu-item'), k = kduCari(it.getAttribute('data-id')), box = it.querySelector('[data-kdu-jpanel]');
+      if (!k || !box) return;
+      if (box.innerHTML) { box.innerHTML = ''; return; }
+      const lok = d => { const x = new Date(d.getTime() - d.getTimezoneOffset() * 60000); return x.toISOString().slice(0, 16); };
+      const min = new Date(Math.ceil((Date.now() + 2 * 3600000 + 60000) / 60000) * 60000), max = new Date(Math.floor((new Date(k.hm_jadwal_usul).getTime() + 3 * 86400000) / 60000) * 60000);
+      box.innerHTML = `<div class="kdu-jp"><div style="font-size:11.5px;color:#475569;margin-bottom:5px">Pilih waktu lain: paling cepat <b>${kduJam(min.toISOString())}</b>, paling lambat <b>${kduJam(max.toISOString())}</b>. HR akan konfirmasi ke kandidat.</div>
+        <input type="datetime-local" data-kdu-jw min="${lok(min)}" max="${lok(max)}" value="${lok(new Date(k.hm_jadwal_usul))}">
+        <input type="text" data-kdu-jc placeholder="Catatan untuk HR (opsional)" maxlength="200">
+        <button class="kdu-btn cv" data-kdu-jkirim style="width:100%;margin-top:6px">Kirim permintaan ganti jam</button></div>`;
+      const w = box.querySelector('[data-kdu-jw]');
+      w.addEventListener('click', () => { try { w.showPicker && w.showPicker(); } catch(e) {} });
+      box.querySelector('[data-kdu-jkirim]').onclick = async (ev) => {
+        if (!w.value) { kduToast('Pilih tanggal & jam'); return; }
+        const t = new Date(w.value);
+        if (isNaN(t) || t.getTime() < Date.now() + 2 * 3600000 || t > max) { kduToast('⚠️ Di luar rentang: paling cepat 2 jam dari sekarang, paling lambat ' + kduJam(max.toISOString())); return; }
+        ev.target.disabled = true;
+        const j = await kduAksi(k.id, 'jadwal_ganti', { waktu: t.toISOString(), catatan: box.querySelector('[data-kdu-jc]').value });
+        if (j.ok) { kduToast('🔄 Permintaan ganti jam terkirim ke HR'); await kduMuat(true); kduRender(); kduSegarKartu(); }
+        else { ev.target.disabled = false; kduToast('⚠️ ' + (j.error || 'Gagal')); }
+      };
+    });
+  }
+  function kduSegarKartu() { try { kduKartu('kdu-home', true); kduKartu('kdu-coo', false); } catch(e) {} }
+
+  // overlay lapis kedua (CV / Form / Diskusi) — satu saja yang terbuka, tombol kembali HP menutupnya
+  function kduSub(id) {
+    ['kdu-cv','kdu-fm','kdu-dk'].forEach(x => { if (x !== id) document.getElementById(x)?.remove(); });
+    let el = document.getElementById(id);
+    const adaSub = history.state && history.state.kdu === 2;
+    if (!el) { el = document.createElement('div'); el.id = id; document.body.appendChild(el); }
+    if (!adaSub) { try { history.pushState({ kdu:2 }, ''); } catch(e) {} }
+    return el;
+  }
+  function kduTutupSub() {
+    ['kdu-cv','kdu-fm','kdu-dk'].forEach(x => document.getElementById(x)?.remove());
+    clearInterval(KDU.dkT);
+    try { if (history.state && history.state.kdu === 2) { KDU.abaikanPop = 2; history.back(); } } catch(e) {}
+  }
+
+  // ----- Interview Form -----
+  function kduBukaForm(id) {
+    const k = kduCari(id); if (!k) return;
+    const el = kduSub('kdu-fm'); el.className = 'kdu-lap';
+    const b = kduBolehIsi(k), t = KDU.form;
+    const kolom = KDU_TF;
+    const nil = (f, a) => f && f.nilai ? f.nilai[a] : null;
+    let h = `<div class="kdu-lt"><button data-x aria-label="Tutup">✕</button><div style="flex:1;min-width:0"><b>📝 Interview Form</b><p>${escapeHtml(k.nama)} · ${escapeHtml(k.posisi || '-')}</p></div><button data-cetak>🖨️ PDF</button></div><div class="kdu-lb">`;
+    h += `<table class="kdu-tb"><tr><th>Aspek</th>${kolom.map(([tt, l]) => `<th>${l}</th>`).join('')}</tr>`;
+    KDU_ASPEK.forEach(([a, l]) => { h += `<tr><td>${l}</td>${kolom.map(([tt]) => `<td>${nil(kduForm(k, tt), a) ?? '–'}</td>`).join('')}</tr>`; });
+    h += `<tr class="r"><td>Rata-rata</td>${kolom.map(([tt]) => { const f = kduForm(k, tt); return `<td>${f ? kduKoma(f.rata) : '–'}</td>`; }).join('')}</tr>`;
+    h += `<tr><td>Remarks</td>${kolom.map(([tt]) => { const f = kduForm(k, tt); return `<td>${f && KDU_RM[f.remarks] ? KDU_RM[f.remarks].join(' ') : '<span style="color:#94a3b8">–</span>'}</td>`; }).join('')}</tr>`;
+    h += `<tr><td>Pewawancara</td>${kolom.map(([tt]) => { const f = kduForm(k, tt); return `<td>${f ? escapeHtml(f.oleh) + '<br><small>' + kduTgl(f.diubah || f.dibuat) + '</small>' : '–'}</td>`; }).join('')}</tr></table>`;
+    h += `<div class="kdu-legend">1 Not Suitable · 2 Below Average · 3 Average · 4 Good · 5 Outstanding</div>`;
+    kolom.forEach(([tt, l]) => { const f = kduForm(k, tt); if (f && f.komentar) h += `<div class="kdu-note"><b>Comments ${l}:</b> ${escapeHtml(f.komentar)}</div>`; });
+    if (t) {
+      const lbl = (KDU_TF.find(x => x[0] === t) || [])[1];
+      if (!b.ok) h += `<div class="kdu-note al" style="margin-top:12px">🔒 Kolom ${lbl}: ${escapeHtml(b.alasan || 'tidak bisa diisi')}</div>`;
+      else {
+        const f = b.ada, ref = t === 'hm' ? [['hr','HR']] : [['hr','HR'],['hm','HM']];
+        h += `<div class="kdu-isi"><div class="kdu-isih">${f ? '✏️ Ubah' : '✍️ Isi'} kolom ${lbl}${t === 'hm' ? ' <span style="color:#b91c1c">(wajib)</span>' : ' <span style="color:#64748b">(opsional)</span>'}</div>`;
+        KDU_ASPEK.forEach(([a, l]) => {
+          const pv = ref.map(([rt, rl]) => { const v = nil(kduForm(k, rt), a); return v ? `${rl} ${v}` : ''; }).filter(Boolean).join(' · ');
+          const cur = nil(f, a);
+          h += `<div class="kdu-asp"><div><span>${l}</span>${pv ? `<small>${pv}</small>` : ''}</div><div class="kdu-sc" data-a="${a}">${[1,2,3,4,5].map(n => `<i data-n="${n}" class="${cur === n ? 'on' : ''}" title="${KDU_KODE[n]}">${n}</i>`).join('')}</div></div>`;
+        });
+        h += `<div class="kdu-rt">Rata-rata: <b data-rata>${f ? kduKoma(f.rata) : '–'}</b></div>`;
+        h += `<div class="kdu-lbl">Remarks${t === 'hm' ? ' (rekomendasi ke HR)' : ''}</div><div class="kdu-rm">${Object.entries(KDU_RM).map(([kk, [ic, l]]) => `<button data-rm="${kk}" class="${f && f.remarks === kk ? 'on' : ''}">${ic} ${l}</button>`).join('')}</div>`;
+        h += `<div class="kdu-lbl">Comments</div><textarea data-kom rows="3" maxlength="1500" placeholder="Catatan hasil interview">${escapeHtml(f && f.komentar ? f.komentar : '')}</textarea>`;
+        h += `<div class="kdu-ttd">✍️ Ditandatangani digital sebagai <b>${escapeHtml(KDU.nama || currentRole)}</b> saat disimpan</div>`;
+        h += `<button class="kdu-btn cv kdu-simpan" data-simpan>💾 ${t === 'hm' ? 'Simpan & Kirim Rekomendasi ke HR' : 'Simpan Form'}</button>`;
+        if (t === 'hm') h += `<div class="kdu-note" style="margin-top:8px">Status kandidat tidak berubah otomatis — HR menerima rekomendasi Anda lalu memutuskan.</div>`;
+        h += `</div>`;
+      }
+    }
+    h += `</div>`;
+    el.innerHTML = h;
+    el.querySelector('[data-x]').onclick = kduTutupSub;
+    el.querySelector('[data-cetak]').onclick = () => kduCetak(k);
+    const hitung = () => { const v = [...el.querySelectorAll('.kdu-sc i.on')].map(i => +i.getAttribute('data-n')); const r = el.querySelector('[data-rata]'); if (r) r.textContent = v.length === 9 ? kduKoma(Math.round(v.reduce((a, c) => a + c, 0) / 9 * 10) / 10) : (v.length ? v.length + '/9 aspek' : '–'); };
+    el.querySelectorAll('.kdu-sc i').forEach(i => i.onclick = () => { i.parentNode.querySelectorAll('i').forEach(x => x.classList.toggle('on', x === i)); hitung(); });
+    el.querySelectorAll('[data-rm]').forEach(x => x.onclick = () => el.querySelectorAll('[data-rm]').forEach(y => y.classList.toggle('on', y === x)));
+    const sv = el.querySelector('[data-simpan]');
+    if (sv) sv.onclick = async () => {
+      const nilai = {}; let kurang = [];
+      el.querySelectorAll('.kdu-sc').forEach(s => { const on = s.querySelector('i.on'); if (on) nilai[s.getAttribute('data-a')] = +on.getAttribute('data-n'); else kurang.push((KDU_ASPEK.find(x => x[0] === s.getAttribute('data-a')) || [])[1]); });
+      const rm = el.querySelector('[data-rm].on');
+      if (kurang.length) { kduToast('⚠️ Nilai belum diisi: ' + kurang.join(', ')); const sc0 = [...el.querySelectorAll('.kdu-sc')].find(x => !x.querySelector('i.on')); if (sc0) sc0.scrollIntoView({ block:'center', behavior:'smooth' }); return; }
+      if (!rm) { kduToast('⚠️ Pilih Remarks'); return; }
+      sv.disabled = true; sv.textContent = '⏳ Menyimpan…';
+      const j = await kduAksi(k.id, 'form', { nilai, remarks: rm.getAttribute('data-rm'), komentar: el.querySelector('[data-kom]').value });
+      if (j.ok) {
+        kduToast('✅ Interview Form tersimpan (rata-rata ' + kduKoma(j.rata) + ')' + (KDU.form === 'hm' ? ' — HR sudah dikabari' : ''));
+        await kduMuat(true); kduRender(); kduSegarKartu();
+        if (document.getElementById('kdu-fm')) kduBukaForm(k.id);
+      } else { sv.disabled = false; sv.textContent = '💾 Simpan'; kduToast('⚠️ ' + (j.error || 'Gagal menyimpan')); }
+    };
+  }
+  function kduCetak(k) {
+    const kol = KDU_TF, cel = (f, a) => f && f.nilai && f.nilai[a] ? f.nilai[a] : '';
+    const kotak = (f, r) => f && f.remarks === r ? '☑' : '☐';
+    const e = escapeHtml;
+    const html = `<!doctype html><html><head><meta charset="utf-8"><title>Interview Form — ${e(k.nama)}</title><style>
+      body{font-family:Arial,Helvetica,sans-serif;color:#000;margin:24px;font-size:12px}.c{text-align:center}h1{font-size:16px;margin:10px 0 18px}
+      table{width:100%;border-collapse:collapse}td,th{border:1px solid #000;padding:6px 5px;vertical-align:top}th{font-size:11px}
+      td.n{text-align:center;font-weight:bold;font-size:13px}.d{width:23%}.cm{height:90px;font-size:11px}.leg{margin-top:8px;font-size:11px;font-weight:bold}
+      .np{margin-top:16px;text-align:center}@media print{.np{display:none}}</style></head><body>
+      <div class="c"><img src="https://verse-recruitment.vercel.app/tools/logo_form.png" style="height:70px" onerror="this.style.display='none'"><h1>INTERVIEW FORM</h1></div>
+      <p>NAME: <b>${e(k.nama)}</b></p><p>POSITION APPLY: <b>${e(k.posisi || '-')}</b>${(k.units || []).length ? ' &nbsp;·&nbsp; UNIT: <b>' + e((k.units || []).map(u => KDU_UNIT[u] || u).join(' / ')) + '</b>' : ''}</p>
+      <table><tr><th class="d">DESCRIPTION</th>${kol.map(([t, l, s]) => `<th>${t === 'hr' ? 'Human Resources' : t === 'hm' ? 'Hotel Manager' : t === 'corp' ? 'Corporate (HK / FO / ENG)' : 'COO / CEO'}<br><br>${s}</th>`).join('')}</tr>
+      ${KDU_ASPEK.map(([a, l]) => `<tr><td>${l.toUpperCase()}</td>${kol.map(([t]) => `<td class="n">${cel(kduForm(k, t), a)}</td>`).join('')}</tr>`).join('')}
+      <tr><td><b>RATA-RATA</b></td>${kol.map(([t]) => { const f = kduForm(k, t); return `<td class="n">${f ? kduKoma(f.rata) : ''}</td>`; }).join('')}</tr>
+      <tr><td>REMARKS:<br><br>${Object.values(KDU_RM).map(x => x[1].toUpperCase()).join('<br>')}</td>${kol.map(([t]) => { const f = kduForm(k, t); return `<td>${Object.entries(KDU_RM).map(([r, x]) => kotak(f, r) + ' ' + x[1]).join('<br>')}</td>`; }).join('')}</tr>
+      <tr><td>COMMENTS</td>${kol.map(([t]) => { const f = kduForm(k, t); return `<td class="cm">${f && f.komentar ? e(f.komentar) : ''}</td>`; }).join('')}</tr>
+      <tr><td>INTERVIEWER'S SIGNATURE</td>${kol.map(([t]) => { const f = kduForm(k, t); return `<td>${f ? '✍️ ' + e(f.oleh) + '<br><small>(tanda tangan digital)</small>' : ''}</td>`; }).join('')}</tr>
+      <tr><td>DATE OF INTERVIEW</td>${kol.map(([t]) => { const f = kduForm(k, t); return `<td>${f ? kduJam(f.diubah || f.dibuat) + ' WIB' : ''}</td>`; }).join('')}</tr></table>
+      <div class="leg">NO. OF CODE : 1. NOT SUITABLE · 2. BELOW AVERAGE · 3. AVERAGE · 4. GOOD · 5. OUTSTANDING</div>
+      <div class="np"><button onclick="window.print()" style="padding:10px 26px;font-size:14px">🖨️ Print / Save as PDF</button></div></body></html>`;
+    const w = window.open('', '_blank');
+    if (!w) { kduToast('⚠️ Popup diblokir — izinkan popup untuk mencetak'); return; }
+    w.document.open(); w.document.write(html); w.document.close();
+  }
+
+  // ----- Diskusi kandidat -----
+  async function kduBukaDiskusi(id) {
+    const k = kduCari(id); if (!k) return;
+    const el = kduSub('kdu-dk'); el.className = 'kdu-lap';
+    el.innerHTML = `<div class="kdu-lt"><button data-x aria-label="Tutup">✕</button><div style="flex:1;min-width:0"><b>💬 Diskusi · ${escapeHtml(k.nama)}</b><p>${escapeHtml(k.posisi || '-')} · HM, HR, Corp & COO</p></div></div>
+      <div class="kdu-msgs"><div class="kdu-kosong">⏳ Memuat…</div></div>
+      <div class="kdu-inp"><div data-kdu-ubah style="display:none"></div><textarea rows="1" maxlength="2000" placeholder="Tulis pesan…"></textarea><button aria-label="Kirim">➤</button></div>`;
+    el.querySelector('[data-x]').onclick = () => { kduTutupSub(); kduMuat(true).then(() => { kduRender(); kduSegarKartu(); }); };
+    const ta = el.querySelector('textarea'), kirim = el.querySelector('.kdu-inp button'), ubahBox = el.querySelector('[data-kdu-ubah]');
+    let ubahId = null;
+    ta.addEventListener('input', () => { ta.style.height = 'auto'; ta.style.height = Math.min(110, ta.scrollHeight) + 'px'; });
+    const muat = async (gulir) => {
+      const j = await kduAksi(id, 'diskusi');
+      const box = el.querySelector('.kdu-msgs'); if (!box) return;
+      if (!j.ok) { box.innerHTML = `<div class="kdu-kosong">⚠️ ${escapeHtml(j.error || 'Gagal memuat')}</div>`; return; }
+      const dekat = box.scrollHeight - box.scrollTop - box.clientHeight < 80;
+      const ms = j.pesan || [];
+      box.innerHTML = ms.length ? ms.map(m => {
+        const sys = /^(📝|✅|🔄|⏱️|📨|🤝|⏭️|📞)/.test(m.isi || '') ;
+        const bisaUbah = m.saya && Date.now() - new Date(m.at).getTime() < 5 * 60000 && !sys;
+        return `<div class="kdu-m ${m.saya ? 'out' : 'in'}${sys ? ' sys' : ''}"><div class="w">${escapeHtml(m.saya ? 'Anda' : (m.oleh || ''))}</div>${m.bls ? `<div class="q">↩ ${escapeHtml(m.bls)}: ${escapeHtml(m.bls_isi || '')}</div>` : ''}<div class="t">${escapeHtml(m.isi || '')}</div><div class="j">${kduTgl(m.at, true)}${bisaUbah ? ` · <button data-ubah="${escapeHtml(m.id)}">✏️ ubah</button>` : ''}</div></div>`;
+      }).join('') : '<div class="kdu-kosong">Belum ada diskusi. Mulai tulis pesan untuk HR / unit.</div>';
+      box.querySelectorAll('[data-ubah]').forEach(b => b.onclick = () => {
+        const m = ms.find(x => x.id === b.getAttribute('data-ubah')); if (!m) return;
+        ubahId = m.id; ta.value = String(m.isi || '').replace(/ \(diedit\)$/, ''); ta.focus();
+        ubahBox.style.display = 'flex'; ubahBox.innerHTML = '✏️ Mengubah pesan <button>Batal</button>';
+        ubahBox.querySelector('button').onclick = () => { ubahId = null; ta.value = ''; ubahBox.style.display = 'none'; };
+      });
+      if (gulir || dekat) box.scrollTop = box.scrollHeight;
+    };
+    kirim.onclick = async () => {
+      const isi = ta.value.trim(); if (!isi) return;
+      kirim.disabled = true;
+      const j = ubahId ? await kduAksi(id, 'ubah', { mid: ubahId, isi }) : await kduAksi(id, 'kirim', { isi });
+      kirim.disabled = false;
+      if (!j.ok) { kduToast('⚠️ ' + (j.error || 'Gagal mengirim')); return; }
+      ta.value = ''; ta.style.height = 'auto'; ubahId = null; ubahBox.style.display = 'none';
+      await muat(true);
+    };
+    await muat(true);
+    clearInterval(KDU.dkT);
+    KDU.dkT = setInterval(() => { if (!document.getElementById('kdu-dk')) { clearInterval(KDU.dkT); return; } if (document.visibilityState === 'visible') muat(false); }, 15000);
   }
 
   // ---------- Penampil CV & lampiran ----------
@@ -29535,18 +29838,13 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
     const k = (KDU.data || []).find(x => x.id === id); if (!k) return;
     const L = kduLampiran(k); if (!L.length) return;
     ke = Math.max(0, Math.min(L.length - 1, ke || 0));
-    let cv = document.getElementById('kdu-cv');
-    if (!cv) {
-      cv = document.createElement('div'); cv.id = 'kdu-cv';
-      document.body.appendChild(cv);
-      try { history.pushState({ kdu:2 }, ''); } catch(e) {}
-    }
+    const cv = kduSub('kdu-cv');
     cv.dataset.zoom = '1';
     const url = L[ke].url;
     cv.innerHTML = `<div class="kdu-cvtop"><button data-x aria-label="Tutup">✕</button><b>${escapeHtml(k.nama || '')} — ${L[ke].cv ? 'CV' : escapeHtml(L[ke].nama)}</b><button data-z="-1" aria-label="Perkecil">－</button><button data-z="1" aria-label="Perbesar">＋</button></div>`
       + (L.length > 1 ? `<div class="kdu-cvchips">${L.map((x, i) => `<button data-i="${i}" class="${i === ke ? 'on' : ''}">${x.cv ? '📄 CV' : '📎 ' + escapeHtml(String(x.nama).replace(/\.[a-z0-9]+$/i, '').slice(0, 22))}</button>`).join('')}</div>` : '')
       + `<div class="kdu-cvsc"><div class="kdu-cvpg"></div></div>`;
-    cv.querySelector('[data-x]').onclick = () => { cv.remove(); try { if (history.state && history.state.kdu === 2) { KDU.abaikanPop = 2; history.back(); } } catch(e) {} };
+    cv.querySelector('[data-x]').onclick = kduTutupSub;
     cv.querySelectorAll('[data-i]').forEach(b => b.onclick = () => kduCV(id, +b.getAttribute('data-i')));
     const pg = cv.querySelector('.kdu-cvpg'), sc = cv.querySelector('.kdu-cvsc');
     const zoom = z => { z = Math.max(1, Math.min(3, z)); cv.dataset.zoom = String(z); pg.style.width = (z * 100) + '%'; };
