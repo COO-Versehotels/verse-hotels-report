@@ -151,6 +151,17 @@ export default async function handler(req, res) {
       tokens = (r && r.tokens) || [];
       title = (r && r.title) || '';
       body = (r && r.body) || '';
+    } else if (reqBody.type === 'kandidat') {
+      // Info kandidat dari Verse Recruitment -> HM unit (dipicu database recruitment, kunci khusus push_kandidat)
+      try {
+        const r = await supaRpc('push_kandidat_prepare', { p_auth: String(reqBody.auth || ''), p_unit: String(reqBody.unit || ''), p_title: String(reqBody.title || ''), p_body: String(reqBody.body || '') });
+        tokens = (r && r.tokens) || [];
+        title = (r && r.title) || '';
+        body = (r && r.body) || '';
+      } catch (e) {
+        if (/NOT_AUTHORIZED/.test(e.message)) return res.status(401).json({ success: false, error: 'NOT_AUTHORIZED' });
+        throw e;
+      }
     } else if (reqBody.type === 'jadwal') {
       // Broadcast terjadwal — dipicu pg_cron (kunci sistem), isi pesan diambil dari database
       try {

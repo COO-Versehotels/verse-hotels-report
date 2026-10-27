@@ -1541,6 +1541,68 @@
   }
 
 
+  /* ===== KANDIDAT UNIT (dari Verse Recruitment) — 27 Okt 2026 ===== */
+  .kdu-card { background:#fff; border:1px solid #eef0f4; border-radius:16px; padding:14px 14px 12px; margin:0 16px 14px; box-shadow:0 2px 10px rgba(26,58,92,0.06); cursor:pointer; }
+  .kdu-card:active { transform:scale(0.985); }
+  .kdu-card .kdu-h { display:flex; align-items:center; gap:10px; }
+  .kdu-card .kdu-ic { width:40px; height:40px; border-radius:11px; background:#eef4fb; display:flex; align-items:center; justify-content:center; font-size:21px; flex-shrink:0; }
+  .kdu-card .kdu-t { flex:1; min-width:0; }
+  .kdu-card .kdu-t b { display:block; font-size:14px; color:#1a3a5c; }
+  .kdu-card .kdu-t span { font-size:12px; color:#64748b; }
+  .kdu-card .kdu-ar { font-size:20px; color:#94a3b8; }
+  .kdu-merah { display:inline-flex; align-items:center; gap:4px; margin-top:8px; background:#fdecec; color:#b91c1c; border:1px solid #f7caca; border-radius:999px; padding:4px 10px; font-size:11.5px; font-weight:700; }
+  .kdu-uchips { display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; }
+  .kdu-uchip { border:1px solid #e2e8f0; background:#f8fafc; color:#1a3a5c; border-radius:999px; padding:5px 10px; font-size:11.5px; font-weight:700; cursor:pointer; }
+  .kdu-uchip.on { background:#1a3a5c; color:#fff; border-color:#1a3a5c; }
+  .kdu-uchip i { font-style:normal; color:#dc2626; margin-left:3px; }
+  .kdu-uchip.on i { color:#fecaca; }
+  #kdu-ov { position:fixed; inset:0; z-index:10002; background:#f5f7fa; display:flex; flex-direction:column; }
+  #kdu-ov .kdu-top { background:linear-gradient(135deg,#1a3a5c,#0e2340); color:#fff; padding:calc(env(safe-area-inset-top,0px) + 14px) 14px 12px; flex-shrink:0; }
+  #kdu-ov .kdu-top .kdu-row { display:flex; align-items:center; gap:10px; }
+  #kdu-ov .kdu-back { background:rgba(255,255,255,0.15); color:#fff; border:none; border-radius:50%; width:36px; height:36px; font-size:18px; cursor:pointer; flex-shrink:0; }
+  #kdu-ov .kdu-top h2 { font-size:17px; color:#fff; margin:0; }
+  #kdu-ov .kdu-top p { font-size:11.5px; color:rgba(255,255,255,0.65); margin:2px 0 0; }
+  #kdu-ov .kdu-top .kdu-uchip { background:rgba(255,255,255,0.12); color:#fff; border-color:rgba(255,255,255,0.2); }
+  #kdu-ov .kdu-top .kdu-uchip.on { background:#c9973a; border-color:#c9973a; }
+  #kdu-ov .kdu-body { flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:10px 12px 30px; max-width:720px; width:100%; margin:0 auto; box-sizing:border-box; }
+  .kdu-sec { margin:14px 2px 6px; font-size:12px; font-weight:800; color:#475569; text-transform:uppercase; letter-spacing:.4px; display:flex; justify-content:space-between; }
+  .kdu-sec.merah { color:#b91c1c; }
+  .kdu-item { background:#fff; border:1px solid #e8ecf2; border-radius:14px; padding:12px; margin-bottom:9px; }
+  .kdu-item.hm { border:1.5px solid #f2a5a5; background:#fffafa; }
+  .kdu-item.batal { background:#fbfbfc; }
+  .kdu-ih { display:flex; gap:11px; align-items:flex-start; }
+  .kdu-av { width:52px; height:52px; border-radius:50%; flex-shrink:0; object-fit:cover; background:#dbe5f0; color:#1a3a5c; font-weight:800; font-size:17px; display:flex; align-items:center; justify-content:center; overflow:hidden; }
+  .kdu-av img { width:100%; height:100%; object-fit:cover; }
+  .kdu-nm { font-size:14.5px; font-weight:800; color:#0f172a; line-height:1.25; }
+  .kdu-ps { font-size:12px; color:#475569; margin-top:1px; }
+  .kdu-tg { font-size:11.5px; color:#334155; margin-top:5px; line-height:1.5; }
+  .kdu-tg b { color:#0f172a; }
+  .kdu-pill { display:inline-block; font-size:10.5px; font-weight:800; border-radius:999px; padding:2px 8px; margin-top:4px; }
+  .kdu-note { margin-top:9px; background:#f8fafc; border:1px solid #e5e7eb; border-radius:9px; padding:7px 9px; font-size:12px; color:#334155; line-height:1.45; white-space:pre-line; }
+  .kdu-note.al { background:#fff7ed; border-color:#fed7aa; color:#9a3412; }
+  .kdu-jw { margin-top:9px; font-size:12px; color:#334155; }
+  .kdu-jw .q { display:flex; gap:6px; padding:3px 0; border-bottom:1px dashed #eef0f4; }
+  .kdu-jw .q span { flex:1; color:#64748b; }
+  .kdu-jw .q b { max-width:55%; text-align:right; color:#0f172a; word-break:break-word; }
+  .kdu-lnk { border:none; background:none; color:#2563eb; font-size:12px; font-weight:700; padding:5px 0 0; cursor:pointer; }
+  .kdu-btns { display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; }
+  .kdu-btn { border:1px solid #cbd5e1; background:#fff; color:#1a3a5c; border-radius:9px; padding:7px 11px; font-size:12px; font-weight:700; cursor:pointer; }
+  .kdu-btn.cv { background:#1a3a5c; color:#fff; border-color:#1a3a5c; }
+  .kdu-kosong { text-align:center; color:#94a3b8; font-size:12.5px; padding:26px 10px; }
+  #kdu-cv { position:fixed; inset:0; z-index:10003; background:#0f172a; display:flex; flex-direction:column; }
+  #kdu-cv .kdu-cvtop { display:flex; align-items:center; gap:8px; padding:calc(env(safe-area-inset-top,0px) + 10px) 10px 8px; color:#fff; flex-shrink:0; }
+  #kdu-cv .kdu-cvtop b { flex:1; font-size:14px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  #kdu-cv .kdu-cvtop button { background:rgba(255,255,255,0.14); color:#fff; border:none; border-radius:8px; padding:7px 11px; font-size:13px; font-weight:700; cursor:pointer; }
+  #kdu-cv .kdu-cvchips { display:flex; gap:6px; overflow-x:auto; padding:0 10px 8px; flex-shrink:0; }
+  #kdu-cv .kdu-cvchips button { flex-shrink:0; background:rgba(255,255,255,0.1); color:#e2e8f0; border:1px solid rgba(255,255,255,0.2); border-radius:999px; padding:5px 11px; font-size:11.5px; font-weight:700; cursor:pointer; }
+  #kdu-cv .kdu-cvchips button.on { background:#c9973a; border-color:#c9973a; color:#fff; }
+  #kdu-cv .kdu-cvsc { flex:1; overflow:auto; -webkit-overflow-scrolling:touch; background:#334155; }
+  #kdu-cv .kdu-cvpg { width:100%; transform-origin:0 0; }
+  #kdu-cv .kdu-cvpg img { display:block; width:100%; margin:0 auto 6px; background:#fff; }
+  #kdu-cv iframe { width:100%; height:100%; border:none; background:#fff; }
+  #kdu-cv .kdu-cvmsg { color:#e2e8f0; text-align:center; padding:30px 14px; font-size:13px; }
+  #kdu-cv .kdu-cvmsg a { color:#fcd34d; }
+
   /* ===== ROOM CHECK STYLES ===== */
   /* ===== ROOM CHECK FEATURE — Tambahan ===== */
   .rc-menu-card {
@@ -2168,6 +2230,9 @@
         </div>
         <div class="rc-arrow">›</div>
       </div>
+
+      <!-- Kandidat Unit (HM: unitnya; HR: semua unit) -->
+      <div id="kdu-home" style="display:none;"></div>
 
       <div class="rc-menu-card" id="jv-home-card" style="display:none;background:linear-gradient(135deg,#c9973a,#a67a24);" onclick="jvOpen()">
         <div class="rc-icon">🧳</div>
@@ -3013,6 +3078,10 @@
         </div>
         <button class="rc-btn-primary" onclick="rcOpenMonthlyReport()" style="margin-top:12px;background:#1a3a5c;">📤 Buat & Kirim Laporan Bulan Lalu</button>
       </div>
+
+      <!-- Kandidat per Unit (dari Verse Recruitment) -->
+      <div style="padding:16px 16px 6px;font-size:11px;color:var(--gray-400);font-weight:700;text-transform:uppercase;letter-spacing:1px;">👥 Kandidat dalam Proses HR</div>
+      <div id="kdu-coo" style="display:none;"></div>
 
       <!-- Live Progress Section -->
       <div style="padding:16px 16px 6px;font-size:11px;color:var(--gray-400);font-weight:700;text-transform:uppercase;letter-spacing:1px;display:flex;align-items:center;justify-content:space-between;">
@@ -6208,6 +6277,8 @@
       if (dab) dab.style.display = (currentRole === 'COO') ? 'inline' : 'none';
       // Load Room Check summary
       if (typeof rcLoadCOORoomCheckSummary === 'function') rcLoadCOORoomCheckSummary();
+      // Kandidat per unit (dari Verse Recruitment)
+      try { if (typeof kduMaybeShowCOO === 'function') kduMaybeShowCOO(); } catch(e) {}
       // Auto-prompt laporan bulanan kalau di awal bulan & belum dikirim
       if (typeof rcMaybePromptMonthlyReport === 'function') rcMaybePromptMonthlyReport();
     }
@@ -6325,6 +6396,8 @@
 
       // Show/hide Room Check menu card based on role
       if (typeof rcMaybeShowHomeMenu === 'function') rcMaybeShowHomeMenu();
+      // Kandidat Unit (HM & HR)
+      try { if (typeof kduMaybeShowHome === 'function') kduMaybeShowHome(); } catch(e) {}
 
       // Show/hide Jadwal Visit Corp menu card based on role
       if (typeof jvMaybeShowHomeMenu === 'function') jvMaybeShowHomeMenu();
@@ -25581,6 +25654,9 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
           if (typeof populateCOO === 'function') populateCOO();
           if (typeof loadLiveProgress === 'function') loadLiveProgress();
           if (typeof rcLoadCOORoomCheckSummary === 'function') rcLoadCOORoomCheckSummary();
+          if (typeof kduMaybeShowCOO === 'function') { KDU.t = 0; kduMaybeShowCOO(); }
+        } else if (id === 'screen-home') {
+          if (typeof kduMaybeShowHome === 'function') { KDU.t = 0; kduMaybeShowHome(); }
         } else if (id === 'screen-peta-live') {
           if (typeof loadPetaLive === 'function') loadPetaLive();
         }
@@ -29239,6 +29315,267 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
       </div>
     `;
     document.body.appendChild(ov);
+  }
+
+
+  // ======================================================
+  // KANDIDAT UNIT — 27 Okt 2026. Kandidat yang sedang diproses HR (Verse Recruitment), hanya-lihat.
+  // HM: kandidat unitnya sendiri (dikunci di server). COO/CEO/HR: semua unit + filter unit.
+  // Telepon & email kandidat tidak pernah dikirim server. Data diambil lewat kartu akses (SESI_VA).
+  // ======================================================
+  const KDU_URL = 'https://bfqxsbyqaewdjstkrmsb.supabase.co/rest/v1/rpc/rec_kandidat_unit';
+  const KDU_KEY = 'sb_publishable_d2HGQ_kntjoQC9G4XtIFWA_XT0_IDw1';
+  const KDU_HM = { 'HM Verse Lite':'lite', 'HM Verse Luxe':'luxe', 'HM Verse Cirebon':'cirebon', 'HM Oak Tree':'oaktree' };
+  const KDU_SEMUA = ['COO','CEO','HR Officer','Ops HR Manager'];
+  const KDU_UNIT = { lite:'Verse Lite', luxe:'Verse Luxe', cirebon:'Verse Cirebon', oaktree:'Oak Tree', corporate:'Corporate', belum:'Belum ada unit' };
+  const KDU_URUT_UNIT = ['lite','luxe','cirebon','oaktree','corporate','belum'];
+  const KDU_PROSES = ['hm','undang','hr','lanjut','trial'];
+  const KDU = { data:null, t:0, janji:null, unit:'', err:'' };
+
+  function kduMode() {
+    const r = (typeof currentRole !== 'undefined' && currentRole) || '';
+    if (KDU_HM[r]) return { hm:true, unit:KDU_HM[r] };
+    if (KDU_SEMUA.includes(r)) return { hm:false, unit:'' };
+    return null;
+  }
+  function kduTahapList(hm) {
+    return [
+      ['hm',      hm ? '🏨 Menunggu Interview Anda' : '🏨 Menunggu Interview HM', true],
+      ['undang',  '📨 Diundang Interview HR'],
+      ['hr',      '🗣️ Sudah Respon / Interview HR'],
+      ['lanjut',  '🔎 Lolos HR · Proses Lanjutan'],
+      ['trial',   '🧪 Trial'],
+      ['diterima','✅ Diterima (30 hari terakhir)'],
+      ['batal',   '❌ Tidak Lanjut (tampil 2 hari)']
+    ];
+  }
+  async function kduPanggil(unit) {
+    const kirim = () => fetch(KDU_URL, { method:'POST', headers:{ 'Content-Type':'application/json', 'apikey':KDU_KEY, 'Authorization':'Bearer ' + KDU_KEY },
+      body: JSON.stringify({ p_sesi: SESI_VA || '', p_unit: unit || null }) }).then(r => r.ok ? r.json() : { ok:false, error:'http' + r.status });
+    if (!SESI_VA) { try { await _ambilSesiVA(window.fetch); } catch(e) {} }
+    let j = await kirim();
+    if (j && j.ok === false && j.error === 'sesi') {   // kartu akses kedaluwarsa → minta baru sekali
+      setSesiVA(''); try { await _ambilSesiVA(window.fetch); } catch(e) {}
+      if (SESI_VA) j = await kirim();
+    }
+    return j;
+  }
+  function kduMuat(paksa) {
+    const m = kduMode(); if (!m) return Promise.resolve(null);
+    const kunci = (currentRole || '') + '|' + m.unit;
+    if (!paksa && KDU.data && KDU.kunci === kunci && Date.now() - KDU.t < 60000) return Promise.resolve(KDU.data);
+    if (KDU.janji && KDU.kunci === kunci) return KDU.janji;
+    KDU.kunci = kunci;
+    KDU.janji = kduPanggil(m.unit).then(j => {
+      if (j && j.ok && Array.isArray(j.data)) { KDU.data = j.data; KDU.t = Date.now(); KDU.err = ''; return KDU.data; }
+      KDU.err = (j && j.error) || 'gagal'; return null;
+    }).catch(e => { KDU.err = 'jaringan'; return null; }).finally(() => { KDU.janji = null; });
+    return KDU.janji;
+  }
+  function kduUnitDari(k) { const u = Array.isArray(k.units) ? k.units : []; return u.length ? u : ['belum']; }
+  function kduRingkas(data, unit) {
+    const d = (data || []).filter(k => !unit || kduUnitDari(k).includes(unit));
+    return { proses: d.filter(k => KDU_PROSES.includes(k.tahap)).length, hm: d.filter(k => k.tahap === 'hm').length,
+             trial: d.filter(k => k.tahap === 'trial').length, batal: d.filter(k => k.tahap === 'batal').length };
+  }
+
+  // ---------- Kartu di Beranda (HM & HR) dan Dashboard COO ----------
+  function kduMaybeShowHome() { kduKartu('kdu-home', true); }
+  function kduMaybeShowCOO() { kduKartu('kdu-coo', false); }
+  async function kduKartu(elId, beranda) {
+    const el = document.getElementById(elId); if (!el) return;
+    const m = kduMode();
+    // Beranda: HM + HR. Dashboard COO: COO/CEO (dan HR bila membuka dashboard).
+    if (!m || (beranda && !m.hm && !['HR Officer','Ops HR Manager'].includes(currentRole)) || (!beranda && m.hm)) { el.style.display = 'none'; el.innerHTML = ''; return; }
+    el.style.display = 'block';
+    if (!el.innerHTML) el.innerHTML = `<div class="kdu-card"><div class="kdu-h"><div class="kdu-ic">👥</div><div class="kdu-t"><b>${m.hm ? 'Kandidat Unit Saya' : 'Kandidat per Unit'}</b><span>⏳ Memuat…</span></div></div></div>`;
+    const data = await kduMuat();
+    if (kduMode() === null || document.getElementById(elId) !== el) return;
+    if (!data) {
+      el.innerHTML = `<div class="kdu-card"><div class="kdu-h"><div class="kdu-ic">👥</div><div class="kdu-t"><b>${m.hm ? 'Kandidat Unit Saya' : 'Kandidat per Unit'}</b><span>⚠️ Gagal memuat — ketuk untuk coba lagi</span></div></div></div>`;
+      el.firstElementChild.onclick = () => { KDU.t = 0; KDU.data = null; kduKartu(elId, beranda); };
+      return;
+    }
+    const s = kduRingkas(data, '');
+    let sub = s.proses ? `${s.proses} dalam proses` : 'Belum ada kandidat dalam proses';
+    if (s.trial) sub += ` · ${s.trial} trial`;
+    let html = `<div class="kdu-card" data-kdu-buka=""><div class="kdu-h"><div class="kdu-ic">👥</div><div class="kdu-t"><b>${m.hm ? 'Kandidat Unit Saya' : 'Kandidat per Unit'}</b><span>${sub}</span></div><div class="kdu-ar">›</div></div>`;
+    if (s.hm) html += `<div class="kdu-merah">🔴 ${s.hm} menunggu interview ${m.hm ? 'Anda' : 'HM'}</div>`;
+    if (!m.hm) {
+      const chips = KDU_URUT_UNIT.map(u => { const r = kduRingkas(data, u); return (r.proses || r.batal) ? `<button class="kdu-uchip" data-kdu-buka="${u}">${KDU_UNIT[u]} ${r.proses}${r.hm ? `<i>● ${r.hm}</i>` : ''}</button>` : ''; }).join('');
+      if (chips) html += `<div class="kdu-uchips">${chips}</div>`;
+    }
+    html += `</div>`;
+    el.innerHTML = html;
+    el.querySelectorAll('[data-kdu-buka]').forEach(b => b.onclick = ev => { ev.stopPropagation(); kduBuka(b.getAttribute('data-kdu-buka') || ''); });
+  }
+
+  // ---------- Halaman daftar ----------
+  function kduBuka(unit) {
+    KDU.unit = unit || '';
+    document.getElementById('kdu-ov')?.remove();
+    const ov = document.createElement('div'); ov.id = 'kdu-ov';
+    ov.innerHTML = `<div class="kdu-top"><div class="kdu-row"><button class="kdu-back" aria-label="Kembali">←</button><div style="flex:1;min-width:0"><h2></h2><p>Info dari HR · hanya untuk dilihat</p></div><button class="kdu-back" data-kdu-segar aria-label="Muat ulang" title="Muat ulang">⟳</button></div><div class="kdu-uchips" data-kdu-unit></div></div><div class="kdu-body"><div class="kdu-kosong">⏳ Memuat…</div></div>`;
+    document.body.appendChild(ov);
+    ov.querySelector('.kdu-back').onclick = kduTutup;
+    ov.querySelector('[data-kdu-segar]').onclick = () => { ov.querySelector('.kdu-body').innerHTML = '<div class="kdu-kosong">⏳ Memuat…</div>'; kduMuat(true).then(kduRender); };
+    try { history.pushState({ kdu:1 }, ''); } catch(e) {}
+    kduMuat().then(kduRender);
+  }
+  function kduTutup() {
+    const ov = document.getElementById('kdu-ov'); if (!ov) return;
+    ov.remove(); document.getElementById('kdu-cv')?.remove();
+    try { if (history.state && history.state.kdu) { KDU.abaikanPop = 1; history.go(-history.state.kdu); } } catch(e) {}
+  }
+  window.addEventListener('popstate', () => {
+    if (KDU.abaikanPop) { KDU.abaikanPop = 0; return; }   // kembali yang dipicu tombol ← / ✕ sendiri
+    const cv = document.getElementById('kdu-cv'); if (cv) { cv.remove(); return; }
+    document.getElementById('kdu-ov')?.remove();
+  });
+  function kduTgl(v, jam) {
+    if (!v) return '';
+    const b = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+    if (/^\d{4}-\d{2}-\d{2}$/.test(v)) { const [y, m, d] = v.split('-').map(Number); return d + ' ' + b[m - 1] + (y !== new Date().getFullYear() ? ' ' + y : ''); }
+    const d = new Date(new Date(v).getTime() + 7 * 3600000); if (isNaN(d)) return '';
+    let s = d.getUTCDate() + ' ' + b[d.getUTCMonth()];
+    if (jam) s += ' ' + String(d.getUTCHours()).padStart(2, '0') + ':' + String(d.getUTCMinutes()).padStart(2, '0');
+    return s;
+  }
+  function kduInisial(n) { return String(n || '?').trim().split(/\s+/).slice(0, 2).map(w => w[0] || '').join('').toUpperCase() || '?'; }
+  function kduFoto(k) {
+    const u = k.cv_url;
+    if (!u || u.indexOf('/upload/') < 0 || k.foto_hal === 0 || !/res\.cloudinary\.com/.test(u)) return null;
+    const pdf = /\.pdf(\?|$)/i.test(u);
+    const b = String(k.foto_box || '').split(',').map(Number);
+    if (b.length === 4 && b.every(n => isFinite(n))) {
+      const s = b[2] < 160 ? 1.5 : 1.15, w = Math.round(b[2] * s), x = Math.max(0, Math.round(b[0] - (w - b[2]) / 2)), y = Math.max(0, Math.round(b[1] - (w - b[3]) / 2));
+      return u.replace('/upload/', '/upload/' + (pdf ? 'pg_' + (k.foto_hal || 1) + '/' : '') + 'c_crop,x_' + x + ',y_' + y + ',w_' + w + ',h_' + w + '/w_120,h_120,c_fill,q_auto,f_jpg/');
+    }
+    return u.replace('/upload/', '/upload/pg_' + (k.foto_hal || 1) + ',w_120,h_120,c_thumb,g_face,q_auto,f_jpg/');
+  }
+  function kduJawaban(k) {
+    let j = k.jawaban; if (typeof j === 'string') { try { j = JSON.parse(j); } catch(e) { j = []; } }
+    return (Array.isArray(j) ? j : []).filter(x => x && (x.teks || x.pertanyaan)).map(x => {
+      let a = x.jawaban; if (Array.isArray(a)) a = a.join(', '); else if (a && typeof a === 'object') a = Object.values(a).join(', ');
+      return { q: x.teks || x.pertanyaan, a: (a == null || a === '') ? '—' : String(a) };
+    });
+  }
+  function kduLampiran(k) {
+    const L = []; if (k.cv_url) L.push({ nama:'CV', url:k.cv_url, cv:true });
+    let l = k.lampiran; if (typeof l === 'string') { try { l = JSON.parse(l); } catch(e) { l = []; } }
+    (Array.isArray(l) ? l : []).forEach(x => { if (x && x.url && x.url !== k.cv_url) L.push({ nama:x.nama || 'Lampiran', url:x.url }); });
+    return L;
+  }
+  function kduTanggal(k) {
+    const t = [];
+    if (k.diundang_at) t.push('Diundang <b>' + kduTgl(k.diundang_at) + '</b>');
+    if (k.tahap === 'undang' && k.batas) t.push('batas respon <b>' + kduTgl(k.batas, true) + '</b>');
+    if (k.respon_tgl) t.push('Respon <b>' + kduTgl(k.respon_tgl) + '</b>');
+    if (k.itv_tgl) t.push('Interview <b>' + kduTgl(k.itv_tgl) + (k.itv_jam ? ' ' + escapeHtml(k.itv_jam) : '') + '</b>' + (k.itv_mode ? ' (' + escapeHtml(k.itv_mode) + ')' : ''));
+    if (k.trial_tgl) t.push('Trial <b>' + kduTgl(k.trial_tgl) + '</b>');
+    if (k.join_tgl) t.push('Join <b>' + kduTgl(k.join_tgl) + '</b>');
+    if (!t.length && k.update_at) t.push('Update <b>' + kduTgl(k.update_at) + '</b>');
+    return t.join(' · ');
+  }
+  function kduSisa(iso) {
+    const ms = new Date(iso).getTime() - Date.now(); if (!(ms > 0)) return 'segera hilang';
+    const j = Math.ceil(ms / 3600000); return j > 24 ? 'hilang dalam ' + Math.ceil(j / 24) + ' hari' : 'hilang dalam ' + j + ' jam';
+  }
+  function kduItem(k, semua) {
+    const f = kduFoto(k), J = kduJawaban(k), L = kduLampiran(k);
+    const unitTxt = semua ? kduUnitDari(k).map(u => KDU_UNIT[u] || u).join(' / ') : '';
+    let h = `<div class="kdu-item ${k.tahap}" data-id="${escapeHtml(k.id)}"><div class="kdu-ih">`;
+    h += f ? `<div class="kdu-av" data-i="${escapeHtml(kduInisial(k.nama))}"><img src="${escapeHtml(f)}" alt="" loading="lazy" onerror="this.parentNode.textContent=this.parentNode.getAttribute('data-i')"></div>` : `<div class="kdu-av">${escapeHtml(kduInisial(k.nama))}</div>`;
+    h += `<div style="flex:1;min-width:0"><div class="kdu-nm">${escapeHtml(k.nama || '—')}</div><div class="kdu-ps">${escapeHtml(k.posisi || 'Posisi belum diisi')}${unitTxt ? ' · <b>' + escapeHtml(unitTxt) + '</b>' : ''}</div>`;
+    if (k.tahap === 'batal') h += `<span class="kdu-pill" style="background:#fee2e2;color:#b91c1c">${escapeHtml(k.status_label || k.status)}</span> <span class="kdu-pill" style="background:#f1f5f9;color:#64748b">${kduSisa(k.hilang_at)}</span>`;
+    else if (k.status_label) h += `<span class="kdu-pill" style="background:#eef2ff;color:#3730a3">${escapeHtml(k.status_label)}</span>`;
+    const tg = kduTanggal(k); if (tg) h += `<div class="kdu-tg">${tg}</div>`;
+    h += `</div></div>`;
+    if (k.tahap === 'batal' && k.alasan) h += `<div class="kdu-note al">❌ <b>Alasan:</b> ${escapeHtml(k.alasan)}</div>`;
+    if (k.catatan_hr) h += `<div class="kdu-note">📝 <b>Catatan HR:</b> ${escapeHtml(k.catatan_hr)}</div>`;
+    if (J.length) {
+      const baris = (x) => `<div class="q"><span>${escapeHtml(x.q)}</span><b>${escapeHtml(x.a)}</b></div>`;
+      h += `<div class="kdu-jw"><div style="font-weight:800;color:#1a3a5c;margin-bottom:2px">💬 Jawaban Seleksi</div>${J.slice(0, 3).map(baris).join('')}`;
+      if (J.length > 3) h += `<div data-kdu-sisa style="display:none">${J.slice(3).map(baris).join('')}</div><button class="kdu-lnk" data-kdu-jw>▾ Lihat semua (${J.length})</button>`;
+      h += `</div>`;
+    }
+    if (L.length) h += `<div class="kdu-btns">${L.map((x, i) => `<button class="kdu-btn${x.cv ? ' cv' : ''}" data-kdu-cv="${i}">${x.cv ? '📄 Lihat CV' : '📎 ' + escapeHtml(String(x.nama).replace(/\.[a-z0-9]+$/i, '').slice(0, 24))}</button>`).join('')}</div>`;
+    else h += `<div class="kdu-tg" style="color:#94a3b8">CV tidak tersedia</div>`;
+    return h + `</div>`;
+  }
+  function kduRender() {
+    const ov = document.getElementById('kdu-ov'); if (!ov) return;
+    const m = kduMode(); const body = ov.querySelector('.kdu-body');
+    ov.querySelector('h2').textContent = m && m.hm ? '👥 Kandidat Unit Saya' : '👥 Kandidat per Unit';
+    if (!m) { kduTutup(); return; }
+    if (!KDU.data) { body.innerHTML = `<div class="kdu-kosong">⚠️ Gagal memuat data kandidat${KDU.err === 'akses' ? ' (akses tidak diizinkan)' : ''}.<br><button class="kdu-btn" style="margin-top:10px" onclick="kduMuat(true).then(kduRender)">Coba lagi</button></div>`; return; }
+    const semua = !m.hm;
+    const uBox = ov.querySelector('[data-kdu-unit]');
+    if (semua) {
+      uBox.innerHTML = [''].concat(KDU_URUT_UNIT.filter(u => kduRingkas(KDU.data, u).proses + kduRingkas(KDU.data, u).batal + KDU.data.filter(k => k.tahap === 'diterima' && kduUnitDari(k).includes(u)).length > 0))
+        .map(u => `<button class="kdu-uchip${KDU.unit === u ? ' on' : ''}" data-u="${u}">${u ? KDU_UNIT[u] : 'Semua'}</button>`).join('');
+      uBox.querySelectorAll('[data-u]').forEach(b => b.onclick = () => { KDU.unit = b.getAttribute('data-u'); kduRender(); });
+    } else uBox.style.display = 'none';
+    const d = KDU.data.filter(k => !semua || !KDU.unit || kduUnitDari(k).includes(KDU.unit));
+    ov.querySelector('.kdu-top p').textContent = (semua ? (KDU.unit ? KDU_UNIT[KDU.unit] : 'Semua unit') + ' · ' : '') + kduRingkas(d, '').proses + ' dalam proses · info dari HR, hanya untuk dilihat';
+    let html = '';
+    kduTahapList(m.hm).forEach(([t, judul, merah]) => {
+      const a = d.filter(k => k.tahap === t);
+      if (!a.length) return;
+      a.sort((x, y) => String(y.update_at || '').localeCompare(String(x.update_at || '')));
+      html += `<div class="kdu-sec${merah ? ' merah' : ''}"><span>${judul}</span><span>${a.length}</span></div>` + a.map(k => kduItem(k, semua)).join('');
+    });
+    body.innerHTML = html || '<div class="kdu-kosong">Belum ada kandidat yang sedang diproses HR untuk unit ini.</div>';
+    body.querySelectorAll('[data-kdu-jw]').forEach(b => b.onclick = () => { const s = b.previousElementSibling; const buka = s.style.display === 'none'; s.style.display = buka ? 'block' : 'none'; b.textContent = buka ? '▴ Tutup' : '▾ Lihat semua (' + (b.parentNode.querySelectorAll('.q').length) + ')'; });
+    body.querySelectorAll('[data-kdu-cv]').forEach(b => b.onclick = () => { const id = b.closest('.kdu-item').getAttribute('data-id'); kduCV(id, +b.getAttribute('data-kdu-cv')); });
+  }
+
+  // ---------- Penampil CV & lampiran ----------
+  function kduCV(id, ke) {
+    const k = (KDU.data || []).find(x => x.id === id); if (!k) return;
+    const L = kduLampiran(k); if (!L.length) return;
+    ke = Math.max(0, Math.min(L.length - 1, ke || 0));
+    let cv = document.getElementById('kdu-cv');
+    if (!cv) {
+      cv = document.createElement('div'); cv.id = 'kdu-cv';
+      document.body.appendChild(cv);
+      try { history.pushState({ kdu:2 }, ''); } catch(e) {}
+    }
+    cv.dataset.zoom = '1';
+    const url = L[ke].url;
+    cv.innerHTML = `<div class="kdu-cvtop"><button data-x aria-label="Tutup">✕</button><b>${escapeHtml(k.nama || '')} — ${L[ke].cv ? 'CV' : escapeHtml(L[ke].nama)}</b><button data-z="-1" aria-label="Perkecil">－</button><button data-z="1" aria-label="Perbesar">＋</button></div>`
+      + (L.length > 1 ? `<div class="kdu-cvchips">${L.map((x, i) => `<button data-i="${i}" class="${i === ke ? 'on' : ''}">${x.cv ? '📄 CV' : '📎 ' + escapeHtml(String(x.nama).replace(/\.[a-z0-9]+$/i, '').slice(0, 22))}</button>`).join('')}</div>` : '')
+      + `<div class="kdu-cvsc"><div class="kdu-cvpg"></div></div>`;
+    cv.querySelector('[data-x]').onclick = () => { cv.remove(); try { if (history.state && history.state.kdu === 2) { KDU.abaikanPop = 2; history.back(); } } catch(e) {} };
+    cv.querySelectorAll('[data-i]').forEach(b => b.onclick = () => kduCV(id, +b.getAttribute('data-i')));
+    const pg = cv.querySelector('.kdu-cvpg'), sc = cv.querySelector('.kdu-cvsc');
+    const zoom = z => { z = Math.max(1, Math.min(3, z)); cv.dataset.zoom = String(z); pg.style.width = (z * 100) + '%'; };
+    cv.querySelectorAll('[data-z]').forEach(b => b.onclick = () => zoom(+cv.dataset.zoom + (+b.getAttribute('data-z')) * 0.5));
+    let tapT = 0; sc.addEventListener('click', () => { const n = Date.now(); if (n - tapT < 320) zoom(+cv.dataset.zoom > 1 ? 1 : 2); tapT = n; });
+    const cld = /res\.cloudinary\.com\/.+\/image\/upload\//.test(url);
+    const asli = `<a href="${escapeHtml(url)}" target="_blank" rel="noopener">Buka file asli</a>`;
+    if (/(drive|docs)\.google\.com/i.test(url)) { pg.innerHTML = `<div class="kdu-cvmsg">File ada di Google Drive.<br><br>${asli}</div>`; return; }
+    if (/\.(jpe?g|png|webp|gif)(\?|$)/i.test(url)) { const im = new Image(); im.alt = 'Lampiran'; im.src = url; pg.appendChild(im); return; }
+    if (cld && /\.pdf(\?|$)/i.test(url)) {
+      const src = n => url.replace('/upload/', '/upload/pg_' + n + ',w_1100,q_auto,f_jpg/').replace(/\.pdf(\?|$)/i, '.jpg$1');
+      pg.innerHTML = '<div class="kdu-cvmsg">Memuat…</div>';
+      const tambah = n => {
+        if (n > 10 || !document.body.contains(pg)) return;
+        const im = new Image(); im.alt = 'Halaman ' + n;
+        im.onload = () => { if (n === 1) pg.innerHTML = ''; pg.appendChild(im); tambah(n + 1); };
+        im.onerror = () => { if (n === 1) pg.innerHTML = `<div class="kdu-cvmsg">Gagal menampilkan PDF.<br><br>${asli}</div>`; else if (n > 10) {} };
+        im.src = src(n);
+      };
+      tambah(1);
+      return;
+    }
+    if (/\.(docx?|pptx?|xlsx?|pdf)(\?|$)/i.test(url)) {   // dokumen Word/PDF non-gambar → pratinjau Google
+      pg.style.height = '100%'; sc.style.overflow = 'hidden';
+      pg.innerHTML = `<iframe src="https://docs.google.com/gview?embedded=1&url=${encodeURIComponent(url)}"></iframe>`;
+      const n = document.createElement('div'); n.className = 'kdu-cvmsg'; n.style.padding = '6px'; n.innerHTML = 'Tidak tampil? ' + asli; cv.appendChild(n);
+      return;
+    }
+    pg.innerHTML = `<div class="kdu-cvmsg">Pratinjau tidak tersedia untuk file ini.<br><br>${asli}</div>`;
   }
 
   // ====== HOME MENU CARD ======
