@@ -1611,7 +1611,9 @@
   .kdu-last { margin-top:8px; font-size:11.5px; color:#475569; background:#f8fafc; border-radius:8px; padding:6px 8px; }
   .kdu-btn.ok { background:#16a34a; color:#fff; border-color:#16a34a; } .kdu-btn.wj { border-color:#dc2626; color:#b91c1c; background:#fff5f5; }
   .kdu-btn.dk { border-color:#93c5fd; color:#1d4ed8; background:#eff6ff; position:relative; }
-  .kdu-dot { position:absolute; top:-7px; right:-7px; background:#ef4444; color:#fff; border-radius:999px; font-size:10px; padding:1px 6px; }
+  .kdu-btn.dk.baru { border-color:#ef4444; color:#b91c1c; background:#fff5f5; padding-right:14px; }
+  .kdu-dkinfo { font-size:11.5px; color:#64748b; margin-top:4px; font-weight:600; } .kdu-dkinfo.baru { color:#dc2626; font-weight:800; }
+  .kdu-dot { position:absolute; white-space:nowrap; top:-7px; right:-7px; background:#ef4444; color:#fff; border-radius:999px; font-size:10px; padding:1px 6px; }
   .kdu-lap { position:fixed; inset:0; z-index:10003; background:#f5f7fa; display:flex; flex-direction:column; }
   .kdu-lt { display:flex; align-items:center; gap:10px; background:linear-gradient(135deg,#1a3a5c,#0e2340); color:#fff; padding:calc(env(safe-area-inset-top,0px) + 12px) 12px 10px; flex-shrink:0; }
   .kdu-lt b { font-size:15px; } .kdu-lt p { margin:2px 0 0; font-size:11.5px; opacity:.7; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
@@ -29481,7 +29483,7 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
   window.addEventListener('popstate', () => {
     if (KDU.abaikanPop) { KDU.abaikanPop = 0; return; }   // kembali yang dipicu tombol ← / ✕ sendiri
     const sub = ['kdu-cv','kdu-fm','kdu-dk'].map(x => document.getElementById(x)).filter(Boolean);
-    if (sub.length) { sub.forEach(x => x.remove()); clearInterval(KDU.dkT); if (document.getElementById('kdu-ov')) { kduMuat(true).then(() => { kduRender(); kduSegarKartu(); }); } return; }
+    if (sub.length) { sub.forEach(x => x.remove()); clearInterval(KDU.dkT); if (document.getElementById('kdu-ov')) { kduRender(); kduSegarKartu(); KDU.janji = null; kduMuat(true).then(() => { kduRender(); kduSegarKartu(); }); } return; }
     document.getElementById('kdu-ov')?.remove();
   });
   function kduTgl(v, jam) {
@@ -29542,6 +29544,8 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
     if (k.tahap === 'batal') h += `<span class="kdu-pill" style="background:#fee2e2;color:#b91c1c">${escapeHtml(k.status_label || k.status)}</span> <span class="kdu-pill" style="background:#f1f5f9;color:#64748b">${kduSisa(k.hilang_at)}</span>`;
     else if (k.status_label) h += `<span class="kdu-pill" style="background:#eef2ff;color:#3730a3">${escapeHtml(k.status_label)}</span>`;
     const tg = kduTanggal(k); if (tg) h += `<div class="kdu-tg">${tg}</div>`;
+    if (k.chat_belum) h += `<div class="kdu-dkinfo baru">🔴 ${k.chat_belum} pesan diskusi baru</div>`;
+    else if (k.chat_n) h += `<div class="kdu-dkinfo">💬 ${k.chat_n} pesan diskusi · sudah dibaca</div>`;
     h += `</div></div>`;
     if (k.tahap === 'batal' && k.alasan) h += `<div class="kdu-note al">❌ <b>Alasan:</b> ${escapeHtml(k.alasan)}</div>`;
     if (k.catatan_hr) h += `<div class="kdu-note">📝 <b>Catatan HR:</b> ${escapeHtml(k.catatan_hr)}</div>`;
@@ -29655,7 +29659,7 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
     if (k.chat_akhir && k.chat_akhir.isi) h += `<div class="kdu-last">💬 <b>${escapeHtml(k.chat_akhir.oleh || '')}:</b> ${escapeHtml(String(k.chat_akhir.isi).replace(/\s+/g, ' ').slice(0, 110))}</div>`;
     const b = kduBolehIsi(k), wajib = KDU.form === 'hm' && k.tahap === 'hm' && k.hm_form_wajib && !kduForm(k, 'hm') && b.ok;
     h += `<div class="kdu-btns"><button class="kdu-btn${wajib ? ' wj' : ''}" data-kdu-form>📝 Interview Form${wajib ? ' (wajib)' : ''}</button>`
-       + `<button class="kdu-btn dk" data-kdu-dk>💬 Diskusi${k.chat_n ? ' (' + k.chat_n + ')' : ''}${k.chat_belum ? `<span class="kdu-dot">${k.chat_belum}</span>` : ''}</button></div>`;
+       + `<button class="kdu-btn dk${k.chat_belum ? ' baru' : ''}" data-kdu-dk>💬 Diskusi${k.chat_n ? ' · ' + k.chat_n : ''}${k.chat_belum ? `<span class="kdu-dot">${k.chat_belum} baru</span>` : ''}</button></div>`;
     return h;
   }
   function kduPasangItem(body) {
@@ -29797,7 +29801,7 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
     el.innerHTML = `<div class="kdu-lt"><button data-x aria-label="Tutup">✕</button><div style="flex:1;min-width:0"><b>💬 Diskusi · ${escapeHtml(k.nama)}</b><p>${escapeHtml(k.posisi || '-')} · HM, HR, Corp & COO</p></div></div>
       <div class="kdu-msgs"><div class="kdu-kosong">⏳ Memuat…</div></div>
       <div class="kdu-inp"><div data-kdu-ubah style="display:none"></div><textarea rows="1" maxlength="2000" placeholder="Tulis pesan…"></textarea><button aria-label="Kirim">➤</button></div>`;
-    el.querySelector('[data-x]').onclick = () => { kduTutupSub(); kduMuat(true).then(() => { kduRender(); kduSegarKartu(); }); };
+    el.querySelector('[data-x]').onclick = () => { kduTutupSub(); kduRender(); kduSegarKartu(); KDU.janji = null; kduMuat(true).then(() => { kduRender(); kduSegarKartu(); }); };
     const ta = el.querySelector('textarea'), kirim = el.querySelector('.kdu-inp button'), ubahBox = el.querySelector('[data-kdu-ubah]');
     let ubahId = null;
     ta.addEventListener('input', () => { ta.style.height = 'auto'; ta.style.height = Math.min(110, ta.scrollHeight) + 'px'; });
@@ -29807,6 +29811,8 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
       if (!j.ok) { box.innerHTML = `<div class="kdu-kosong">⚠️ ${escapeHtml(j.error || 'Gagal memuat')}</div>`; return; }
       const dekat = box.scrollHeight - box.scrollTop - box.clientHeight < 80;
       const ms = j.pesan || [];
+      k.chat_n = ms.length; k.chat_belum = 0;
+      if (ms.length) { const z = ms[ms.length - 1]; k.chat_akhir = { oleh: z.oleh, isi: z.isi, at: z.at }; }
       box.innerHTML = ms.length ? ms.map(m => {
         const sys = /^(📝|✅|🔄|⏱️|📨|🤝|⏭️|📞)/.test(m.isi || '') ;
         const bisaUbah = m.saya && Date.now() - new Date(m.at).getTime() < 5 * 60000 && !sys;
