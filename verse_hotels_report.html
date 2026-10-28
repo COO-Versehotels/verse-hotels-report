@@ -29411,7 +29411,8 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
     if (KDU.janji && KDU.kunci === kunci) return KDU.janji;
     KDU.kunci = kunci;
     KDU.janji = kduPanggil(m.unit).then(j => {
-      if (j && j.ok && Array.isArray(j.data)) { KDU.data = j.data; KDU.form = j.form || ''; KDU.nama = j.nama || ''; KDU.t = Date.now(); KDU.err = ''; return KDU.data; }
+      if (j && j.ok && Array.isArray(j.data)) { KDU.data = m.ce ? j.data.filter(k => k.eng) : j.data;   // CE: hanya kandidat Engineering (juga saat COO mengintip sebagai CE)
+      KDU.form = j.form || ''; KDU.nama = j.nama || ''; KDU.t = Date.now(); KDU.err = ''; return KDU.data; }
       KDU.err = (j && j.error) || 'gagal'; return null;
     }).catch(e => { KDU.err = 'jaringan'; return null; }).finally(() => { KDU.janji = null; });
     return KDU.janji;
