@@ -1990,6 +1990,8 @@
   .jt-card h4 { margin:0 0 6px; font-size:14px; display:flex; justify-content:space-between; } .jt-card h4 span { color:#5E5A73; font-weight:600; font-size:12px; }
   .jt-row { display:flex; align-items:center; gap:10px; padding:9px 0; border-top:1px solid #EEECF5; }
   .jt-av { width:38px; height:38px; border-radius:13px; background:linear-gradient(135deg,#E6E2F8,#CFC6FF); color:#3B2F7A; font-weight:800; font-size:13px; display:flex; align-items:center; justify-content:center; flex:0 0 38px; }
+  .jt-tot { display:block; margin-top:1px; } .jt-nm .jt-tot b { display:inline; color:#2B1F7A; font-size:12.5px; }
+  .jt-gtot { background:#FFF3C4 !important; color:#1E1B2E; font-weight:800; border-left:2px solid #1E1B2E; }
   .jt-nm { flex:1 1 0; min-width:0; } .jt-nm b { display:block; font-size:13.5px; } .jt-nm small { color:#5E5A73; font-size:11.5px; }
   .jt-pill { font-size:12px; font-weight:800; border-radius:8px; padding:5px 9px; min-width:46px; text-align:center; }
   .jt-pen { width:30px; height:30px; border-radius:50%; background:#F3F1FC; color:#4A3AA7; display:flex; align-items:center; justify-content:center; font-size:13px; cursor:pointer; border:none; }
@@ -30258,6 +30260,11 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
   function jtShiftWin(n) { const p = jtPerInfo(); const tot = _jtDayDiff(p.selesai, p.mulai) + 1; jtWin = Math.max(0, Math.min(jtWin + n, Math.max(0, tot - 14))); jtRender(); }
   function jtSearch(v) { jtQ = v; jtRender(true); }
 
+  function _jtTot(b) {
+    let kerja = 0, off = 0; const per = {};
+    (b.kode || []).forEach(c => { c = String(c == null ? '' : c).trim(); if (!c || c === '-') return; if (c.toLowerCase() === 'dayoff') { off++; return; } kerja++; per[c] = (per[c] || 0) + 1; });
+    return { kerja, off, per, tip: Object.keys(per).map(k => k + ': ' + per[k]).join(', ') + (off ? (Object.keys(per).length ? ', ' : '') + 'dayoff: ' + off : '') };
+  }
   function _jtInisial(n) { const p = String(n).trim().split(/\s+/); return ((p[0] || '')[0] || '') + ((p[1] || '')[0] || ''); }
 
   function jtRender(keepSearch) {
@@ -30299,7 +30306,7 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
       h += '<div class="jt-card"><h4>' + _jtGrpNama(g) + '<span>' + list.length + ' orang</span></h4>';
       list.forEach(b => {
         const code = b.kode[jtDay] || '-', ch = b.kode[jtDay] !== b.master[jtDay];
-        h += '<div class="jt-row"><div class="jt-av">' + _jtEsc(_jtInisial(b.nama)) + '</div><div class="jt-nm"><b>' + _jtEsc(b.nama) + '</b><small>' + _jtEsc(b.jabatan || '') + (multi ? ' · ' + JT_UNIT_NAMA[b.unit] : '') + '</small></div>'
+        h += '<div class="jt-row"><div class="jt-av">' + _jtEsc(_jtInisial(b.nama)) + '</div><div class="jt-nm"><b>' + _jtEsc(b.nama) + '</b><small>' + _jtEsc(b.jabatan || '') + (multi ? ' · ' + JT_UNIT_NAMA[b.unit] : '') + '</small><small class="jt-tot" title="' + _jtEsc(_jtTot(b).tip) + '">Total <b>' + _jtTot(b).kerja + '</b> hari kerja · dayoff ' + _jtTot(b).off + '</small></div>'
           + '<div class="jt-pill jt-c-' + _jtGrp(code) + (ch ? ' jt-ch' : '') + '">' + _jtEsc(code) + '</div>'
           + (jtData.ubah ? '<button class="jt-pen" onclick="jtOpenSheet(\'' + b.unit + '\',' + b.row + ',' + jtDay + ')" aria-label="Ubah">✎</button>' : '') + '</div>';
       });
@@ -30312,11 +30319,12 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
     const w0 = jtWin, w1 = Math.min(n, jtWin + 14), nw = w1 - w0, today = _jtDayDiff(_jtHariIni(), p.mulai);
     h += '<div class="jt-grid-wrap"><div style="padding:10px 16px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #E3E0EE;"><b style="font-size:14px;">' + fmt(_jtAddDay(p.mulai, w0).toISOString().slice(0, 10)) + ' – ' + fmt(_jtAddDay(p.mulai, w1 - 1).toISOString().slice(0, 10)) + '</b>'
       + '<span><button class="jt-chip" onclick="jtShiftWin(-7)">← 7 hari</button> <button class="jt-chip" onclick="jtShiftWin(7)">7 hari →</button></span></div>';
-    h += '<div style="overflow-x:auto;"><div class="jt-gt" style="grid-template-columns:230px repeat(' + nw + ',minmax(46px,1fr));">';
+    h += '<div style="overflow-x:auto;"><div class="jt-gt" style="grid-template-columns:230px repeat(' + nw + ',minmax(46px,1fr)) 64px;">';
     h += '<div class="jt-gh" style="text-align:left;padding-left:12px;">Nama dan jabatan</div>';
     let prevMon = null;
     for (let i = w0; i < w1; i++) { const d = _jtAddDay(p.mulai, i); const sep = (prevMon !== null && d.getUTCMonth() !== prevMon); prevMon = d.getUTCMonth();
       h += '<div class="jt-gh' + (d.getUTCDay() === 0 ? ' sun' : '') + (i === today ? ' today' : '') + (sep ? ' sep' : '') + '"><div>' + JT_HARI[d.getUTCDay()] + '</div><div style="font-size:13px;">' + d.getUTCDate() + '</div></div>'; }
+    h += '<div class="jt-gh jt-gtot">Total</div>';
     let lastU = null, lastD = null;
     rows.forEach(b => {
       if (multi && b.unit !== lastU) { h += '<div class="jt-sec unit">' + JT_UNIT_NAMA[b.unit].toUpperCase() + '</div>'; lastU = b.unit; lastD = null; }
@@ -30326,6 +30334,8 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
       for (let i = w0; i < w1; i++) { const d = _jtAddDay(p.mulai, i); const sep = (pm !== null && d.getUTCMonth() !== pm); pm = d.getUTCMonth();
         const code = b.kode[i] || '', ch = code !== b.master[i];
         h += '<div class="jt-gc jt-c-' + _jtGrp(code) + (ch ? ' jt-ch' : '') + (i === today ? ' today' : '') + (sep ? ' sep' : '') + (jtData.ubah ? ' edit' : '') + '"' + (jtData.ubah ? ' onclick="jtOpenSheet(\'' + b.unit + '\',' + b.row + ',' + i + ')"' : '') + '>' + _jtEsc(code) + '</div>'; }
+      const tt = _jtTot(b);
+      h += '<div class="jt-gc jt-gtot" title="' + _jtEsc(tt.tip) + '">' + tt.kerja + '</div>';
     });
     h += '</div></div></div>';
     h += '<div class="jt-legend"><span><b class="jt-ch" style="padding:1px 8px;border-radius:6px;">Kuning</b> beda dari master</span><span>Garis tebal = pergantian bulan · kotak ungu = hari ini</span><span style="margin-left:auto;">Sumber: Daily Update · diperbarui ' + new Date(p.diperbarui).toLocaleTimeString('id-ID', { timeZone: 'Asia/Jakarta', hour: '2-digit', minute: '2-digit' }).replace(':', '.') + ' WIB' + (jtData.ubah ? '' : ' · hanya dilihat') + '</span></div>';
