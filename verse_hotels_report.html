@@ -30195,6 +30195,7 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
     try {
       const d = await _jtRpc('jadwal_baca', { p_as: _jtAs() });
       if (!d || !d.ok) return;
+      (d.baris || []).forEach(b => { if (!String(b.nama || '').trim()) b.nama_kosong = true; });
       jtData = d; jtTime = Date.now();
       card.style.display = 'flex';
       const sub = document.getElementById('jt-home-card-sub');
@@ -30214,6 +30215,7 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
         if (body) body.innerHTML = '<div style="text-align:center;padding:30px 16px;color:#5E5A73;font-size:13.5px;">' + msg + '</div>';
         return;
       }
+      (d.baris || []).forEach(b => { if (!String(b.nama || '').trim()) b.nama_kosong = true; });
       jtData = d; jtTime = Date.now();
     } catch (e) {
       if (!jtData && body) body.innerHTML = '<div style="text-align:center;padding:30px 16px;color:#e74c3c;font-size:13px;">Gagal memuat jadwal. Periksa koneksi lalu coba lagi.</div>';
@@ -30260,6 +30262,7 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
   function jtShiftWin(n) { const p = jtPerInfo(); const tot = _jtDayDiff(p.selesai, p.mulai) + 1; jtWin = Math.max(0, Math.min(jtWin + n, Math.max(0, tot - 14))); jtRender(); }
   function jtSearch(v) { jtQ = v; jtRender(true); }
 
+  function _jtNm(b) { return b.nama_kosong ? '(belum ada nama)' : b.nama; }
   function _jtTot(b) {
     let kerja = 0, off = 0; const per = {};
     (b.kode || []).forEach(c => { c = String(c == null ? '' : c).trim(); if (!c || c === '-') return; if (c.toLowerCase() === 'dayoff') { off++; return; } kerja++; per[c] = (per[c] || 0) + 1; });
@@ -30306,7 +30309,7 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
       h += '<div class="jt-card"><h4>' + _jtGrpNama(g) + '<span>' + list.length + ' orang</span></h4>';
       list.forEach(b => {
         const code = b.kode[jtDay] || '-', ch = b.kode[jtDay] !== b.master[jtDay];
-        h += '<div class="jt-row"><div class="jt-av">' + _jtEsc(_jtInisial(b.nama)) + '</div><div class="jt-nm"><b>' + _jtEsc(b.nama) + '</b><small>' + _jtEsc(b.jabatan || '') + (multi ? ' · ' + JT_UNIT_NAMA[b.unit] : '') + '</small><small class="jt-tot" title="' + _jtEsc(_jtTot(b).tip) + '">Total <b>' + _jtTot(b).kerja + '</b> hari kerja · dayoff ' + _jtTot(b).off + '</small></div>'
+        h += '<div class="jt-row"><div class="jt-av">' + _jtEsc(_jtInisial(_jtNm(b))) + '</div><div class="jt-nm"><b>' + _jtEsc(_jtNm(b)) + '</b><small>' + _jtEsc(b.jabatan || '') + (multi ? ' · ' + JT_UNIT_NAMA[b.unit] : '') + '</small><small class="jt-tot" title="' + _jtEsc(_jtTot(b).tip) + '">Total <b>' + _jtTot(b).kerja + '</b> hari kerja · dayoff ' + _jtTot(b).off + '</small></div>'
           + '<div class="jt-pill jt-c-' + _jtGrp(code) + (ch ? ' jt-ch' : '') + '">' + _jtEsc(code) + '</div>'
           + (jtData.ubah ? '<button class="jt-pen" onclick="jtOpenSheet(\'' + b.unit + '\',' + b.row + ',' + jtDay + ')" aria-label="Ubah">✎</button>' : '') + '</div>';
       });
@@ -30329,7 +30332,7 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
     rows.forEach(b => {
       if (multi && b.unit !== lastU) { h += '<div class="jt-sec unit">' + JT_UNIT_NAMA[b.unit].toUpperCase() + '</div>'; lastU = b.unit; lastD = null; }
       if (b.dept !== lastD) { h += '<div class="jt-sec">' + (JT_DEPT_NAMA[b.dept] || b.dept).toUpperCase() + '</div>'; lastD = b.dept; }
-      h += '<div class="jt-gn"><b>' + _jtEsc(b.nama) + '</b><small>' + _jtEsc(b.jabatan || '') + '</small></div>';
+      h += '<div class="jt-gn"><b>' + _jtEsc(_jtNm(b)) + '</b><small>' + _jtEsc(b.jabatan || '') + '</small></div>';
       let pm = null;
       for (let i = w0; i < w1; i++) { const d = _jtAddDay(p.mulai, i); const sep = (pm !== null && d.getUTCMonth() !== pm); pm = d.getUTCMonth();
         const code = b.kode[i] || '', ch = code !== b.master[i];
@@ -30357,7 +30360,7 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
     const lbl = JT_HARI[tgl.getUTCDay()] + ', ' + tgl.getUTCDate() + ' ' + JT_BULAN[tgl.getUTCMonth()] + ' ' + tgl.getUTCFullYear();
     const el = document.getElementById('jt-sheet-in');
     el.innerHTML = '<div style="width:44px;height:5px;border-radius:99px;background:#D4D0E4;margin:0 auto 14px;"></div>'
-      + '<div style="font-size:17px;font-weight:800;">' + _jtEsc(b.nama) + '</div><div style="font-size:12.5px;color:#5E5A73;margin-bottom:12px;">' + _jtEsc(b.jabatan || '') + ' · ' + JT_UNIT_NAMA[unit] + ' · ' + lbl + '</div>'
+      + '<div style="font-size:17px;font-weight:800;">' + _jtEsc(_jtNm(b)) + '</div><div style="font-size:12.5px;color:#5E5A73;margin-bottom:12px;">' + _jtEsc(b.jabatan || '') + ' · ' + JT_UNIT_NAMA[unit] + ' · ' + lbl + '</div>'
       + '<div style="display:flex;gap:10px;font-size:12px;color:#5E5A73;margin-bottom:12px;"><div style="flex:1;background:#F3F1FC;border-radius:12px;padding:9px 12px;">Master<br><b style="color:#1E1B2E;font-size:14px;">' + _jtEsc(b.master[idx] || '-') + '</b></div><div style="flex:1;background:' + (b.kode[idx] !== b.master[idx] ? '#FFFBCF' : '#F3F1FC') + ';border-radius:12px;padding:9px 12px;">Saat ini<br><b style="color:#1E1B2E;font-size:14px;">' + _jtEsc(b.kode[idx] || '-') + '</b></div></div>'
       + '<div style="font-size:11.5px;font-weight:800;letter-spacing:.06em;color:#5E5A73;margin-bottom:8px;">GANTI MENJADI</div><div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;" id="jt-opts">'
       + opts.map(c => '<div class="jt-opt jt-c-' + _jtGrp(c) + '" data-k="' + _jtEsc(c) + '" onclick="jtPick(this)">' + _jtEsc(c) + '</div>').join('') + '</div>'
