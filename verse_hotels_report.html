@@ -30398,6 +30398,8 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
     });
     h += '</div></div></div>';
     h += '<div class="jt-legend"><span><b class="jt-ch" style="padding:1px 8px;border-radius:6px;">Kuning</b> beda dari master</span><span>Garis tebal = pergantian bulan · kotak ungu = hari ini</span><span style="margin-left:auto;">Sumber: Daily Update · diperbarui ' + new Date(p.diperbarui).toLocaleTimeString('id-ID', { timeZone: 'Asia/Jakarta', hour: '2-digit', minute: '2-digit' }).replace(':', '.') + ' WIB' + (jtData.ubah ? '' : ' · hanya dilihat') + '</span></div>';
+    const nVac = (jtData.baris || []).filter(b => b.periode === jtPer && !_jtAda(b) && (jtUnit === 'ALL' || b.unit === jtUnit) && (jtDept === 'ALL' || b.dept === jtDept)).length;
+    if (nVac) h += '<div style="margin:12px 4px 0;font-size:12px;color:#8A869C;"><span style="display:inline-block;border-radius:6px;background:#E4E2EE;color:#6B6782;font-weight:800;padding:1px 7px;margin-right:6px;">Vacant</span>' + nVac + ' baris belum ada jadwal, disembunyikan</div>';
     body.innerHTML = h;
     try { const on = body.querySelector('.jt-day.on'); if (on) on.parentElement.scrollLeft = Math.max(0, on.offsetLeft - 130); } catch (e) {}
     if (keepSearch) { const q = document.getElementById('jt-q'); if (q) { q.focus(); q.setSelectionRange(q.value.length, q.value.length); } }
@@ -30423,7 +30425,7 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
       + '<div style="font-size:11.5px;font-weight:800;letter-spacing:.06em;color:#5E5A73;margin-bottom:6px;">ALASAN (WAJIB)</div>'
       + '<textarea id="jt-alasan" rows="2" placeholder="Contoh: tukar shift, sakit, tambahan okupansi" style="width:100%;box-sizing:border-box;border:1px solid #D4D0E4;border-radius:14px;padding:10px 12px;font-family:inherit;font-size:14px;margin-bottom:12px;resize:none;" oninput="jtCekSimpan()"></textarea>'
       + '<button class="jt-save" id="jt-simpan" disabled onclick="jtSimpan()">Simpan perubahan</button>'
-      + '<div style="font-size:11.5px;color:#5E5A73;line-height:1.5;margin-top:10px;">Tersimpan ke sheet Daily Update unit (dalam ±5 menit), sel jadi kuning bila beda dari master. Tercatat siapa, kapan, dan alasannya. HM unit ikut diberi notifikasi.</div>';
+      + '<div style="font-size:11.5px;color:#5E5A73;line-height:1.5;margin-top:10px;">Tersimpan ke sheet Daily Update unit (dalam ±15 detik), sel jadi kuning bila beda dari master. Tercatat siapa, kapan, dan alasannya. HM unit ikut diberi notifikasi.</div>';
     document.getElementById('jt-sheet').style.display = 'flex';
   }
   function jtPick(el) { document.querySelectorAll('#jt-opts .jt-opt').forEach(x => x.classList.remove('sel')); el.classList.add('sel'); jtEdit.baru = el.getAttribute('data-k'); jtCekSimpan(); }
