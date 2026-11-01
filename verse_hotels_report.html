@@ -1971,6 +1971,51 @@
   .hod-qfield.required-alert { border-color:#dc2626 !important; background:#fef2f2; }
   .hod-reason-banner { background:#fee2e2; border-left:3px solid #dc2626; padding:8px 12px; border-radius:8px; margin-bottom:8px; font-size:12px; color:#991b1b; font-weight:600; }
   .hod-reason.required-alert { border-color:#dc2626 !important; }
+  /* ===== JADWAL TIM (Daily Update dari Google Sheet, via Supabase) ===== */
+  #screen-jadwal-tim { background:#F3F1FC; }
+  #screen-jadwal-tim .topbar.jt-top { background:linear-gradient(135deg,#2B1F7A 0%,#4A3AA7 55%,#7B5CFF 100%); border-radius:0 0 24px 24px; }
+  #screen-jadwal-tim .jt-body { padding:14px 16px 24px; display:flex; flex-direction:column; gap:12px; }
+  .jt-chips { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+  .jt-chip { display:inline-flex; align-items:center; min-height:40px; padding:0 14px; border-radius:99px; border:1px solid #D4D0E4; background:#fff; font-size:13px; font-weight:700; color:#1E1B2E; white-space:nowrap; cursor:pointer; font-family:inherit; }
+  .jt-chip.on { background:linear-gradient(135deg,#4A3AA7,#7B5CFF); border-color:transparent; color:#fff; box-shadow:0 4px 12px rgba(74,58,167,.30); }
+  .jt-sel, .jt-search { min-height:40px; border-radius:12px; border:1px solid #D4D0E4; background:#fff; padding:0 12px; font-size:13px; font-weight:600; font-family:inherit; color:#1E1B2E; }
+  .jt-tiles { display:flex; gap:8px; flex-wrap:wrap; }
+  .jt-tile { flex:1 1 70px; border-radius:16px; padding:10px 8px; text-align:center; box-shadow:0 6px 16px rgba(43,31,122,.08); }
+  .jt-tile b { display:block; font-size:20px; } .jt-tile span { font-size:11.5px; font-weight:700; }
+  .jt-days { display:flex; gap:6px; overflow-x:auto; padding:2px 0 4px; }
+  .jt-day { flex:0 0 46px; text-align:center; padding:6px 0; border-radius:12px; background:#fff; border:1px solid #E3E0EE; font-size:11px; font-weight:700; color:#5E5A73; cursor:pointer; }
+  .jt-day b { display:block; font-size:15px; color:#1E1B2E; }
+  .jt-day.sun b { color:#e8710a; } .jt-day.on { background:linear-gradient(135deg,#4A3AA7,#7B5CFF); color:#fff; border-color:transparent; } .jt-day.on b { color:#fff; }
+  .jt-card { background:#fff; border-radius:20px; box-shadow:0 8px 24px rgba(43,31,122,.08); padding:12px 16px 4px; }
+  .jt-card h4 { margin:0 0 6px; font-size:14px; display:flex; justify-content:space-between; } .jt-card h4 span { color:#5E5A73; font-weight:600; font-size:12px; }
+  .jt-row { display:flex; align-items:center; gap:10px; padding:9px 0; border-top:1px solid #EEECF5; }
+  .jt-av { width:38px; height:38px; border-radius:13px; background:linear-gradient(135deg,#E6E2F8,#CFC6FF); color:#3B2F7A; font-weight:800; font-size:13px; display:flex; align-items:center; justify-content:center; flex:0 0 38px; }
+  .jt-nm { flex:1 1 0; min-width:0; } .jt-nm b { display:block; font-size:13.5px; } .jt-nm small { color:#5E5A73; font-size:11.5px; }
+  .jt-pill { font-size:12px; font-weight:800; border-radius:8px; padding:5px 9px; min-width:46px; text-align:center; }
+  .jt-pen { width:30px; height:30px; border-radius:50%; background:#F3F1FC; color:#4A3AA7; display:flex; align-items:center; justify-content:center; font-size:13px; cursor:pointer; border:none; }
+  .jt-c-pagi { background:#E9F5EC; color:#1D5A34; } .jt-c-siang { background:#FFF1DC; color:#7A4A05; } .jt-c-malam { background:#E7E4F7; color:#3B2F7A; }
+  .jt-c-off { background:#6FA8DC; color:#0B1F33; } .jt-c-bo { background:#EEEEEE; color:#1E1B2E; } .jt-c-x { background:#F3F1FC; color:#5E5A73; }
+  .jt-ch { background:#FFFF00 !important; color:#000 !important; outline:2px solid #1E1B2E; }
+  .jt-grid-wrap { display:none; background:#fff; border-radius:20px; box-shadow:0 8px 24px rgba(43,31,122,.08); overflow:hidden; }
+  .jt-list-wrap { display:flex; flex-direction:column; gap:10px; }
+  @media (min-width: 900px) { .jt-grid-wrap { display:block; } .jt-list-wrap, .jt-days-wrap { display:none; } #screen-jadwal-tim .jt-body { padding:18px 28px 28px; } }
+  .jt-gt { display:grid; align-items:stretch; min-width:860px; }
+  .jt-gh { padding:6px 0; text-align:center; font-size:11px; font-weight:800; border-bottom:1px solid #E3E0EE; background:#fff; } .jt-gh.sun { background:#F6B26B; } .jt-gh.today { outline:3px solid #4A3AA7; outline-offset:-3px; } .jt-gh.sep, .jt-gc.sep { border-left:3px solid #1E1B2E; }
+  .jt-gn { padding:6px 12px; border-bottom:1px solid #EEECF5; display:flex; flex-direction:column; justify-content:center; min-height:40px; background:#fff; } .jt-gn b { font-size:12.5px; } .jt-gn small { font-size:11px; color:#5E5A73; }
+  .jt-gc { display:flex; align-items:center; justify-content:center; font-size:11.5px; font-weight:800; border-bottom:1px solid #EEECF5; border-left:1px solid #EEECF5; min-height:40px; } .jt-gc.today { box-shadow:inset 0 0 0 2px #4A3AA7; } .jt-gc.edit { cursor:pointer; }
+  .jt-sec { grid-column:1 / -1; background:#434343; color:#fff; font-size:11.5px; font-weight:800; letter-spacing:.06em; padding:7px 12px; }
+  .jt-sec.unit { background:#2B1F7A; }
+  .jt-legend { display:flex; flex-wrap:wrap; gap:10px 16px; font-size:11.5px; color:#5E5A73; padding:8px 4px; }
+  #jt-sheet, #jt-akses { display:none; position:fixed; inset:0; background:rgba(20,14,50,.55); z-index:9999; align-items:flex-end; justify-content:center; }
+  .jt-sheet-in { width:100%; max-width:520px; background:#fff; border-radius:28px 28px 0 0; padding:12px 20px 26px; max-height:90vh; overflow-y:auto; box-sizing:border-box; }
+  @media (min-width: 900px) { #jt-sheet, #jt-akses { align-items:center; } .jt-sheet-in { border-radius:24px; } }
+  .jt-opt { flex:1 1 28%; min-height:48px; border-radius:14px; display:flex; flex-direction:column; align-items:center; justify-content:center; font-size:13px; font-weight:800; border:2px solid transparent; cursor:pointer; }
+  .jt-opt.sel { border-color:#4A3AA7; box-shadow:0 0 0 3px rgba(123,92,255,.25); }
+  .jt-save { width:100%; min-height:50px; border:none; border-radius:16px; background:linear-gradient(135deg,#4A3AA7,#7B5CFF); color:#fff; font-size:15px; font-weight:800; font-family:inherit; cursor:pointer; }
+  .jt-save:disabled { opacity:.5; }
+  .jt-tg { width:46px; height:27px; border-radius:99px; background:#D4D0E4; position:relative; flex:0 0 46px; cursor:pointer; border:none; padding:0; }
+  .jt-tg::after { content:''; position:absolute; top:3px; left:3px; width:21px; height:21px; border-radius:50%; background:#fff; box-shadow:0 2px 6px rgba(0,0,0,.25); transition:left .15s; }
+  .jt-tg.on { background:linear-gradient(135deg,#4A3AA7,#7B5CFF); } .jt-tg.on::after { left:22px; } .jt-tg:disabled { opacity:.4; cursor:default; }
 
   /* ===== Unit Hotel (splash) — style baru untuk kartu logo hotel ===== */
   .unit-hotel-card { background:rgba(255,255,255,0.9); border:1.5px solid rgba(255,255,255,0.9); border-radius:16px; padding:14px; display:flex; flex-direction:column; align-items:center; gap:8px; cursor:pointer; }
@@ -2284,6 +2329,15 @@
         <div class="rc-text">
           <div class="rc-title">Jadwal Visit Corp</div>
           <div class="rc-sub" id="jv-home-card-sub">Lihat &amp; atur jadwal visit tim</div>
+        </div>
+        <div class="rc-arrow">›</div>
+      </div>
+
+      <div class="rc-menu-card" id="jt-home-card" style="display:none;background:linear-gradient(135deg,#4A3AA7,#7B5CFF);" onclick="jtOpen()">
+        <div class="rc-icon">🗓️</div>
+        <div class="rc-text">
+          <div class="rc-title">Jadwal Tim</div>
+          <div class="rc-sub" id="jt-home-card-sub">Lihat jadwal shift</div>
         </div>
         <div class="rc-arrow">›</div>
       </div>
@@ -2695,6 +2749,32 @@
     </div>
   </div>
 
+  <!-- ===== JADWAL TIM (Daily Update) ===== -->
+  <div class="screen lebar" id="screen-jadwal-tim">
+    <div class="topbar jt-top" style="padding:48px 16px 14px;">
+      <button class="topbar-back" onclick="jtGoBack()" style="color:white;background:rgba(255,255,255,0.15);">←</button>
+      <div class="topbar-title">
+        <h2 style="color:white;">Jadwal Tim</h2>
+        <p style="color:rgba(255,255,255,0.8);" id="jt-sub">Memuat...</p>
+      </div>
+      <div class="topbar-right">
+        <span id="jt-akses-btn" style="display:none;font-size:20px;cursor:pointer;color:#FFE94D;" onclick="jtOpenAkses()" title="Pengaturan Akses Jadwal">⚙️</span>
+      </div>
+    </div>
+    <div class="scroll-area">
+      <div class="jt-body" id="jt-body"><div style="text-align:center;padding:24px;color:var(--gray-400);font-size:13px;">Memuat jadwal...</div></div>
+    </div>
+  </div>
+
+  <!-- Jadwal Tim — ubah shift -->
+  <div id="jt-sheet" onclick="if(event.target===this) jtCloseSheet()">
+    <div class="jt-sheet-in" id="jt-sheet-in"></div>
+  </div>
+  <!-- Jadwal Tim — pengaturan akses (COO) -->
+  <div id="jt-akses" onclick="if(event.target===this) jtCloseAkses()">
+    <div class="jt-sheet-in" id="jt-akses-in"></div>
+  </div>
+
   <!-- ===== LOGIN HISTORY (COO Only) ===== -->
   <div class="screen lebar" id="screen-login-history">
     <div class="topbar" style="padding:48px 16px 12px;background:linear-gradient(135deg,#4c1d95,#7c3aed);">
@@ -3076,6 +3156,7 @@
         <p style="color:rgba(255,255,255,0.5);" id="coo-date">Verse Group Hotels</p>
       </div>
       <div class="topbar-right">
+        <span style="font-size:20px;cursor:pointer;color:var(--gold);margin-right:10px;" onclick="jtOpen()" title="Jadwal Tim">🗓️</span>
         <span style="font-size:20px;cursor:pointer;color:var(--gold);margin-right:10px;" onclick="jvOpen()" title="Jadwal Visit Corp">🧳</span>
         <span id="coo-user-btn" style="font-size:20px;cursor:pointer;color:var(--gold);margin-right:10px;display:none;" onclick="openUserMgmtReport()" title="Manage User">👥</span>
         <span id="coo-loglog-btn" style="font-size:20px;cursor:pointer;color:var(--gold);margin-right:10px;display:none;" onclick="openLoginHistory()" title="Login History">📊</span>
@@ -6446,6 +6527,7 @@
 
       // Show/hide Jadwal Visit Corp menu card based on role
       if (typeof jvMaybeShowHomeMenu === 'function') jvMaybeShowHomeMenu();
+      try { if (typeof jtMaybeShowHome === 'function') jtMaybeShowHome(); } catch(e) {}
 
       // Arsip Laporan semua role (HR Officer & Ops HR Manager)
       if (typeof arsMaybeShowHome === 'function') arsMaybeShowHome();
@@ -30066,6 +30148,266 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
     ).join('');
     card.style.display = 'block';
   }
+
+  // =============================================================
+  // JADWAL TIM — jadwal shift dari sheet DAILY_UPDATE tiap unit (disalin Apps Script ke Supabase).
+  // Hak lihat/ubah ditentukan di DATABASE sesuai peran pada kartu akses (bukan hanya tampilan).
+  // COO bisa menyalakan hak ubah peran lain lewat ⚙️ (Pengaturan Akses Jadwal).
+  // =============================================================
+  const JT_UNIT_NAMA = { LITE: 'Verse Lite', LUXE: 'Verse Luxe', CIREBON: 'Verse Cirebon', OAK: 'Oak Tree' };
+  const JT_DEPT_NAMA = { HM: 'Hotel Manager', FO: 'Front Office', HK: 'Housekeeping', ENG: 'Engineering', SEC: 'Security' };
+  const JT_BULAN = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+  const JT_HARI = ['Min','Sen','Sel','Rab','Kam','Jum','Sab'];
+  let jtData = null, jtUnit = 'ALL', jtDept = 'ALL', jtPer = '', jtDay = 0, jtWin = 0, jtQ = '', jtEdit = null, jtTime = 0;
+
+  function _jtEsc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+  function _jtRpc(fn, body) {
+    return fetch(SUPA_URL + '/rest/v1/rpc/' + fn, {
+      method: 'POST', headers: { 'Content-Type': 'application/json', 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY },
+      body: JSON.stringify(body || {})
+    }).then(r => r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status)));
+  }
+  function _jtAs() { return (window._peekMode && currentRole) ? currentRole : null; }
+  function _jtHariIni() { return new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' }); }
+  function _jtDayDiff(a, b) { return Math.round((Date.parse(a + 'T00:00:00Z') - Date.parse(b + 'T00:00:00Z')) / 86400000); }
+  function _jtAddDay(s, n) { return new Date(Date.parse(s + 'T00:00:00Z') + n * 86400000); }
+  function _jtGrp(code) {
+    const c = String(code || '').trim().toLowerCase();
+    if (!c) return 'x';
+    if (c === 'dayoff' || c === 'off' || c === 'do') return 'off';
+    if (c === 'bo') return 'bo';
+    if (/malam|night/.test(c) || /^n[-\d]/.test(c) || c === 'n') return 'malam';
+    if (/siang|evening/.test(c) || /^a\d|^a-/.test(c) || c === 'a') return 'siang';
+    if (/pagi|morning/.test(c) || /^m(d)?[-\d]/.test(c) || c === 'm') return 'pagi';
+    return 'x';
+  }
+  function _jtGrpNama(g) { return { pagi: 'Pagi', siang: 'Siang', malam: 'Malam', off: 'Dayoff', bo: 'Back Office', x: 'Lainnya' }[g]; }
+
+  function jtGoBack() { if (currentRole === 'COO' && !window._peekMode) go('coo'); else goHome(); }
+
+  async function jtMaybeShowHome() {
+    const card = document.getElementById('jt-home-card');
+    if (!card) return;
+    card.style.display = 'none';
+    if (currentRole === 'COO' && !window._peekMode) return; // COO: lewat ikon 🗓️ di dashboard
+    try {
+      const d = await _jtRpc('jadwal_baca', { p_as: _jtAs() });
+      if (!d || !d.ok) return;
+      jtData = d; jtTime = Date.now();
+      card.style.display = 'flex';
+      const sub = document.getElementById('jt-home-card-sub');
+      if (sub) sub.textContent = d.ubah ? 'Lihat & ubah jadwal shift' : 'Lihat jadwal shift';
+    } catch (e) {}
+  }
+
+  function jtOpen() { go('jadwal-tim'); jtLoad(); }
+
+  async function jtLoad() {
+    const body = document.getElementById('jt-body');
+    if (body && !jtData) body.innerHTML = '<div style="text-align:center;padding:24px;color:var(--gray-400);font-size:13px;">Memuat jadwal...</div>';
+    try {
+      const d = await _jtRpc('jadwal_baca', { p_as: _jtAs() });
+      if (!d || !d.ok) {
+        const msg = d && d.alasan === 'dimatikan' ? 'Akses jadwal untuk jabatan ini belum dibuka.' : (d && d.alasan === 'peran' ? 'Jabatan ini belum punya akses jadwal.' : 'Sesi belum siap, coba buka ulang aplikasi.');
+        if (body) body.innerHTML = '<div style="text-align:center;padding:30px 16px;color:#5E5A73;font-size:13.5px;">' + msg + '</div>';
+        return;
+      }
+      jtData = d; jtTime = Date.now();
+    } catch (e) {
+      if (!jtData && body) body.innerHTML = '<div style="text-align:center;padding:30px 16px;color:#e74c3c;font-size:13px;">Gagal memuat jadwal. Periksa koneksi lalu coba lagi.</div>';
+      if (!jtData) return;
+    }
+    const ab = document.getElementById('jt-akses-btn');
+    if (ab) ab.style.display = (jtData.grup === 'COO' && !window._peekMode) ? 'inline' : 'none';
+    // periode: yang memuat hari ini, kalau tidak ada yang terbaru
+    const today = _jtHariIni();
+    const pers = jtPeriodes();
+    if (!jtPer || !pers.some(p => p.periode === jtPer)) {
+      const cur = pers.filter(p => p.mulai <= today && today <= p.selesai)[0] || pers[pers.length - 1];
+      jtPer = cur ? cur.periode : '';
+    }
+    jtInitDay();
+    jtRender();
+  }
+
+  function jtPeriodes() {
+    const seen = {}, out = [];
+    ((jtData && jtData.periode) || []).forEach(p => { if (!seen[p.periode]) { seen[p.periode] = 1; out.push(p); } });
+    return out.sort((a, b) => a.mulai < b.mulai ? -1 : 1);
+  }
+  function jtPerInfo() { return jtPeriodes().filter(p => p.periode === jtPer)[0]; }
+  function jtInitDay() {
+    const p = jtPerInfo(); if (!p) return;
+    const n = _jtDayDiff(p.selesai, p.mulai) + 1;
+    let i = _jtDayDiff(_jtHariIni(), p.mulai);
+    if (i < 0) i = 0; if (i > n - 1) i = n - 1;
+    jtDay = i;
+    jtWin = Math.max(0, Math.min(i - 3, n - 14));
+  }
+
+  function jtRows() {
+    const q = jtQ.trim().toLowerCase();
+    return (jtData.baris || []).filter(b => b.periode === jtPer
+      && (jtUnit === 'ALL' || b.unit === jtUnit) && (jtDept === 'ALL' || b.dept === jtDept)
+      && (!q || String(b.nama).toLowerCase().indexOf(q) >= 0));
+  }
+  function jtSetUnit(u) { jtUnit = u; jtRender(); }
+  function jtSetDept(d) { jtDept = d; jtRender(); }
+  function jtSetPer(p) { jtPer = p; jtInitDay(); jtRender(); }
+  function jtSetDay(i) { jtDay = i; jtRender(); }
+  function jtShiftWin(n) { const p = jtPerInfo(); const tot = _jtDayDiff(p.selesai, p.mulai) + 1; jtWin = Math.max(0, Math.min(jtWin + n, Math.max(0, tot - 14))); jtRender(); }
+  function jtSearch(v) { jtQ = v; jtRender(true); }
+
+  function _jtInisial(n) { const p = String(n).trim().split(/\s+/); return ((p[0] || '')[0] || '') + ((p[1] || '')[0] || ''); }
+
+  function jtRender(keepSearch) {
+    const body = document.getElementById('jt-body'); if (!body || !jtData) return;
+    const p = jtPerInfo(); if (!p) { body.innerHTML = '<div style="text-align:center;padding:30px;color:#5E5A73;">Belum ada jadwal.</div>'; return; }
+    const sub = document.getElementById('jt-sub');
+    const units = [...new Set((jtData.baris || []).map(b => b.unit))];
+    const depts = [...new Set((jtData.baris || []).filter(b => b.periode === jtPer).map(b => b.dept))];
+    if (jtUnit !== 'ALL' && units.indexOf(jtUnit) < 0) jtUnit = 'ALL';
+    if (jtDept !== 'ALL' && depts.indexOf(jtDept) < 0) jtDept = 'ALL';
+    if (sub) sub.textContent = (units.length === 1 ? JT_UNIT_NAMA[units[0]] : 'Semua unit') + (jtData.dept ? ' · ' + (JT_DEPT_NAMA[jtData.dept] || jtData.dept) : '') + (jtData.ubah ? ' · bisa ubah' : ' · hanya lihat');
+    const rows = jtRows();
+    const n = _jtDayDiff(p.selesai, p.mulai) + 1;
+    const fmt = s => { const d = new Date(s + 'T00:00:00Z'); return d.getUTCDate() + ' ' + JT_BULAN[d.getUTCMonth()]; };
+    let h = '';
+    // filter
+    h += '<div class="jt-chips"><select class="jt-sel" onchange="jtSetPer(this.value)">' + jtPeriodes().map(x => '<option value="' + _jtEsc(x.periode) + '"' + (x.periode === jtPer ? ' selected' : '') + '>Periode ' + fmt(x.mulai) + ' – ' + fmt(x.selesai) + '</option>').join('') + '</select>';
+    h += '<input class="jt-search" id="jt-q" placeholder="Cari nama…" value="' + _jtEsc(jtQ) + '" oninput="jtSearch(this.value)" style="flex:1 1 140px;max-width:260px;"></div>';
+    if (units.length > 1) h += '<div class="jt-chips"><button class="jt-chip' + (jtUnit === 'ALL' ? ' on' : '') + '" onclick="jtSetUnit(\'ALL\')">Semua unit</button>' + units.map(u => '<button class="jt-chip' + (jtUnit === u ? ' on' : '') + '" onclick="jtSetUnit(\'' + u + '\')">' + JT_UNIT_NAMA[u] + '</button>').join('') + '</div>';
+    if (depts.length > 1) h += '<div class="jt-chips"><button class="jt-chip' + (jtDept === 'ALL' ? ' on' : '') + '" onclick="jtSetDept(\'ALL\')">Semua dept</button>' + depts.map(d => '<button class="jt-chip' + (jtDept === d ? ' on' : '') + '" onclick="jtSetDept(\'' + d + '\')">' + (JT_DEPT_NAMA[d] || d) + '</button>').join('') + '</div>';
+
+    // ringkasan untuk tanggal terpilih (HP) / hari ini (laptop pakai tanggal terpilih juga)
+    const cnt = { pagi: 0, siang: 0, malam: 0, off: 0 };
+    rows.forEach(b => { const g = _jtGrp(b.kode[jtDay]); if (cnt[g] !== undefined) cnt[g]++; });
+    const tgl = _jtAddDay(p.mulai, jtDay);
+    const lblTgl = JT_HARI[tgl.getUTCDay()] + ', ' + tgl.getUTCDate() + ' ' + JT_BULAN[tgl.getUTCMonth()] + ' ' + tgl.getUTCFullYear();
+    h += '<div style="font-size:12.5px;font-weight:700;color:#5E5A73;">' + lblTgl + '</div>';
+    h += '<div class="jt-tiles">' + [['pagi', 'Pagi'], ['siang', 'Siang'], ['malam', 'Malam'], ['off', 'Dayoff']].map(x => '<div class="jt-tile jt-c-' + x[0] + '"><b>' + cnt[x[0]] + '</b><span>' + x[1] + '</span></div>').join('') + '</div>';
+
+    // HP: strip tanggal + daftar per shift
+    h += '<div class="jt-days-wrap"><div class="jt-days">';
+    for (let i = 0; i < n; i++) { const d = _jtAddDay(p.mulai, i); h += '<div class="jt-day' + (i === jtDay ? ' on' : '') + (d.getUTCDay() === 0 ? ' sun' : '') + '" onclick="jtSetDay(' + i + ')">' + JT_HARI[d.getUTCDay()] + '<b>' + d.getUTCDate() + '</b></div>'; }
+    h += '</div></div>';
+    h += '<div class="jt-list-wrap">';
+    const multi = units.length > 1 && jtUnit === 'ALL';
+    ['pagi', 'siang', 'malam', 'bo', 'off', 'x'].forEach(g => {
+      const list = rows.filter(b => _jtGrp(b.kode[jtDay]) === g);
+      if (!list.length) return;
+      h += '<div class="jt-card"><h4>' + _jtGrpNama(g) + '<span>' + list.length + ' orang</span></h4>';
+      list.forEach(b => {
+        const code = b.kode[jtDay] || '-', ch = b.kode[jtDay] !== b.master[jtDay];
+        h += '<div class="jt-row"><div class="jt-av">' + _jtEsc(_jtInisial(b.nama)) + '</div><div class="jt-nm"><b>' + _jtEsc(b.nama) + '</b><small>' + _jtEsc(b.jabatan || '') + (multi ? ' · ' + JT_UNIT_NAMA[b.unit] : '') + '</small></div>'
+          + '<div class="jt-pill jt-c-' + _jtGrp(code) + (ch ? ' jt-ch' : '') + '">' + _jtEsc(code) + '</div>'
+          + (jtData.ubah ? '<button class="jt-pen" onclick="jtOpenSheet(\'' + b.unit + '\',' + b.row + ',' + jtDay + ')" aria-label="Ubah">✎</button>' : '') + '</div>';
+      });
+      h += '</div>';
+    });
+    if (!rows.length) h += '<div style="text-align:center;padding:24px;color:#5E5A73;font-size:13px;">Tidak ada data.</div>';
+    h += '</div>';
+
+    // Laptop: grid 14 hari
+    const w0 = jtWin, w1 = Math.min(n, jtWin + 14), nw = w1 - w0, today = _jtDayDiff(_jtHariIni(), p.mulai);
+    h += '<div class="jt-grid-wrap"><div style="padding:10px 16px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #E3E0EE;"><b style="font-size:14px;">' + fmt(_jtAddDay(p.mulai, w0).toISOString().slice(0, 10)) + ' – ' + fmt(_jtAddDay(p.mulai, w1 - 1).toISOString().slice(0, 10)) + '</b>'
+      + '<span><button class="jt-chip" onclick="jtShiftWin(-7)">← 7 hari</button> <button class="jt-chip" onclick="jtShiftWin(7)">7 hari →</button></span></div>';
+    h += '<div style="overflow-x:auto;"><div class="jt-gt" style="grid-template-columns:230px repeat(' + nw + ',minmax(46px,1fr));">';
+    h += '<div class="jt-gh" style="text-align:left;padding-left:12px;">Nama dan jabatan</div>';
+    let prevMon = null;
+    for (let i = w0; i < w1; i++) { const d = _jtAddDay(p.mulai, i); const sep = (prevMon !== null && d.getUTCMonth() !== prevMon); prevMon = d.getUTCMonth();
+      h += '<div class="jt-gh' + (d.getUTCDay() === 0 ? ' sun' : '') + (i === today ? ' today' : '') + (sep ? ' sep' : '') + '"><div>' + JT_HARI[d.getUTCDay()] + '</div><div style="font-size:13px;">' + d.getUTCDate() + '</div></div>'; }
+    let lastU = null, lastD = null;
+    rows.forEach(b => {
+      if (multi && b.unit !== lastU) { h += '<div class="jt-sec unit">' + JT_UNIT_NAMA[b.unit].toUpperCase() + '</div>'; lastU = b.unit; lastD = null; }
+      if (b.dept !== lastD) { h += '<div class="jt-sec">' + (JT_DEPT_NAMA[b.dept] || b.dept).toUpperCase() + '</div>'; lastD = b.dept; }
+      h += '<div class="jt-gn"><b>' + _jtEsc(b.nama) + '</b><small>' + _jtEsc(b.jabatan || '') + '</small></div>';
+      let pm = null;
+      for (let i = w0; i < w1; i++) { const d = _jtAddDay(p.mulai, i); const sep = (pm !== null && d.getUTCMonth() !== pm); pm = d.getUTCMonth();
+        const code = b.kode[i] || '', ch = code !== b.master[i];
+        h += '<div class="jt-gc jt-c-' + _jtGrp(code) + (ch ? ' jt-ch' : '') + (i === today ? ' today' : '') + (sep ? ' sep' : '') + (jtData.ubah ? ' edit' : '') + '"' + (jtData.ubah ? ' onclick="jtOpenSheet(\'' + b.unit + '\',' + b.row + ',' + i + ')"' : '') + '>' + _jtEsc(code) + '</div>'; }
+    });
+    h += '</div></div></div>';
+    h += '<div class="jt-legend"><span><b class="jt-ch" style="padding:1px 8px;border-radius:6px;">Kuning</b> beda dari master</span><span>Garis tebal = pergantian bulan · kotak ungu = hari ini</span><span style="margin-left:auto;">Sumber: Daily Update · diperbarui ' + new Date(p.diperbarui).toLocaleTimeString('id-ID', { timeZone: 'Asia/Jakarta', hour: '2-digit', minute: '2-digit' }).replace(':', '.') + ' WIB' + (jtData.ubah ? '' : ' · hanya dilihat') + '</span></div>';
+    body.innerHTML = h;
+    try { const on = body.querySelector('.jt-day.on'); if (on) on.parentElement.scrollLeft = Math.max(0, on.offsetLeft - 130); } catch (e) {}
+    if (keepSearch) { const q = document.getElementById('jt-q'); if (q) { q.focus(); q.setSelectionRange(q.value.length, q.value.length); } }
+  }
+
+  // ---- ubah shift ----
+  function jtOpenSheet(unit, row, idx) {
+    if (!jtData || !jtData.ubah || window._peekMode) { if (window._peekMode) showToast('👁️ Mode Intip — hanya lihat'); return; }
+    const b = (jtData.baris || []).filter(x => x.unit === unit && x.periode === jtPer && x.row === row)[0]; if (!b) return;
+    const p = jtPerInfo();
+    const base = ['M7', 'M-5', 'MD1', 'A15', 'N-23', 'BO', 'dayoff'];
+    const used = [...new Set((jtData.baris || []).filter(x => x.dept === b.dept && x.unit === unit).reduce((a, x) => a.concat(x.kode), []).filter(c => c && c !== '-'))];
+    const opts = b.dept === 'SEC' ? used : [...new Set(base.concat(used.filter(c => base.indexOf(c) < 0 && b.dept !== 'SEC' && !/^SEC/i.test(c))))];
+    jtEdit = { unit, row, idx, kode: b.kode[idx], baru: '', nama: b.nama, opts };
+    const tgl = _jtAddDay(p.mulai, idx);
+    const lbl = JT_HARI[tgl.getUTCDay()] + ', ' + tgl.getUTCDate() + ' ' + JT_BULAN[tgl.getUTCMonth()] + ' ' + tgl.getUTCFullYear();
+    const el = document.getElementById('jt-sheet-in');
+    el.innerHTML = '<div style="width:44px;height:5px;border-radius:99px;background:#D4D0E4;margin:0 auto 14px;"></div>'
+      + '<div style="font-size:17px;font-weight:800;">' + _jtEsc(b.nama) + '</div><div style="font-size:12.5px;color:#5E5A73;margin-bottom:12px;">' + _jtEsc(b.jabatan || '') + ' · ' + JT_UNIT_NAMA[unit] + ' · ' + lbl + '</div>'
+      + '<div style="display:flex;gap:10px;font-size:12px;color:#5E5A73;margin-bottom:12px;"><div style="flex:1;background:#F3F1FC;border-radius:12px;padding:9px 12px;">Master<br><b style="color:#1E1B2E;font-size:14px;">' + _jtEsc(b.master[idx] || '-') + '</b></div><div style="flex:1;background:' + (b.kode[idx] !== b.master[idx] ? '#FFFBCF' : '#F3F1FC') + ';border-radius:12px;padding:9px 12px;">Saat ini<br><b style="color:#1E1B2E;font-size:14px;">' + _jtEsc(b.kode[idx] || '-') + '</b></div></div>'
+      + '<div style="font-size:11.5px;font-weight:800;letter-spacing:.06em;color:#5E5A73;margin-bottom:8px;">GANTI MENJADI</div><div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;" id="jt-opts">'
+      + opts.map(c => '<div class="jt-opt jt-c-' + _jtGrp(c) + '" data-k="' + _jtEsc(c) + '" onclick="jtPick(this)">' + _jtEsc(c) + '</div>').join('') + '</div>'
+      + '<div style="font-size:11.5px;font-weight:800;letter-spacing:.06em;color:#5E5A73;margin-bottom:6px;">ALASAN (WAJIB)</div>'
+      + '<textarea id="jt-alasan" rows="2" placeholder="Contoh: tukar shift, sakit, tambahan okupansi" style="width:100%;box-sizing:border-box;border:1px solid #D4D0E4;border-radius:14px;padding:10px 12px;font-family:inherit;font-size:14px;margin-bottom:12px;resize:none;" oninput="jtCekSimpan()"></textarea>'
+      + '<button class="jt-save" id="jt-simpan" disabled onclick="jtSimpan()">Simpan perubahan</button>'
+      + '<div style="font-size:11.5px;color:#5E5A73;line-height:1.5;margin-top:10px;">Tersimpan ke sheet Daily Update unit (dalam ±5 menit), sel jadi kuning bila beda dari master. Tercatat siapa, kapan, dan alasannya. HM unit ikut diberi notifikasi.</div>';
+    document.getElementById('jt-sheet').style.display = 'flex';
+  }
+  function jtPick(el) { document.querySelectorAll('#jt-opts .jt-opt').forEach(x => x.classList.remove('sel')); el.classList.add('sel'); jtEdit.baru = el.getAttribute('data-k'); jtCekSimpan(); }
+  function jtCekSimpan() { const a = (document.getElementById('jt-alasan') || {}).value || ''; const b = document.getElementById('jt-simpan'); if (b) b.disabled = !(jtEdit && jtEdit.baru && jtEdit.baru !== jtEdit.kode && a.trim().length >= 3); }
+  function jtCloseSheet() { document.getElementById('jt-sheet').style.display = 'none'; jtEdit = null; }
+  async function jtSimpan() {
+    if (!jtEdit) return;
+    const btn = document.getElementById('jt-simpan'); btn.disabled = true; btn.textContent = 'Menyimpan…';
+    const e = jtEdit, alasan = document.getElementById('jt-alasan').value.trim();
+    try {
+      const r = await _jtRpc('jadwal_ubah', { p_unit: e.unit, p_periode: jtPer, p_row: e.row, p_idx: e.idx + 1, p_kode: e.baru, p_alasan: alasan });
+      if (!r || !r.ok) {
+        const m = { tidak_diizinkan: 'Hak ubah untuk jabatan ini belum dibuka.', unit: 'Di luar unit Anda.', dept: 'Di luar divisi Anda.', sama: 'Shift sama dengan sebelumnya.', alasan: 'Alasan wajib diisi.', sesi: 'Sesi habis, buka ulang aplikasi.' };
+        showToast('⚠️ ' + (m[r && r.alasan] || 'Gagal menyimpan'));
+        btn.disabled = false; btn.textContent = 'Simpan perubahan'; return;
+      }
+      const b = (jtData.baris || []).filter(x => x.unit === e.unit && x.periode === jtPer && x.row === e.row)[0];
+      if (b) b.kode[e.idx] = e.baru;
+      jtCloseSheet(); jtRender();
+      showToast('✅ Jadwal diubah, sheet menyusul otomatis');
+      try { fetch('/api/send-push', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: 'jadwal_ubah', id: r.id }) }).catch(() => {}); } catch (x) {}
+    } catch (err) { showToast('⚠️ Gagal menyimpan, periksa koneksi'); btn.disabled = false; btn.textContent = 'Simpan perubahan'; }
+  }
+
+  // ---- pengaturan akses (COO) ----
+  const JT_GRUP_NAMA = { HR: ['Corporate HR', 'Ops HR Manager + HR Officer · semua unit, semua dept'], CE: ['Corporate ENG', 'Chief Engineering · Engineering semua unit'], CRA: ['Corporate CRA', 'Front Office semua unit'], HM: ['HM', 'Unit sendiri · semua dept'], HOD: ['HOD', 'Unit sendiri · divisi sendiri'] };
+  async function jtOpenAkses() {
+    const el = document.getElementById('jt-akses-in');
+    el.innerHTML = '<div style="padding:20px;text-align:center;color:#5E5A73;">Memuat…</div>';
+    document.getElementById('jt-akses').style.display = 'flex';
+    try { const r = await _jtRpc('jadwal_akses_baca', {}); if (!r || !r.ok) throw 0; jtRenderAkses(r.akses); }
+    catch (e) { el.innerHTML = '<div style="padding:20px;text-align:center;color:#e74c3c;">Gagal memuat.</div>'; }
+  }
+  function jtRenderAkses(ak) {
+    const el = document.getElementById('jt-akses-in');
+    const order = ['HM', 'HOD', 'CE', 'HR', 'CRA'];
+    let h = '<div style="width:44px;height:5px;border-radius:99px;background:#D4D0E4;margin:0 auto 14px;"></div><div style="font-size:18px;font-weight:800;">Pengaturan Akses Jadwal</div><div style="font-size:12.5px;color:#5E5A73;margin:4px 0 14px;line-height:1.5;">Khusus COO. Berlaku langsung, tanpa update aplikasi. COO selalu bisa lihat dan ubah.</div>';
+    h += '<div style="display:grid;grid-template-columns:1fr 54px 54px;gap:10px;align-items:center;font-size:11px;font-weight:800;color:#5E5A73;letter-spacing:.05em;padding:0 2px 6px;"><span>PERAN</span><span style="text-align:center;">LIHAT</span><span style="text-align:center;">UBAH</span></div>';
+    order.forEach(g => { const a = ak.filter(x => x.grup === g)[0]; if (!a) return;
+      h += '<div style="display:grid;grid-template-columns:1fr 54px 54px;gap:10px;align-items:center;padding:11px 2px;border-top:1px solid #EEECF5;"><div><div style="font-size:14px;font-weight:800;">' + JT_GRUP_NAMA[g][0] + '</div><div style="font-size:11.5px;color:#5E5A73;">' + JT_GRUP_NAMA[g][1] + '</div></div>'
+        + '<div style="display:flex;justify-content:center;"><button class="jt-tg' + (a.lihat ? ' on' : '') + '" onclick="jtToggle(\'' + g + '\',\'lihat\')" aria-label="Lihat"></button></div>'
+        + '<div style="display:flex;justify-content:center;"><button class="jt-tg' + (a.ubah ? ' on' : '') + '"' + (a.lihat ? '' : ' disabled') + ' onclick="jtToggle(\'' + g + '\',\'ubah\')" aria-label="Ubah"></button></div></div>'; });
+    h += '<div style="font-size:11.5px;color:#5E5A73;line-height:1.5;margin-top:12px;">Hak ubah CE berlaku untuk Engineering semua unit; HM untuk unit sendiri; HOD untuk divisi sendiri. Setiap perubahan tercatat dan HM unit mendapat notifikasi.</div>';
+    h += '<button class="jt-save" style="margin-top:14px;background:#1E1B2E;" onclick="jtCloseAkses()">Tutup</button>';
+    el.innerHTML = h; el._ak = ak;
+  }
+  async function jtToggle(g, k) {
+    const el = document.getElementById('jt-akses-in'); const ak = el._ak || []; const a = ak.filter(x => x.grup === g)[0]; if (!a) return;
+    const n = { lihat: a.lihat, ubah: a.ubah }; n[k] = !n[k]; if (!n.lihat) n.ubah = false;
+    try { const r = await _jtRpc('jadwal_akses_simpan', { p_grup: g, p_lihat: n.lihat, p_ubah: n.ubah }); if (!r || !r.ok) throw 0; a.lihat = n.lihat; a.ubah = n.ubah; jtRenderAkses(ak); showToast('✅ Akses ' + JT_GRUP_NAMA[g][0] + ' diperbarui'); }
+    catch (e) { showToast('⚠️ Gagal menyimpan pengaturan'); }
+  }
+  function jtCloseAkses() { document.getElementById('jt-akses').style.display = 'none'; }
 
   function jvMaybeShowHomeMenu() {
     const card = document.getElementById('jv-home-card');

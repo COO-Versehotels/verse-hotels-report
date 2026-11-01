@@ -140,6 +140,12 @@ export default async function handler(req, res) {
       tokens = (r && r.tokens) || [];
       title = (r && r.title) || '📝 Catatan HR untuk laporan Anda';
       body = (r && r.body) || '';
+    } else if (reqBody.type === 'jadwal_ubah') {
+      // Jadwal Tim diubah lewat aplikasi -> notifikasi ke HM unit (+COO bila bukan COO yang mengubah), sekali per perubahan
+      const r = await supaRpc('push_jadwal_ubah', { p_id: Number(reqBody.id) || 0 });
+      tokens = (r && r.tokens) || [];
+      title = (r && r.title) || '';
+      body = (r && r.body) || '';
     } else if (reqBody.type === 'device_request') {
       const r = await supaRpc('push_device_request', { p_device_id: String(reqBody.deviceId || '') });
       tokens = (r && r.tokens) || [];
