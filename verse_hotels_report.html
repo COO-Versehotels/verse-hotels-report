@@ -1991,6 +1991,24 @@
   .jt-row { display:flex; align-items:center; gap:10px; padding:9px 0; border-top:1px solid #EEECF5; }
   .jt-av { width:38px; height:38px; border-radius:13px; background:linear-gradient(135deg,#E6E2F8,#CFC6FF); color:#3B2F7A; font-weight:800; font-size:13px; display:flex; align-items:center; justify-content:center; flex:0 0 38px; }
   .jt-tot { display:block; margin-top:1px; } .jt-nm .jt-tot b { display:inline; color:#2B1F7A; font-size:12.5px; }
+  .jt-dot { width:11px; height:11px; border-radius:99px; display:inline-block; margin-right:7px; border:1.5px solid rgba(255,255,255,.9); box-shadow:0 0 0 1px rgba(0,0,0,.15); }
+  .jt-ub { display:inline-block; border-radius:7px; padding:1px 7px; font-size:10.5px; font-weight:800; }
+  .jt-av { border:3px solid transparent; box-sizing:border-box; }
+  .jt-tt { width:56px; height:56px; border-radius:99px; display:flex; flex-direction:column; align-items:center; justify-content:center; border:3px solid; box-sizing:border-box; line-height:1; flex:none; }
+  .jt-tt b { font-size:19px; font-weight:800; display:block; } .jt-tt span { font-size:8.5px; font-weight:700; margin-top:2px; }
+  .jt-tt.ok { border-color:#1F9D55; background:#E6F6EC; color:#116B36; } .jt-tt.bad { border-color:#D92D20; background:#FDECEA; color:#B42318; } .jt-tt.na { border-color:#B8B3CF; background:#F3F1FC; color:#3B3752; }
+  .jt-dl { margin-top:4px; font-size:10.5px; font-weight:800; border-radius:6px; padding:1px 6px; color:#fff; text-align:center; } .jt-dl.ok { background:#1F9D55; } .jt-dl.bad { background:#D92D20; }
+  .jt-row.bad { background:#FFF7F6; border-radius:12px; }
+  .jt-alert { display:flex; gap:12px; align-items:center; border-radius:18px; padding:12px 14px; background:#fff; border:2px solid #D92D20; box-shadow:0 6px 16px rgba(217,45,32,.14); cursor:pointer; font-family:inherit; text-align:left; width:100%; }
+  .jt-alert.good { border-color:#1F9D55; box-shadow:0 6px 16px rgba(31,157,85,.14); cursor:default; }
+  .jt-alert i { width:40px; height:40px; border-radius:12px; display:flex; align-items:center; justify-content:center; flex:none; background:#D92D20; } .jt-alert.good i { background:#1F9D55; }
+  .jt-alert b { display:block; font-size:14px; color:#B42318; } .jt-alert.good b { color:#116B36; } .jt-alert small { display:block; font-size:12px; color:#5E5A73; margin-top:2px; }
+  .jt-gn.bad { background:#FFF7F6; }
+  .jt-gn b, .jt-gn small { display:block; }
+  .jt-tc { display:flex; align-items:center; justify-content:center; border-bottom:1px solid #fff; border-left:3px solid #1E1B2E; font-weight:800; font-size:17px; } .jt-tc.ok { background:#1F9D55; color:#fff; } .jt-tc.bad { background:#D92D20; color:#fff; } .jt-tc.na { background:#EEECF5; color:#1E1B2E; }
+  .jt-dc { display:flex; align-items:center; justify-content:center; border-bottom:1px solid #fff; font-weight:800; font-size:12.5px; } .jt-dc.ok { background:#DDF3E4; color:#116B36; } .jt-dc.bad { background:#FDECEA; color:#B42318; } .jt-dc.na { background:#F6F5FB; color:#6B6782; }
+  .jt-gh.tt { background:#1E1B2E; color:#fff; display:flex; align-items:center; justify-content:center; }
+  .jt-sec i { display:inline-flex; width:20px; height:20px; border-radius:6px; align-items:center; justify-content:center; margin-right:8px; vertical-align:middle; }
   .jt-gtot { background:#FFF3C4 !important; color:#1E1B2E; font-weight:800; border-left:2px solid #1E1B2E; }
   .jt-nm { flex:1 1 0; min-width:0; } .jt-nm b { display:block; font-size:13.5px; } .jt-nm small { color:#5E5A73; font-size:11.5px; }
   .jt-pill { font-size:12px; font-weight:800; border-radius:8px; padding:5px 9px; min-width:46px; text-align:center; }
@@ -2001,7 +2019,7 @@
   .jt-grid-wrap { display:none; background:#fff; border-radius:20px; box-shadow:0 8px 24px rgba(43,31,122,.08); overflow:hidden; }
   .jt-list-wrap { display:flex; flex-direction:column; gap:10px; }
   @media (min-width: 900px) { .jt-grid-wrap { display:block; } .jt-list-wrap, .jt-days-wrap { display:none; } #screen-jadwal-tim .jt-body { padding:18px 28px 28px; } }
-  .jt-gt { display:grid; align-items:stretch; min-width:860px; }
+  .jt-gt { display:grid; align-items:stretch; min-width:1000px; }
   .jt-gh { padding:6px 0; text-align:center; font-size:11px; font-weight:800; border-bottom:1px solid #E3E0EE; background:#fff; } .jt-gh.sun { background:#F6B26B; } .jt-gh.today { outline:3px solid #4A3AA7; outline-offset:-3px; } .jt-gh.sep, .jt-gc.sep { border-left:3px solid #1E1B2E; }
   .jt-gn { padding:6px 12px; border-bottom:1px solid #EEECF5; display:flex; flex-direction:column; justify-content:center; min-height:40px; background:#fff; } .jt-gn b { font-size:12.5px; } .jt-gn small { font-size:11px; color:#5E5A73; }
   .jt-gc { display:flex; align-items:center; justify-content:center; font-size:11.5px; font-weight:800; border-bottom:1px solid #EEECF5; border-left:1px solid #EEECF5; min-height:40px; } .jt-gc.today { box-shadow:inset 0 0 0 2px #4A3AA7; } .jt-gc.edit { cursor:pointer; }
@@ -30157,10 +30175,24 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
   // COO bisa menyalakan hak ubah peran lain lewat ⚙️ (Pengaturan Akses Jadwal).
   // =============================================================
   const JT_UNIT_NAMA = { LITE: 'Verse Lite', LUXE: 'Verse Luxe', CIREBON: 'Verse Cirebon', OAK: 'Oak Tree' };
+  const JT_UNIT_COL = {
+    LITE: { bg: '#F2B705', fg: '#3B2D00', soft: '#FFF4CC', ink: '#5C4400' },
+    LUXE: { bg: '#7A4A1E', fg: '#FFFFFF', soft: '#F3E6D8', ink: '#4F2E10' },
+    CIREBON: { bg: '#18864B', fg: '#FFFFFF', soft: '#DDF3E4', ink: '#0F5A31' },
+    OAK: { bg: '#D62F6F', fg: '#FFFFFF', soft: '#FCE3EE', ink: '#8F1B48' }
+  };
+  const JT_DEPT_COL = {
+    HM: ['#475569', 'M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6'],
+    FO: ['#0891B2', 'M4 12a8 8 0 0 1 16 0M2 12h20M12 4v2'],
+    HK: ['#0D9488', 'M3 20h18M5 20v-5a7 7 0 0 1 14 0v5M12 4v4'],
+    ENG: ['#64748B', 'M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.4-.6-.6-2.4z'],
+    SEC: ['#A16207', 'M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z']
+  };
+  function _jtUC(u) { return JT_UNIT_COL[u] || { bg: '#6B6782', fg: '#fff', soft: '#EEECF5', ink: '#3B3752' }; }
   const JT_DEPT_NAMA = { HM: 'Hotel Manager', FO: 'Front Office', HK: 'Housekeeping', ENG: 'Engineering', SEC: 'Security' };
   const JT_BULAN = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
   const JT_HARI = ['Min','Sen','Sel','Rab','Kam','Jum','Sab'];
-  let jtData = null, jtUnit = 'ALL', jtDept = 'ALL', jtPer = '', jtDay = 0, jtWin = 0, jtQ = '', jtEdit = null, jtTime = 0;
+  let jtOnlyBad = false, jtData = null, jtUnit = 'ALL', jtDept = 'ALL', jtPer = '', jtDay = 0, jtWin = 0, jtQ = '', jtEdit = null, jtTime = 0;
 
   function _jtEsc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
   function _jtRpc(fn, body) {
@@ -30251,7 +30283,7 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
 
   function jtRows() {
     const q = jtQ.trim().toLowerCase();
-    return (jtData.baris || []).filter(b => b.periode === jtPer
+    return (jtData.baris || []).filter(b => b.periode === jtPer && _jtAda(b)
       && (jtUnit === 'ALL' || b.unit === jtUnit) && (jtDept === 'ALL' || b.dept === jtDept)
       && (!q || String(b.nama).toLowerCase().indexOf(q) >= 0));
   }
@@ -30268,6 +30300,20 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
     (b.kode || []).forEach(c => { c = String(c == null ? '' : c).trim(); if (!c || c === '-') return; if (c.toLowerCase() === 'dayoff') { off++; return; } kerja++; per[c] = (per[c] || 0) + 1; });
     return { kerja, off, per, tip: Object.keys(per).map(k => k + ': ' + per[k]).join(', ') + (off ? (Object.keys(per).length ? ', ' : '') + 'dayoff: ' + off : '') };
   }
+  function _jtTarget(b) {
+    const p = (jtData.periode || []).filter(x => x.unit === b.unit && x.periode === b.periode)[0];
+    if (!p) return null;
+    const t = b.dept === 'HM' ? p.bo : p.ops;
+    return (t == null) ? null : +t;
+  }
+  function _jtStat(b) {
+    const t = _jtTot(b), target = _jtTarget(b);
+    if (target == null) return { t, target: null, diff: 0, st: 'na', label: '' };
+    const diff = t.kerja - target;
+    return { t, target, diff, st: diff === 0 ? 'ok' : 'bad', label: diff === 0 ? 'sesuai' : (diff > 0 ? '+' + diff + ' hari' : '\u2212' + Math.abs(diff) + ' hari') };
+  }
+  function _jtAda(b) { const t = _jtTot(b); return (t.kerja + t.off) > 0; }
+  function jtSetBad(v) { jtOnlyBad = !!v; jtRender(); }
   function _jtInisial(n) { const p = String(n).trim().split(/\s+/); return ((p[0] || '')[0] || '') + ((p[1] || '')[0] || ''); }
 
   function jtRender(keepSearch) {
@@ -30279,16 +30325,24 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
     if (jtUnit !== 'ALL' && units.indexOf(jtUnit) < 0) jtUnit = 'ALL';
     if (jtDept !== 'ALL' && depts.indexOf(jtDept) < 0) jtDept = 'ALL';
     if (sub) sub.textContent = (units.length === 1 ? JT_UNIT_NAMA[units[0]] : 'Semua unit') + (jtData.dept ? ' · ' + (JT_DEPT_NAMA[jtData.dept] || jtData.dept) : '') + (jtData.ubah ? ' · bisa ubah' : ' · hanya lihat');
-    const rows = jtRows();
+    const allRows = jtRows();
+    const nBad = allRows.filter(b => _jtStat(b).st === 'bad').length, nTarget = allRows.filter(b => _jtStat(b).st !== 'na').length;
+    const rows = jtOnlyBad ? allRows.filter(b => _jtStat(b).st === 'bad') : allRows;
     const n = _jtDayDiff(p.selesai, p.mulai) + 1;
     const fmt = s => { const d = new Date(s + 'T00:00:00Z'); return d.getUTCDate() + ' ' + JT_BULAN[d.getUTCMonth()]; };
     let h = '';
     // filter
     h += '<div class="jt-chips"><select class="jt-sel" onchange="jtSetPer(this.value)">' + jtPeriodes().map(x => '<option value="' + _jtEsc(x.periode) + '"' + (x.periode === jtPer ? ' selected' : '') + '>Periode ' + fmt(x.mulai) + ' – ' + fmt(x.selesai) + '</option>').join('') + '</select>';
     h += '<input class="jt-search" id="jt-q" placeholder="Cari nama…" value="' + _jtEsc(jtQ) + '" oninput="jtSearch(this.value)" style="flex:1 1 140px;max-width:260px;"></div>';
-    if (units.length > 1) h += '<div class="jt-chips"><button class="jt-chip' + (jtUnit === 'ALL' ? ' on' : '') + '" onclick="jtSetUnit(\'ALL\')">Semua unit</button>' + units.map(u => '<button class="jt-chip' + (jtUnit === u ? ' on' : '') + '" onclick="jtSetUnit(\'' + u + '\')">' + JT_UNIT_NAMA[u] + '</button>').join('') + '</div>';
+    if (units.length > 1) h += '<div class="jt-chips"><button class="jt-chip' + (jtUnit === 'ALL' ? ' on' : '') + '" onclick="jtSetUnit(\'ALL\')">Semua unit</button>' + units.map(u => '<button class="jt-chip' + (jtUnit === u ? ' on' : '') + '" onclick="jtSetUnit(\'' + u + '\')"><span class="jt-dot" style="background:' + _jtUC(u).bg + '"></span>' + JT_UNIT_NAMA[u] + '</button>').join('') + '</div>';
     if (depts.length > 1) h += '<div class="jt-chips"><button class="jt-chip' + (jtDept === 'ALL' ? ' on' : '') + '" onclick="jtSetDept(\'ALL\')">Semua dept</button>' + depts.map(d => '<button class="jt-chip' + (jtDept === d ? ' on' : '') + '" onclick="jtSetDept(\'' + d + '\')">' + (JT_DEPT_NAMA[d] || d) + '</button>').join('') + '</div>';
 
+    if (nTarget) {
+      const pi = (jtData.periode || []).filter(x => x.periode === jtPer && x.ops != null)[0] || {};
+      const acuan = 'Acuan periode ini: OPS ' + (pi.ops != null ? pi.ops : '-') + ' hari \u00b7 BO ' + (pi.bo != null ? pi.bo : '-') + ' hari. Lebih atau kurang sama-sama ditandai merah.';
+      if (nBad) h += '<button class="jt-alert" onclick="jtSetBad(' + (!jtOnlyBad) + ')"><i><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg></i><div style="flex:1;"><b>' + nBad + ' orang total hari kerja tidak sesuai acuan</b><small>' + acuan + '</small></div><span style="font-size:12px;font-weight:800;color:#B42318;white-space:nowrap;">' + (jtOnlyBad ? 'Tampilkan semua' : 'Lihat saja') + '</span></button>';
+      else h += '<div class="jt-alert good"><i><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg></i><div style="flex:1;"><b>Semua total hari kerja sesuai acuan</b><small>' + acuan + '</small></div></div>';
+    }
     // ringkasan untuk tanggal terpilih (HP) / hari ini (laptop pakai tanggal terpilih juga)
     const cnt = { pagi: 0, siang: 0, malam: 0, off: 0 };
     rows.forEach(b => { const g = _jtGrp(b.kode[jtDay]); if (cnt[g] !== undefined) cnt[g]++; });
@@ -30309,9 +30363,11 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
       h += '<div class="jt-card"><h4>' + _jtGrpNama(g) + '<span>' + list.length + ' orang</span></h4>';
       list.forEach(b => {
         const code = b.kode[jtDay] || '-', ch = b.kode[jtDay] !== b.master[jtDay];
-        h += '<div class="jt-row"><div class="jt-av">' + _jtEsc(_jtInisial(_jtNm(b))) + '</div><div class="jt-nm"><b>' + _jtEsc(_jtNm(b)) + '</b><small>' + _jtEsc(b.jabatan || '') + (multi ? ' · ' + JT_UNIT_NAMA[b.unit] : '') + '</small><small class="jt-tot" title="' + _jtEsc(_jtTot(b).tip) + '">Total <b>' + _jtTot(b).kerja + '</b> hari kerja · dayoff ' + _jtTot(b).off + '</small></div>'
-          + '<div class="jt-pill jt-c-' + _jtGrp(code) + (ch ? ' jt-ch' : '') + '">' + _jtEsc(code) + '</div>'
-          + (jtData.ubah ? '<button class="jt-pen" onclick="jtOpenSheet(\'' + b.unit + '\',' + b.row + ',' + jtDay + ')" aria-label="Ubah">✎</button>' : '') + '</div>';
+        const st = _jtStat(b), uc = _jtUC(b.unit);
+        h += '<div class="jt-row' + (st.st === 'bad' ? ' bad' : '') + '"><div class="jt-av" style="background:' + uc.soft + ';color:' + uc.ink + ';border-color:' + uc.bg + ';">' + _jtEsc(_jtInisial(_jtNm(b))) + '</div><div class="jt-nm"><b>' + _jtEsc(_jtNm(b)) + '</b><small>' + _jtEsc(b.jabatan || '') + '</small><span class="jt-ub" style="background:' + uc.bg + ';color:' + uc.fg + ';">' + JT_UNIT_NAMA[b.unit] + '</span></div>'
+          + '<div style="display:flex;flex-direction:column;align-items:center;flex:none;" title="' + _jtEsc(st.t.tip) + '"><div class="jt-tt ' + st.st + '"><b>' + st.t.kerja + '</b><span>hari kerja</span></div>' + (st.label ? '<div class="jt-dl ' + st.st + '">' + st.label + '</div>' : '') + '</div>'
+          + '<div style="display:flex;flex-direction:column;align-items:center;gap:6px;flex:none;"><div class="jt-pill jt-c-' + _jtGrp(code) + (ch ? ' jt-ch' : '') + '">' + _jtEsc(code) + '</div>'
+          + (jtData.ubah ? '<button class="jt-pen" onclick="jtOpenSheet(\'' + b.unit + '\',' + b.row + ',' + jtDay + ')" aria-label="Ubah">\u270e</button>' : '') + '</div></div>';
       });
       h += '</div>';
     });
@@ -30322,23 +30378,23 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
     const w0 = jtWin, w1 = Math.min(n, jtWin + 14), nw = w1 - w0, today = _jtDayDiff(_jtHariIni(), p.mulai);
     h += '<div class="jt-grid-wrap"><div style="padding:10px 16px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #E3E0EE;"><b style="font-size:14px;">' + fmt(_jtAddDay(p.mulai, w0).toISOString().slice(0, 10)) + ' – ' + fmt(_jtAddDay(p.mulai, w1 - 1).toISOString().slice(0, 10)) + '</b>'
       + '<span><button class="jt-chip" onclick="jtShiftWin(-7)">← 7 hari</button> <button class="jt-chip" onclick="jtShiftWin(7)">7 hari →</button></span></div>';
-    h += '<div style="overflow-x:auto;"><div class="jt-gt" style="grid-template-columns:230px repeat(' + nw + ',minmax(46px,1fr)) 64px;">';
+    h += '<div style="overflow-x:auto;"><div class="jt-gt" style="grid-template-columns:230px repeat(' + nw + ',minmax(46px,1fr)) 84px 64px;">';
     h += '<div class="jt-gh" style="text-align:left;padding-left:12px;">Nama dan jabatan</div>';
     let prevMon = null;
     for (let i = w0; i < w1; i++) { const d = _jtAddDay(p.mulai, i); const sep = (prevMon !== null && d.getUTCMonth() !== prevMon); prevMon = d.getUTCMonth();
       h += '<div class="jt-gh' + (d.getUTCDay() === 0 ? ' sun' : '') + (i === today ? ' today' : '') + (sep ? ' sep' : '') + '"><div>' + JT_HARI[d.getUTCDay()] + '</div><div style="font-size:13px;">' + d.getUTCDate() + '</div></div>'; }
-    h += '<div class="jt-gh jt-gtot">Total</div>';
+    h += '<div class="jt-gh tt">TOTAL</div><div class="jt-gh tt" style="border-left:1px solid #3a3650;">Selisih</div>';
     let lastU = null, lastD = null;
     rows.forEach(b => {
-      if (multi && b.unit !== lastU) { h += '<div class="jt-sec unit">' + JT_UNIT_NAMA[b.unit].toUpperCase() + '</div>'; lastU = b.unit; lastD = null; }
-      if (b.dept !== lastD) { h += '<div class="jt-sec">' + (JT_DEPT_NAMA[b.dept] || b.dept).toUpperCase() + '</div>'; lastD = b.dept; }
-      h += '<div class="jt-gn"><b>' + _jtEsc(_jtNm(b)) + '</b><small>' + _jtEsc(b.jabatan || '') + '</small></div>';
+      const uc = _jtUC(b.unit), st = _jtStat(b);
+      if (multi && b.unit !== lastU) { h += '<div class="jt-sec unit" style="background:' + uc.bg + ';color:' + uc.fg + ';font-size:13px;">' + JT_UNIT_NAMA[b.unit].toUpperCase() + '</div>'; lastU = b.unit; lastD = null; }
+      if (b.dept !== lastD) { const dc = JT_DEPT_COL[b.dept] || ['#64748B', 'M5 12h14']; h += '<div class="jt-sec"><i style="background:' + dc[0] + ';"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="' + dc[1] + '"/></svg></i>' + (JT_DEPT_NAMA[b.dept] || b.dept).toUpperCase() + '</div>'; lastD = b.dept; }
+      h += '<div class="jt-gn' + (st.st === 'bad' ? ' bad' : '') + '" style="flex-direction:row;align-items:center;gap:10px;"><div class="jt-av" style="width:32px;height:32px;flex:0 0 32px;border-radius:99px;font-size:11px;background:' + uc.soft + ';color:' + uc.ink + ';border-color:' + uc.bg + ';">' + _jtEsc(_jtInisial(_jtNm(b))) + '</div><div style="min-width:0;"><b>' + _jtEsc(_jtNm(b)) + '</b><small>' + _jtEsc(b.jabatan || '') + '</small></div></div>';
       let pm = null;
       for (let i = w0; i < w1; i++) { const d = _jtAddDay(p.mulai, i); const sep = (pm !== null && d.getUTCMonth() !== pm); pm = d.getUTCMonth();
         const code = b.kode[i] || '', ch = code !== b.master[i];
         h += '<div class="jt-gc jt-c-' + _jtGrp(code) + (ch ? ' jt-ch' : '') + (i === today ? ' today' : '') + (sep ? ' sep' : '') + (jtData.ubah ? ' edit' : '') + '"' + (jtData.ubah ? ' onclick="jtOpenSheet(\'' + b.unit + '\',' + b.row + ',' + i + ')"' : '') + '>' + _jtEsc(code) + '</div>'; }
-      const tt = _jtTot(b);
-      h += '<div class="jt-gc jt-gtot" title="' + _jtEsc(tt.tip) + '">' + tt.kerja + '</div>';
+      h += '<div class="jt-tc ' + st.st + '" title="' + _jtEsc(st.t.tip) + '">' + st.t.kerja + '</div><div class="jt-dc ' + st.st + '">' + (st.label || '-') + '</div>';
     });
     h += '</div></div></div>';
     h += '<div class="jt-legend"><span><b class="jt-ch" style="padding:1px 8px;border-radius:6px;">Kuning</b> beda dari master</span><span>Garis tebal = pergantian bulan · kotak ungu = hari ini</span><span style="margin-left:auto;">Sumber: Daily Update · diperbarui ' + new Date(p.diperbarui).toLocaleTimeString('id-ID', { timeZone: 'Asia/Jakarta', hour: '2-digit', minute: '2-digit' }).replace(':', '.') + ' WIB' + (jtData.ubah ? '' : ' · hanya dilihat') + '</span></div>';
