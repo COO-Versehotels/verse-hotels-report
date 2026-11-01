@@ -30360,6 +30360,18 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
   function jtPick(el) { document.querySelectorAll('#jt-opts .jt-opt').forEach(x => x.classList.remove('sel')); el.classList.add('sel'); jtEdit.baru = el.getAttribute('data-k'); jtCekSimpan(); }
   function jtCekSimpan() { const a = (document.getElementById('jt-alasan') || {}).value || ''; const b = document.getElementById('jt-simpan'); if (b) b.disabled = !(jtEdit && jtEdit.baru && jtEdit.baru !== jtEdit.kode && a.trim().length >= 3); }
   function jtCloseSheet() { document.getElementById('jt-sheet').style.display = 'none'; jtEdit = null; }
+  function jtTalentaPopup() {
+    const old = document.getElementById('jt-talenta-pop'); if (old) old.remove();
+    const d = document.createElement('div'); d.id = 'jt-talenta-pop';
+    d.style.cssText = 'position:fixed;inset:0;z-index:100000;background:rgba(20,16,40,.55);display:flex;align-items:center;justify-content:center;padding:20px;';
+    d.innerHTML = '<div style="background:#fff;border-radius:22px;max-width:380px;width:100%;padding:24px 22px;box-shadow:0 20px 50px rgba(0,0,0,.35);text-align:center;font-family:inherit;">'
+      + '<div style="font-size:38px;">⚠️</div>'
+      + '<div style="font-size:17px;font-weight:800;color:#1E1B2E;margin:6px 0 10px;">Perubahan Schedule</div>'
+      + '<div style="font-size:14px;line-height:1.55;color:#3a3650;">Perubahan Schedule ini <b>tidak otomatis berubah di Talenta</b>. Anda (HM / HR) tetap <b>wajib update</b> perubahan schedule ini segera di <b>Talenta Web</b>.</div>'
+      + '<button style="margin-top:18px;width:100%;min-height:48px;border:0;border-radius:14px;background:linear-gradient(135deg,#4A3AA7,#7B5CFF);color:#fff;font-size:15px;font-weight:700;cursor:pointer;" onclick="document.getElementById(\'jt-talenta-pop\').remove()">Saya mengerti</button></div>';
+    document.body.appendChild(d);
+  }
+
   async function jtSimpan() {
     if (!jtEdit) return;
     const btn = document.getElementById('jt-simpan'); btn.disabled = true; btn.textContent = 'Menyimpan…';
@@ -30375,6 +30387,7 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
       if (b) b.kode[e.idx] = e.baru;
       jtCloseSheet(); jtRender();
       showToast('✅ Jadwal diubah, sheet menyusul otomatis');
+      jtTalentaPopup();
       try { fetch('/api/send-push', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: 'jadwal_ubah', id: r.id }) }).catch(() => {}); } catch (x) {}
     } catch (err) { showToast('⚠️ Gagal menyimpan, periksa koneksi'); btn.disabled = false; btn.textContent = 'Simpan perubahan'; }
   }
