@@ -29869,8 +29869,11 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
       sv.disabled = true; sv.textContent = '⏳ Menyimpan…';
       const j = await kduAksi(k.id, 'form', { nilai, remarks: rm.getAttribute('data-rm'), komentar: el.querySelector('[data-kom]').value });
       if (j.ok) {
+        const stLama = k.status;
         kduToast('✅ Interview Form tersimpan (rata-rata ' + kduKoma(j.rata) + ')' + (KDU.form === 'hm' ? ' — HR sudah dikabari' : ''));
         await kduMuat(true); kduRender(); kduSegarKartu();
+        const kb = kduCari(k.id);   // 3 Nov 2026: langkah otomatis Engineering (HM -> CE, CE -> Reference Check)
+        if (kb && kb.status !== stLama && (kb.status === 'lanjut_ce' || kb.status === 'lanjut_ref')) kduToast('⚙️ Otomatis: kandidat lanjut ke ' + (kb.status === 'lanjut_ce' ? 'Interview CE Corp — CE sudah dikabari' : 'Reference Check — HR sudah dikabari'));
         if (document.getElementById('kdu-fm')) kduBukaForm(k.id);
       } else { sv.disabled = false; sv.textContent = '💾 Simpan'; kduToast('⚠️ ' + (j.error || 'Gagal menyimpan')); }
     };
