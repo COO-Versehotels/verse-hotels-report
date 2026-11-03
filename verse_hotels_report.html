@@ -29742,6 +29742,7 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
       if (f) return `<span class="kdu-fc ok">${lbl} ${kduKoma(f.rata)} ${KDU_RM[f.remarks] ? KDU_RM[f.remarks][0] : ''}${f.pengganti ? ' 🔁' : ''}</span>`;
       if (t === 'hr') return `<span class="kdu-fc">${lbl} · belum</span>`;
       if (t === 'hm') return (k.tahap === 'hm' && k.hm_form_wajib) ? `<span class="kdu-fc wj">${lbl} · wajib diisi</span>` : `<span class="kdu-fc">${lbl} · belum</span>`;
+      if (t === 'corp' && k.eng && k.status === 'lanjut_ce') return `<span class="kdu-fc wj">${lbl} · wajib diisi CE</span>`;   // 3 Nov 2026: Engineering wajib CE
       return `<span class="kdu-fc">${lbl} · opsional</span>`;
     }).join('');
   }
