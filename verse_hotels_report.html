@@ -29643,6 +29643,7 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
     let h = `<div class="kdu-item ${k.tahap}" data-id="${escapeHtml(k.id)}"><div class="kdu-ih">`;
     h += f ? `<div class="kdu-av" data-i="${escapeHtml(kduInisial(k.nama))}"><img src="${escapeHtml(f)}" alt="" loading="lazy" onerror="this.parentNode.textContent=this.parentNode.getAttribute('data-i')"></div>` : `<div class="kdu-av">${escapeHtml(kduInisial(k.nama))}</div>`;
     h += `<div style="flex:1;min-width:0"><div class="kdu-nm">${escapeHtml(k.nama || '—')}</div><div class="kdu-ps">${escapeHtml(k.posisi || 'Posisi belum diisi')}${unitTxt ? ' · <b>' + escapeHtml(unitTxt) + '</b>' : ''}</div>`;
+    if (k.pengganti) h += `<span class="kdu-pill" style="background:#ede9fe;color:#6d28d9">🔁 Pengganti HM ${escapeHtml(KDU_UNIT[k.pengganti] || k.pengganti)}</span> `;
     if (k.tahap === 'batal') h += `<span class="kdu-pill" style="background:#fee2e2;color:#b91c1c">${escapeHtml(k.status_label || k.status)}</span> <span class="kdu-pill" style="background:#f1f5f9;color:#64748b">${kduSisa(k.hilang_at)}</span>`;
     else if (k.status_label) h += `<span class="kdu-pill" style="background:#eef2ff;color:#3730a3">${escapeHtml(k.status_label)}</span>`;
     const tg = kduTanggal(k); if (tg) h += `<div class="kdu-tg">${tg}</div>`;
@@ -29729,14 +29730,16 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
       if (!ada && k.status !== 'lanjut_hm') return { ok:false, alasan:'Kandidat belum di tahap Interview HM', ada };
       return { ok:true, ada };
     }
-    if (!(hm || (k.corp && hr))) return { ok:false, alasan:'Terbuka setelah HM mengisi Interview Form', ada };
+    const hmSah = hm && (!hm.pengganti || hm.disetujui_oleh);   // 3 Nov 2026: Form HM pengganti (HR) perlu persetujuan COO
+    if (!(hmSah || (k.corp && hr))) return { ok:false, alasan: hm && !hmSah ? 'Menunggu persetujuan COO atas Form HM pengganti' : 'Terbuka setelah HM mengisi Interview Form', ada };
     if (t === 'corp' && ada && coo) return { ok:false, alasan:'Terkunci — COO/CEO sudah mengisi', ada };
     return { ok:true, ada };
   }
   function kduChipForm(k) {
     return KDU_TF.filter(([t]) => t !== 'corp' || k.eng || kduForm(k, 'corp')).map(([t, lbl]) => {
       const f = kduForm(k, t);
-      if (f) return `<span class="kdu-fc ok">${lbl} ${kduKoma(f.rata)} ${KDU_RM[f.remarks] ? KDU_RM[f.remarks][0] : ''}</span>`;
+      if (f && f.pengganti && !f.disetujui_oleh) return `<span class="kdu-fc wj">${lbl} ${kduKoma(f.rata)} · pengganti, menunggu COO</span>`;
+      if (f) return `<span class="kdu-fc ok">${lbl} ${kduKoma(f.rata)} ${KDU_RM[f.remarks] ? KDU_RM[f.remarks][0] : ''}${f.pengganti ? ' 🔁' : ''}</span>`;
       if (t === 'hr') return `<span class="kdu-fc">${lbl} · belum</span>`;
       if (t === 'hm') return (k.tahap === 'hm' && k.hm_form_wajib) ? `<span class="kdu-fc wj">${lbl} · wajib diisi</span>` : `<span class="kdu-fc">${lbl} · belum</span>`;
       return `<span class="kdu-fc">${lbl} · opsional</span>`;
