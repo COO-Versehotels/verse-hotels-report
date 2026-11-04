@@ -2426,7 +2426,7 @@
   :is(.tb,.tbo) .kdu-uchip { background:var(--tb-dalam); color:#e2e8f0; border-color:var(--tb-garis); }
   :is(.tb,.tbo) .kdu-uchip.on { background:var(--tb-emas); color:#1a1400; border-color:var(--tb-emas); }
   :is(.tb,.tbo) .kdu-uchip i { color:#f87171; }
-  #loc-warning-banner { margin:0 12px 8px !important; background:#3a1d0b !important; border:1px solid #9a3412 !important; color:#fed7aa !important; border-radius:14px !important; }
+  :is(.tb,.tbo) #loc-warning-banner { margin:0 12px 8px !important; background:#3a1d0b !important; border:1px solid #9a3412 !important; color:#fed7aa !important; border-radius:14px !important; }
   #ars-home { margin:0 12px 8px !important; }
   /* Angka kinerja (rating) */
   :is(.tb,.tbo) #grps-home-card { margin:0 12px !important; background:var(--tb-panel) !important; border:1px solid var(--tb-garis) !important; box-shadow:var(--shadow) !important; }
@@ -2802,6 +2802,62 @@
 
   :is(.tb,.tbo) [style*="background:#fee2e2" i][style*="border-left" i], :is(.tb,.tbo) .hod-reason-banner { background:#3b0d0d !important; border:1px solid #7f1d1d !important; border-left:3px solid #ef4444 !important; color:#fecaca !important; }
   :is(.tb,.tbo) [style*="background:#fef3c7" i][style*="border-left" i] { border:1px solid #6b5412 !important; border-left:3px solid #f59e0b !important; }
+
+  /* ===== Pilihan tema (4 Nov 2026) ===== */
+  .tb-tema-btn { flex:none; height:40px; border-radius:12px; border:1px solid rgba(255,255,255,.18); background:#1e2638; color:#fff; font:inherit; font-size:11.5px; font-weight:800; padding:0 10px; cursor:pointer; white-space:nowrap; }
+  .tema-pilih { margin:0 16px 14px; background:var(--tb-panel,#fff); border:1px solid var(--tb-garis,#e2e8f0); border-radius:16px; padding:12px 14px; }
+  .tema-pilih-j { font-size:13px; font-weight:800; color:var(--tb-teks,#1e293b); } .tema-pilih-j small { font-weight:600; color:var(--gray-400); }
+  .tema-pilih-b { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:10px; }
+  .tema-pilih-b button { font:inherit; font-size:13px; font-weight:800; padding:11px; border-radius:12px; cursor:pointer; border:1px solid var(--tb-garis,#e2e8f0); background:var(--tb-dalam,#f5f7fa); color:var(--tb-teks,#1e293b); }
+  .tema-pilih-b button.on { background:#c9a227; border-color:#c9a227; color:#1a1400; }
+
+  /* ===== TEMA TERANG: susunan baru, warna terang ===== */
+  html.tema-terang { --gray-400:#64748b; --gray-500:#5c6475; }
+  html.tema-terang .tb-rekap-role { display:none !important; }
+  html.tema-terang { --tb-panel:#ffffff; --tb-garis:#e2e8f0; --tb-dalam:#f5f7fa; --tb-teks:#1e293b; --tb-redup:#64748b; --tb-emas:#c9973a; }
+  html.tema-terang .tb-hh { background:linear-gradient(135deg,var(--navy),#0e2340); padding:calc(env(safe-area-inset-top,0px) + 14px) 14px 12px; }
+  html.tema-terang .tb-tema-btn { background:rgba(255,255,255,.15); }
+  html.tema-terang .tb-sapa { margin:12px 12px 0; background:#fff; border:1px solid #e2e8f0; border-radius:16px; padding:14px; box-shadow:var(--shadow-card); }
+  html.tema-terang .tb-sapa .home-header-row { margin-bottom:12px; align-items:flex-start; }
+  html.tema-terang .tb-sapa .home-greeting { color:#64748b; font-size:12px; }
+  html.tema-terang .tb-sapa .home-name { color:var(--navy); font-size:19px; }
+  html.tema-terang .tb-sapa .home-role-badge { background:#fef3c7; border-color:#f5d78a; color:#8a6408; }
+  html.tema-terang .tb-sapa .home-avatar { background:#eef2f7; }
+  html.tema-terang .tb-sapa .progress-card { background:linear-gradient(135deg,var(--navy),#0e2340); border:0; padding:12px; }
+  html.tema-terang .tb-sec { font-size:11px; font-weight:900; letter-spacing:.7px; color:#64748b; text-transform:uppercase; margin:18px 14px 8px; }
+  html.tema-terang .tb-kpi { margin:0 12px; background:#fff; border:1px solid #e2e8f0; border-left:4px solid #c9973a; border-radius:16px; padding:6px 14px; box-shadow:var(--shadow-card); }
+  html.tema-terang .tb-kpi > div:first-child { display:none !important; }
+  html.tema-terang .tb-kpi-i { border-top-color:#eef0f4; } html.tema-terang .tb-kpi-i span { color:#334155; }
+  html.tema-terang .tb-kpi-i b { background:#fef3c7; color:#8a6408; }
+  html.tema-terang .gr-ot { background:#f8fafc; border-color:#e2e8f0; } html.tema-terang .gr-ol b { color:#334155; } html.tema-terang .gr-ov span { color:#0f172a; }
+  html.tema-terang .gr-ov i[style*="86efac"] { color:#15803d !important; } html.tema-terang .gr-ov i[style*="fca5a5"] { color:#b91c1c !important; } html.tema-terang .gr-ov i[style*="94a3b8"] { color:#64748b !important; }
+  html.tema-terang .gr-lg { box-shadow:0 0 0 1px #e2e8f0; }
+  html.tema-terang .tb-tl { background:#fff; border-bottom:1px solid #e2e8f0; }
+  html.tema-terang .tb-tl-bg { background:#e2e8f0; } html.tema-terang .tb-tl-bar b { color:var(--navy); }
+  html.tema-terang .tb-tl-f button { background:#f5f7fa; border-color:#e2e8f0; color:#334155; } html.tema-terang .tb-tl-f button b { color:var(--navy); }
+  html.tema-terang .tb-tl-f button.on { background:#fef3c7; border-color:#c9973a; color:#8a6408; } html.tema-terang .tb-tl-f button.on b { color:#8a6408; }
+  html.tema-terang .tb-sb-n { background:rgba(255,255,255,.2); color:#fff; }
+  html.tema-terang .tb-wj { border-top-color:#fde2e2; } html.tema-terang .tb-wj .n { background:#fee2e2; color:#b91c1c; }
+  html.tema-terang .tb-wj .t b { color:#1e293b; } html.tema-terang .tb-wj .t small { color:#b91c1c; } html.tema-terang .tb-wj button { color:#b45309; }
+  html.tema-terang .kdu-tab { background:#f5f7fa; border-color:#e2e8f0; color:#334155; } html.tema-terang .kdu-tab b { color:var(--navy); }
+  html.tema-terang #kdu-ov .kdu-top .kdu-tab { background:rgba(255,255,255,.12); border-color:rgba(255,255,255,.2); color:#fff; } html.tema-terang #kdu-ov .kdu-top .kdu-tab b { color:#fff; }
+  html.tema-terang #kdu-ov .kdu-top .kdu-tab.on { background:#c9973a; border-color:#c9973a; color:#1a1400; } html.tema-terang #kdu-ov .kdu-top .kdu-tab.on b { color:#1a1400; }
+  html.tema-terang .kdu-gt { background:#f8fafc; border-color:#e2e8f0; }
+  html.tema-terang .kdu-gt-s span { background:#fff; border-color:#cbd5e1; color:#94a3b8; } html.tema-terang .kdu-gt-s b { color:#64748b; }
+  html.tema-terang .kdu-gt-s.ok span { background:#dcfce7; border-color:#16a34a; color:#15803d; } html.tema-terang .kdu-gt-s.ok b { color:#15803d; }
+  html.tema-terang .kdu-gt-s.now span, html.tema-terang .kdu-gt-s.tg span { background:#fef3c7; border-color:#d97706; color:#b45309; } html.tema-terang .kdu-gt-s.now b, html.tema-terang .kdu-gt-s.tg b { color:#b45309; }
+  html.tema-terang .kdu-gt-s.wj span { background:#ede9fe; border-color:#7c3aed; color:#6d28d9; } html.tema-terang .kdu-gt-s.wj b { color:#6d28d9; }
+  html.tema-terang .kdu-gt-l { background:#cbd5e1; } html.tema-terang .kdu-gt-k { color:#b45309; }
+  html.tema-terang .kdu-utama { background:#f5f7fa; border-color:#cbd5e1; color:#1a3a5c; }
+  html.tema-terang .kdu-hasil { background:#eff6ff; border-color:#bfdbfe; color:#1e3a8a; } html.tema-terang .kdu-hasil span { color:#1d4ed8; }
+  html.tema-terang .kdu-alasan { color:#64748b; }
+  html.tema-terang .coo-menu-in { background:#141a2a; }
+  html.tema-terang .tb-coo-hotel .tb-hc, html.tema-terang .tb-coo-corp { background:#fff; border-color:#e2e8f0; box-shadow:var(--shadow-card); }
+  html.tema-terang .tb-hc-h b { color:var(--navy); }
+  html.tema-terang .tb-hc-h span { background:#fef3c7; color:#8a6408; } html.tema-terang .tb-hc-h span.ok { background:#dcfce7; color:#15803d; }
+  html.tema-terang .tb-rc { background:#f8fafc; border-color:#e2e8f0; } html.tema-terang .tb-rc.ok { color:#15803d; } html.tema-terang .tb-rc.no { color:#b91c1c; }
+  html.tema-terang #screen-coo .tb-sec { color:#64748b; }
+  html.tema-terang .tema-pilih { background:#fff; }
 </style>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
@@ -3005,6 +3061,7 @@
         <div class="tb-logo"><img id="tb-logo-img" alt="Verse"></div>
         <div class="tb-tt"><b>Tasklist</b><span>Verse Hotels Group</span></div>
         <span id="today-date" style="display:none">15 Apr</span>
+        <button class="tb-tema-btn" onclick="tbGantiTema()" title="Ganti tema Gelap / Terang" aria-label="Ganti tema"><span data-tema-lbl>🌙 Gelap</span></button>
         <button class="notif-bell" onclick="openNotifInbox()" title="Notifikasi" style="position:relative;background:rgba(255,255,255,0.15);border:none;border-radius:50%;width:36px;height:36px;font-size:17px;cursor:pointer;">🔔<span class="notif-badge" style="display:none;position:absolute;top:-3px;right:-3px;background:#ef4444;color:#fff;border-radius:999px;min-width:18px;height:18px;padding:0 5px;font-size:10px;font-weight:800;line-height:18px;text-align:center;"></span></button>
       </div>
       <div class="tb-jam" data-tb-jam><div><span class="tb-jd"></span><span class="tb-jj"><b class="tb-hm"></b><b class="tb-s"></b><small>WIB</small></span></div><span class="tb-live"><i></i><b>LIVE</b></span></div>
@@ -3942,6 +3999,7 @@
         <span class="cm-it" id="coo-loglog-btn" style="display:none;" onclick="openLoginHistory()"><i>📊</i><b>Login History</b></span>
         <span class="cm-it" id="coo-devapproval-btn" style="display:none;" onclick="openDeviceApproval()"><i>📱</i><b>Device Approval</b></span>
         <span class="cm-it" onclick="openBroadcast()"><i>📢</i><b>Broadcast Message</b></span>
+        <span class="cm-it" onclick="tbGantiTema()"><i>🌓</i><b>Tema: <span data-tema-lbl>🌙 Gelap</span></b></span>
         <span class="cm-it keluar" onclick="cooLogout()"><i>🚪</i><b>Keluar</b></span>
       </div>
     </div>
@@ -4062,6 +4120,10 @@
         <p style="font-size:13px;color:var(--gray-400);margin-top:4px;">Verse Group Hotels</p>
       </div>
 
+      <div class="tema-pilih">
+        <div class="tema-pilih-j">🎨 Tema tampilan <small>(tersimpan di HP ini)</small></div>
+        <div class="tema-pilih-b"><button type="button" data-tema-pilih="gelap" onclick="tbSetTema('gelap')">🌙 Gelap</button><button type="button" data-tema-pilih="terang" onclick="tbSetTema('terang')">☀️ Terang</button></div>
+      </div>
       <div style="margin:0 16px;background:var(--white);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow-card);">
         <div class="submit-row">
           <span class="submit-row-label">Laporan Hari Ini</span>
@@ -30430,7 +30492,7 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
   function kduBuka(unit) {
     KDU.unit = unit || ''; KDU.tab = null;
     document.getElementById('kdu-ov')?.remove();
-    const ov = document.createElement('div'); ov.id = 'kdu-ov'; ov.className = 'tb';
+    const ov = document.createElement('div'); ov.id = 'kdu-ov'; ov.dataset.tbs = '1'; if (!window.tbTema || tbTema() === 'gelap') ov.className = 'tb';
     ov.innerHTML = `<div class="kdu-top"><div class="kdu-row"><button class="kdu-back" aria-label="Kembali">←</button><div style="flex:1;min-width:0"><h2></h2><p>Info dari HR</p></div><button class="kdu-back" data-kdu-segar aria-label="Muat ulang" title="Muat ulang">⟳</button></div><div class="kdu-uchips" data-kdu-unit></div><div class="kdu-tabs" data-kdu-tab></div></div><div class="kdu-body"><div class="kdu-kosong">⏳ Memuat…</div></div>`;
     document.body.appendChild(ov);
     ov.querySelector('.kdu-back').onclick = kduTutup;
@@ -32641,15 +32703,40 @@ function hodShowWaModal(msg, waGroupUrl) {
 })();
 </script>
 <script>
-/* 4 Nov 2026 — TEMA B untuk semua jendela melayang (lembar, popup, daftar) yang ditempel ke halaman */
+/* 4 Nov 2026 — TEMA: Gelap (default) / Terang, dipilih per HP. Jendela melayang ikut tema. */
 (function(){
-  const LEWATI = new Set(['screen-public-detail','tb-dlg','app']);
-  const tandai = el => { if (el && el.nodeType === 1 && !LEWATI.has(el.id) && !/^(SCRIPT|STYLE|LINK|META)$/.test(el.tagName) && !el.classList.contains('tb')) el.classList.add('tbo'); };
+  const LEWATI = new Set(['screen-public-detail','tb-dlg','app','hm-select-modal','unit-hotel-modal','unit-role-modal','fbm-hotel-modal']);
+  const PRA = '#screen-splash.active, #screen-login.active, #screen-login-fb.active, #screen-pin.active';
+  let tema = 'gelap'; try { tema = localStorage.getItem('verse_tema') === 'terang' ? 'terang' : 'gelap'; } catch(e) {}
+  window.tbTema = () => tema;
+  const pasangKelas = el => {
+    if (el.dataset.tbo === '1') el.classList.toggle('tbo', tema === 'gelap');
+    if (el.dataset.tbs === '1') el.classList.toggle('tb', tema === 'gelap');
+  };
+  const tandai = (el, statis) => {
+    if (!el || el.nodeType !== 1 || LEWATI.has(el.id) || /^(SCRIPT|STYLE|LINK|META)$/.test(el.tagName)) return;
+    if (el.dataset.tbs === '1' || el.classList.contains('tb')) { el.dataset.tbs = '1'; pasangKelas(el); return; }
+    if (!statis && document.querySelector(PRA)) return;   // jendela saat login/PIN tetap terang (di atas layar pembuka)
+    el.dataset.tbo = '1'; pasangKelas(el);
+  };
+  window.tbSetTema = function(t) {
+    tema = t === 'terang' ? 'terang' : 'gelap';
+    try { localStorage.setItem('verse_tema', tema); } catch(e) {}
+    document.documentElement.classList.toggle('tema-terang', tema === 'terang');
+    document.querySelectorAll('.screen').forEach(sc => { if (sc.classList.contains('tb')) sc.dataset.tbs = '1'; if (sc.dataset.tbs === '1') pasangKelas(sc); });
+    document.querySelectorAll('[data-tbo="1"],[data-tbs="1"]').forEach(pasangKelas);
+    document.querySelectorAll('[data-tema-lbl]').forEach(x => x.textContent = tema === 'gelap' ? '🌙 Gelap' : '☀️ Terang');
+    document.querySelectorAll('[data-tema-pilih]').forEach(x => x.classList.toggle('on', x.getAttribute('data-tema-pilih') === tema));
+    const m = document.querySelector('meta[name="theme-color"]'); if (m) m.setAttribute('content', tema === 'gelap' ? '#141a2a' : '#1a3a5c');
+  };
+  window.tbGantiTema = () => { tbSetTema(tema === 'gelap' ? 'terang' : 'gelap'); try { showToast(tema === 'gelap' ? '🌙 Tema gelap' : '☀️ Tema terang'); } catch(e) {} };
   const mulai = () => {
-    [...document.body.children].forEach(tandai);
-    const app = document.getElementById('app'); if (app) [...app.children].forEach(el => { if (!el.classList.contains('screen')) tandai(el); });
-    new MutationObserver(ms => ms.forEach(m => m.addedNodes.forEach(tandai))).observe(document.body, { childList:true });
-    if (app) new MutationObserver(ms => ms.forEach(m => m.addedNodes.forEach(n => { if (n.nodeType === 1 && !n.classList.contains('screen')) tandai(n); }))).observe(app, { childList:true });
+    document.querySelectorAll('.screen.tb').forEach(sc => sc.dataset.tbs = '1');
+    [...document.body.children].forEach(el => tandai(el, true));
+    const app = document.getElementById('app'); if (app) [...app.children].forEach(el => { if (!el.classList.contains('screen')) tandai(el, true); });
+    new MutationObserver(ms => ms.forEach(m => m.addedNodes.forEach(n => tandai(n, false)))).observe(document.body, { childList:true });
+    if (app) new MutationObserver(ms => ms.forEach(m => m.addedNodes.forEach(n => { if (n.nodeType === 1 && !n.classList.contains('screen')) tandai(n, false); }))).observe(app, { childList:true });
+    tbSetTema(tema);
   };
   if (document.body) mulai(); else document.addEventListener('DOMContentLoaded', mulai);
 })();
