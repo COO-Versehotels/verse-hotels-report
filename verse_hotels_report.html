@@ -2773,6 +2773,9 @@
   .gr-ol b { font-size:11.5px; font-weight:700; color:#e2e8f0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .gr-lg { width:24px; height:24px; border-radius:7px; flex:none; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:12px; background:#fff; overflow:hidden; }
   .gr-lg img { width:100%; height:100%; object-fit:contain; padding:2px; }
+  .gr-lgw { display:flex; align-items:center; justify-content:flex-start; width:100%; height:30px; }
+  .gr-lgw img { display:block; width:100%; max-width:118px; height:100%; object-fit:contain; object-position:left center; }
+  .gr-lgw .lg-t { display:none; } html.tema-terang .gr-lgw .lg-g { display:none; } html.tema-terang .gr-lgw .lg-t { display:block; }
   .gr-ov { display:flex; align-items:baseline; gap:7px; margin-top:6px; }
   .gr-ov span { font-size:22px; font-weight:900; color:#fff; font-variant-numeric:tabular-nums; }
   .gr-ov i { font-style:normal; font-size:11px; font-weight:800; }
@@ -2858,6 +2861,22 @@
   html.tema-terang .tb-rc { background:#f8fafc; border-color:#e2e8f0; } html.tema-terang .tb-rc.ok { color:#15803d; } html.tema-terang .tb-rc.no { color:#b91c1c; }
   html.tema-terang #screen-coo .tb-sec { color:#64748b; }
   html.tema-terang .tema-pilih { background:#fff; }
+  @media (min-width:1024px) {
+    html.tema-terang #screen-coo { padding-left:236px; }
+    html.tema-terang #screen-coo .coo-tb { background:linear-gradient(135deg,var(--navy),#0e2340) !important; padding:16px 26px !important; }
+    html.tema-terang #screen-coo .coo-tb .topbar-title p { color:#cbd5e1; }
+  }
+  html.tema-terang #submit-done { color:#15803d !important; }
+  html.tema-terang .rc-coo-hotel-pct { color:#15803d; }
+  html.tema-terang .pl-sep, html.tema-terang .pl-chip.kosong, html.tema-terang .bc-glbl, html.tema-terang .kdu-fc, html.tema-terang .kdu-asp small, html.tema-terang .kdu-kosong, html.tema-terang .kdu-m .j, html.tema-terang .dva-badge { color:#64748b; }
+  html.tema-terang .submit-row-value[style*="var(--green)"], html.tema-terang #loglog-stat-today { color:#15803d !important; }
+  html.tema-terang .submit-row-value[style*="var(--red)"], html.tema-terang #submit-not, html.tema-terang #submit-incomplete-section, html.tema-terang .tb-wajib-n { color:#c0392b !important; }
+  html.tema-terang #jv-date-strip > [style*="#FFF3E0" i], html.tema-terang #jv-date-strip > [style*="#FFF3E0" i] * { color:#8a6408 !important; }
+  html.tema-terang #jv-date-strip > [style*="#F0F0EE" i], html.tema-terang #jv-date-strip > [style*="#F0F0EE" i] * { color:#5f6068 !important; }
+  html.tema-terang #jv-member-list [style*="#9A9AA4" i], html.tema-terang .bc-lbl [style*="#94a3b8" i] { color:#64748b !important; }
+  html.tema-terang #screen-coo p[style*="var(--red)"] { color:#c0392b !important; }
+  html.tema-terang .badge-amber, html.tema-terang .task-number.inprogress, html.tema-terang .status-btn.selected-amber { color:#8a5a00; }
+  html.tema-terang .badge-green, html.tema-terang .task-number.done, html.tema-terang .status-btn.selected-green { color:#13753b; }
 </style>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
@@ -31054,6 +31073,8 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
   const GRPS_API_URL = 'https://script.google.com/macros/s/AKfycbz3b0dZeU2TMYT2x9V9SjhE8rlK5aDDhJ1hM2OnBrX1KawBpFkBCSu7kqF5pbT2eGWSyQ/exec';
   const GRPS_API_KEY_FE = 'verse-grps-rating-2026';
 
+  // Logo resmi platform (sumber: GRPS Dashboard otaLogos, file di /ota-logo/): dipangkas, tinggi maks 48px, latar transparan; versi gelap = teks gelap jadi putih
+  window.GRPS_LOGO = {"terang":{"google":"/ota-logo/google-terang.webp","tripadvisor":"/ota-logo/tripadvisor-terang.webp","traveloka":"/ota-logo/traveloka-terang.webp","agoda":"/ota-logo/agoda-terang.webp","booking":"/ota-logo/booking-terang.webp","tiket":"/ota-logo/tiket-terang.webp","trip":"/ota-logo/trip-terang.webp"},"gelap":{"google":"/ota-logo/google-gelap.webp","tripadvisor":"/ota-logo/tripadvisor-gelap.webp","traveloka":"/ota-logo/traveloka-gelap.webp","agoda":"/ota-logo/agoda-gelap.webp","booking":"/ota-logo/booking-gelap.webp","tiket":"/ota-logo/tiket-gelap.webp","trip":"/ota-logo/trip-gelap.webp"}};
   const GRPS_WARNA = { google:['#4285F4','G'], tripadvisor:['#00AA6C','T'], traveloka:['#0194F3','T'], agoda:['#E4002B','A'], booking:['#003580','B'], tiket:['#0064D2','t'], trip:['#287DFA','T'] };
   async function grpsMaybeShowHomeCard() {
     const card = document.getElementById('grps-home-card');
@@ -31084,10 +31105,10 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
           }
           // 4 Nov 2026 (tema B): kotak rating dengan lencana platform, nilai besar, perubahan vs tgl 1
           const W = GRPS_WARNA[p.key] || ['#334155', (p.label || '?').charAt(0)];
-          const logo = (window.GRPS_LOGO || {})[p.key];
-          const lencana = logo ? '<span class="gr-lg"><img src="' + logo + '" alt=""></span>' : '<span class="gr-lg" style="background:' + W[0] + ';color:#fff">' + jvEsc(W[1]) + '</span>';
+          const LG = window.GRPS_LOGO || {}; const logo = (LG.gelap || {})[p.key], logoT = (LG.terang || {})[p.key] || logo;
+          const lencana = logo ? '<span class="gr-lgw" title="' + jvEsc(p.label) + '"><img class="lg-g" src="' + logo + '" alt="' + jvEsc(p.label) + '"><img class="lg-t" src="' + logoT + '" alt="' + jvEsc(p.label) + '"></span>' : '<span class="gr-lg" style="background:' + W[0] + ';color:#fff">' + jvEsc(W[1]) + '</span>';
           const dc = color === '#2ecc71' ? '#86efac' : color === '#e74c3c' ? '#fca5a5' : '#94a3b8';
-          return '<div class="gr-ot"><div class="gr-ol">' + lencana + '<b>' + jvEsc(p.label) + '</b></div>' +
+          return '<div class="gr-ot"><div class="gr-ol">' + lencana + (logo ? '' : '<b>' + jvEsc(p.label) + '</b>') + '</div>' +
             '<div class="gr-ov"><span>' + jvEsc(p.score) + '</span><i style="color:' + dc + '">' + arrow + '</i></div></div>';
         }).join('');
       }
@@ -32703,11 +32724,11 @@ function hodShowWaModal(msg, waGroupUrl) {
 })();
 </script>
 <script>
-/* 4 Nov 2026 — TEMA: Gelap (default) / Terang, dipilih per HP. Jendela melayang ikut tema. */
+/* 4 Nov 2026 — TEMA: Terang (default) / Gelap, dipilih per HP (kunci verse_tema_pilih, hanya tersimpan bila user memilih). */
 (function(){
   const LEWATI = new Set(['screen-public-detail','tb-dlg','app','hm-select-modal','unit-hotel-modal','unit-role-modal','fbm-hotel-modal']);
   const PRA = '#screen-splash.active, #screen-login.active, #screen-login-fb.active, #screen-pin.active';
-  let tema = 'gelap'; try { tema = localStorage.getItem('verse_tema') === 'terang' ? 'terang' : 'gelap'; } catch(e) {}
+  let tema = 'terang'; try { tema = localStorage.getItem('verse_tema_pilih') === 'gelap' ? 'gelap' : 'terang'; } catch(e) {}
   window.tbTema = () => tema;
   const pasangKelas = el => {
     if (el.dataset.tbo === '1') el.classList.toggle('tbo', tema === 'gelap');
@@ -32720,8 +32741,11 @@ function hodShowWaModal(msg, waGroupUrl) {
     el.dataset.tbo = '1'; pasangKelas(el);
   };
   window.tbSetTema = function(t) {
-    tema = t === 'terang' ? 'terang' : 'gelap';
-    try { localStorage.setItem('verse_tema', tema); } catch(e) {}
+    tema = t === 'gelap' ? 'gelap' : 'terang';
+    try { localStorage.setItem('verse_tema_pilih', tema); } catch(e) {}
+    terapkan();
+  };
+  const terapkan = function() {
     document.documentElement.classList.toggle('tema-terang', tema === 'terang');
     document.querySelectorAll('.screen').forEach(sc => { if (sc.classList.contains('tb')) sc.dataset.tbs = '1'; if (sc.dataset.tbs === '1') pasangKelas(sc); });
     document.querySelectorAll('[data-tbo="1"],[data-tbs="1"]').forEach(pasangKelas);
@@ -32736,7 +32760,7 @@ function hodShowWaModal(msg, waGroupUrl) {
     const app = document.getElementById('app'); if (app) [...app.children].forEach(el => { if (!el.classList.contains('screen')) tandai(el, true); });
     new MutationObserver(ms => ms.forEach(m => m.addedNodes.forEach(n => tandai(n, false)))).observe(document.body, { childList:true });
     if (app) new MutationObserver(ms => ms.forEach(m => m.addedNodes.forEach(n => { if (n.nodeType === 1 && !n.classList.contains('screen')) tandai(n, false); }))).observe(app, { childList:true });
-    tbSetTema(tema);
+    terapkan();
   };
   if (document.body) mulai(); else document.addEventListener('DOMContentLoaded', mulai);
 })();
