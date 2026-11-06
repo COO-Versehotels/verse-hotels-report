@@ -1627,6 +1627,11 @@
   .kdu-isih { font-weight:800; color:#1a3a5c; font-size:13.5px; margin-bottom:6px; }
   .kdu-asp { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:6px 0; border-bottom:1px dashed #eef0f4; font-size:12.5px; }
   .kdu-asp small { display:block; font-size:10.5px; color:#94a3b8; }
+  .kdu-skala { display:flex; flex-wrap:wrap; gap:5px; margin:2px 0 6px; } .kdu-skala i { font-style:normal; font-size:11px; border:1px solid #cbd5e1; background:#f8fafc; border-radius:999px; padding:3px 8px; color:#334155; } .kdu-skala b { color:#0f172a; }
+  .kdu-kel { display:flex; align-items:center; gap:7px; font-size:11px; font-weight:800; letter-spacing:1.2px; color:#1d4ed8; margin:10px 0 2px; padding-bottom:4px; border-bottom:1px solid #cbd5e1; } .kdu-kel span { background:#1d4ed8; color:#fff; border-radius:5px; padding:0 6px; letter-spacing:0; }
+  .kdu-asp small.kdu-ket { color:#64748b; margin-top:1px; }
+  :is(.tb,.tbo) .kdu-skala i { background:#1c2438; border-color:#33405e; color:#cbd5e1; } :is(.tb,.tbo) .kdu-skala b { color:#fff; }
+  :is(.tb,.tbo) .kdu-kel { color:#93c5fd; border-bottom-color:#33405e; } :is(.tb,.tbo) .kdu-asp small.kdu-ket { color:#8b98b4; }
   .kdu-sc { display:flex; gap:4px; flex-shrink:0; } .kdu-sc i { font-style:normal; width:30px; height:30px; border-radius:8px; border:1px solid #cbd5e1; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; color:#475569; background:#fff; cursor:pointer; }
   .kdu-sc i.on { background:#1a3a5c; color:#fff; border-color:#1a3a5c; }
   .kdu-rt { text-align:right; font-size:13px; color:#1a3a5c; margin-top:6px; }
@@ -30645,9 +30650,19 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
 
   // ---------- Interview Form, Diskusi kandidat & jadwal interview HM (27 Okt 2026) ----------
   const KDU_AKSI_URL = 'https://bfqxsbyqaewdjstkrmsb.supabase.co/rest/v1/rpc/rec_kandidat_aksi';
-  const KDU_ASPEK = [['appearance','Appearance'],['personality','Personality'],['manner','Manner'],['language','Language'],['motivation','Motivation'],
-                     ['general','General Knowledge'],['technical','Technical Knowledge'],['tech_bg','Technical Background'],['school','School Background']];
-  const KDU_RM = { not_suitable:['❌','Not Suitable'], considered:['🤔','Can Be Considered'], suitable:['✅','Suitable'], potensial:['⭐','Potensial'] };
+  // 6 Nov 2026: 9 poin penilaian baru (sama dengan aplikasi Recruitment) — language → Communication, tech_bg → Relevant Experience
+  const KDU_ASPEK = [
+    ['appearance','Appearance & Grooming','Kerapian, kebersihan, penampilan sesuai standar hotel','A'],
+    ['manner','Attitude & Manner','Sopan santun, sikap, bahasa tubuh','A'],
+    ['language','Communication','Bicara jelas & terstruktur, bahasa Inggris','A'],
+    ['guest','Guest Service Mindset','Sikap melayani & keramahan pada tamu','A'],
+    ['technical','Technical Knowledge','Pemahaman tugas posisi (SOP, sistem, standar)','B'],
+    ['tech_bg','Relevant Experience','Pengalaman di posisi / bidang yang sama','B'],
+    ['problem','Problem Solving','Cara menangani situasi & komplain tamu','B'],
+    ['general','General Knowledge','Wawasan umum','B'],
+    ['motivation','Motivation & Commitment','Alasan melamar, rencana karier, kesiapan jangka panjang','C']];
+  const KDU_KEL = { A:'KESAN & SIKAP', B:'KEMAMPUAN', C:'KECOCOKAN' };
+  const KDU_RM = { not_suitable:['❌','Not Suitable'], considered:['🤔','Can Be Considered'], suitable:['✅','Suitable'], potensial:['⭐','Potential'] };
   const KDU_TF = [['hr','HR','First Interview'],['hm','HM','Second Interview'],['corp','Corp','Third Interview'],['coo','COO/CEO','Fourth Interview']];
   const KDU_KODE = ['','Not Suitable','Below Average','Average','Good','Outstanding'];
   function kduKoma(n) { return n == null ? '–' : String(n).replace('.', ','); }
@@ -30834,10 +30849,13 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
       else {
         const f = b.ada, ref = t === 'hm' ? [['hr','HR']] : [['hr','HR'],['hm','HM']];
         h += `<div class="kdu-isi"><div class="kdu-isih">${f ? '✏️ Ubah' : '✍️ Isi'} kolom ${lbl}${t === 'hm' ? ' <span style="color:#b91c1c">(wajib)</span>' : ' <span style="color:#64748b">(opsional)</span>'}</div>`;
-        KDU_ASPEK.forEach(([a, l]) => {
-          const pv = ref.map(([rt, rl]) => { const v = nil(kduForm(k, rt), a); return v ? `${rl} ${v}` : ''; }).filter(Boolean).join(' · ');
+        h += `<div class="kdu-skala">${[1,2,3,4,5].map(n => `<i><b>${n}</b> ${KDU_KODE[n]}</i>`).join('')}</div>`;
+        let kel = '';
+        KDU_ASPEK.forEach(([a, l, ket, g]) => {
+          const pv = ref.map(([rt, rl]) => { const v = nil(kduForm(k, rt), a); return `${rl} ${v || '–'}`; }).join(' · ');
           const cur = nil(f, a);
-          h += `<div class="kdu-asp"><div><span>${l}</span>${pv ? `<small>${pv}</small>` : ''}</div><div class="kdu-sc" data-a="${a}">${[1,2,3,4,5].map(n => `<i data-n="${n}" class="${cur === n ? 'on' : ''}" title="${KDU_KODE[n]}">${n}</i>`).join('')}</div></div>`;
+          if (g !== kel) { kel = g; h += `<div class="kdu-kel"><span>${g}</span>${KDU_KEL[g]}</div>`; }
+          h += `<div class="kdu-asp"><div><span>${l}</span><small class="kdu-ket">${ket}</small>${pv ? `<small>${pv}</small>` : ''}</div><div class="kdu-sc" data-a="${a}">${[1,2,3,4,5].map(n => `<i data-n="${n}" class="${cur === n ? 'on' : ''}" title="${KDU_KODE[n]}">${n}</i>`).join('')}</div></div>`;
         });
         h += `<div class="kdu-rt">Rata-rata: <b data-rata>${f ? kduKoma(f.rata) : '–'}</b></div>`;
         h += `<div class="kdu-lbl">Remarks${t === 'hm' ? ' (rekomendasi ke HR)' : ''}</div><div class="kdu-rm">${Object.entries(KDU_RM).map(([kk, [ic, l]]) => `<button data-rm="${kk}" class="${f && f.remarks === kk ? 'on' : ''}">${ic} ${l}</button>`).join('')}</div>`;
