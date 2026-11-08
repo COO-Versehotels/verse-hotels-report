@@ -30546,6 +30546,8 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
   }
   function kduInisial(n) { return String(n || '?').trim().split(/\s+/).slice(0, 2).map(w => w[0] || '').join('').toUpperCase() || '?'; }
   function kduFoto(k) {
+    // 8 Nov 2026: foto yang sudah dipotong dari CV Word dipakai langsung
+    if (k.foto_url && /res\.cloudinary\.com/.test(k.foto_url) && k.foto_url.indexOf('/upload/') > 0) return k.foto_url.replace('/upload/', '/upload/w_120,h_120,c_fill,g_face,q_auto,f_jpg/');
     const u = k.cv_url;
     if (!u || u.indexOf('/upload/') < 0 || k.foto_hal === 0 || !/res\.cloudinary\.com/.test(u)) return null;
     const pdf = /\.pdf(\?|$)/i.test(u);
