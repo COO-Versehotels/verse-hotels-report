@@ -2765,6 +2765,10 @@
   .umr-ak { display:flex; gap:6px; flex:none; } .umr-b { border:none; background:#eef2f6; color:#334155; border-radius:7px; padding:6px 10px; font:inherit; font-size:12px; font-weight:700; cursor:pointer; } .umr-b.umr-h { background:#fde8e8; color:#b91c1c; }
   .umr-ku { font-size:11px; color:#94a3b8; flex:none; }
   @media (max-width:480px) { .umr-row { flex-wrap:wrap; } .umr-jb { flex-basis:100%; } .umr-ak { margin-left:auto; } }
+  .umr-top { position:sticky; top:0; z-index:3; display:flex; align-items:center; justify-content:space-between; gap:10px; background:inherit; padding:16px 0 10px; margin-bottom:2px; border-bottom:1px solid #eef2f6; }
+  #umr-overlay .umr-box { background-clip:padding-box; } .umr-top { background:#fff; }
+  .umr-x { flex:none; border:none; background:#eef2f6; color:#334155; border-radius:10px; padding:8px 12px; font:inherit; font-size:13px; font-weight:800; cursor:pointer; }
+  html:not(.tema-terang) #umr-overlay .umr-top { background:#141b2e; border-color:#2b3652; } html:not(.tema-terang) #umr-overlay .umr-x { background:#2b3652; color:#f1f5f9; } html:not(.tema-terang) #umr-overlay .umr-top > div { color:#f1f5f9 !important; }
   html:not(.tema-terang) #umr-overlay .umr-box { background:#141b2e !important; color:#e2e8f0; }
   html:not(.tema-terang) #umr-overlay .umr-cari { background:#0f1422; border-color:#33405e; color:#e2e8f0; }
   html:not(.tema-terang) #umr-overlay .umr-grp { background:#1c2438; border-color:#33405e; } html:not(.tema-terang) #umr-overlay .umr-gh { background:#232d45; border-color:#33405e; }
@@ -4779,6 +4783,7 @@
       const el = document.getElementById(id);
       if (el) el.style.display = 'none';
     });
+    try { _logBukaApp(); } catch(e) {}
     if (!_goHomeOrResume()) showToast('👋 Selamat datang kembali, ' + currentRole.replace(' Corporate','') + '!');
     setTimeout(updateVisitSectionLogo, 100); setTimeout(saveTeamLocation, 500); setTimeout(startBackgroundGpsTracking, 800); setTimeout(registerPushNotifications, 1000);
     return true;
@@ -5036,7 +5041,7 @@
       fetch(SUPA_URL + '/rest/v1/user_login_log', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY, 'Prefer': 'return=minimal' },
-        body: JSON.stringify({ user_name: s.role + ' (intip ' + role + ')', role: s.role, hotel: 'Corporate', device_info: _parseDeviceInfo(), user_agent: (navigator.userAgent || '').substring(0, 500) })
+        body: JSON.stringify({ user_name: s.role + ' (intip ' + role + ')', role: s.role, hotel: 'Corporate', jenis: 'intip', device_info: _parseDeviceInfo(), user_agent: (navigator.userAgent || '').substring(0, 500) })
       }).catch(() => {});
     } catch(e) {}
     window._peekMode = { role: role, by: s.role };
@@ -7689,11 +7694,25 @@
     return device + ' · ' + os + ' · ' + browser;
   }
 
-  async function logUserLogin() {
+  // Buka app dengan sesi tersimpan (tanpa PIN) juga dicatat — maks 1x / 30 menit per jabatan di HP ini
+  function _logBukaApp() {
+    try {
+      if (window._peekMode || !currentRole || currentRole === 'COO' || currentRole === 'CEO') return;
+      if (typeof _isLinkPublik === 'function' && _isLinkPublik()) return;
+      const k = 'verse_log_buka', o = JSON.parse(localStorage.getItem(k) || '{}');
+      if (o.role === currentRole && Date.now() - (o.ts || 0) < 30 * 60000) return;
+      localStorage.setItem(k, JSON.stringify({ role: currentRole, ts: Date.now() }));
+      logUserLogin('buka');
+    } catch(e) {}
+  }
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') _logBukaApp(); });
+  async function logUserLogin(jenis) {
     if (window._peekMode) return;
     if (!currentRole) return;
     try {
+      if (jenis !== 'buka') localStorage.setItem('verse_log_buka', JSON.stringify({ role: currentRole, ts: Date.now() }));
       const payload = {
+        jenis: jenis === 'buka' ? 'buka' : 'pin',
         user_name: currentUserName || '',
         role: currentRole,
         hotel: currentHotel || '',
@@ -7774,6 +7793,10 @@
 
       let data = await resp.json();
 
+      const JN = window.LOGLOG_JENIS || 'semua';
+      const jumlahJenis = { semua: data.length, pin: 0, buka: 0, intip: 0 };
+      data.forEach(r => { const j = r.jenis || 'pin'; if (jumlahJenis[j] != null) jumlahJenis[j]++; });
+      if (JN !== 'semua') data = data.filter(r => (r.jenis || 'pin') === JN);
       // Apply text filter (client-side, case-insensitive)
       if (filterText) {
         data = data.filter(r => {
@@ -7784,7 +7807,7 @@
 
       // Update stats
       const total = data.length;
-      const uniqueUsers = new Set(data.map(r => (r.user_name || r.role) + '|' + r.role)).size;
+      const uniqueUsers = new Set(data.filter(r => r.jenis !== 'intip').map(r => r.role)).size;
       const todayStr = new Date(Date.now() + 7*3600000).toISOString().split('T')[0];
       const todayCount = data.filter(r => {
         const loginDate = new Date(new Date(r.login_at).getTime() + 7*3600000).toISOString().split('T')[0];
@@ -7794,13 +7817,15 @@
       document.getElementById('loglog-stat-unique').textContent = uniqueUsers;
       document.getElementById('loglog-stat-today').textContent = todayCount;
 
-      if (data.length === 0) {
+      if (data.length === 0 && JN === 'semua') {
         tableEl.innerHTML = '<div style="padding:30px;text-align:center;color:var(--gray-400);font-size:13px;">📭 Tidak ada data login pada periode ini.</div>';
         return;
       }
 
       // Render rows
-      let html = '<div style="background:var(--gray-50);padding:10px 12px;display:grid;grid-template-columns:90px 1fr 100px;gap:8px;font-size:10px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.5px;border-bottom:1px solid var(--gray-200);">';
+      const chipJ = (k, l) => `<button type="button" onclick="window.LOGLOG_JENIS='${k}';loadLoginHistory()" style="font:inherit;font-size:12px;font-weight:700;padding:7px 12px;border-radius:999px;border:1px solid ${JN===k?'var(--navy)':'var(--gray-200)'};background:${JN===k?'var(--navy)':'transparent'};color:${JN===k?'#fff':'var(--gray-600)'};cursor:pointer;">${l} (${jumlahJenis[k]})</button>`;
+      let html = '<div style="display:flex;flex-wrap:wrap;gap:6px;padding:10px 12px;">' + chipJ('semua','Semua') + chipJ('pin','🔑 Login PIN') + chipJ('buka','📱 Buka app') + chipJ('intip','👁 Intip COO') + '</div>';
+      html += '<div style="background:var(--gray-50);padding:10px 12px;display:grid;grid-template-columns:90px 1fr 100px;gap:8px;font-size:10px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.5px;border-bottom:1px solid var(--gray-200);">';
       html += '<div>Waktu (WIB)</div><div>User / Role / Hotel</div><div>Device</div>';
       html += '</div>';
 
@@ -7825,7 +7850,7 @@
             <div style="color:var(--gray-600);font-weight:600;line-height:1.4;">${timeLabel}</div>
             <div>
               <div style="font-weight:700;color:var(--navy);font-size:12px;">${userName}</div>
-              <div style="color:#7c3aed;font-size:10px;font-weight:600;margin-top:2px;">🎫 ${role}</div>
+              <div style="color:#7c3aed;font-size:10px;font-weight:600;margin-top:2px;">🎫 ${role} <span style="margin-left:6px;font-size:10px;font-weight:700;padding:1px 7px;border-radius:6px;background:${r.jenis==='buka'?'#e0f2fe':r.jenis==='intip'?'#f3e8ff':'#dcfce7'};color:${r.jenis==='buka'?'#0369a1':r.jenis==='intip'?'#7c3aed':'#15803d'};">${r.jenis==='buka'?'📱 Buka app':r.jenis==='intip'?'👁 Intip':'🔑 Login PIN'}</span></div>
               ${hotel && hotel !== '-' && hotel !== 'Corporate' ? `<div style="color:var(--gray-500);font-size:10px;margin-top:1px;">🏨 ${hotel}</div>` : ''}
             </div>
             <div style="font-size:9px;color:var(--gray-500);font-weight:500;line-height:1.4;">${device}</div>
@@ -29387,8 +29412,9 @@ function _arsTglLabel(t){ const d=new Date(t+'T00:00:00Z'); const h=['Minggu','S
     ov.id = 'umr-overlay';
     ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;padding:16px;z-index:100000;';
     ov.innerHTML = `
-      <div class="umr-box" style="background:white;border-radius:18px;padding:20px;max-width:620px;width:100%;max-height:90vh;overflow-y:auto;">
-        <div style="font-size:18px;font-weight:800;color:var(--navy);">👥 Manage User</div>
+      <div class="umr-box" style="background:white;border-radius:18px;padding:0 20px 20px;max-width:620px;width:100%;max-height:90vh;overflow-y:auto;">
+        <div class="umr-top"><div style="font-size:18px;font-weight:800;color:var(--navy);">👥 Manage User</div>
+          <button type="button" class="umr-x" onclick="document.getElementById('umr-overlay').remove()" aria-label="Tutup">✕ Tutup</button></div>
         <p class="umr-ket">PIN dikelompokkan per unit. Satu jabatan boleh punya beberapa PIN (beberapa orang). Perubahan berlaku saat login berikutnya. PIN akun <b>COO</b> adalah kunci utama — tidak dapat dihapus atau diubah dari sini.</p>
         <input id="umr-cari" class="umr-cari" placeholder="🔍 Cari nama, jabatan, atau PIN…" oninput="renderReportUsers()">
         <div id="umr-list" style="font-size:13px;color:#555;">Memuat…</div>
@@ -29410,6 +29436,7 @@ function _arsTglLabel(t){ const d=new Date(t+'T00:00:00Z'); const h=['Minggu','S
         </div>
         <button onclick="document.getElementById('umr-overlay').remove()" style="width:100%;margin-top:12px;padding:11px;background:#eee;color:#555;border:none;border-radius:8px;">Tutup</button>
       </div>`;
+    ov.addEventListener('click', e => { if (e.target === ov) ov.remove(); });
     document.body.appendChild(ov);
     muatReportUsers();
   }
