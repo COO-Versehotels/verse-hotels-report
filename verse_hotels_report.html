@@ -2705,6 +2705,32 @@
   :is(.tb,.tbo) #rc-coo-section-body [style*="color:#6b7280" i] { color:#cbd5e1 !important; border-top-color:#2a3145 !important; }
   :is(.tb,.tbo) #rc-coo-section-body b[style*="#1a3a5c" i] { color:#fff !important; }
   #coo-back-btn[style*="hidden" i] { display:none; }
+  /* 9 Nov 2026: Manage User per unit */
+  .umr-ket { font-size:12px; color:#64748b; margin:6px 0 10px; line-height:1.45; }
+  .umr-cari { width:100%; padding:10px 12px; border:1px solid #d6dbe4; border-radius:10px; font:inherit; font-size:13px; margin-bottom:10px; box-sizing:border-box; }
+  .umr-grp { border:1px solid #e2e8f0; border-radius:14px; margin-bottom:10px; overflow:hidden; background:#fff; }
+  .umr-gh { display:flex; align-items:center; gap:8px; padding:9px 12px; background:#f1f5f9; border-bottom:1px solid #e2e8f0; }
+  .umr-gh b { font-size:14px; color:#0f172a; flex:0 1 auto; min-width:0; line-height:1.25; } .umr-gh small { color:#64748b; font-size:11.5px; white-space:nowrap; } .umr-tb { white-space:nowrap; }
+  .umr-lg { width:28px; height:28px; border-radius:7px; background:#fff; display:inline-flex; align-items:center; justify-content:center; box-shadow:0 0 0 1px #e2e8f0; flex:none; overflow:hidden; }
+  .umr-lg img { width:100%; height:100%; object-fit:contain; padding:2px; box-sizing:border-box; } .umr-lg-c { font-size:15px; }
+  .umr-tb { margin-left:auto; border:none; background:#1a3a5c; color:#fff; border-radius:8px; padding:6px 10px; font:inherit; font-size:12px; font-weight:700; cursor:pointer; }
+  .umr-row { display:flex; align-items:center; gap:10px; padding:9px 12px; border-top:1px solid #eef2f6; }
+  .umr-row:first-of-type { border-top:none; }
+  .umr-jb { flex:1; min-width:0; font-size:13px; font-weight:700; color:#0f172a; } .umr-jb small { display:block; font-weight:500; font-size:12px; color:#475569; margin-top:1px; } .umr-jb small.umr-tn { color:#b45309; }
+  .umr-row-kosong .umr-jb { color:#94a3b8; } .umr-row-kosong .umr-jb small { color:#94a3b8; font-style:italic; }
+  .umr-pin { font-family:ui-monospace,Menlo,Consolas,monospace; font-weight:800; font-size:14px; letter-spacing:1px; background:#eef2ff; color:#1e3a8a; border-radius:7px; padding:4px 8px; flex:none; }
+  .umr-ak { display:flex; gap:6px; flex:none; } .umr-b { border:none; background:#eef2f6; color:#334155; border-radius:7px; padding:6px 10px; font:inherit; font-size:12px; font-weight:700; cursor:pointer; } .umr-b.umr-h { background:#fde8e8; color:#b91c1c; }
+  .umr-ku { font-size:11px; color:#94a3b8; flex:none; }
+  @media (max-width:480px) { .umr-row { flex-wrap:wrap; } .umr-jb { flex-basis:100%; } .umr-ak { margin-left:auto; } }
+  html:not(.tema-terang) #umr-overlay .umr-box { background:#141b2e !important; color:#e2e8f0; }
+  html:not(.tema-terang) #umr-overlay .umr-cari { background:#0f1422; border-color:#33405e; color:#e2e8f0; }
+  html:not(.tema-terang) #umr-overlay .umr-grp { background:#1c2438; border-color:#33405e; } html:not(.tema-terang) #umr-overlay .umr-gh { background:#232d45; border-color:#33405e; }
+  html:not(.tema-terang) #umr-overlay .umr-gh b, html:not(.tema-terang) #umr-overlay .umr-jb { color:#f1f5f9; } html:not(.tema-terang) #umr-overlay .umr-jb small { color:#aab4c8; }
+  html:not(.tema-terang) #umr-overlay .umr-row { border-color:#2b3652; } html:not(.tema-terang) #umr-overlay .umr-pin { background:#1e2a4a; color:#c7d2fe; }
+  html:not(.tema-terang) #umr-overlay .umr-b { background:#2b3652; color:#e2e8f0; } html:not(.tema-terang) #umr-overlay .umr-b.umr-h { background:#3a1d1d; color:#fca5a5; }
+  html:not(.tema-terang) #umr-overlay .umr-form { background:#1c2438 !important; } html:not(.tema-terang) #umr-overlay .umr-row-kosong .umr-jb, html:not(.tema-terang) #umr-overlay .umr-row-kosong .umr-jb small { color:#7c8aa8; } html:not(.tema-terang) #umr-overlay .umr-jb small.umr-tn { color:#fbbf24; } html:not(.tema-terang) #umr-overlay .umr-pin { color:#e0e7ff; background:#26345c; } html:not(.tema-terang) #umr-overlay .umr-ket { color:#aab4c8; }
+  .pv-nav { position:absolute; top:50%; transform:translateY(-50%); width:44px; height:64px; border:none; border-radius:12px; background:rgba(255,255,255,.16); color:#fff; font-size:34px; line-height:1; cursor:pointer; z-index:2; }
+  .pv-nav:active { background:rgba(255,255,255,.3); }
   .tb-dlg { position:fixed; inset:0; z-index:100005; background:rgba(0,0,0,.6); display:flex; align-items:center; justify-content:center; padding:20px; }
   .tb-dlg-k { width:100%; max-width:380px; background:#141a2a; border:1px solid #2a3145; border-radius:18px; padding:18px; color:#f1f5f9; box-shadow:0 20px 50px rgba(0,0,0,.5); font-family:inherit; }
   .tb-dlg-k p { font-size:14px; line-height:1.5; white-space:pre-line; margin:0 0 14px; }
@@ -4670,7 +4696,7 @@
   // Saat halaman dimuat ulang: kalau ada sesi hari ini + catatan kamera, langsung pulihkan
   function _camAutoResumeOnLoad() {
     if (document.getElementById('device-gate-overlay')) return;
-    if (new URLSearchParams(location.search).get('view')) return;
+    if (_isLinkPublik()) return;
     const session = loadSessionToday();
     if (!session || currentRole) return;
     let m = null;
@@ -5070,10 +5096,15 @@
     if (old) old.remove();
   }
 
+  // 9 Nov 2026: link laporan di WA (?r=kode, ?d=…, ?view=detail) bisa dibuka siapa saja (mis. Owner) tanpa app,
+  // tanpa Device Approval & tanpa PIN — hanya menampilkan laporan itu saja.
+  function _isLinkPublik() {
+    const q = new URLSearchParams(location.search);
+    return !!(q.get('r') || q.get('d') || q.get('view') === 'detail');
+  }
   async function checkDeviceApproval() {
     // Link laporan publik (WA share) tidak digembok — cuma alur login utama
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('view') === 'detail') return;
+    if (_isLinkPublik()) return;
 
     const deviceId = getOrCreateDeviceId();
     try {
@@ -5113,42 +5144,107 @@
     return /\.(jpe?g|png|gif|webp|bmp|heic|heif)$/i.test(path);
   }
 
-  function openPhotoViewer(url) {
+  // 9 Nov 2026: viewer selalu paling depan + geser ke foto sebelum/berikutnya (daftar = semua foto di jendela yang sama)
+  let _pvDaftar = [], _pvIdx = 0;
+  function openPhotoViewer(url, daftar, idx) {
     closePhotoViewer();
+    _pvDaftar = (Array.isArray(daftar) && daftar.length) ? daftar : [{ url, cap: '' }];
+    _pvIdx = Math.max(0, Math.min(_pvDaftar.length - 1, idx != null ? idx : _pvDaftar.findIndex(x => x.url === url)));
+    const banyak = _pvDaftar.length > 1;
     const ov = document.createElement('div');
     ov.id = 'photo-viewer';
-    ov.style.cssText = 'position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,0.95);display:flex;flex-direction:column;';
+    ov.style.cssText = 'position:fixed;inset:0;z-index:2147483000;background:rgba(0,0,0,0.95);display:flex;flex-direction:column;';
     ov.innerHTML = `
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:calc(env(safe-area-inset-top,0px) + 12px) 14px 10px;color:#fff;font-size:12px;">
-        <span style="opacity:.7;">Ketuk 2x untuk zoom</span>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:calc(env(safe-area-inset-top,0px) + 12px) 14px 6px;color:#fff;font-size:12px;">
+        <span id="pv-hit" style="font-weight:800;font-size:14px;min-width:54px;">${banyak ? '' : '<span style="opacity:.7;font-weight:400;font-size:12px;">Ketuk 2x untuk zoom</span>'}</span>
         <span style="display:flex;gap:8px;">
         <button id="pv-share" style="height:40px;padding:0 14px;border-radius:20px;border:none;background:#25D366;color:#fff;font-size:13px;font-weight:800;cursor:pointer;">📤 Bagikan</button>
         <button id="pv-close" style="width:40px;height:40px;border-radius:50%;border:none;background:rgba(255,255,255,0.18);color:#fff;font-size:20px;cursor:pointer;">✕</button></span>
       </div>
-      <div id="pv-scroll" style="flex:1;overflow:auto;display:flex;align-items:center;justify-content:center;-webkit-overflow-scrolling:touch;">
-        <img id="pv-img" src="${url.replace(/"/g,'&quot;')}" style="max-width:100%;max-height:100%;object-fit:contain;transition:width .15s;" alt="">
-      </div>`;
+      <div id="pv-cap" style="color:#e2e8f0;font-size:13px;font-weight:600;padding:0 16px 8px;text-align:center;min-height:18px;line-height:1.35;"></div>
+      <div style="flex:1;position:relative;min-height:0;display:flex;">
+        <div id="pv-scroll" style="flex:1;overflow:auto;display:flex;align-items:center;justify-content:center;-webkit-overflow-scrolling:touch;">
+          <img id="pv-img" src="" style="max-width:100%;max-height:100%;object-fit:contain;transition:width .15s;" alt="">
+        </div>
+        ${banyak ? `<button id="pv-prev" class="pv-nav" style="left:8px;" aria-label="Sebelumnya">‹</button><button id="pv-next" class="pv-nav" style="right:8px;" aria-label="Berikutnya">›</button>` : ''}
+      </div>
+      ${banyak ? '<div style="color:#94a3b8;font-size:11.5px;text-align:center;padding:8px 0 calc(env(safe-area-inset-bottom,0px) + 10px);">Geser kiri / kanan untuk foto lain · ketuk 2x untuk zoom</div>' : ''}`;
     document.body.appendChild(ov);
     document.getElementById('pv-close').onclick = closePhotoViewer;
-    document.getElementById('pv-share').onclick = () => sharePhoto(url);
+    document.getElementById('pv-share').onclick = () => sharePhoto(_pvDaftar[_pvIdx].url);
     const img = document.getElementById('pv-img');
     const box = document.getElementById('pv-scroll');
     let zoomed = false, lastTap = 0;
-    const toggleZoom = () => {
-      zoomed = !zoomed;
-      if (zoomed) {
-        box.style.display = 'block';
-        img.style.maxWidth = 'none'; img.style.maxHeight = 'none'; img.style.width = '250%';
-      } else {
-        box.style.display = 'flex';
-        img.style.width = ''; img.style.maxWidth = '100%'; img.style.maxHeight = '100%';
+    const setZoom = z => {
+      zoomed = z;
+      if (zoomed) { box.style.display = 'block'; img.style.maxWidth = 'none'; img.style.maxHeight = 'none'; img.style.width = '250%'; }
+      else { box.style.display = 'flex'; img.style.width = ''; img.style.maxWidth = '100%'; img.style.maxHeight = '100%'; }
+    };
+    const tampil = () => {
+      const it = _pvDaftar[_pvIdx]; setZoom(false); img.src = it.url;
+      document.getElementById('pv-cap').textContent = it.cap || '';
+      if (banyak) {
+        document.getElementById('pv-hit').textContent = (_pvIdx + 1) + ' / ' + _pvDaftar.length;
+        document.getElementById('pv-prev').style.visibility = _pvIdx > 0 ? 'visible' : 'hidden';
+        document.getElementById('pv-next').style.visibility = _pvIdx < _pvDaftar.length - 1 ? 'visible' : 'hidden';
       }
     };
-    img.addEventListener('dblclick', toggleZoom);
+    const pindah = d => { const n = _pvIdx + d; if (n < 0 || n >= _pvDaftar.length) return; _pvIdx = n; tampil(); };
+    window._pvPindah = pindah;
+    if (banyak) {
+      document.getElementById('pv-prev').onclick = e => { e.stopPropagation(); pindah(-1); };
+      document.getElementById('pv-next').onclick = e => { e.stopPropagation(); pindah(1); };
+      let x0 = null, y0 = 0;
+      box.addEventListener('touchstart', e => { if (zoomed || e.touches.length !== 1) { x0 = null; return; } x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; }, { passive: true });
+      box.addEventListener('touchend', e => {
+        if (x0 == null) return; const t = e.changedTouches[0], dx = t.clientX - x0, dy = t.clientY - y0; x0 = null;
+        if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.3) pindah(dx < 0 ? 1 : -1);
+      }, { passive: true });
+    }
+    img.addEventListener('dblclick', () => setZoom(!zoomed));
     img.addEventListener('touchend', () => {
       const now = Date.now();
-      if (now - lastTap < 300) { toggleZoom(); lastTap = 0; } else lastTap = now;
+      if (now - lastTap < 300) { setZoom(!zoomed); lastTap = 0; } else lastTap = now;
     });
+    tampil();
+  }
+  document.addEventListener('keydown', e => {
+    if (!document.getElementById('photo-viewer')) return;
+    if (e.key === 'ArrowLeft' && window._pvPindah) window._pvPindah(-1);
+    else if (e.key === 'ArrowRight' && window._pvPindah) window._pvPindah(1);
+    else if (e.key === 'Escape') closePhotoViewer();
+  });
+  // Kumpulkan semua foto di jendela/halaman yang sama dengan foto yang diklik (+ keterangan di atasnya)
+  function _pvLinkFoto(a) {
+    const href = a.getAttribute('href') || '';
+    return _isImageUrl(href) || (a.target === '_blank' && a.querySelector('img') && !/^(https?:\/\/)?(wa\.me|api\.whatsapp|www\.google\.com\/maps|maps\.)/i.test(href));
+  }
+  function _pvKet(a) {
+    let el = a;
+    for (let n = 0; n < 4 && el && el !== document.body; n++) {
+      let s = el.previousElementSibling;
+      while (s) {
+        const t = (s.innerText || '').trim().replace(/\s+/g, ' ');
+        if (t && !s.querySelector('img')) return t.length > 90 ? t.slice(0, 88) + '…' : t;
+        if (s.querySelector('img')) break;
+        s = s.previousElementSibling;
+      }
+      el = el.parentElement;
+    }
+    return '';
+  }
+  function _pvKumpulkan(a) {
+    let wadah = a.parentElement;
+    while (wadah && wadah !== document.body && getComputedStyle(wadah).position !== 'fixed') wadah = wadah.parentElement;
+    wadah = wadah || document.body;
+    const lihat = new Set(), daftar = [];
+    wadah.querySelectorAll('a[href]').forEach(x => {
+      if (!_pvLinkFoto(x) || !(x.offsetWidth || x.offsetHeight)) return;
+      const u = x.href; if (lihat.has(u)) return; lihat.add(u);
+      daftar.push({ url: u, cap: _pvKet(x) });
+    });
+    const i = daftar.findIndex(x => x.url === a.href);
+    return i < 0 ? { daftar: [{ url: a.href, cap: _pvKet(a) }], i: 0 } : { daftar, i };
   }
 
   // Bagikan foto ke WA / aplikasi lain. APK: menu share Android (pakai salinan di galeri kalau ada).
@@ -5187,10 +5283,11 @@
     const a = e.target.closest ? e.target.closest('a[href]') : null;
     if (!a) return;
     const href = a.getAttribute('href') || '';
-    if (_isImageUrl(href) || (a.target === '_blank' && a.querySelector('img') && !/^(https?:\/\/)?(wa\.me|api\.whatsapp|www\.google\.com\/maps|maps\.)/i.test(href))) {
+    if (_pvLinkFoto(a)) {
       e.preventDefault();
       e.stopPropagation();
-      openPhotoViewer(a.href);
+      const k = _pvKumpulkan(a);
+      openPhotoViewer(a.href, k.daftar, k.i);
     }
   }, true);
 
@@ -5396,7 +5493,7 @@
 
   async function _appLockOnLoad() {
     if (document.getElementById('device-gate-overlay')) return;
-    if (new URLSearchParams(location.search).get('view')) return;
+    if (_isLinkPublik()) return;
     if (currentRole) return; // sudah dipulihkan (mis. resume kamera)
     const session = loadSessionToday();
     if (!session) return;
@@ -29100,16 +29197,17 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
     ov.id = 'umr-overlay';
     ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;padding:16px;z-index:100000;';
     ov.innerHTML = `
-      <div style="background:white;border-radius:18px;padding:20px;max-width:520px;width:100%;max-height:88vh;overflow-y:auto;">
+      <div class="umr-box" style="background:white;border-radius:18px;padding:20px;max-width:620px;width:100%;max-height:90vh;overflow-y:auto;">
         <div style="font-size:18px;font-weight:800;color:var(--navy);">👥 Manage User</div>
-        <p style="font-size:12px;color:#888;margin:6px 0 12px;">Tambah, edit, atau hapus PIN per jabatan. Satu jabatan boleh punya beberapa PIN (beberapa orang). Perubahan berlaku saat login berikutnya. PIN COO <b>1986</b> adalah kunci utama — tidak dapat dihapus atau diubah.</p>
+        <p class="umr-ket">PIN dikelompokkan per unit. Satu jabatan boleh punya beberapa PIN (beberapa orang). Perubahan berlaku saat login berikutnya. PIN akun <b>COO</b> adalah kunci utama — tidak dapat dihapus atau diubah dari sini.</p>
+        <input id="umr-cari" class="umr-cari" placeholder="🔍 Cari nama, jabatan, atau PIN…" oninput="renderReportUsers()">
         <div id="umr-list" style="font-size:13px;color:#555;">Memuat…</div>
-        <div style="background:#f4f6fa;border-radius:12px;padding:14px;margin-top:14px;">
+        <div id="umr-form" class="umr-form" style="background:#f4f6fa;border-radius:12px;padding:14px;margin-top:14px;">
           <div id="umr-form-title" style="font-weight:700;color:var(--navy);margin-bottom:8px;">Tambah PIN Baru</div>
           <input type="hidden" id="umr-edit-pin">
           <label style="font-size:12px;color:#666;">Jabatan / Role</label>
           <select id="umr-role" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;margin:4px 0 10px;">
-            ${REPORT_ROLE_LIST.map(r=>`<option value="${_umrEsc(r)}">${_umrEsc(r)}</option>`).join('')}
+            ${_umrKelompok().map(g=>`<optgroup label="${_umrEsc(g.judul)}">${g.roles.map(r=>`<option value="${_umrEsc(r)}">${_umrEsc(_umrLabel(r))}</option>`).join('')}</optgroup>`).join('')}
           </select>
           <label style="font-size:12px;color:#666;">PIN (4 digit angka, unik)</label>
           <input id="umr-pin" maxlength="4" inputmode="numeric" placeholder="cth. 0210" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;margin:4px 0 10px;">
@@ -29125,6 +29223,22 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
     document.body.appendChild(ov);
     muatReportUsers();
   }
+  // 9 Nov 2026: Manage User dikelompokkan per unit (Corporate, lalu 4 hotel), jabatan dipendekkan
+  const UMR_HOTEL = ['Verse Lite Gajah Mada','Verse Luxe Wahid Hasyim','Verse Hotel Cirebon','Oak Tree Mahakam Blok M'];
+  const UMR_HM = { 'HM Verse Lite':'Verse Lite Gajah Mada', 'HM Verse Luxe':'Verse Luxe Wahid Hasyim', 'HM Verse Cirebon':'Verse Hotel Cirebon', 'HM Oak Tree':'Oak Tree Mahakam Blok M' };
+  const UMR_CORP = ['CEO','COO','Ops HR Manager','HR Officer','Chief Engineering Corporate','EHK Corporate','CRA Corporate','F&B Manager','F&B Attendant','Team Kitchen'];
+  const _umrHotelDari = r => UMR_HM[r] || HOD_HOTEL_MAP[r] || '';
+  function _umrLabel(r) {
+    if (UMR_HM[r]) return 'Hotel Manager';
+    const h = HOD_HOTEL_MAP[r]; if (!h) return r;
+    return r.replace(' ' + h, '').replace('Supervisor', 'SPV');
+  }
+  function _umrUrutUnit(r) { return UMR_HM[r] ? 0 : /^Housekeeping/.test(r) ? 1 : /^Engineering/.test(r) ? 2 : /^Front Office/.test(r) ? 3 : 4; }
+  function _umrKelompok() {
+    const semua = Array.from(new Set(REPORT_ROLE_LIST.concat(_umrData.map(u => u.role))));
+    const corp = semua.filter(r => !_umrHotelDari(r)).sort((a, b) => { const ia = UMR_CORP.indexOf(a), ib = UMR_CORP.indexOf(b); return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib) || a.localeCompare(b); });
+    return [{ judul: '🏢 Corporate', ikon: '🏢', roles: corp }].concat(UMR_HOTEL.map(h => ({ judul: h, hotel: h, roles: semua.filter(r => _umrHotelDari(r) === h).sort((a, b) => _umrUrutUnit(a) - _umrUrutUnit(b)) })));
+  }
   async function muatReportUsers() {
     const el = document.getElementById('umr-list'); if (!el) return;
     try {
@@ -29133,20 +29247,42 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
         el.innerHTML = 'Tabel user kosong. <span style="color:#c0564a;">Jalankan dulu skrip SQL <b>report_users.sql</b> di Supabase, lalu buka ulang menu ini.</span>';
         return;
       }
-      el.innerHTML = '<table style="width:100%;border-collapse:collapse;font-size:12px;">' +
-        '<tr style="color:#888;text-align:left;"><th style="padding:6px 4px;">Jabatan</th><th>PIN</th><th>Nama</th><th></th></tr>' +
-        _umrData.map(u => `<tr style="border-top:1px solid #eee;">
-          <td style="padding:7px 4px;">${_umrEsc(u.role)}</td>
-          <td><b>${_umrEsc(u.pin)}</b></td>
-          <td>${_umrEsc(u.nama || '—')}</td>
-          <td style="white-space:nowrap;text-align:right;">
-            ${u.role === 'COO' ? '<span style="font-size:11px;color:#aaa;">kunci utama</span>' : `
-            <button onclick="isiFormEditReportUser('${_umrEsc(u.pin)}')" style="padding:4px 9px;background:#f0f0f0;border:none;border-radius:6px;margin-right:4px;">Edit</button>
-            <button onclick="hapusReportUser('${_umrEsc(u.pin)}')" style="padding:4px 9px;background:#fde8e8;color:#c0564a;border:none;border-radius:6px;">Hapus</button>`}
-          </td></tr>`).join('') + '</table>';
+      renderReportUsers();
     } catch (e) {
       el.innerHTML = '<span style="color:#c0564a;">Gagal memuat daftar user: ' + _umrEsc(e.message || e) + '</span>';
     }
+  }
+  function renderReportUsers() {
+    const el = document.getElementById('umr-list'); if (!el || !_umrData.length) return;
+    const q = ((document.getElementById('umr-cari') || {}).value || '').trim().toLowerCase();
+    const cocok = u => !q || [u.role, _umrLabel(u.role), u.nama, u.pin, _umrHotelDari(u.role)].some(x => String(x || '').toLowerCase().includes(q));
+    let html = '', ada = 0;
+    _umrKelompok().forEach(g => {
+      const baris = [];
+      g.roles.forEach(r => {
+        const us = _umrData.filter(u => u.role === r && cocok(u));
+        us.forEach(u => baris.push(u));
+        if (!us.length && !q) baris.push({ role: r, kosong: true });
+      });
+      if (!baris.length) return;
+      const isi = baris.filter(b => !b.kosong).length; ada += isi;
+      const logo = g.hotel ? getHotelLogo(Object.keys(UMR_HM).find(k => UMR_HM[k] === g.hotel)) : '';
+      html += `<div class="umr-grp"><div class="umr-gh">${logo ? `<span class="umr-lg"><img src="${logo}" alt=""></span>` : '<span class="umr-lg umr-lg-c">🏢</span>'}<b>${_umrEsc(g.hotel || 'Corporate')}</b><small>${isi} PIN</small>
+        <button type="button" class="umr-tb" onclick="tambahReportUser('${_umrEsc(g.roles[0] || '')}')">+ Tambah</button></div>`
+        + baris.map(u => u.kosong
+          ? `<div class="umr-row umr-row-kosong"><div class="umr-jb">${_umrEsc(_umrLabel(u.role))}<small>Belum ada PIN</small></div><button type="button" class="umr-b" onclick="tambahReportUser('${_umrEsc(u.role)}')">+ PIN</button></div>`
+          : `<div class="umr-row"><div class="umr-jb">${_umrEsc(_umrLabel(u.role))}<small class="${u.nama ? '' : 'umr-tn'}">${_umrEsc(u.nama || 'Nama belum diisi')}</small></div>
+              <span class="umr-pin">${_umrEsc(u.pin)}</span>
+              ${u.role === 'COO' ? '<span class="umr-ku">🔒 kunci utama</span>' : `<span class="umr-ak"><button type="button" class="umr-b" onclick="isiFormEditReportUser('${_umrEsc(u.pin)}')">Edit</button><button type="button" class="umr-b umr-h" onclick="hapusReportUser('${_umrEsc(u.pin)}')">Hapus</button></span>`}</div>`).join('')
+        + '</div>';
+    });
+    el.innerHTML = html || '<div style="padding:14px;text-align:center;color:#94a3b8;">Tidak ada yang cocok dengan pencarian.</div>';
+  }
+  function tambahReportUser(role) {
+    resetFormReportUser();
+    const sel = document.getElementById('umr-role'); if (sel && role) sel.value = role;
+    const f = document.getElementById('umr-form'); if (f) f.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    setTimeout(() => { try { document.getElementById('umr-pin').focus(); } catch(e) {} }, 350);
   }
   function isiFormEditReportUser(p) {
     const u = _umrData.find(x => x.pin === p); if (!u) return;
@@ -29156,6 +29292,7 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
     document.getElementById('umr-nama').value = u.nama || '';
     document.getElementById('umr-form-title').textContent = 'Edit PIN: ' + u.pin + ' (' + u.role + ')';
     document.getElementById('umr-batal').style.display = 'inline-block';
+    const f = document.getElementById('umr-form'); if (f) f.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
   function resetFormReportUser() {
     document.getElementById('umr-edit-pin').value = '';
@@ -29183,11 +29320,12 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
   async function hapusReportUser(p) {
     const u = _umrData.find(x => x.pin === p);
     if (u && u.role === 'COO') { showToast('PIN kunci utama COO tidak dapat dihapus.'); return; }
-    if (!confirm('Hapus PIN ' + p + (u ? ' (' + u.role + (u.nama ? ' — ' + u.nama : '') + ')' : '') + '?\n\nPemegang PIN ini tidak akan bisa login lagi.')) return;
-    try {
-      await _adminRpc('admin_user_delete', { p_pin: p });
-      showToast('✅ User dihapus'); muatReportUsers();
-    } catch (e) { showToast('Gagal menghapus: ' + (e.message || e)); }
+    tbTanya('Hapus PIN ' + p + (u ? ' (' + _umrLabel(u.role) + (_umrHotelDari(u.role) ? ' · ' + _umrHotelDari(u.role) : '') + (u.nama ? ' — ' + u.nama : '') + ')' : '') + '?\nPemegang PIN ini tidak akan bisa login lagi.', 'Hapus', 'Batal', async () => {
+      try {
+        await _adminRpc('admin_user_delete', { p_pin: p });
+        showToast('✅ User dihapus'); muatReportUsers();
+      } catch (e) { showToast('Gagal menghapus: ' + (e.message || e)); }
+    });
   }
   // ============================================================
   // ============ ROOM CHECK FEATURE — TAMBAHAN BARU ============
