@@ -1355,7 +1355,7 @@
   .ars-chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
   .ars-chips button,.ars-chips label{font:inherit;font-size:11.5px;font-weight:600;padding:6px 11px;border-radius:999px;border:none;background:#eef2f7;color:#475569;cursor:pointer;position:relative}
   .ars-chips .on{background:var(--navy);color:#fff}
-  .ars-chips label input{position:absolute;inset:0;opacity:0;width:100%;cursor:pointer}
+  .ars-chips label input{position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer;padding:0!important;margin:0!important;border:0!important;pointer-events:none}
   .ars-sum{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:4px 0 8px}.ars-sum div{background:#f4f6fa;border-radius:10px;padding:7px 4px;text-align:center;font-size:10.5px;color:var(--gray-500)}.ars-sum b{display:block;font-size:17px;color:var(--navy)}
   .ars-it{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid #eef2f7;cursor:pointer}
   .ars-sum + .ars-it{border-top:none}
@@ -26275,7 +26275,14 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
     return String(role||'').replace(' Corporate','').replace('Housekeeping Supervisor','HK Spv').replace('Engineering Supervisor','Eng Spv')
       .replace('Front Office Supervisor','FO Spv').replace(' Wahid Hasyim','').replace(' Gajah Mada','').replace(' Mahakam Blok M','').replace('Verse Hotel ','Verse ');
   }
-  function _arsTglLabel(t){ const d=new Date(t+'T00:00:00Z'); const h=['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'], b=['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des']; return h[d.getUTCDay()]+', '+d.getUTCDate()+' '+b[d.getUTCMonth()]+' '+d.getUTCFullYear(); }
+  // 9 Nov 2026: kalender "Pilih tanggal" dibuka lewat showPicker() — klik di mana pun pada tombol (laptop & HP)
+function arsBukaKalender(ev, lbl){
+  const inp=lbl.querySelector('input[type=date]'); if(!inp) return;
+  ev.preventDefault();
+  try { if(inp.showPicker){ inp.showPicker(); return; } } catch(e) {}
+  inp.style.pointerEvents='auto'; inp.focus(); inp.click(); setTimeout(()=>{ inp.style.pointerEvents=''; },500);
+}
+function _arsTglLabel(t){ const d=new Date(t+'T00:00:00Z'); const h=['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'], b=['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des']; return h[d.getUTCDay()]+', '+d.getUTCDate()+' '+b[d.getUTCMonth()]+' '+d.getUTCFullYear(); }
   function _arsJam(iso){ if(!iso) return '—'; const d=new Date(new Date(iso).getTime()+7*3600000); return String(d.getUTCHours()).padStart(2,'0')+':'+String(d.getUTCMinutes()).padStart(2,'0'); }
   function arsBoleh(){ return ['HR Officer','Ops HR Manager','COO'].includes(currentRole); }
   function arsMaybeShowHome(){
@@ -26316,7 +26323,7 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
     el.innerHTML=`<div class="ars-box">
       <div class="ars-h"><b>📁 Arsip Laporan</b><span>${_arsTglLabel(ARS.tgl)}</span></div>
       <div class="ars-chips">${chip(ARS.tgl===hari,'Hari ini',`arsTgl('${hari}')`)}${chip(ARS.tgl===kmrn,'Kemarin',`arsTgl('${kmrn}')`)}
-        <label class="${ARS.tgl!==hari&&ARS.tgl!==kmrn?'on':''}">📅 Pilih tanggal<input type="date" max="${hari}" value="${ARS.tgl}" onchange="if(this.value)arsTgl(this.value)"></label></div>
+        <label class="${ARS.tgl!==hari&&ARS.tgl!==kmrn?'on':''}" onclick="arsBukaKalender(event,this)">📅 Pilih tanggal<input type="date" max="${hari}" value="${ARS.tgl}" onchange="if(this.value)arsTgl(this.value)"></label></div>
       <div class="ars-chips">${[['semua','Semua'],['corp','Corporate'],['hm','HM'],['hod','HOD'],['fb','F&amp;B']].map(([k,l])=>chip(g===k,l,`ARS.grup='${k}';ARS.semua=false;arsRender()`)).join('')}</div>
       <div class="ars-sum"><div><b>${list.length}</b>Terkirim</div><div><b>${belum.length}</b>Belum kirim</div><div><b>${nCek}</b>Sudah dicek HR</div></div>
       ${tampil.length ? tampil.map(r=>{ const ck=ARS.cek[r.role], p=r.pct||0;
