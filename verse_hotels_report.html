@@ -4905,7 +4905,7 @@
           const url = typeof input === 'string' ? input : ((input && input.url) || '');
           const method = String((init && init.method) || (input && input.method) || 'GET').toUpperCase();
           const ours = url.indexOf(SUPA_URL) === 0 || url.indexOf('/api/') === 0 || url.indexOf(location.origin + '/api/') === 0;
-          const readOnlyRpc = /\/rest\/v1\/rpc\/(device_check|admin_devices_list|admin_users_list|notif_list|notif_history|jadwal_baca)$/.test(url.split('?')[0]);
+          const readOnlyRpc = /\/rest\/v1\/rpc\/(device_check|admin_devices_list|admin_users_list|notif_list|notif_history|jadwal_baca|live_skor|hod_nilai_baca|coo_nilai_baca)$/.test(url.split('?')[0]);
           if (ours && method !== 'GET' && method !== 'HEAD' && !readOnlyRpc) {
             if (Date.now() - _lastPeekToast > 3000) {
               _lastPeekToast = Date.now();
