@@ -80,6 +80,16 @@ export default async function handler(req, res) {
       hasil.push({ rating: u, ok: true });
     } catch (e) { hasil.push({ rating: u, error: String(e && e.message || e) }); }
   }));
+  // Revenue & ARR (Daily Occupancy Report) untuk skor HM
+  try {
+    const ctrl = new AbortController(); const t = setTimeout(() => ctrl.abort(), 40000);
+    const r = await fetch(GRPS_API_URL + '?key=' + encodeURIComponent(GRPS_API_KEY) + '&mode=occ', { redirect: 'follow', signal: ctrl.signal });
+    clearTimeout(t);
+    const j = JSON.parse(await r.text());
+    if (!j || !j.success || !j.units) throw new Error((j && j.error) || 'occ belum tersedia');
+    await simpanSumber('occ', j);
+    hasil.push({ occ: true });
+  } catch (e) { hasil.push({ occ: false, info: String(e && e.message || e) }); }
   try {
     const r = await fetch('https://bfqxsbyqaewdjstkrmsb.supabase.co/rest/v1/rpc/manning_kpi', {
       method: 'POST', headers: { apikey: REC_KEY, Authorization: 'Bearer ' + REC_KEY, 'Content-Type': 'application/json' }, body: '{}'
