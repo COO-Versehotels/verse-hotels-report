@@ -26386,11 +26386,11 @@ function arsBukaKalender(ev, lbl){
 }
 function _arsTglLabel(t){ const d=new Date(t+'T00:00:00Z'); const h=['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'], b=['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des']; return h[d.getUTCDay()]+', '+d.getUTCDate()+' '+b[d.getUTCMonth()]+' '+d.getUTCFullYear(); }
   function _arsJam(iso){ if(!iso) return '—'; const d=new Date(new Date(iso).getTime()+7*3600000); return String(d.getUTCHours()).padStart(2,'0')+':'+String(d.getUTCMinutes()).padStart(2,'0'); }
-  function arsBoleh(){ return ['HR Officer','Ops HR Manager','COO','CEO'].includes(currentRole) || !!DSP_HM_HOTEL[currentRole]; }
-  function _arsMilikHM(role){ const h=DSP_HM_HOTEL[currentRole]; return !h || role===currentRole || HOD_HOTEL_MAP[role]===h; }
+  function arsBoleh(){ return ['HR Officer','Ops HR Manager','COO','CEO'].includes(currentRole) || !!DSP_HM_HOTEL[currentRole] || !!DSP_DEPT[currentRole]; }
+  function _arsMilikHM(role){ const d=DSP_DEPT[currentRole]; if(d) return role===currentRole || String(role||'').startsWith(d); const h=DSP_HM_HOTEL[currentRole]; return !h || role===currentRole || HOD_HOTEL_MAP[role]===h; }
   function arsMaybeShowHome(){
     const el=document.getElementById('ars-home'); if(!el) return;
-    if (!(['HR Officer','Ops HR Manager'].includes(currentRole) || DSP_HM_HOTEL[currentRole]) || window._peekMode) { el.style.display='none'; el.innerHTML=''; return; }
+    if (!(['HR Officer','Ops HR Manager'].includes(currentRole) || DSP_HM_HOTEL[currentRole] || DSP_DEPT[currentRole]) || window._peekMode) { el.style.display='none'; el.innerHTML=''; return; }
     el.style.display='block'; arsMuat('ars-home');
   }
   async function arsMuat(elId){
@@ -26427,7 +26427,7 @@ function _arsTglLabel(t){ const d=new Date(t+'T00:00:00Z'); const h=['Minggu','S
       <div class="ars-h"><b>📁 Arsip Laporan</b><span>${_arsTglLabel(ARS.tgl)}</span></div>
       <div class="ars-chips">${chip(ARS.tgl===hari,'Hari ini',`arsTgl('${hari}')`)}${chip(ARS.tgl===kmrn,'Kemarin',`arsTgl('${kmrn}')`)}
         <label class="${ARS.tgl!==hari&&ARS.tgl!==kmrn?'on':''}" onclick="arsBukaKalender(event,this)">📅 Pilih tanggal<input type="date" max="${hari}" value="${ARS.tgl}" onchange="if(this.value)arsTgl(this.value)"></label></div>
-      ${DSP_HM_HOTEL[currentRole]?'':`<div class="ars-chips">${[['semua','Semua'],['corp','Corporate'],['hm','HM'],['hod','HOD'],['fb','F&amp;B']].map(([k,l])=>chip(g===k,l,`ARS.grup='${k}';ARS.semua=false;arsRender()`)).join('')}</div>`}
+      ${DSP_HM_HOTEL[currentRole]||DSP_DEPT[currentRole]?'':`<div class="ars-chips">${[['semua','Semua'],['corp','Corporate'],['hm','HM'],['hod','HOD'],['fb','F&amp;B']].map(([k,l])=>chip(g===k,l,`ARS.grup='${k}';ARS.semua=false;arsRender()`)).join('')}</div>`}
       <div class="ars-sum"><div><b>${list.length}</b>Terkirim</div><div><b>${belum.length}</b>Belum kirim</div><div><b>${nCek}</b>Sudah dicek HR</div></div>
       ${tampil.length ? tampil.map(r=>{ const ck=ARS.cek[r.role], p=r.pct||0;
         return `<div class="ars-it" onclick="arsBuka('${encodeURIComponent(r.role)}')"><div class="ars-ic">${_arsIkon(r.role)}</div>
@@ -26485,6 +26485,7 @@ function _arsTglLabel(t){ const d=new Date(t+'T00:00:00Z'); const h=['Minggu','S
   // ===== KEDISIPLINAN LAPORAN (9 Nov 2026) — batas 18.30, alasan wajib bila tidak kirim, ringkasan COO/CEO/HR/HM =====
   const DSP = { kunci: false, cekKey: '', kurang: [], tgl: null, data: null, el: null, buka: {} };
   const DSP_AL = [['sakit','🤒 Sakit'],['izin','📝 Izin tidak masuk'],['lupa','⏰ Lupa / tidak sempat'],['lainnya','✏️ Lainnya (tulis sendiri)']];
+  const DSP_DEPT = { 'Chief Engineering Corporate':'Engineering Supervisor' };   // lihat 1 departemen di semua unit
   const DSP_HM_HOTEL = { 'HM Verse Lite':'Verse Lite Gajah Mada', 'HM Verse Luxe':'Verse Luxe Wahid Hasyim', 'HM Verse Cirebon':'Verse Hotel Cirebon', 'HM Oak Tree':'Oak Tree Mahakam Blok M' };
   function _dspLewati(){
     if (!currentRole || currentRole === 'COO' || currentRole === 'CEO') return true;
@@ -26560,10 +26561,10 @@ function _arsTglLabel(t){ const d=new Date(t+'T00:00:00Z'); const h=['Minggu','S
   }
 
   // --- Ringkasan Kedisiplinan (COO/CEO/HR: semua unit · HM: unitnya) ---
-  function dspBoleh(){ return ['COO','CEO','HR Officer','Ops HR Manager'].includes(currentRole) || !!DSP_HM_HOTEL[currentRole]; }
+  function dspBoleh(){ return ['COO','CEO','HR Officer','Ops HR Manager'].includes(currentRole) || !!DSP_HM_HOTEL[currentRole] || !!DSP_DEPT[currentRole]; }
   function dspMaybeShowHome(){
     const el = document.getElementById('dsp-home'); if (!el) return;
-    if (!(['HR Officer','Ops HR Manager'].includes(currentRole) || DSP_HM_HOTEL[currentRole]) || window._peekMode) { el.style.display = 'none'; el.innerHTML = ''; return; }
+    if (!(['HR Officer','Ops HR Manager'].includes(currentRole) || DSP_HM_HOTEL[currentRole] || DSP_DEPT[currentRole]) || window._peekMode) { el.style.display = 'none'; el.innerHTML = ''; return; }
     el.style.display = 'block'; dspMuat('dsp-home');
   }
   async function dspMuat(elId){
@@ -26585,7 +26586,7 @@ function _arsTglLabel(t){ const d=new Date(t+'T00:00:00Z'); const h=['Minggu','S
     const el = document.getElementById(DSP.el); if (!el) return;
     const D = DSP.data, kmr = _arsGeser(_arsHariIni(), -1);
     const nav = `<div class="dsp-nav"><button type="button" onclick="dspGeser(-1)" aria-label="Hari sebelumnya">‹</button><span>${_arsTglLabel(DSP.tgl)}${DSP.tgl === kmr ? ' · kemarin' : ''}</span><button type="button" onclick="dspGeser(1)" ${DSP.tgl >= kmr ? 'disabled' : ''} aria-label="Hari berikutnya">›</button></div>`;
-    const judul = `<div class="ars-h"><b>📋 Kedisiplinan Laporan</b><span>${DSP_HM_HOTEL[currentRole] ? _arsEsc(_arsPendek(DSP_HM_HOTEL[currentRole])) : 'Semua unit'} · batas 18.30</span></div>`;
+    const judul = `<div class="ars-h"><b>📋 Kedisiplinan Laporan</b><span>${DSP_HM_HOTEL[currentRole] ? _arsEsc(_arsPendek(DSP_HM_HOTEL[currentRole])) : DSP_DEPT[currentRole] ? 'Engineering · semua unit' : 'Semua unit'} · batas 18.30</span></div>`;
     if (!D) { el.innerHTML = `<div class="ars-box">${judul}<div class="ars-kosong">Gagal memuat. <button type="button" class="ars-more" style="display:inline;width:auto" onclick="dspMuat()">Coba lagi</button></div></div>`; return; }
     const hari = D.hari || [], esc = _arsEsc, jam = _arsJam;
     const wajib = hari.filter(h => h.wajib);
