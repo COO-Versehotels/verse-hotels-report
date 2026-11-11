@@ -26997,6 +26997,20 @@ function _arsTglLabel(t){ const d=new Date(t+'T00:00:00Z'); const h=['Minggu','S
     }
   }
 
+  // Buka Live Score dari notifikasi (+ langsung detail orangnya bila namanya ada di judul)
+  function lskBuka(judul){
+    const coo = currentRole === 'COO' || currentRole === 'CEO', id = coo ? 'lsk-coo' : 'lsk-home';
+    go(coo ? 'coo' : 'home');
+    setTimeout(async () => {
+      const el = document.getElementById(id); if (el) { el.style.display = 'block'; el.scrollIntoView({ behavior:'smooth', block:'start' }); }
+      await lskMuat(id);
+      const D = LSK.data || {}, semua = [...(D.hod || []), ...(D.lain || [])];
+      const nm = h => h.dept ? LSK_DEPT[h.dept] + ' ' + LSK_UNIT[h.unit] : h.grup === 'hm' ? 'HM ' + LSK_UNIT[h.unit] : ({ 'Chief Engineering Corporate':'CE Corp', 'CRA Corporate':'CRA Corp' }[h.role] || h.role);
+      const t = String(judul || ''), h = semua.find(x => t.includes(': ' + nm(x) + ' '));
+      if (h) lskDetail(h.role);
+    }, 350);
+  }
+
   // --- Form Nilai HOD (HM, tiap minggu) ---
   function _lskMingguDefault(){
     const D = LSK.data || {}, b = (D.belum_menilai || [])[0];
@@ -27745,6 +27759,7 @@ function _arsTglLabel(t){ const d=new Date(t+'T00:00:00Z'); const h=['Minggu','S
       if (rk && dspBoleh()) { const y = new Date(new Date(n.created_at).getTime() + 7*3600000).getUTCFullYear(); return { label: 'Buka Kedisiplinan Laporan', run: () => dspBukaTanggal(`${y}-${rk[2]}-${rk[1]}`) }; }
       if (/Keanehan akses/i.test(n.title || '') && dspBoleh()) return { label: 'Buka Kedisiplinan Laporan', run: () => dspBukaTanggal() };
       if (/HOD belum kirim/i.test(n.title || '') && arsBoleh()) return { label: 'Buka Arsip Laporan hari ini', run: () => arsBukaHariIni() };
+      if (/Skor merah|Skor turun|Skor naik ke hijau|Rekap Live Score/i.test(n.title || '') && lskBoleh()) return { label: 'Buka Live Score', run: () => lskBuka(n.title || '') };
     }
     if (window._peekMode || isAdmin) return null;
     if (/jadwal visit|visit/i.test(t)) return { label: 'Lihat Beranda & Jadwal Visit', run: () => go('home') };
