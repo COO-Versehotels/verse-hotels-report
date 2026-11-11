@@ -2680,6 +2680,11 @@
   .dsp-tag.hijau{background:#dcfce7;color:#15803d}
 
   /* ===== Live Score KPI (11 Nov 2026) ===== */
+  #lsk-ov .rwy-x{white-space:nowrap;flex:none}
+  .lsk-tabs{display:flex;gap:6px;margin:0 0 10px}.lsk-tabs button{flex:1;font:inherit;font-size:13px;font-weight:800;padding:8px 6px;border-radius:20px;border:1px solid #e2e8f0;background:#f5f7fa;color:#475569;cursor:pointer}.lsk-tabs button.on{background:#1a3a5c;border-color:#1a3a5c;color:#fff}
+  .lsk-cr{background:#e9edf3;border-radius:16px;padding:10px;margin-bottom:12px}.lsk-cr.mati{opacity:.55}.lsk-crh{padding:2px 4px 8px}.lsk-crh b{display:block;font-size:14.5px;color:#1a3a5c}.lsk-crh small{font-size:11.5px;color:#64748b}
+  :is(.tb,.tbo) .lsk-tabs button{background:var(--tb-dalam);border-color:var(--tb-garis);color:#cbd5e1} :is(.tb,.tbo) .lsk-tabs button.on{background:var(--tb-emas);border-color:var(--tb-emas);color:#1a1400}
+  :is(.tb,.tbo) .lsk-cr{background:#0b1020} :is(.tb,.tbo) .lsk-crh b{color:#f1f5f9} :is(.tb,.tbo) .lsk-crh small{color:#9fb0cf}
   .lsk-live{font-size:10.5px;font-weight:800;color:#15803d;background:#dcfce7;border-radius:20px;padding:3px 9px;margin-left:auto}
   .lsk-sub{font-size:11.5px;color:#64748b;margin:-4px 0 10px}
   .lsk-t{width:100%;border-collapse:collapse;font-size:13px}
@@ -26776,7 +26781,7 @@ function _arsTglLabel(t){ const d=new Date(t+'T00:00:00Z'); const h=['Minggu','S
   // LIVE SCORE KPI (Tahap 1 · 11 Nov 2026) — HOD: Hasil kerja 50% · Kedisiplinan 20% · Penilaian HM 30%
   // Data dihitung di DB (live_skor). COO/CEO/HR: semua · HM: 3 HOD unitnya + form Nilai HOD · CE Corp: ENG SPV · HOD: skor sendiri
   // =============================================================
-  const LSK = { data: null, el: null, nilai: null, minggu: null };
+  const LSK = { data: null, el: null, nilai: null, minggu: null, tab: 'hod', coo: null, cooBl: null };
   const LSK_UNIT = { LITE: 'Verse Lite', LUXE: 'Verse Luxe', CIREBON: 'Verse Cirebon', OAK: 'Oak Tree' };
   const LSK_DEPT = { HK: 'HK SPV', ENG: 'ENG SPV', FO: 'FO SPV' };
   const LSK_DEPT_PJG = { HK: 'Housekeeping SPV', ENG: 'Engineering SPV', FO: 'Front Office SPV' };
@@ -26785,7 +26790,7 @@ function _arsTglLabel(t){ const d=new Date(t+'T00:00:00Z'); const h=['Minggu','S
   function _lskSemua(){ return ['COO','CEO','HR Officer','Ops HR Manager'].includes(currentRole); }
   function _lskHM(){ return String(currentRole || '').startsWith('HM '); }
   function _lskHOD(){ return /^(Housekeeping|Engineering|Front Office) Supervisor /.test(String(currentRole || '')); }
-  function lskBoleh(){ return _lskSemua() || _lskHM() || currentRole === 'Chief Engineering Corporate' || _lskHOD(); }
+  function lskBoleh(){ return _lskSemua() || _lskHM() || ['Chief Engineering Corporate','CRA Corporate'].includes(currentRole) || _lskHOD(); }
   function _lskK(s){ return s == null ? 'abu' : s >= 85 ? 'g' : s >= 70 ? 'a' : 'r'; }
   function _lskNm(n){ n = String(n || '').trim(); if (!n) return ''; const i = n.lastIndexOf(' - '); return i >= 0 ? n.slice(i + 3) : n; }
   function _lskTgl(t){ const d = new Date(t + 'T00:00:00Z'), b = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des']; return d.getUTCDate() + ' ' + b[d.getUTCMonth()]; }
@@ -26814,12 +26819,51 @@ function _arsTglLabel(t){ const d=new Date(t+'T00:00:00Z'); const h=['Minggu','S
   }
   function _lskBaris(h, sub){
     const nm = _lskNm(h.nama);
-    return `<div class="lsk-r" onclick="lskDetail('${_arsEsc(h.role)}')"><div class="ars-tx"><b>${_arsEsc(sub)}</b><small>${h.aktif ? (_arsEsc(nm) || '—') : 'Posisi Vacant / belum aktif'}${h.nilai_hm == null && h.aktif ? ' · ⚠️ belum dinilai HM' : ''}</small></div>
+    return `<div class="lsk-r" onclick="lskDetail('${_arsEsc(h.role)}')"><div class="ars-tx"><b>${_arsEsc(sub)}</b><small>${h.aktif ? (_arsEsc(nm) || '—') : 'Posisi Vacant / belum aktif'}${(h.dept ? h.nilai_hm : h.nilai_coo) == null && h.aktif ? ' · ⚠️ belum dinilai ' + (h.dept ? 'HM' : 'COO') : ''}</small></div>
       <span class="ars-pc ${h.aktif ? _lskK(h.total) : 'abu'} lsk-pc">${h.aktif && h.total != null ? h.total : '—'}</span></div>`;
+  }
+  function _lskNmRole(h){
+    if (!h) return '';
+    if (h.dept) return LSK_DEPT_PJG[h.dept] + ' · ' + LSK_UNIT[h.unit];
+    if (h.grup === 'hm') return 'Hotel Manager · ' + LSK_UNIT[h.unit];
+    return { 'HR Officer':'HR Officer', 'Ops HR Manager':'Ops HR Manager', 'Chief Engineering Corporate':'Chief Engineering Corporate', 'CRA Corporate':'CRA Corporate' }[h.role] || h.role;
+  }
+  function _lskPendek(h){
+    if (h.dept) return LSK_DEPT[h.dept];
+    if (h.grup === 'hm') return 'HM ' + LSK_UNIT[h.unit];
+    return { 'Chief Engineering Corporate':'CE Corp', 'CRA Corporate':'CRA Corp' }[h.role] || h.role;
+  }
+  // Kartu "Skor Saya" (HOD / HM / Corporate)
+  function _lskSaya(me, nmBl){
+    if (!me) return '';
+    const esc = _arsEsc, atasan = me.dept ? 'HM' : 'COO', nAt = me.dept ? me.nilai_hm : me.nilai_coo;
+    return `<div class="ars-box lsk-box lsk-saya" onclick="lskDetail('${esc(me.role)}')">
+      <div class="ars-h"><b>🎯 Skor Saya</b><span class="ars-pc ${_lskK(me.total)} lsk-big">${me.total == null ? '—' : me.total}</span></div>
+      <div class="lsk-sub">${esc(_lskNmRole(me))} · ${nmBl} · klik untuk detail</div>
+      <div class="lsk-3"><div><b>${me.hasil ?? '—'}</b>Hasil kerja 50%</div><div><b>${me.disiplin ?? '—'}</b>Kedisiplinan 20%</div><div><b>${nAt ?? '—'}</b>Penilaian ${atasan} 30%</div></div>
+      ${(me.items || []).filter(i => i.grup !== 'perlu').map(i => `<div class="lsk-mi"><span>${esc(i.label)}</span><b class="t-${_lskK(i.nilai)}">${i.nilai == null ? '—' : Math.round(i.nilai)}</b></div>`).join('')}
+      ${nAt == null ? `<div class="dsp-cat2">⚠️ Penilaian ${atasan} ${me.dept ? 'minggu ini' : 'bulan ini'} belum diisi — bobotnya sementara dipindah ke poin lain.</div>` : ''}
+    </div>`;
+  }
+  function _lskTabel(D){
+    const hod = D.hod || [], lain = D.lain || [], tab = LSK.tab || 'hod', esc = _arsEsc;
+    const tabs = `<div class="lsk-tabs">${[['hod','HOD'],['hm','HM'],['corp','Corporate']].map(([k, l]) => `<button type="button" class="${tab === k ? 'on' : ''}" onclick="LSK.tab='${k}';lskRender()">${l}</button>`).join('')}</div>`;
+    let isi = '';
+    if (tab === 'hod') {
+      const cari = (u, d) => hod.find(h => h.unit === u && h.dept === d);
+      isi = `<table class="lsk-t"><thead><tr><th>Unit</th><th>HK SPV</th><th>ENG SPV</th><th>FO SPV</th></tr></thead>
+        <tbody>${['LITE','LUXE','CIREBON','OAK'].map(u => `<tr><td>${LSK_UNIT[u]}</td>${['HK','ENG','FO'].map(d => `<td>${_lskSel(cari(u, d))}</td>`).join('')}</tr>`).join('')}</tbody></table>
+        <div class="dsp-cat2" style="margin-top:2px">— = posisi Vacant / belum aktif · klik angka untuk detail · HOD dinilai HM tiap minggu</div>`;
+    } else {
+      const xs = lain.filter(h => tab === 'hm' ? h.grup === 'hm' : h.grup !== 'hm');
+      isi = `<div class="lsk-list">${xs.map(h => _lskBaris(h, tab === 'hm' ? LSK_UNIT[h.unit] : _lskNmRole(h))).join('') || '<div class="ars-kosong">Tidak ada data.</div>'}</div>
+        <div class="dsp-cat2">${tab === 'hm' ? 'HM' : 'Corporate'} dinilai COO tiap bulan (batas tgl 3 bulan berikutnya) · klik nama untuk detail</div>`;
+    }
+    return tabs + isi;
   }
   function lskRender(){
     const el = document.getElementById(LSK.el); if (!el) return;
-    const D = LSK.data || {}, esc = _arsEsc, hod = D.hod || [];
+    const D = LSK.data || {}, esc = _arsEsc, hod = D.hod || [], lain = D.lain || [];
     const bl = D.bulan ? new Date(D.bulan + 'T00:00:00Z') : new Date();
     const nmBl = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'][bl.getUTCMonth()] + ' ' + bl.getUTCFullYear();
     const upd = D.grps_update ? `GRPS ${_lskJam(D.grps_update)}` : '';
@@ -26827,24 +26871,26 @@ function _arsTglLabel(t){ const d=new Date(t+'T00:00:00Z'); const h=['Minggu','S
     const blm = (D.belum_menilai || []);
     const blmHtml = blm.length ? `<div class="lsk-warn">⚠️ <b>Belum menilai HOD</b> (batas Senin 12.00): ${blm.map(b => esc(_arsPendek(b.hm)) + ' — minggu ' + _lskTgl(b.minggu)).join(' · ')}</div>` : '';
     const live = `<span class="lsk-live">● LIVE</span>`;
-    const kaki = `<div class="dsp-cat2">Bobot: Hasil kerja 50% · Kedisiplinan 20% · Penilaian HM 30%. Poin yang belum ada datanya / belum dinilai tidak dihitung (bobot pindah). Hijau ≥85 · kuning 70–84 · merah &lt;70.${upd ? ' Data ' + upd + '.' : ''}</div>`;
+    const kaki = `<div class="dsp-cat2">Bobot: Hasil kerja 50% · Kedisiplinan 20% · Penilaian atasan 30%. Poin yang belum ada datanya / belum dinilai tidak dihitung (bobot pindah). Hijau ≥85 · kuning 70–84 · merah &lt;70.${upd ? ' Data ' + upd + '.' : ''}</div>`;
+    const saya = lain.find(h => h.role === currentRole) || hod.find(h => h.role === currentRole);
 
     if (_lskSemua()) {
-      const units = ['LITE','LUXE','CIREBON','OAK'];
-      const cari = (u, d) => hod.find(h => h.unit === u && h.dept === d);
-      el.innerHTML = `<div class="ars-box lsk-box"><div class="ars-h"><b>🎯 Live Score Tim · HOD</b>${live}</div>
-        <div class="lsk-sub">${nmBl} · berjalan sampai hari ini · HM &amp; Corporate menyusul (Tahap 2)</div>
-        <table class="lsk-t"><thead><tr><th>Unit</th><th>HK SPV</th><th>ENG SPV</th><th>FO SPV</th></tr></thead>
-        <tbody>${units.map(u => `<tr><td>${LSK_UNIT[u]}</td>${['HK','ENG','FO'].map(d => `<td>${_lskSel(cari(u, d))}</td>`).join('')}</tr>`).join('')}</tbody></table>
-        <div class="dsp-cat2" style="margin-top:2px">— = posisi Vacant / belum aktif · klik angka untuk detail</div>
-        ${blmHtml}${kaki}</div>`;
+      const coo = currentRole === 'COO' || currentRole === 'CEO';
+      const bc = D.belum_coo || [];
+      const blnIni = (D.bulan || '').slice(0, 10);
+      el.innerHTML = `${!coo && saya ? _lskSaya(saya, nmBl) + '<div style="height:12px"></div>' : ''}<div class="ars-box lsk-box"><div class="ars-h"><b>🎯 Live Score Tim</b>${live}</div>
+        <div class="lsk-sub">${nmBl} · berjalan sampai hari ini</div>
+        ${_lskTabel(D)}
+        ${blmHtml}
+        ${bc.length ? `<div class="lsk-warn">📋 <b>Penilaian COO ${_lskBlnNm(D.bulan_coo_lalu)} belum diisi:</b> ${bc.map(r => esc(_arsPendek(r))).join(' · ')}</div>` : ''}
+        ${coo ? `<button type="button" class="lsk-btn" onclick="lskCooBuka()">✍️ Nilai Bulanan COO — HM &amp; Corporate</button>` : ''}
+        ${kaki}</div>`;
       return;
     }
     if (_lskHM()) {
       const hh = hod.slice().sort((a, b) => ['HK','ENG','FO'].indexOf(a.dept) - ['HK','ENG','FO'].indexOf(b.dept));
       const mg = _lskMingguDefault();
-      const sudah = !blm.length;
-      el.innerHTML = `<div class="ars-box lsk-box"><div class="ars-h"><b>🎯 Skor HOD Unit Saya</b>${live}</div>
+      el.innerHTML = `${_lskSaya(saya, nmBl)}${saya ? '<div style="height:12px"></div>' : ''}<div class="ars-box lsk-box"><div class="ars-h"><b>🎯 Skor HOD Unit Saya</b>${live}</div>
         <div class="lsk-sub">${nmBl} · klik nama untuk detail poin</div>
         <div class="lsk-list">${hh.map(h => _lskBaris(h, LSK_DEPT[h.dept])).join('') || '<div class="ars-kosong">Tidak ada HOD.</div>'}</div>
         ${blm.length ? `<div class="lsk-warn">⚠️ Penilaian HOD minggu ${_lskTgl(blm[0].minggu)} belum diisi — lewat batas Senin 12.00.</div>` : ''}
@@ -26854,29 +26900,23 @@ function _arsTglLabel(t){ const d=new Date(t+'T00:00:00Z'); const h=['Minggu','S
       return;
     }
     if (currentRole === 'Chief Engineering Corporate') {
-      el.innerHTML = `<div class="ars-box lsk-box"><div class="ars-h"><b>🎯 Live Score · ENG SPV 4 Unit</b>${live}</div>
-        <div class="lsk-sub">${nmBl} · skor Chief Engineering Corporate menyusul (Tahap 2)</div>
+      el.innerHTML = `${_lskSaya(saya, nmBl)}${saya ? '<div style="height:12px"></div>' : ''}<div class="ars-box lsk-box"><div class="ars-h"><b>🎯 Live Score · ENG SPV 4 Unit</b>${live}</div>
+        <div class="lsk-sub">${nmBl} · klik untuk detail</div>
         <div class="lsk-list">${hod.map(h => _lskBaris(h, 'ENG SPV ' + LSK_UNIT[h.unit])).join('')}</div>${kaki}</div>`;
       return;
     }
-    // HOD — Skor Saya
-    const me = hod[0];
-    if (!me) { el.style.display = 'none'; el.innerHTML = ''; return; }
-    el.innerHTML = `<div class="ars-box lsk-box lsk-saya" onclick="lskDetail('${esc(me.role)}')">
-      <div class="ars-h"><b>🎯 Skor Saya</b><span class="ars-pc ${_lskK(me.total)} lsk-big">${me.total == null ? '—' : me.total}</span></div>
-      <div class="lsk-sub">${LSK_DEPT[me.dept]} ${LSK_UNIT[me.unit]} · ${nmBl} · klik untuk detail</div>
-      <div class="lsk-3"><div><b>${me.hasil ?? '—'}</b>Hasil kerja 50%</div><div><b>${me.disiplin ?? '—'}</b>Kedisiplinan 20%</div><div><b>${me.nilai_hm ?? '—'}</b>Penilaian HM 30%</div></div>
-      ${(me.items || []).filter(i => i.grup !== 'perlu').map(i => `<div class="lsk-mi"><span>${esc(i.label)}</span><b class="t-${_lskK(i.nilai)}">${i.nilai == null ? '—' : Math.round(i.nilai)}</b></div>`).join('')}
-      ${me.nilai_hm == null ? '<div class="dsp-cat2">⚠️ Penilaian HM minggu ini belum diisi — bobotnya sementara dipindah ke poin lain.</div>' : ''}
-    </div>`;
+    if (!saya) { el.style.display = 'none'; el.innerHTML = ''; return; }
+    el.innerHTML = _lskSaya(saya, nmBl);
   }
+  function _lskBlnNm(t){ if (!t) return ''; const d = new Date(String(t).slice(0, 10) + 'T00:00:00Z'); return ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'][d.getUTCMonth()] + ' ' + d.getUTCFullYear(); }
 
-  // --- Detail poin satu HOD ---
+  // --- Detail poin (HOD / HM / Corporate) ---
   function lskDetail(role){
-    const h = ((LSK.data && LSK.data.hod) || []).find(x => x.role === role); if (!h) return;
-    const esc = _arsEsc, it = h.items || [];
-    const grp = [['hasil','HASIL KERJA · 50%'],['disiplin','KEDISIPLINAN · 20%'],['hm','PENILAIAN HM · 30%'],['perlu','BELUM DIHITUNG (perlu data)']];
-    const tag = i => i.grup === 'hm' ? '<span class="lsk-src hm">✍️ HM</span>' : i.grup === 'perlu' ? '<span class="lsk-src abu">🔧 Perlu data</span>' : `<span class="lsk-src">⚡ ${esc(i.src)}</span>`;
+    const D = LSK.data || {};
+    const h = (D.hod || []).find(x => x.role === role) || (D.lain || []).find(x => x.role === role); if (!h) return;
+    const esc = _arsEsc, it = h.items || [], hodp = !!h.dept, atasan = hodp ? 'HM' : 'COO', nAt = hodp ? h.nilai_hm : h.nilai_coo;
+    const grp = [['hasil','HASIL KERJA · 50%'],['disiplin','KEDISIPLINAN · 20%'],[hodp ? 'hm' : 'coo','PENILAIAN ' + atasan + ' · 30%'],['perlu','BELUM DIHITUNG (perlu data)']];
+    const tag = i => i.grup === 'hm' ? '<span class="lsk-src hm">✍️ HM</span>' : i.grup === 'coo' ? '<span class="lsk-src hm">✍️ COO</span>' : i.grup === 'perlu' ? '<span class="lsk-src abu">🔧 Perlu data</span>' : `<span class="lsk-src">⚡ ${esc(i.src)}</span>`;
     const isi = grp.map(([g, jd]) => { const xs = it.filter(i => i.grup === g); if (!xs.length) return '';
       return `<div class="lsk-gj">${jd}</div>` + xs.map(i => `<div class="lsk-it"><div class="lsk-ith"><b>${esc(i.label)}</b>${tag(i)}</div>
         ${i.nilai != null ? `<div class="lsk-bar"><i class="b-${_lskK(i.nilai)}" style="width:${Math.max(2, Math.min(100, i.nilai))}%"></i></div>` : ''}
@@ -26887,15 +26927,74 @@ function _arsTglLabel(t){ const d=new Date(t+'T00:00:00Z'); const h=['Minggu','S
     document.getElementById('lsk-ov')?.remove();
     const ov = document.createElement('div'); ov.id = 'lsk-ov'; ov.className = 'rwy-ov';
     ov.onclick = e => { if (e.target === ov) ov.remove(); };
-    ov.innerHTML = `<div class="rwy-sheet"><div class="rwy-top"><div><b>🎯 ${LSK_DEPT_PJG[h.dept]} · ${LSK_UNIT[h.unit]}</b><div class="lsk-tsub">${esc(_lskNm(h.nama) || (h.aktif ? '' : 'Posisi Vacant'))}${LSK.data.grps_update ? ' · per ' + _lskJam(LSK.data.grps_update) : ''}</div></div><button type="button" class="rwy-x" onclick="document.getElementById('lsk-ov').remove()">✕ Tutup</button></div>
+    ov.innerHTML = `<div class="rwy-sheet"><div class="rwy-top"><div><b>🎯 ${esc(_lskNmRole(h))}</b><div class="lsk-tsub">${esc(_lskNm(h.nama) || (h.aktif ? '' : 'Posisi Vacant'))}${D.grps_update ? ' · per ' + _lskJam(D.grps_update) : ''}</div></div><button type="button" class="rwy-x" onclick="document.getElementById('lsk-ov').remove()">✕ Tutup</button></div>
       <div class="rwy-bd">
         <div class="lsk-hero"><div class="lsk-ring r-${_lskK(h.total)}" style="--d:${deg}deg"><span>${h.total ?? '—'}</span></div>
           <div><b>${st}</b>${lemah ? `<small>Terendah: ${esc(lemah.label)} (${Math.round(lemah.nilai)})</small>` : ''}${!h.aktif ? '<small>Posisi Vacant / belum ada pengguna aktif</small>' : ''}</div></div>
-        <div class="lsk-3 lsk-3b"><div><b>${h.hasil ?? '—'}</b>Hasil 50%</div><div><b>${h.disiplin ?? '—'}</b>Disiplin 20%</div><div><b>${h.nilai_hm ?? '—'}</b>HM 30%</div></div>
+        <div class="lsk-3 lsk-3b"><div><b>${h.hasil ?? '—'}</b>Hasil 50%</div><div><b>${h.disiplin ?? '—'}</b>Disiplin 20%</div><div><b>${nAt ?? '—'}</b>${atasan} 30%</div></div>
         <div class="lsk-det">${isi}</div>
-        <div class="dsp-cat2">Complaint GRPS: fasilitas kamar 80% HK SPV + 20% ENG SPV · kebersihan 100% HK · pelayanan 100% FO. Skor complaint = 100 ÷ (1 + rasio complaint ÷ 5%) — tiap complaint selalu menurunkan skor. Complaint yang hasil cek-nya “tidak ada masalah” tidak dihitung.</div>
+        <div class="dsp-cat2">${hodp ? 'Complaint GRPS: fasilitas kamar 80% HK SPV + 20% ENG SPV · kebersihan 100% HK · pelayanan 100% FO.' : h.grup === 'hm' ? 'Complaint GRPS: seluruh complaint unit. Room Check: semua kamar min. 1×/bulan, target harian = total kamar ÷ hari kerja HM.' : 'Rating dihitung skala 100 (mis. 8,0/10 = 80 · 4,4/5 = 88).'} Skor complaint = 100 ÷ (1 + rasio complaint ÷ 5%) — tiap complaint selalu menurunkan skor; complaint yang hasil cek-nya “tidak ada masalah” tidak dihitung.</div>
       </div></div>`;
     document.body.appendChild(ov);
+  }
+
+  // --- Form Nilai Bulanan COO (HM & Corporate) ---
+  function _lskBlnIni(){ return _arsHariIni().slice(0, 7) + '-01'; }
+  function _lskBlnLalu(){ const d = new Date(_lskBlnIni() + 'T00:00:00Z'); d.setUTCMonth(d.getUTCMonth() - 1); return d.toISOString().slice(0, 10); }
+  async function lskCooBuka(bl){
+    if (!(currentRole === 'COO' || currentRole === 'CEO')) return;
+    const tgl = Number(_arsHariIni().slice(8, 10)), lalu = _lskBlnLalu();
+    LSK.cooBl = bl || (tgl <= 4 && lalu >= '2026-11-01' ? lalu : _lskBlnIni());
+    document.getElementById('lsk-ov')?.remove();
+    const ov = document.createElement('div'); ov.id = 'lsk-ov'; ov.className = 'rwy-ov';
+    ov.onclick = e => { if (e.target === ov) ov.remove(); };
+    ov.innerHTML = '<div class="rwy-sheet" id="lsk-csheet"><div class="ars-kosong">⏳ Memuat…</div></div>';
+    document.body.appendChild(ov);
+    try { LSK.coo = await _rpc('coo_nilai_baca', { p_viewer: currentRole, p_bulan: LSK.cooBl }); }
+    catch(e) { LSK.coo = { gagal: e.message || String(e) }; }
+    lskCooRender();
+  }
+  function lskCooRender(){
+    const sh = document.getElementById('lsk-csheet'); if (!sh) return;
+    const C = LSK.coo || {}, esc = _arsEsc, bl = LSK.cooBl, tgl = Number(_arsHariIni().slice(8, 10)), lalu = _lskBlnLalu();
+    const pilihan = [_lskBlnIni()]; if (tgl <= 4 && lalu >= '2026-11-01') pilihan.unshift(lalu);
+    const rs = (C.roles || []);
+    const blok = rs.map(r => {
+      const sudah = (r.poin || []).every(p => p.nilai);
+      return `<div class="lsk-cr${r.aktif ? '' : ' mati'}" data-role="${esc(r.role)}">
+        <div class="lsk-crh"><b>${esc(_lskNmRole(r))}</b><small>${r.aktif ? (esc(_lskNm(r.nama)) || '—') : 'Posisi kosong — tidak perlu dinilai'}${sudah ? ' · ✓ sudah dinilai' : ''}</small></div>
+        ${(r.poin || []).map(p => `<div class="lsk-np" data-poin="${p.poin}">
+          <div class="lsk-npj"><b>${esc(p.label)}</b></div>
+          <div class="lsk-sk">${[1,2,3,4,5].map(i => `<button type="button" class="${i === p.nilai ? 'on' : ''}" ${r.aktif ? '' : 'disabled'} onclick="lskPilih(this,${i})" aria-label="${i} ${LSK_LBL_N[i]}">${i}</button>`).join('')}</div>
+          <div class="lsk-skl">${p.nilai ? LSK_LBL_N[p.nilai] : '1 = kurang sekali · 5 = sangat baik'}</div>
+          <input class="lsk-cat" maxlength="300" placeholder="Catatan (opsional)" value="${esc(p.catatan || '')}" ${r.aktif ? '' : 'disabled'}>
+        </div>`).join('')}</div>`;
+    }).join('');
+    sh.innerHTML = `<div class="rwy-top"><div><b>✍️ Nilai Bulanan COO</b><div class="lsk-tsub">${_lskBlnNm(bl)} · HM &amp; Corporate · batas tgl 3</div></div><button type="button" class="rwy-x" onclick="document.getElementById('lsk-ov').remove()">✕ Tutup</button></div>
+      <div class="rwy-bd">
+        ${pilihan.length > 1 ? `<div class="lsk-mg">${pilihan.map(m => `<button type="button" class="${m === bl ? 'on' : ''}" onclick="lskCooBuka('${m}')">${_lskBlnNm(m)}</button>`).join('')}</div>` : ''}
+        ${C.gagal ? `<div class="ars-kosong">Gagal memuat: ${esc(C.gagal)}</div>` : blok}
+        <div class="dsp-err" id="lsk-err"></div>
+        ${C.gagal ? '' : '<button type="button" class="lsk-btn" id="lsk-simpan" onclick="lskCooSimpan()">Simpan Penilaian</button>'}
+        <div class="dsp-cat2">Boleh diisi sebagian — poin yang belum dinilai tidak dihitung (bobot pindah). Nilai 1–5 = skor 20–100 dan menjadi 30% skor bulan itu. Bisa diubah sampai tgl 4 bulan berikutnya.</div>
+      </div>`;
+  }
+  async function lskCooSimpan(){
+    const err = document.getElementById('lsk-err'), btn = document.getElementById('lsk-simpan'); const items = [];
+    document.querySelectorAll('#lsk-csheet .lsk-cr:not(.mati)').forEach(r => r.querySelectorAll('.lsk-np').forEach(p => {
+      const on = p.querySelector('.lsk-sk button.on'); if (!on) return;
+      items.push({ role: r.dataset.role, poin: p.dataset.poin, nilai: Number(on.textContent), catatan: p.querySelector('.lsk-cat').value.trim() });
+    }));
+    if (!items.length) { err.textContent = 'Belum ada poin yang dinilai.'; return; }
+    err.textContent = ''; btn.disabled = true; btn.textContent = '⏳ Menyimpan…';
+    try {
+      await _rpc('coo_nilai_simpan', { p_viewer: currentRole, p_bulan: LSK.cooBl, p_items: items });
+      document.getElementById('lsk-ov')?.remove();
+      showToast('✓ ' + items.length + ' poin penilaian COO tersimpan — skor diperbarui');
+      lskMuat();
+    } catch(e) {
+      err.textContent = 'Gagal menyimpan: ' + (e.message || e); btn.disabled = false; btn.textContent = 'Simpan Penilaian';
+    }
   }
 
   // --- Form Nilai HOD (HM, tiap minggu) ---
