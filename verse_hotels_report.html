@@ -26587,8 +26587,8 @@ function _arsTglLabel(t){ const d=new Date(t+'T00:00:00Z'); const h=['Minggu','S
     } else showToast('✓ Laporan ditandai sudah dicek');
   }
 
-  // Batas kirim laporan (12 Nov 2026): HM & Corporate 20.00 · HOD & F&B 19.00
-  function dspJamBatas(role) { role = String(role || ''); return (role.startsWith('HM ') || /Corporate$|^HR Officer$|^Ops HR Manager$/.test(role)) ? '20.00' : '19.00'; }
+  // Batas kirim laporan (12 Nov 2026): HM, Corporate & F&B Manager 20.00 · HOD 19.30
+  function dspJamBatas(role) { role = String(role || ''); return (role.startsWith('HM ') || /Corporate$|^HR Officer$|^Ops HR Manager$|^F&B Manager$/.test(role)) ? '20.00' : '19.30'; }
   // ===== KEDISIPLINAN LAPORAN (9 Nov 2026) — batas 18.30, alasan wajib bila tidak kirim, ringkasan COO/CEO/HR/HM =====
   const DSP = { kunci: false, cekKey: '', kurang: [], tgl: null, data: null, el: null, buka: {} };
   const DSP_AL = [['sakit','🤒 Sakit'],['izin','📝 Izin tidak masuk'],['lainnya','✏️ Lainnya (tulis sendiri)']];
@@ -26693,12 +26693,12 @@ function _arsTglLabel(t){ const d=new Date(t+'T00:00:00Z'); const h=['Minggu','S
     const el = document.getElementById(DSP.el); if (!el) return;
     const D = DSP.data, kmr = _arsGeser(_arsHariIni(), -1);
     const nav = `<div class="dsp-nav"><button type="button" onclick="dspGeser(-1)" aria-label="Hari sebelumnya">‹</button><span>${_arsTglLabel(DSP.tgl)}${DSP.tgl === kmr ? ' · kemarin' : ''}</span><button type="button" onclick="dspGeser(1)" ${DSP.tgl >= kmr ? 'disabled' : ''} aria-label="Hari berikutnya">›</button></div>`;
-    const judul = `<div class="ars-h"><b>📋 Kedisiplinan Laporan</b><span>${DSP_HM_HOTEL[currentRole] ? _arsEsc(_arsPendek(DSP_HM_HOTEL[currentRole])) : DSP_DEPT[currentRole] ? 'Engineering · semua unit' : 'Semua unit'} · batas HOD 19.00 · HM &amp; Corp 20.00</span></div>`;
+    const judul = `<div class="ars-h"><b>📋 Kedisiplinan Laporan</b><span>${DSP_HM_HOTEL[currentRole] ? _arsEsc(_arsPendek(DSP_HM_HOTEL[currentRole])) : DSP_DEPT[currentRole] ? 'Engineering · semua unit' : 'Semua unit'} · batas HOD 19.30 · HM, Corp &amp; FBM 20.00</span></div>`;
     if (!D) { el.innerHTML = `<div class="ars-box">${judul}<div class="ars-kosong">Gagal memuat. <button type="button" class="ars-more" style="display:inline;width:auto" onclick="dspMuat()">Coba lagi</button></div></div>`; return; }
     const hari = D.hari || [], esc = _arsEsc, jam = _arsJam;
     const wajib = hari.filter(h => h.wajib);
-    // Batas kirim (12 Nov 2026): HM & Corporate 20.00 WIB · HOD & F&B 19.00 WIB
-    const btOf = h => new Date(DSP.tgl + (['hm','corp'].includes(h.grup) ? 'T13:00:00Z' : 'T12:00:00Z')).getTime();
+    // Batas kirim (12 Nov 2026): HM, Corporate & F&B 20.00 WIB · HOD 19.30 WIB
+    const btOf = h => new Date(DSP.tgl + (['hm','corp','fb'].includes(h.grup) ? 'T13:00:00Z' : 'T12:30:00Z')).getTime();
     const tepat = wajib.filter(h => h.kirim && new Date(h.kirim).getTime() <= btOf(h)), telat = wajib.filter(h => h.kirim && new Date(h.kirim).getTime() > btOf(h));
     const tidak = wajib.filter(h => !h.kirim), sebelumMulai = DSP.tgl < (D.mulai || '2026-11-09');
     const libur = hari.filter(h => !h.wajib && h.sebab !== 'Belum ada pengguna aktif');
@@ -26714,7 +26714,7 @@ function _arsTglLabel(t){ const d=new Date(t+'T00:00:00Z'); const h=['Minggu','S
       <div class="dsp-kpi"><div><b>${wajib.length}</b>Wajib</div><div class="g"><b>${tepat.length}</b>Tepat waktu</div><div class="a"><b>${telat.length}</b>Terlambat</div><div class="r"><b>${tidak.length}</b>Tidak kirim</div></div>
       ${D.libur_kemarin ? `<div class="dsp-info">🎌 ${esc(D.libur_kemarin)} — Corporate &amp; HM libur</div>` : ''}
       ${tidak.length ? `<div class="dsp-sec">❌ Tidak kirim</div>${tidak.map(h => `<div class="dsp-row"><div class="ars-ic">${_arsIkon(h.role)}</div><div class="ars-tx"><b class="dsp-nm" onclick="rwyBuka('${esc(h.role)}')">${esc(_dspNama(h.role))}</b>${h.alasan === 'lainnya' && h.ket ? `<small>“${esc(h.ket)}”</small>` : ''}</div>${tagAl(h)}</div>`).join('')}` : (wajib.length ? '<div class="dsp-info ok">✓ Semua yang wajib sudah mengirim laporan</div>' : '')}
-      ${telat.length ? `<div class="dsp-sec">🕒 Terlambat (lewat batas · HOD 19.00 · HM &amp; Corp 20.00)</div>${telat.map(h => `<div class="dsp-row"><div class="ars-ic">${_arsIkon(h.role)}</div><div class="ars-tx"><b class="dsp-nm" onclick="rwyBuka('${esc(h.role)}')">${esc(_dspNama(h.role))}</b></div><span class="dsp-tag kuning">kirim ${jam(h.kirim)}</span></div>`).join('')}` : ''}
+      ${telat.length ? `<div class="dsp-sec">🕒 Terlambat (lewat batas · HOD 19.30 · HM, Corp &amp; FBM 20.00)</div>${telat.map(h => `<div class="dsp-row"><div class="ars-ic">${_arsIkon(h.role)}</div><div class="ars-tx"><b class="dsp-nm" onclick="rwyBuka('${esc(h.role)}')">${esc(_dspNama(h.role))}</b></div><span class="dsp-tag kuning">kirim ${jam(h.kirim)}</span></div>`).join('')}` : ''}
       ${libur.length ? `<button type="button" class="dsp-lip" onclick="DSP.buka.libur=!DSP.buka.libur;dspRender()">🌴 Libur / day off (${libur.length}) ${DSP.buka.libur ? '▴' : '▾'}</button>
         ${DSP.buka.libur ? libur.map(h => `<div class="dsp-row kecil"><div class="ars-tx"><b>${esc(_dspNama(h.role))}</b></div><span class="dsp-tag abu">${esc(h.sebab === 'kosong' ? 'Posisi Vacant' : h.sebab)}</span></div>`).join('') : ''}` : ''}
       <div class="dsp-sec">🏅 Skor bulan ini</div>
@@ -26773,7 +26773,7 @@ function _arsTglLabel(t){ const d=new Date(t+'T00:00:00Z'); const h=['Minggu','S
     const rows = (D.hari || []).map((h, i) => {
       const t = h.tanggal, dd = new Date(t + 'T00:00:00Z'), lap = h.laporan || [], kirim = h.kirim || (lap[0] && lap[0].kirim);
       const _jb = dspJamBatas(RWY.role);
-      const batas = new Date(t + (_jb === '20.00' ? 'T13:00:00Z' : 'T12:00:00Z')).getTime(), kini = t === hariIni;
+      const batas = new Date(t + (_jb === '20.00' ? 'T13:00:00Z' : 'T12:30:00Z')).getTime(), kini = t === hariIni;
       let judul = '', sub = '', tag = '', klik = '';
       if (lap.length) {
         const jam = _arsJam(kirim), l0 = lap[0];
