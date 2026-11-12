@@ -27041,7 +27041,7 @@ function _arsTglLabel(t){ const d=new Date(t+'T00:00:00Z'); const h=['Minggu','S
   function dfkBoleh(r) {
     r = r || currentRole || '';
     return /^(HM |Housekeeping Supervisor |Engineering Supervisor |Front Office Supervisor )/.test(r)
-      || ['EHK Corporate','CRA Corporate','Ops HR Manager','HR Officer','Chief Engineering Corporate','F&B Manager','COO','CEO'].includes(r);
+      || ['EHK Corporate','Chief Engineering Corporate','F&B Manager','COO','CEO'].includes(r);   // HR & CRA tidak punya akses Defect
   }
   async function dfkMaybeShow() {
     const coo = currentRole === 'COO' || currentRole === 'CEO';
