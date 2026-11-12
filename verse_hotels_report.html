@@ -27677,8 +27677,8 @@ function _arsTglLabel(t){ const d=new Date(t+'T00:00:00Z'); const h=['Minggu','S
   // Login History) dan hanya saat tidak ada isian / jendela terbuka. Layar isian tim TIDAK PERNAH dimuat ulang otomatis.
   let _versiAwalVA = null;
   function layarAmanVA_() {
-    if (window._peekMode) return false;
     const a = document.querySelector('.screen.active'); const id = a ? a.id : '';
+    if (window._peekMode && id !== 'screen-home') return false;   // Mode Intip: hanya di Beranda (intip dipulihkan setelah muat ulang)
     if (['screen-coo', 'screen-home', 'screen-peta-live', 'screen-location-tracking', 'screen-login-history'].indexOf(id) < 0) return false;
     const el = document.activeElement; if (el && /INPUT|TEXTAREA|SELECT/.test(el.tagName)) return false;
     if (document.querySelector('.modal-overlay.show')) return false;
@@ -27694,6 +27694,7 @@ function _arsTglLabel(t){ const d=new Date(t+'T00:00:00Z'); const h=['Minggu','S
       if (!_versiAwalVA) { _versiAwalVA = v; return; }
       if (v !== _versiAwalVA && layarAmanVA_()) {
         try { const a = document.querySelector('.screen.active'); if (a && a.id === 'screen-peta-live') sessionStorage.setItem('va_buka_peta', '1'); } catch (e) {}
+        try { if (window._peekMode) sessionStorage.setItem('va_intip', window._peekMode.role); } catch (e) {}
         location.reload();
       }
     } catch (e) {}
@@ -27701,6 +27702,19 @@ function _arsTglLabel(t){ const d=new Date(t+'T00:00:00Z'); const h=['Minggu','S
   setTimeout(cekVersiBaruVA, 5000);
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') setTimeout(cekVersiBaruVA, 800); });
   setInterval(cekVersiBaruVA, 5 * 60 * 1000);
+  // Setelah dimuat ulang saat Mode Intip → intip lagi role yang sama begitu Dashboard COO/CEO terbuka
+  (function () {
+    let role = null;
+    try { role = sessionStorage.getItem('va_intip'); sessionStorage.removeItem('va_intip'); } catch (e) {}
+    if (!role) return;
+    let n = 0;
+    const t = setInterval(() => {
+      n++;
+      const a = document.querySelector('.screen.active');
+      if (a && a.id === 'screen-coo') { clearInterval(t); try { startPeekMode(role); } catch (e) {} }
+      else if (n > 40) clearInterval(t);
+    }, 500);
+  })();
   // Setelah dimuat ulang dari Peta Live → kembali ke Peta Live begitu Dashboard COO/CEO terbuka
   (function () {
     let mau = false;
