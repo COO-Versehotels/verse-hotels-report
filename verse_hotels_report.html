@@ -1670,6 +1670,7 @@
   .dfk-chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}.dfk-chips:empty{display:none}
   .dfk-chips span{font-size:11px;font-weight:700;background:rgba(255,255,255,.18);color:#fff;border-radius:20px;padding:3px 9px}
   .dfk-chips span.w{background:#fff;color:#c2410c}
+  .dfk-chips span.y{background:#fde047;color:#422006}
   :is(.tb,.tbo) .dfk-card .rc-icon{background:#3a1d0b !important}
   :is(.tb,.tbo) .dfk-chips span{background:#2a3145;color:#e2e8f0} :is(.tb,.tbo) .dfk-chips span.w{background:#c2410c;color:#fff}
   #dfk-ov{position:fixed;inset:0;z-index:100500;background:#0f172a;display:flex;flex-direction:column}
@@ -4938,7 +4939,7 @@
           const url = typeof input === 'string' ? input : ((input && input.url) || '');
           const method = String((init && init.method) || (input && input.method) || 'GET').toUpperCase();
           const ours = url.indexOf(SUPA_URL) === 0 || url.indexOf('/api/') === 0 || url.indexOf(location.origin + '/api/') === 0;
-          const readOnlyRpc = /\/rest\/v1\/rpc\/(device_check|admin_devices_list|admin_users_list|notif_list|notif_history|jadwal_baca|live_skor|hod_nilai_baca|coo_nilai_baca|defect_ringkas|defect_sso_buat)$/.test(url.split('?')[0]);
+          const readOnlyRpc = /\/rest\/v1\/rpc\/(device_check|admin_devices_list|admin_users_list|notif_list|notif_history|jadwal_baca|live_skor|hod_nilai_baca|coo_nilai_baca|defect_ringkas|defect_sso_buat|dc_tasklist_belum)$/.test(url.split('?')[0]);
           if (ours && method !== 'GET' && method !== 'HEAD' && !readOnlyRpc) {
             if (Date.now() - _lastPeekToast > 3000) {
               _lastPeekToast = Date.now();
@@ -27051,15 +27052,18 @@ function _arsTglLabel(t){ const d=new Date(t+'T00:00:00Z'); const h=['Minggu','S
     if (!dfkBoleh()) { el.style.display = 'none'; return; }
     el.style.display = 'flex';
     let d = null;
-    try { d = await _rpc('defect_ringkas', window._peekMode ? { p_role: currentRole } : {}); } catch(e) { d = null; }
+    let pesan = 0;
+    try { [d, pesan] = await Promise.all([_rpc('defect_ringkas', window._peekMode ? { p_role: currentRole } : {}), _rpc('dc_tasklist_belum', window._peekMode ? { p_role: currentRole } : {}).catch(() => 0)]); } catch(e) { d = null; }
     const chips = document.getElementById(id + '-chips'), sub = document.getElementById(id + '-sub');
     if (!d || Array.isArray(d)) { if (chips) chips.innerHTML = ''; return; }
     if (sub) sub.textContent = (d.unit ? String(d.unit).replace(' Gajah Mada','').replace(' Wahid Hasyim','').replace(' Mahakam Blok M','') + ' · ' : '') + 'buka tanpa login lagi';
-    if (chips) chips.innerHTML = `<span class="w">${d.open || 0} Open</span><span>${d.progress || 0} In Progress</span>` +
+    const ikChat = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>';
+    el.dataset.pesan = (+pesan > 0) ? '1' : '';
+    if (chips) chips.innerHTML = ((+pesan > 0) ? `<span class="y">${ikChat} ${pesan} pesan baru</span>` : '') + `<span class="w">${d.open || 0} Open</span><span>${d.progress || 0} In Progress</span>` +
       (d.barang ? `<span>📦 ${d.barang} menunggu barang</span>` : (d.pending ? `<span>${d.pending} Pending</span>` : '')) +
       (d.lama ? `<span>⚠️ ${d.lama} &gt; 3 hari</span>` : '');
   }
-  async function dfkBuka() {
+  async function dfkBuka(opsi) {
     if (!dfkBoleh()) { showToast('Role Anda tidak punya akses Defect Tracker'); return; }
     document.getElementById('dfk-ov')?.remove();
     const ov = document.createElement('div'); ov.id = 'dfk-ov';
@@ -27071,7 +27075,9 @@ function _arsTglLabel(t){ const d=new Date(t+'T00:00:00Z'); const h=['Minggu','S
     catch(e) { ov.querySelector('.dfk-load').innerHTML = '⚠️ ' + _arsEsc(e.message || String(e)); return; }
     if (!r || !r.kode) { ov.querySelector('.dfk-load').textContent = '⚠️ Gagal membuka Defect Tracker. Coba lagi.'; return; }
     const fr = document.createElement('iframe');
-    fr.src = DFK_URL + '?sso=' + encodeURIComponent(r.kode);
+    const _el = document.getElementById((currentRole === 'COO' || currentRole === 'CEO') ? 'dfk-coo' : 'dfk-home');
+    if (!opsi && _el && _el.dataset.pesan) opsi = 'chat';
+    fr.src = DFK_URL + '?sso=' + encodeURIComponent(r.kode) + (opsi === 'chat' ? '&buka=chat' : '');
     fr.setAttribute('allow', 'camera; microphone; geolocation; clipboard-write; fullscreen');
     fr.onload = () => { const l = ov.querySelector('.dfk-load'); if (l) l.remove(); };
     ov.appendChild(fr);
@@ -27846,6 +27852,7 @@ function _arsTglLabel(t){ const d=new Date(t+'T00:00:00Z'); const h=['Minggu','S
       if (rk && dspBoleh()) { const y = new Date(new Date(n.created_at).getTime() + 7*3600000).getUTCFullYear(); return { label: 'Buka Kedisiplinan Laporan', run: () => dspBukaTanggal(`${y}-${rk[2]}-${rk[1]}`) }; }
       if (/Keanehan akses/i.test(n.title || '') && dspBoleh()) return { label: 'Buka Kedisiplinan Laporan', run: () => dspBukaTanggal() };
       if (/HOD belum kirim/i.test(n.title || '') && arsBoleh()) return { label: 'Buka Arsip Laporan hari ini', run: () => arsBukaHariIni() };
+      if (/^Diskusi Defect/i.test(n.title || '') && dfkBoleh()) return { label: 'Buka Diskusi Defect', run: () => dfkBuka('chat') };
       if (/Skor merah|Skor turun|Skor naik ke hijau|Rekap Live Score/i.test(n.title || '') && lskBoleh()) return { label: 'Buka Live Score', run: () => lskBuka(n.title || '') };
     }
     if (window._peekMode || isAdmin) return null;
