@@ -1667,6 +1667,17 @@
     transition: transform 0.15s;
   }
   .rc-menu-card:active { transform: scale(0.97); }
+  .dfk-chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}.dfk-chips:empty{display:none}
+  .dfk-chips span{font-size:11px;font-weight:700;background:rgba(255,255,255,.18);color:#fff;border-radius:20px;padding:3px 9px}
+  .dfk-chips span.w{background:#fff;color:#c2410c}
+  :is(.tb,.tbo) .dfk-card .rc-icon{background:#3a1d0b !important}
+  :is(.tb,.tbo) .dfk-chips span{background:#2a3145;color:#e2e8f0} :is(.tb,.tbo) .dfk-chips span.w{background:#c2410c;color:#fff}
+  #dfk-ov{position:fixed;inset:0;z-index:100500;background:#0f172a;display:flex;flex-direction:column}
+  #dfk-ov .dfk-bar{display:flex;align-items:center;gap:10px;padding:calc(env(safe-area-inset-top,0px) + 8px) 12px 8px;background:linear-gradient(135deg,#0f172a,#1e293b);color:#fff}
+  #dfk-ov .dfk-back{border:none;background:rgba(255,255,255,.14);color:#fff;font:inherit;font-size:13px;font-weight:800;border-radius:20px;padding:8px 13px;cursor:pointer;white-space:nowrap}
+  #dfk-ov .dfk-bar b{font-size:14.5px}#dfk-ov .dfk-bar small{display:block;font-size:11px;color:#94a3b8}
+  #dfk-ov iframe{flex:1;width:100%;border:0;background:#0f172a}
+  #dfk-ov .dfk-load{position:absolute;inset:60px 0 0;display:flex;align-items:center;justify-content:center;color:#cbd5e1;font-size:13px;pointer-events:none}
   .rc-menu-card .rc-icon {
     width: 48px; height: 48px;
     background: rgba(255,255,255,0.18);
@@ -3308,6 +3319,17 @@
         <div class="rc-arrow">›</div>
       </div>
 
+      <!-- Defect Tracker lewat Tasklist (12 Nov 2026) — HM, Corporate, HOD, FBM -->
+      <div class="rc-menu-card dfk-card" id="dfk-home" style="display:none;background:linear-gradient(135deg,#7c2d12,#c2410c);" onclick="dfkBuka()">
+        <div class="rc-icon">🛠️</div>
+        <div class="rc-text">
+          <div class="rc-title">Defect Tracker</div>
+          <div class="rc-sub" id="dfk-home-sub">Buka tanpa login lagi</div>
+          <div class="dfk-chips" id="dfk-home-chips"></div>
+        </div>
+        <div class="rc-arrow">›</div>
+      </div>
+
       <!-- Kandidat Unit (HM: unitnya; HR: semua unit) -->
       <div id="kdu-home" style="display:none;"></div>
 
@@ -4267,6 +4289,15 @@
       </div>
 
       <!-- Arsip Laporan (COO) -->
+      <div class="rc-menu-card dfk-card" id="dfk-coo" style="display:none;margin:0 16px 14px;background:linear-gradient(135deg,#7c2d12,#c2410c);" onclick="dfkBuka()">
+        <div class="rc-icon">🛠️</div>
+        <div class="rc-text">
+          <div class="rc-title">Defect Tracker</div>
+          <div class="rc-sub" id="dfk-coo-sub">4 unit · buka tanpa login lagi</div>
+          <div class="dfk-chips" id="dfk-coo-chips"></div>
+        </div>
+        <div class="rc-arrow">›</div>
+      </div>
       <div id="lsk-coo" style="margin:0 16px 16px;"></div>
       <div id="dsp-coo" style="margin:0 16px 16px;"></div>
       <div id="ars-coo" style="margin:0 16px 16px;"></div>
@@ -7641,6 +7672,7 @@
 
       // Show/hide Room Check menu card based on role
       if (typeof rcMaybeShowHomeMenu === 'function') rcMaybeShowHomeMenu();
+      try { dfkMaybeShow(); } catch(e) { console.warn('dfk', e); }
       // Kandidat Unit (HM & HR)
       try { if (typeof kduMaybeShowHome === 'function') kduMaybeShowHome(); } catch(e) {}
 
@@ -26997,6 +27029,59 @@ function _arsTglLabel(t){ const d=new Date(t+'T00:00:00Z'); const h=['Minggu','S
     }
   }
 
+
+  // =============================================================
+  // DEFECT TRACKER LEWAT TASKLIST (12 Nov 2026) — HM, Corporate, HOD, FBM, COO/CEO
+  // Tasklist minta kode sekali pakai (defect_sso_buat) → Verse Defect dibuka di dalam Tasklist & langsung masuk.
+  // Akun Defect role ini dikunci dari login PIN; Aplikasi Verse Defect khusus ENG DW & Purchasing.
+  // =============================================================
+  const DFK_URL = 'https://verse-defect.vercel.app/';
+  function dfkBoleh(r) {
+    r = r || currentRole || '';
+    return /^(HM |Housekeeping Supervisor |Engineering Supervisor |Front Office Supervisor )/.test(r)
+      || ['EHK Corporate','CRA Corporate','Ops HR Manager','HR Officer','Chief Engineering Corporate','F&B Manager','COO','CEO'].includes(r);
+  }
+  async function dfkMaybeShow() {
+    const coo = currentRole === 'COO' || currentRole === 'CEO';
+    const id = coo ? 'dfk-coo' : 'dfk-home';
+    ['dfk-coo','dfk-home'].forEach(x => { if (x !== id) { const e = document.getElementById(x); if (e) e.style.display = 'none'; } });
+    const el = document.getElementById(id); if (!el) return;
+    if (!dfkBoleh() || window._peekMode) { el.style.display = 'none'; return; }
+    el.style.display = 'flex';
+    let d = null;
+    try { d = await _rpc('defect_ringkas', {}); } catch(e) { d = null; }
+    const chips = document.getElementById(id + '-chips'), sub = document.getElementById(id + '-sub');
+    if (!d || Array.isArray(d)) { if (chips) chips.innerHTML = ''; return; }
+    if (sub) sub.textContent = (d.unit ? String(d.unit).replace(' Gajah Mada','').replace(' Wahid Hasyim','').replace(' Mahakam Blok M','') + ' · ' : '') + 'buka tanpa login lagi';
+    if (chips) chips.innerHTML = `<span class="w">${d.open || 0} Open</span><span>${d.progress || 0} In Progress</span>` +
+      (d.barang ? `<span>📦 ${d.barang} menunggu barang</span>` : (d.pending ? `<span>${d.pending} Pending</span>` : '')) +
+      (d.lama ? `<span>⚠️ ${d.lama} &gt; 3 hari</span>` : '');
+  }
+  async function dfkBuka() {
+    if (window._peekMode) { showToast('👁️ Mode Intip — Defect Tracker tidak dibuka'); return; }
+    if (!dfkBoleh()) { showToast('Role Anda tidak punya akses Defect Tracker'); return; }
+    document.getElementById('dfk-ov')?.remove();
+    const ov = document.createElement('div'); ov.id = 'dfk-ov';
+    ov.innerHTML = `<div class="dfk-bar"><button type="button" class="dfk-back" onclick="dfkTutup()">← Tasklist</button><div><b>🛠️ Defect Tracker</b><small>Masuk otomatis sebagai ${_arsEsc(getDisplayRole ? getDisplayRole(currentRole) : currentRole)}</small></div></div><div class="dfk-load">⏳ Membuka Defect Tracker…</div>`;
+    document.body.appendChild(ov);
+    try { history.pushState({ dfk: 1 }, ''); } catch(e) {}
+    let r;
+    try { r = await _rpc('defect_sso_buat', {}); }
+    catch(e) { ov.querySelector('.dfk-load').innerHTML = '⚠️ ' + _arsEsc(e.message || String(e)); return; }
+    if (!r || !r.kode) { ov.querySelector('.dfk-load').textContent = '⚠️ Gagal membuka Defect Tracker. Coba lagi.'; return; }
+    const fr = document.createElement('iframe');
+    fr.src = DFK_URL + '?sso=' + encodeURIComponent(r.kode);
+    fr.setAttribute('allow', 'camera; microphone; geolocation; clipboard-write; fullscreen');
+    fr.onload = () => { const l = ov.querySelector('.dfk-load'); if (l) l.remove(); };
+    ov.appendChild(fr);
+  }
+  function dfkTutup() {
+    const ov = document.getElementById('dfk-ov'); if (!ov) return;
+    ov.remove(); try { dfkMaybeShow(); } catch(e) {}
+  }
+  window.addEventListener('popstate', () => { if (document.getElementById('dfk-ov')) dfkTutup(); });
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && currentRole && !document.getElementById('dfk-ov')) { try { dfkMaybeShow(); } catch(e) {} } });
+
   // Buka Live Score dari notifikasi (+ langsung detail orangnya bila namanya ada di judul)
   function lskBuka(judul){
     const coo = currentRole === 'COO' || currentRole === 'CEO', id = coo ? 'lsk-coo' : 'lsk-home';
@@ -27226,7 +27311,7 @@ function _arsTglLabel(t){ const d=new Date(t+'T00:00:00Z'); const h=['Minggu','S
           ${submitted > 0 ? `<span style="font-size:12px;color:var(--gray-400);margin-left:8px;">${avgRolePct}%</span>` : ''}
         </div>`;
     });
-    try { if (currentRole === 'COO' || currentRole === 'CEO') { arsMuat('ars-coo'); dspMuat('dsp-coo'); lskMuat('lsk-coo'); } } catch(e) {}
+    try { if (currentRole === 'COO' || currentRole === 'CEO') { arsMuat('ars-coo'); dspMuat('dsp-coo'); lskMuat('lsk-coo'); try { dfkMaybeShow(); } catch(e) {} } } catch(e) {}
     try { tbCooRingkas(roles, submittedReports); } catch(e) { console.warn('tbCooRingkas', e); }
     document.getElementById('coo-role-summary').innerHTML = roleSummaryHtml ||
       '<div style="padding:16px;text-align:center;color:var(--gray-400);font-size:13px;">Belum ada laporan masuk</div>';
@@ -30155,6 +30240,7 @@ function _arsTglLabel(t){ const d=new Date(t+'T00:00:00Z'); const h=['Minggu','S
     if (currentRole.startsWith('HM ')) return true;
     if (currentRole === 'EHK Corporate') return true;
     if (currentRole === 'Chief Engineering Corporate') return true;
+    if (currentRole.startsWith('Housekeeping Supervisor ')) return true;
     return false;
   }
 
@@ -30164,8 +30250,10 @@ function _arsTglLabel(t){ const d=new Date(t+'T00:00:00Z'); const h=['Minggu','S
     if (currentRole.startsWith('HM ')) return 'HM';
     if (currentRole === 'EHK Corporate') return 'EHK';
     if (currentRole === 'Chief Engineering Corporate') return 'CE';
+    if (currentRole.startsWith('Housekeeping Supervisor ')) return 'HK';
     return null;
   }
+  function rcHotelUnit() { return rcUserRoleType === 'HK' ? currentRole.replace('Housekeeping Supervisor ', '') : RC_HM_HOTEL_MAP[currentRole]; }
 
   // ====== ENTER ROOM CHECK SCREEN ======
   function rcEnter() {
@@ -30182,14 +30270,16 @@ function _arsTglLabel(t){ const d=new Date(t+'T00:00:00Z'); const h=['Minggu','S
     // Subtitle
     const subtitle = rcUserRoleType === 'HM'
       ? `${currentRole} · Tanggung jawab kamar`
+      : rcUserRoleType === 'HK'
+      ? `HK SPV · ${currentRole.replace('Housekeeping Supervisor ', '')} · Cek harian`
       : `${currentRole} · Unit Visit`;
     document.getElementById('rc-subtitle').textContent = subtitle;
 
     // Show hotel tabs only for Corporate roles
     const hotelTabs = document.getElementById('rc-hotel-tabs');
-    if (rcUserRoleType === 'HM') {
+    if (rcUserRoleType === 'HM' || rcUserRoleType === 'HK') {
       hotelTabs.style.display = 'none';
-      rcCurrentHotel = RC_HM_HOTEL_MAP[currentRole];
+      rcCurrentHotel = rcHotelUnit();
     } else {
       hotelTabs.style.display = 'flex';
       // Reset selected hotel kalau pindah dari hotel sebelumnya
@@ -30379,8 +30469,10 @@ function _arsTglLabel(t){ const d=new Date(t+'T00:00:00Z'); const h=['Minggu','S
     const cntMap = {};
     const latestByRoom = {};
     const recurCountMap = {}; // berapa kali Sedang/Buruk bulan ini per kamar
+    const _hkHari = new Date(Date.now() + 7*3600000).toISOString().split('T')[0];
     rcChecks.forEach(ch => {
-      cntMap[ch.room_no] = (cntMap[ch.room_no] || 0) + 1;
+      if (rcUserRoleType !== 'HK' || (ch.checked_at && new Date(new Date(ch.checked_at).getTime()+7*3600000).toISOString().split('T')[0] === _hkHari))
+        cntMap[ch.room_no] = (cntMap[ch.room_no] || 0) + 1;
       if (!latestByRoom[ch.room_no]) latestByRoom[ch.room_no] = ch; // pertama = terbaru (sudah desc)
       if (ch.cleanliness === 'Sedang' || ch.cleanliness === 'Buruk') {
         recurCountMap[ch.room_no] = (recurCountMap[ch.room_no] || 0) + 1;
@@ -30415,7 +30507,7 @@ function _arsTglLabel(t){ const d=new Date(t+'T00:00:00Z'); const h=['Minggu','S
         else if (cnt >= 2) cls += ' multi';
         else if (cnt >= 1) cls += ' checked';
         // Khusus CE: kamar yang CE sendiri tandai OO (Out of Order) — highlight terpisah dari cleanliness
-        const isOO = rcUserRoleType === 'CE' && latest && latest.room_status === 'OO' && latest.user_role === 'CE';
+        const isOO = latest && latest.room_status === 'OO' && ((rcUserRoleType === 'CE' && latest.user_role === 'CE') || rcUserRoleType === 'HK');
         if (isOO) cls += ' rc-oo-room';
         const cntBadge = (cnt >= 2 && !needsFollowup) ? '<span class="rc-cnt">' + cnt + '</span>' : '';
         const fuBadge = needsFollowup ? '<span class="rc-fu-badge">' + (isOverdue ? '⏰' : '⚠️') + '</span>' : '';
@@ -30539,16 +30631,18 @@ function _arsTglLabel(t){ const d=new Date(t+'T00:00:00Z'); const h=['Minggu','S
   function rcRenderHMDailyTarget() {
     const box = document.getElementById('rc-hm-target-alert');
     if (!box) return;
+    if (rcUserRoleType === 'HK') { rcRenderHKHarian(box); return; }
     if (rcUserRoleType !== 'HM') { box.style.display = 'none'; box.innerHTML = ''; return; }
 
     const rooms = RC_ROOMS_BY_HOTEL[rcCurrentHotel] || [];
     const total = rooms.length;
-    const checkedRooms = new Set(rcChecks.map(c => c.room_no));
+    const cekHM = rcChecks.filter(c => !c.user_role || c.user_role === 'HM');
+    const checkedRooms = new Set(cekHM.map(c => c.room_no));
     const sisaKamar = Math.max(0, total - checkedRooms.size);
 
     const todayStr = new Date(Date.now() + 7*3600000).toISOString().split('T')[0];
     const todayCount = new Set(
-      rcChecks.filter(c => {
+      cekHM.filter(c => {
         const d = c.checked_at ? new Date(new Date(c.checked_at).getTime()+7*3600000).toISOString().split('T')[0] : null;
         return d === todayStr;
       }).map(c => c.room_no)
@@ -30573,6 +30667,20 @@ function _arsTglLabel(t){ const d=new Date(t+'T00:00:00Z'); const h=['Minggu','S
       warna.icon + ' Hari ini: ' + todayCount + '/' + targetHarian + ' kamar tercapai' +
       '<div style="font-weight:500;font-size:11px;margin-top:3px;opacity:0.85;">Sisa ' + sisaKamar + ' dari ' + total + ' kamar · ' + hariKerjaTersisa + ' hari kerja tersisa bulan ini (di luar Sabtu/Minggu/tanggal merah) → target ' + targetHarian + ' kamar/hari agar 100% tercapai akhir bulan</div>' +
       '</div>';
+  }
+
+  // ====== HK SPV: progres cek harian (12 Nov 2026) ======
+  function rcRenderHKHarian(box) {
+    const rooms = RC_ROOMS_BY_HOTEL[rcCurrentHotel] || [];
+    const todayStr = new Date(Date.now() + 7*3600000).toISOString().split('T')[0];
+    const hariIni = rcChecks.filter(c => c.user_role === 'HK' && c.checked_at && new Date(new Date(c.checked_at).getTime()+7*3600000).toISOString().split('T')[0] === todayStr);
+    const kamar = new Set(hariIni.map(c => c.room_no));
+    const occ = new Set(hariIni.filter(c => c.room_status === 'OD').map(c => c.room_no)).size;
+    const oo = new Set(hariIni.filter(c => c.room_status === 'OO').map(c => c.room_no)).size;
+    box.style.display = 'block';
+    box.innerHTML = '<div style="background:#eff6ff;border:1.5px solid #93c5fd;border-radius:12px;padding:10px 14px;font-size:12px;font-weight:700;color:#1e3a8a;line-height:1.6;">🧹 Hari ini Anda sudah cek ' + kamar.size + ' dari ' + rooms.length + ' kamar' +
+      (oo ? ' · 🔧 ' + oo + ' OOO' : '') + (occ ? ' · 🛏️ ' + occ + ' Occupied' : '') +
+      '<div style="font-weight:500;font-size:11px;margin-top:3px;opacity:0.85;">Cek semua kamar VCC, VCU, VD &amp; OOO setiap hari (Occupied tidak perlu). Kotak hijau = sudah dicek hari ini.</div></div>';
   }
 
   // ====== EHK TARGET HARIAN (5 kamar/hari, reminder saja — tidak blocking) ======
@@ -31887,6 +31995,8 @@ function _arsTglLabel(t){ const d=new Date(t+'T00:00:00Z'); const h=['Minggu','S
       const roleType = rcGetUserRoleType();
       const subText = roleType === 'HM'
         ? 'Cek semua kamar unit Anda · target bulanan 100%'
+        : roleType === 'HK'
+        ? 'Cek harian semua kamar VCC, VCU, VD & OOO (kecuali Occupied)'
         : roleType === 'EHK'
           ? 'Unit Visit · cek kamar di 4 hotel'
           : 'Unit Visit · target kamar OO';
