@@ -33146,7 +33146,7 @@ function _arsTglLabel(t){ const d=new Date(t+'T00:00:00Z'); const h=['Minggu','S
   function rcMaybePromptMonthlyReport() {
     if (currentRole !== 'COO') return;
     const today = new Date(Date.now() + 7*3600000);
-    const dayOfMonth = today.getDate();
+    const dayOfMonth = today.getUTCDate();
     // Hanya prompt di 7 hari pertama bulan baru
     if (dayOfMonth > 7) return;
 
@@ -33510,9 +33510,10 @@ function hodValidateAll(containerSelector) {
 // Bangun teks rekap WA — detail lengkap per tugas (sama seperti role lain),
 // Daily Inventory DULU, baru Tasklist di bawahnya, sesuai keputusan Pak Ian.
 function hodBuildWaRecap(role, hotel, containerSelector, docLink) {
-  const today = new Date(Date.now() + 7*3600000);
-  const dateStr = today.toLocaleDateString('id-ID', { day:'2-digit', month:'long', year:'numeric' });
-  const jam = today.toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit' }) + ' WIB';
+  // 15 Nov 2026: dulu jam +7 dua kali (kirim 19.00 tertulis 02.00 besok). Sekarang pakai zona Asia/Jakarta langsung.
+  const today = new Date();
+  const dateStr = today.toLocaleDateString('id-ID', { day:'2-digit', month:'long', year:'numeric', timeZone:'Asia/Jakarta' });
+  const jam = today.toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit', hour12:false, timeZone:'Asia/Jakarta' }) + ' WIB';
 
   const cats = document.querySelectorAll(containerSelector + ' .task-category');
 
