@@ -4939,7 +4939,7 @@
           const url = typeof input === 'string' ? input : ((input && input.url) || '');
           const method = String((init && init.method) || (input && input.method) || 'GET').toUpperCase();
           const ours = url.indexOf(SUPA_URL) === 0 || url.indexOf('/api/') === 0 || url.indexOf(location.origin + '/api/') === 0;
-          const readOnlyRpc = /\/rest\/v1\/rpc\/(device_check|admin_devices_list|admin_users_list|notif_list|notif_history|jadwal_baca|live_skor|hod_nilai_baca|coo_nilai_baca|defect_ringkas|defect_sso_buat|dc_tasklist_belum)$/.test(url.split('?')[0]);
+          const readOnlyRpc = /\/rest\/v1\/rpc\/(device_check|admin_devices_list|admin_users_list|notif_list|notif_history|jadwal_baca|live_skor|hod_nilai_baca|coo_nilai_baca|defect_ringkas|defect_sso_buat|dc_tasklist_belum|hm_audit_baca)$/.test(url.split('?')[0]);
           if (ours && method !== 'GET' && method !== 'HEAD' && !readOnlyRpc) {
             if (Date.now() - _lastPeekToast > 3000) {
               _lastPeekToast = Date.now();
@@ -11205,6 +11205,8 @@ function hodHasUploadForTask(item) {
       await hodSubmitReport(currentRole, hotel, '#tasklist-content');
       return;
     }
+    // Ops HR Manager: Audit Laporan HM yang jamnya sudah lewat wajib terisi dulu
+    if (currentRole === 'Ops HR Manager' && !(await hmaCekKirim())) return;
     // Validasi dulu
     if (!validateAndSubmit()) return;
 
@@ -11335,6 +11337,8 @@ function hodHasUploadForTask(item) {
       }
     } catch(e) { console.error('Gagal buat link pendek:', e); }
     msg += `📸 *Dokumentasi:* ${docLink}\n`;
+    // Audit Laporan HM — paling atas report Ops HR Manager (23 Nov 2026)
+    if (currentRole === 'Ops HR Manager') { try { msg += await hmaTeksWA(); } catch(e) { console.warn('hmaTeksWA', e); } }
 
     // Tampilkan alasan "tidak bisa check 5 kamar" kalau HM submit hari ini pakai alasan override
     if (role && role.startsWith('HM ')) {
@@ -26346,6 +26350,7 @@ ROLE_TASKS["Front Office Supervisor Oak Tree Mahakam Blok M"] = {
     document.getElementById('tasklist-progress').textContent = '0/' + data.count;
     tasklistRendered = true;
     lastRenderedRole = role;
+    try { hmaMount(role); } catch(e) { console.warn('hmaMount', e); }   // Audit Laporan HM (khusus Ops HR Manager, paling bawah)
 
     // Kalau dibuka dari laptop/desktop, blokir tombol "Ambil Foto" (Wajib Foto Langsung)
     blockCameraOnlyInputsOnDesktop();
@@ -26589,6 +26594,321 @@ function _arsTglLabel(t){ const d=new Date(t+'T00:00:00Z'); const h=['Minggu','S
 
   // Batas kirim laporan (12 Nov 2026): HM, Corporate & F&B Manager 20.00 · HOD 19.30
   function dspJamBatas(role) { role = String(role || ''); return (role.startsWith('HM ') || /Corporate$|^HR Officer$|^Ops HR Manager$|^F&B Manager$/.test(role)) ? '20.00' : '19.30'; }
+  // ===== AUDIT LAPORAN HM (23 Nov 2026) — diisi Ops HR Manager, paling bawah Tasklist HRM, paling atas WA report HRM =====
+  // Sumber: HM Daily & Monthly Report Guide. Bukti = screen capture grup WA (wajib bila Sudah), alasan wajib bila Tidak.
+  // Masuk ke nilai KPI HM (Live Score → Kedisiplinan → "Laporan HM ke grup WA").
+  const HMA = { data: null, tab: null, draft: {}, sibuk: {}, muat: false };
+  const HMA_NAMA = { LITE: 'Verse Lite', LUXE: 'Verse Luxe', CIREBON: 'Verse Cirebon', OAK: 'Oak Tree' };
+  const HMA_IC = {
+    cek: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>',
+    kamera: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>',
+    salin: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>',
+    info: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>',
+    auto: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg>',
+    x: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>',
+  };
+  function _hmaEsc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
+  function _hmaCss() {
+    if (document.getElementById('hma-css')) return;
+    const st = document.createElement('style'); st.id = 'hma-css';
+    st.textContent = `
+    #hma-wrap{--hb:#fff;--hi:#f7f8fa;--hl:#e3e7ee;--ht:#1f2937;--hm:#64748b;--hh:#1a3a5c;
+      --tabon-b:#e0f2fe;--tabon-l:#0284c7;--tabon-t:#075985;--ok:#15803d;--pr:#b45309;--off:#94a3b8;
+      --bg-g:#15803d;--bg-r:#dc2626;--tx-r:#fff;--bg-a:#fef3c7;--ln-a:#f59e0b;--tx-a:#92400e;
+      --au-b:#e0f2fe;--au-t:#075985;--auok-b:#dcfce7;--auok-t:#166534;
+      --up-b:#f0f9ff;--up-t:#0369a1;--up-l:#38bdf8;--upw-b:#fff7ed;--upw-t:#c2410c;--upw-l:#f97316;
+      --sm-b:#dcfce7;--sm-t:#166534;--sm-l:#16a34a;--al-b:#fff7ed;--al-l:#f97316;--al-lb:#c2410c;--em:#b45309;--err:#dc2626;
+      margin:10px 12px 8px;border-radius:16px;overflow:hidden;border:1px solid var(--hl);background:var(--hb);box-shadow:0 2px 10px rgba(15,23,42,.08);color:var(--ht)}
+    :is(.tb,.tbo) #hma-wrap{--hb:#141a2a;--hi:#0f1422;--hl:#2a3145;--ht:#f1f5f9;--hm:#9fb0cf;--hh:#0f1422;
+      --tabon-b:#0c2433;--tabon-l:#38bdf8;--tabon-t:#e0f2fe;--ok:#4ade80;--pr:#fcd34d;--off:#7c8aa5;
+      --bg-r:#7f1d1d;--tx-r:#fecaca;--bg-a:#3a2a0b;--tx-a:#fcd34d;
+      --au-b:#0c2433;--au-t:#7dd3fc;--auok-b:#0f2a1a;--auok-t:#86efac;
+      --up-b:#0c1a28;--up-t:#7dd3fc;--upw-b:#2a1508;--upw-t:#fdba74;--sm-b:#0f2a1a;--sm-t:#bbf7d0;--sm-l:#15803d;
+      --al-b:#0f1422;--al-lb:#fb923c;--em:#fcd34d;--err:#fca5a5;box-shadow:0 4px 14px rgba(0,0,0,.3)}
+    #hma-wrap .hma-h{display:flex;align-items:center;gap:8px;padding:12px 13px;background:var(--hh);color:#fcd34d}
+    #hma-wrap .hma-h b{flex:1;color:#fff;font-size:12.5px;font-weight:900}
+    #hma-wrap .hma-cnt{background:rgba(255,255,255,.16);color:#fff;font-weight:800;font-size:11px;border-radius:10px;padding:3px 9px}
+    #hma-wrap .hma-tabs{display:flex;gap:6px;padding:10px 12px 4px}
+    #hma-wrap .hma-tab{flex:1;text-align:center;border:1px solid var(--hl);background:var(--hi);border-radius:11px;padding:7px 2px;font:inherit;font-size:11.5px;font-weight:800;color:var(--hm);cursor:pointer;position:relative}
+    #hma-wrap .hma-tab small{display:block;font-size:10px;font-weight:700;margin-top:1px}
+    #hma-wrap .hma-tab.on{border-color:var(--tabon-l);background:var(--tabon-b);color:var(--tabon-t)}
+    #hma-wrap .hma-tab .ok{color:var(--ok)}#hma-wrap .hma-tab .pr{color:var(--pr)}#hma-wrap .hma-tab .off{color:var(--off)}
+    #hma-wrap .hma-tab.ada-tidak:after{content:'';position:absolute;top:5px;right:6px;width:7px;height:7px;border-radius:50%;background:#ef4444}
+    #hma-wrap .hma-info{margin:8px 13px 2px;font-size:11.5px;color:var(--hm);display:flex;gap:6px;align-items:center;line-height:1.4}
+    #hma-wrap .hma-it{margin:8px 12px 0;border:1px solid var(--hl);border-radius:13px;padding:10px 11px;background:var(--hb)}
+    #hma-wrap .hma-it.s-sudah{box-shadow:inset 3px 0 0 #22c55e}#hma-wrap .hma-it.s-tidak{box-shadow:inset 3px 0 0 #ef4444}#hma-wrap .hma-it.s-belum{box-shadow:inset 3px 0 0 #f59e0b}
+    #hma-wrap .hma-row{display:flex;gap:9px;align-items:flex-start}
+    #hma-wrap .hma-no{width:23px;height:23px;border-radius:7px;background:var(--hi);border:1px solid var(--hl);color:var(--hm);font-size:11.5px;font-weight:800;display:flex;align-items:center;justify-content:center;flex:none;margin-top:1px}
+    #hma-wrap .s-sudah .hma-no{background:#15803d;border-color:#15803d;color:#fff}#hma-wrap .s-tidak .hma-no{background:var(--bg-r);border-color:var(--bg-r);color:var(--tx-r)}#hma-wrap .s-belum .hma-no{background:var(--bg-a);border-color:var(--ln-a);color:var(--tx-a)}
+    #hma-wrap .hma-q{flex:1;min-width:0}
+    #hma-wrap .hma-q b{display:block;font-size:13px;line-height:1.35;color:var(--ht)}
+    #hma-wrap .hma-q small{display:block;font-size:11px;color:var(--hm);margin-top:2px}
+    #hma-wrap .hma-q em{display:flex;gap:5px;align-items:flex-start;font-style:normal;font-size:11px;color:var(--em);margin-top:4px;line-height:1.4}
+    #hma-wrap .hma-q em svg{flex:none;margin-top:1px}
+    #hma-wrap .hma-bt{display:flex;gap:6px;margin-top:9px;padding-left:32px}
+    #hma-wrap .hma-b{flex:1;font:inherit;font-size:12px;font-weight:800;border:1px solid var(--hl);background:var(--hi);color:var(--ht);border-radius:10px;padding:8px 4px;cursor:pointer}
+    #hma-wrap .hma-b.g{background:var(--bg-g);border-color:var(--bg-g);color:#fff}#hma-wrap .hma-b.r{background:var(--bg-r);border-color:var(--bg-r);color:var(--tx-r)}#hma-wrap .hma-b.a{background:var(--bg-a);border-color:var(--ln-a);color:var(--tx-a)}
+    #hma-wrap .hma-b:disabled{opacity:.55;cursor:default}
+    #hma-wrap .hma-auto{margin:8px 0 0 32px;display:flex;align-items:center;gap:6px;font-size:11.5px;font-weight:700;border-radius:9px;padding:7px 9px;background:var(--au-b);color:var(--au-t)}
+    #hma-wrap .hma-auto.ok{background:var(--auok-b);color:var(--auok-t)}
+    #hma-wrap .hma-bk{margin:9px 0 0 32px;display:flex;flex-wrap:wrap;gap:7px;align-items:center}
+    #hma-wrap .hma-th{position:relative;width:58px;height:58px;border-radius:10px;overflow:hidden;border:1px solid var(--hl);background:var(--hi)}
+    #hma-wrap .hma-th img{width:100%;height:100%;object-fit:cover;display:block;cursor:zoom-in}
+    #hma-wrap .hma-th button{position:absolute;top:3px;right:3px;width:20px;height:20px;border-radius:50%;border:none;background:rgba(15,20,34,.8);color:#fecaca;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
+    #hma-wrap .hma-up{display:flex;align-items:center;gap:6px;font-size:11.5px;font-weight:800;color:var(--up-t);border:1px dashed var(--up-l);border-radius:10px;padding:0 11px;height:58px;background:var(--up-b);cursor:pointer}
+    #hma-wrap .hma-up input{display:none}
+    #hma-wrap .hma-up.wajib{border-color:var(--upw-l);color:var(--upw-t);background:var(--upw-b)}
+    #hma-wrap .hma-sama{margin:7px 0 0 32px;display:inline-flex;align-items:center;gap:6px;font:inherit;font-size:11.5px;font-weight:800;color:var(--sm-t);background:var(--sm-b);border:1px solid var(--sm-l);border-radius:9px;padding:6px 10px;cursor:pointer}
+    #hma-wrap .hma-al{margin:9px 0 0 32px}
+    #hma-wrap .hma-al label{display:block;font-size:10px;font-weight:800;letter-spacing:.4px;color:var(--al-lb);margin-bottom:4px}
+    #hma-wrap .hma-al textarea{width:100%;box-sizing:border-box;resize:none;background:var(--al-b);border:1px solid var(--al-l);border-radius:10px;padding:8px 10px;color:var(--ht);font:inherit;font-size:13px}
+    :is(.tb,.tbo) #hma-wrap .hma-al textarea{color-scheme:dark}
+    #hma-wrap .hma-al .hma-simpan{margin-top:6px;width:100%;font:inherit;font-size:12px;font-weight:800;border:none;border-radius:9px;padding:8px;background:#dc2626;color:#fff;cursor:pointer}
+    #hma-wrap .hma-st{margin:6px 0 0 32px;font-size:10.5px;color:var(--hm)}
+    #hma-wrap .hma-st.err{color:var(--err);font-weight:700}
+    #hma-wrap .hma-kosong{padding:18px 14px;text-align:center;font-size:12.5px;color:var(--hm);line-height:1.5}
+    #hma-wrap .hma-pad{height:12px}`;
+    document.head.appendChild(st);
+  }
+  function hmaBoleh() { return currentRole === 'Ops HR Manager'; }
+  function _hmaBisaUbah() { return !!(HMA.data && HMA.data.bisa_ubah) && !window._peekMode; }
+  function _hmaWrap() {
+    let el = document.getElementById('hma-wrap');
+    if (!el) {
+      const tc = document.getElementById('tasklist-content'); if (!tc) return null;
+      el = document.createElement('div'); el.id = 'hma-wrap'; tc.insertAdjacentElement('afterend', el);
+    }
+    return el;
+  }
+  async function hmaMount(role) {
+    const ada = document.getElementById('hma-wrap');
+    if ((role || currentRole) !== 'Ops HR Manager') { if (ada) ada.remove(); return; }
+    _hmaCss();
+    const el = _hmaWrap(); if (!el) return;
+    if (!HMA.data) el.innerHTML = '<div class="hma-h">' + HMA_IC.cek + '<b>Audit Laporan HM — Hari Ini</b></div><div class="hma-kosong">Memuat audit…</div>';
+    await hmaMuat();
+  }
+  async function hmaMuat() {
+    try {
+      HMA.data = await _rpc('hm_audit_baca', {});
+      HMA.draft = {};
+      if (!HMA.tab || !(HMA.data.units || []).some(u => u.unit === HMA.tab)) {
+        const pertama = (HMA.data.units || []).find(u => !u.libur) || (HMA.data.units || [])[0];
+        HMA.tab = pertama ? pertama.unit : null;
+      }
+      hmaRender();
+    } catch (e) {
+      const el = document.getElementById('hma-wrap');
+      if (el) el.innerHTML = '<div class="hma-h">' + HMA_IC.cek + '<b>Audit Laporan HM — Hari Ini</b></div><div class="hma-kosong">Gagal memuat audit: ' + _hmaEsc(e.message) + '<br><button class="hma-b" style="max-width:160px;margin-top:8px" onclick="hmaMuat()">Coba lagi</button></div>';
+    }
+  }
+  function _hmaStatus(u, it) {           // status yang tampil (draft lokal menang atas yang tersimpan)
+    const d = HMA.draft[u.role + '|' + it.key];
+    return d && 'status' in d ? d.status : it.status;
+  }
+  function _hmaSelesai(u) {             // [terjawab, total, adaTidak]
+    let n = 0, t = 0, tdk = false;
+    (u.items || []).forEach(it => { t++; if (it.status) n++; if (it.status === 'tidak') tdk = true; });
+    return [n, t, tdk];
+  }
+  function hmaRender() {
+    const el = document.getElementById('hma-wrap'); if (!el || !HMA.data) return;
+    const units = HMA.data.units || [];
+    let tn = 0, tt = 0;
+    units.forEach(u => { const [n, t] = _hmaSelesai(u); tn += n; tt += t; });
+    const tabs = units.map(u => {
+      const [n, t, tdk] = _hmaSelesai(u);
+      const ket = u.libur && !t ? '<small class="off">Day off</small>' : `<small class="${n === t ? 'ok' : 'pr'}">${n}/${t}</small>`;
+      return `<button class="hma-tab${u.unit === HMA.tab ? ' on' : ''}${tdk ? ' ada-tidak' : ''}" onclick="hmaTab('${u.unit}')">${_hmaEsc(HMA_NAMA[u.unit] || u.unit).replace('Verse ', '')}${ket}</button>`;
+    }).join('');
+    const u = units.find(x => x.unit === HMA.tab);
+    let isi = '';
+    if (u) {
+      if (u.libur) isi += `<div class="hma-info">${HMA_IC.info}HM ${_hmaEsc(HMA_NAMA[u.unit])} day off hari ini (Jadwal Tim) — laporan harian otomatis dilewati.</div>`;
+      if (!(u.items || []).length) isi += '<div class="hma-kosong">Tidak ada laporan yang perlu diaudit hari ini.</div>';
+      (u.items || []).forEach(it => { isi += _hmaItemHtml(u, it); });
+    }
+    if (!_hmaBisaUbah()) isi = `<div class="hma-info">${HMA_IC.info}${window._peekMode ? 'Mode intip — hanya lihat.' : 'Audit hanya bisa diubah di hari yang sama.'}</div>` + isi;
+    el.innerHTML = `<div class="hma-h">${HMA_IC.cek}<b>Audit Laporan HM — Hari Ini</b><span class="hma-cnt">${tn}/${tt}</span></div>
+      <div class="hma-tabs">${tabs}</div>${isi}<div class="hma-pad"></div>`;
+  }
+  function hmaTab(unit) { HMA.tab = unit; hmaRender(); }
+  function _hmaItemHtml(u, it) {
+    const id = u.role + '|' + it.key, s = _hmaStatus(u, it), d = HMA.draft[id] || {}, bisa = _hmaBisaUbah();
+    const sibuk = HMA.sibuk[id];
+    const ks = JSON.stringify(u.role).replace(/"/g, '&quot;'), kk = it.key;
+    let h = `<div class="hma-it${s ? ' s-' + s : ''}" id="hma-${u.unit}-${kk}"><div class="hma-row"><div class="hma-no">${it.urut}</div><div class="hma-q">
+      <b>${_hmaEsc(it.label)} sudah dikirim?</b><small>${_hmaEsc(it.jam)} · Grup ${_hmaEsc(it.grup)}</small>
+      ${it.info && it.tipe !== 'auto' ? `<em>${HMA_IC.info}${_hmaEsc(it.info)}</em>` : ''}</div></div>`;
+    if (it.tipe === 'auto') {
+      return h + `<div class="hma-auto${it.status === 'sudah' ? ' ok' : ''}">${HMA_IC.auto}Cek otomatis · ${_hmaEsc(it.info)}</div></div>`;
+    }
+    const lbl = { sudah: '✓ Sudah', tidak: '✗ Tidak', belum: '⏳ Belum' }, cls = { sudah: 'g', tidak: 'r', belum: 'a' };
+    h += '<div class="hma-bt">' + (it.opsi || []).map(o =>
+      `<button class="hma-b${s === o ? ' ' + cls[o] : ''}" ${bisa && !sibuk ? '' : 'disabled'} onclick="hmaPilih(${ks},'${kk}','${o}')">${lbl[o]}</button>`).join('') + '</div>';
+    if (s === 'sudah') {
+      const bukti = ('bukti' in d) ? d.bukti : (it.bukti || []);
+      h += '<div class="hma-bk">' + bukti.map((b, i) => `<div class="hma-th"><img src="${_hmaEsc(_hmaThumb(b))}" onclick="window.open('${_hmaEsc(b)}','_blank')" alt="bukti">${bisa ? `<button onclick="hmaHapusBukti(${ks},'${kk}',${i})" aria-label="Hapus">${HMA_IC.x}</button>` : ''}</div>`).join('');
+      if (bisa && bukti.length < 6) h += `<label class="hma-up${bukti.length ? '' : ' wajib'}">${HMA_IC.kamera}${sibuk === 'upload' ? 'Mengupload…' : (bukti.length ? 'Tambah' : 'Upload screen capture (wajib)')}<input type="file" accept="image/*" multiple onchange="hmaUpload(this,${ks},'${kk}')"></label>`;
+      h += '</div>';
+      if (bisa && !bukti.length) {
+        const sumber = _hmaBuktiSama(u, it);
+        if (sumber) h += `<button class="hma-sama" onclick="hmaPakaiSama(${ks},'${kk}','${sumber.key}')">${HMA_IC.salin}Pakai bukti yang sama (${_hmaEsc(sumber.label)})</button>`;
+      }
+    } else if (s === 'tidak') {
+      const al = ('alasan' in d) ? d.alasan : (it.alasan || '');
+      h += `<div class="hma-al"><label>ALASAN HM TIDAK MENGERJAKAN — WAJIB</label>
+        <textarea rows="2" ${bisa ? '' : 'disabled'} placeholder="Tulis alasan HM tidak mengirim laporan ini…" oninput="hmaAlasan(${ks},'${kk}',this.value)">${_hmaEsc(al)}</textarea>
+        ${bisa && (d.status === 'tidak' || al !== (it.alasan || '')) ? `<button class="hma-simpan" ${sibuk ? 'disabled' : ''} onclick="hmaSimpanAlasan(${ks},'${kk}')">${sibuk ? 'Menyimpan…' : 'Simpan alasan'}</button>` : ''}</div>`;
+    }
+    if (d.err) h += `<div class="hma-st err">${_hmaEsc(d.err)}</div>`;
+    else if (it.status && !('status' in d) && it.diubah) h += `<div class="hma-st">Tersimpan ${_hmaJam(it.diubah)}</div>`;
+    else if ('status' in d && d.status !== it.status) h += `<div class="hma-st">${d.status === 'sudah' ? 'Upload bukti untuk menyimpan' : 'Isi alasan lalu Simpan'}</div>`;
+    return h + '</div>';
+  }
+  function _hmaJam(iso) { const t = new Date(iso); return isNaN(t) ? '' : t.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Jakarta' }); }
+  function _hmaThumb(url) { return String(url).replace('/upload/', '/upload/c_fill,w_160,h_160,q_auto,f_auto/'); }
+  function _hmaBuktiSama(u, it) {        // item lain di grup WA yang sama, unit sama, yang sudah punya bukti
+    return (u.items || []).find(x => x.key !== it.key && x.grup === it.grup && x.status === 'sudah' && (x.bukti || []).length) || null;
+  }
+  function _hmaCari(role, key) { const u = (HMA.data.units || []).find(x => x.role === role); return [u, u && (u.items || []).find(x => x.key === key)]; }
+  async function _hmaKirim(role, key, status, alasan, bukti) {
+    const id = role + '|' + key;
+    HMA.sibuk[id] = true; hmaRender();
+    try {
+      await _rpc('hm_audit_simpan', { p_hm_role: role, p_item: key, p_status: status, p_alasan: alasan || null, p_bukti: bukti || [] });
+      const [u, it] = _hmaCari(role, key);
+      if (it) { it.status = status; it.alasan = status === 'tidak' ? alasan : null; it.bukti = status === 'sudah' ? bukti : []; it.diubah = new Date().toISOString(); }
+      delete HMA.draft[id];
+      return true;
+    } catch (e) {
+      HMA.draft[id] = Object.assign(HMA.draft[id] || {}, { err: 'Gagal simpan: ' + e.message });
+      return false;
+    } finally { delete HMA.sibuk[id]; hmaRender(); }
+  }
+  function hmaPilih(role, key, status) {
+    if (!_hmaBisaUbah()) return;
+    const [u, it] = _hmaCari(role, key); if (!it) return;
+    const id = role + '|' + key;
+    if (status === 'belum') { _hmaKirim(role, key, 'belum', null, []); return; }
+    if (status === 'sudah') {
+      const bukti = it.status === 'sudah' ? (it.bukti || []) : [];
+      HMA.draft[id] = { status: 'sudah', bukti };
+      if (it.status !== 'sudah' && bukti.length) { _hmaKirim(role, key, 'sudah', null, bukti); return; }
+    } else {
+      HMA.draft[id] = { status: 'tidak', alasan: it.status === 'tidak' ? (it.alasan || '') : '' };
+    }
+    hmaRender();
+    if (status === 'tidak') setTimeout(() => { const t = document.querySelector(`#hma-${u.unit}-${key} textarea`); if (t) t.focus(); }, 30);
+  }
+  function hmaAlasan(role, key, v) {
+    const id = role + '|' + key;
+    HMA.draft[id] = Object.assign(HMA.draft[id] || { status: 'tidak' }, { alasan: v, err: null });
+    const [u] = _hmaCari(role, key);
+    const box = document.querySelector(`#hma-${u.unit}-${key} .hma-al`);
+    if (box && !box.querySelector('.hma-simpan')) {
+      const b = document.createElement('button'); b.className = 'hma-simpan'; b.textContent = 'Simpan alasan';
+      b.onclick = () => hmaSimpanAlasan(role, key); box.appendChild(b);
+    }
+  }
+  function hmaSimpanAlasan(role, key) {
+    const id = role + '|' + key, [u, it] = _hmaCari(role, key);
+    const al = ((HMA.draft[id] && 'alasan' in HMA.draft[id]) ? HMA.draft[id].alasan : (it.alasan || '')).trim();
+    if (al.length < 5) { HMA.draft[id] = Object.assign(HMA.draft[id] || { status: 'tidak' }, { status: 'tidak', alasan: al, err: 'Alasan minimal 5 huruf' }); hmaRender(); return; }
+    HMA.draft[id] = Object.assign(HMA.draft[id] || {}, { status: 'tidak', alasan: al });
+    _hmaKirim(role, key, 'tidak', al, []);
+  }
+  function hmaPakaiSama(role, key, dariKey) {
+    const [u, it] = _hmaCari(role, key), src = (u.items || []).find(x => x.key === dariKey);
+    if (!src) return;
+    _hmaKirim(role, key, 'sudah', null, (src.bukti || []).slice());
+  }
+  function hmaHapusBukti(role, key, idx) {
+    const id = role + '|' + key, [u, it] = _hmaCari(role, key);
+    const d = HMA.draft[id] || {};
+    const bukti = (('bukti' in d) ? d.bukti : (it.bukti || [])).slice(); bukti.splice(idx, 1);
+    if (bukti.length && it.status === 'sudah') { HMA.draft[id] = { status: 'sudah', bukti }; _hmaKirim(role, key, 'sudah', null, bukti); return; }
+    HMA.draft[id] = { status: 'sudah', bukti };
+    if (it.status === 'sudah') { _hmaKirim(role, key, null, null, []).then(() => { HMA.draft[id] = { status: 'sudah', bukti: [] }; hmaRender(); }); return; }
+    hmaRender();
+  }
+  async function _hmaKompres(file) {
+    if (!/^image\//.test(file.type || '') || /gif$/.test(file.type)) return file;
+    try {
+      const url = URL.createObjectURL(file);
+      const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = url; });
+      const maks = 2000, sk = Math.min(1, maks / Math.max(img.naturalWidth, img.naturalHeight));
+      const c = document.createElement('canvas'); c.width = Math.round(img.naturalWidth * sk); c.height = Math.round(img.naturalHeight * sk);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); URL.revokeObjectURL(url);
+      const blob = await new Promise(res => c.toBlob(res, 'image/jpeg', 0.85));
+      return blob && blob.size < file.size ? new File([blob], (file.name || 'bukti').replace(/\.[^.]+$/, '') + '.jpg', { type: 'image/jpeg' }) : file;
+    } catch (e) { return file; }
+  }
+  async function hmaUpload(input, role, key) {
+    const files = Array.from(input.files || []); try { input.value = ''; } catch (e) {}
+    if (!files.length || !_hmaBisaUbah()) return;
+    const id = role + '|' + key, [u, it] = _hmaCari(role, key);
+    const d = HMA.draft[id] || {};
+    const bukti = (('bukti' in d) ? d.bukti : (it.status === 'sudah' ? (it.bukti || []) : [])).slice();
+    HMA.sibuk[id] = 'upload'; HMA.draft[id] = Object.assign(d, { status: 'sudah', bukti, err: null }); hmaRender();
+    const tgl = (HMA.data && HMA.data.tanggal) || new Date(Date.now() + 7 * 3600000).toISOString().slice(0, 10);
+    let gagal = 0;
+    for (const f of files.slice(0, 6 - bukti.length)) {
+      try {
+        const kecil = await _hmaKompres(f);
+        const r = await uploadCloudinaryAman(kecil, tgl + '/Audit_HM/' + u.unit + '/' + key + '/' + Date.now());
+        if (r && r.secure_url) bukti.push(r.secure_url); else gagal++;
+      } catch (e) { gagal++; }
+    }
+    delete HMA.sibuk[id];
+    if (!bukti.length) { HMA.draft[id] = { status: 'sudah', bukti: [], err: 'Upload gagal — coba lagi' }; hmaRender(); return; }
+    const ok = await _hmaKirim(role, key, 'sudah', null, bukti);
+    if (ok && gagal) showToast(gagal + ' foto gagal diupload');
+  }
+  // Wajib sebelum kirim laporan HRM: laporan HM yang jamnya sudah lewat harus sudah diaudit
+  const HMA_BATAS = { breakfast: 7.5, roommove: 7.5, talenta: 10.5, grps: 17.5 };
+  async function hmaCekKirim() {
+    if (!hmaBoleh() || window._peekMode) return true;
+    try { await hmaMuat(); } catch (e) { return true; }
+    if (!HMA.data || !HMA.data.bisa_ubah) return true;
+    const w = new Date(Date.now() + 7 * 3600000), jam = w.getUTCHours() + w.getUTCMinutes() / 60;
+    const kurang = [];
+    (HMA.data.units || []).forEach(u => (u.items || []).forEach(it => {
+      if (!it.status && HMA_BATAS[it.key] != null && jam >= HMA_BATAS[it.key]) kurang.push({ u, it });
+    }));
+    if (!kurang.length) return true;
+    HMA.tab = kurang[0].u.unit; hmaRender();
+    const el = document.getElementById('hma-' + kurang[0].u.unit + '-' + kurang[0].it.key);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    showToast('Audit Laporan HM belum lengkap (' + kurang.length + '): ' + kurang.slice(0, 3).map(k => (HMA_NAMA[k.u.unit] || k.u.unit).replace('Verse ', '') + ' – ' + k.it.label).join(', ') + (kurang.length > 3 ? ', …' : ''));
+    return false;
+  }
+  // Teks WA (paling atas report HRM)
+  async function hmaTeksWA() {
+    let D = null;
+    try { D = await _rpc('hm_audit_baca', {}); } catch (e) { return ''; }
+    if (!D || !(D.units || []).length) return '';
+    let t = '\n🔎 *AUDIT LAPORAN HM*\n';
+    D.units.forEach(u => {
+      const nm = HMA_NAMA[u.unit] || u.unit, its = u.items || [];
+      const harian = its.filter(i => i.tipe !== 'bulanan'), bulanan = its.filter(i => i.tipe === 'bulanan');
+      if (u.libur && !harian.length) t += `*${nm}* — _Day off (Jadwal Tim)_\n`;
+      else {
+        const ok = harian.filter(i => i.status === 'sudah').length, tdk = harian.filter(i => i.status === 'tidak'), blm = harian.filter(i => !i.status && i.tipe !== 'auto');
+        const otoBlm = harian.filter(i => !i.status && i.tipe === 'auto');
+        t += `*${nm}* — ${ok}/${harian.length} terkirim ${tdk.length ? '⚠️' : (blm.length || otoBlm.length ? '⏳' : '✅')}\n`;
+        otoBlm.forEach(i => { t += `  ⏳ ${i.label} belum terkirim dari aplikasi\n`; });
+        tdk.forEach(i => { t += `  ✗ ${i.label} → _${(i.alasan || '').replace(/[_*]/g, '')}_\n`; });
+        if (blm.length) t += `  ⏳ Belum diaudit: ${blm.map(i => i.label).join(', ')}\n`;
+      }
+      bulanan.forEach(i => {
+        const st = i.status === 'sudah' ? '✅ sudah' : i.status === 'tidak' ? '✗ tidak dikirim → _' + (i.alasan || '').replace(/[_*]/g, '') + '_' : i.status === 'belum' ? '⏳ belum' : '⏳ belum diaudit';
+        t += `  📅 ${i.label}: ${st}\n`;
+      });
+    });
+    return t;
+  }
+
   // ===== KEDISIPLINAN LAPORAN (9 Nov 2026) — batas 18.30, alasan wajib bila tidak kirim, ringkasan COO/CEO/HR/HM =====
   const DSP = { kunci: false, cekKey: '', kurang: [], tgl: null, data: null, el: null, buka: {} };
   const DSP_AL = [['sakit','🤒 Sakit'],['izin','📝 Izin tidak masuk'],['lainnya','✏️ Lainnya (tulis sendiri)']];
