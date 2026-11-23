@@ -4939,13 +4939,15 @@
           const url = typeof input === 'string' ? input : ((input && input.url) || '');
           const method = String((init && init.method) || (input && input.method) || 'GET').toUpperCase();
           const ours = url.indexOf(SUPA_URL) === 0 || url.indexOf('/api/') === 0 || url.indexOf(location.origin + '/api/') === 0;
-          const readOnlyRpc = /\/rest\/v1\/rpc\/(device_check|admin_devices_list|admin_users_list|notif_list|notif_history|jadwal_baca|live_skor|hod_nilai_baca|coo_nilai_baca|defect_ringkas|defect_sso_buat|dc_tasklist_belum|hm_audit_baca)$/.test(url.split('?')[0]);
+          const readOnlyRpc = /\/rest\/v1\/rpc\/(device_check|admin_devices_list|admin_users_list|notif_list|notif_history|jadwal_baca|live_skor|hod_nilai_baca|coo_nilai_baca|defect_ringkas|defect_sso_buat|dc_tasklist_belum|hm_audit_baca|app_sesi_cek|disiplin_ringkas|disiplin_riwayat|laporan_publik|notif_balasan_saya|peta_live_data)$/.test(url.split('?')[0]);
           if (ours && method !== 'GET' && method !== 'HEAD' && !readOnlyRpc) {
             if (Date.now() - _lastPeekToast > 3000) {
               _lastPeekToast = Date.now();
-              try { showToast('👁️ Mode Intip — hanya lihat, tidak ada yang disimpan'); } catch(e) {}
+              try { showToast('👁️ Mode Intip — contoh saja, tidak disimpan'); } catch(e) {}
             }
-            return Promise.resolve(new Response('[]', { status: 200, headers: { 'Content-Type': 'application/json' } }));
+            // 23 Nov 2026: balas "berhasil" tiruan supaya alur bisa dicoba sampai akhir — tidak ada yang terkirim ke server
+            const tiruan = /\/rest\/v1\/rpc\//.test(url) ? '{"ok":true,"contoh":true}' : '[]';
+            return Promise.resolve(new Response(tiruan, { status: 200, headers: { 'Content-Type': 'application/json' } }));
           }
         }
       } catch(e) {}
@@ -5474,12 +5476,30 @@
     }
   }, true);
 
+  // Mode Intip: tampilkan teks WA yang AKAN terkirim, tanpa membuka WhatsApp (23 Nov 2026)
+  function _peekWaPratinjau(url) {
+    let teks = ''; try { const u = new URL(String(url)); teks = u.searchParams.get('text') || ''; } catch(e) {}
+    if (!teks) { const m = String(url).match(/[?&]text=([^&]*)/); if (m) { try { teks = decodeURIComponent(m[1].replace(/\+/g, ' ')); } catch(e) {} } }
+    if (!teks) { try { showToast('👁️ Mode Intip — WhatsApp tidak dibuka'); } catch(e) {} return; }
+    document.getElementById('peek-wa')?.remove();
+    const ov = document.createElement('div'); ov.id = 'peek-wa';
+    ov.style.cssText = 'position:fixed;inset:0;z-index:9600;background:rgba(8,12,22,.72);display:flex;align-items:flex-end;justify-content:center';
+    ov.innerHTML = '<div style="width:100%;max-width:560px;max-height:86vh;display:flex;flex-direction:column;background:#0b141a;border-radius:20px 20px 0 0;padding:14px 14px calc(14px + env(safe-area-inset-bottom));box-shadow:0 -10px 40px rgba(0,0,0,.5)">'
+      + '<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px"><b style="flex:1;color:#fff;font-size:15px">Contoh pesan WhatsApp</b>'
+      + '<button type="button" style="border:none;background:#facc15;color:#1a1a1a;border-radius:999px;padding:7px 14px;font:inherit;font-size:13px;font-weight:800;cursor:pointer">Tutup</button></div>'
+      + '<div style="font-size:12px;color:#facc15;margin-bottom:8px">👁️ Mode Intip — WhatsApp tidak dibuka, laporan tidak disimpan.</div>'
+      + '<div class="peek-wa-isi" style="flex:1;overflow-y:auto;background:#1f2c34;color:#e9edef;border-radius:12px;padding:12px;font-size:13.5px;line-height:1.5;white-space:pre-wrap;word-break:break-word"></div></div>';
+    ov.querySelector('.peek-wa-isi').textContent = teks || '(teks kosong)';
+    const tutup = () => ov.remove();
+    ov.querySelector('button').onclick = tutup; ov.addEventListener('click', e => { if (e.target === ov) tutup(); });
+    document.body.appendChild(ov);
+  }
   // window.open(foto) -> viewer; selain foto tetap seperti biasa
   (function () {
     const _origOpen = window.open;
     window.open = function (url, target, features) {
       if (_isImageUrl(url)) { openPhotoViewer(url); return null; }
-      if (window._peekMode && /whatsapp|wa\.me/i.test(String(url))) { showToast('👁️ Mode Intip — kirim WA dinonaktifkan'); return null; }
+      if (window._peekMode && /whatsapp|wa\.me/i.test(String(url))) { _peekWaPratinjau(url); return null; }
       return _origOpen.call(window, url, target, features);
     };
   })();
@@ -10412,6 +10432,15 @@
     if (files.length > remaining) showToast('Hanya ' + remaining + ' file lagi yang bisa ditambahkan');
     else showToast('⏳ Memproses ' + toAdd.length + ' foto...');
 
+    if (window._peekMode) {
+      if (!taskFileUrls[taskId]) taskFileUrls[taskId] = [];
+      toAdd.forEach(file => { taskFiles[taskId].push(file); taskFileUrls[taskId].push({ url: URL.createObjectURL(file), name: file.name, type: file.type || '' }); });
+      try { renderFilePreview(taskId); } catch(e) {}
+      try { _areaSesudahUpload(taskId); } catch(e) {}
+      showToast('👁️ Mode Intip — foto hanya contoh, tidak diupload');
+      try { input.value = ''; } catch(e) {}
+      return;
+    }
     const today = _hariIniTL();
     for (const file of toAdd) {
       // Foto (dari kamera maupun galeri) → cap timestamp+hotel/role + kompres dalam SATU langkah
@@ -11157,7 +11186,6 @@ function hodHasUploadForTask(item) {
 
   // Submit
   async function doSubmitReport() {
-    if (window._peekMode) { if (typeof showToast === 'function') showToast('👁️ Mode Intip — submit dinonaktifkan'); return; }
     if (!validateAndSubmit()) return;
 
     // Hitung data
@@ -11500,7 +11528,7 @@ function hodHasUploadForTask(item) {
       modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:flex-end;';
       modal.innerHTML = `
         <div style="background:white;border-radius:20px 20px 0 0;padding:20px;width:100%;max-height:70vh;overflow-y:auto;">
-          <div style="font-size:15px;font-weight:800;color:#1a1a2e;margin-bottom:4px;">✅ Laporan Tersimpan!</div>
+          <div style="font-size:15px;font-weight:800;color:#1a1a2e;margin-bottom:4px;">${window._peekMode ? '👁️ Contoh laporan — Mode Intip, tidak tersimpan' : '✅ Laporan Tersimpan!'}</div>
           <div style="font-size:12px;color:#888;margin-bottom:12px;">Salin pesan di bawah lalu paste di WhatsApp Group</div>
           <textarea id="wa-msg-preview" readonly style="width:100%;height:160px;border:1.5px solid #e0e0e0;border-radius:10px;padding:10px;font-size:11px;font-family:inherit;resize:none;background:#f8f8f8;box-sizing:border-box;">${msg}</textarea>
           <div style="display:flex;gap:8px;margin-top:12px;">
@@ -26500,7 +26528,7 @@ function _arsTglLabel(t){ const d=new Date(t+'T00:00:00Z'); const h=['Minggu','S
   function _arsMilikHM(role){ const d=DSP_DEPT[currentRole]; if(d) return role===currentRole || String(role||'').startsWith(d); const h=DSP_HM_HOTEL[currentRole]; return !h || role===currentRole || HOD_HOTEL_MAP[role]===h; }
   function arsMaybeShowHome(){
     const el=document.getElementById('ars-home'); if(!el) return;
-    if (!(['HR Officer','Ops HR Manager'].includes(currentRole) || DSP_HM_HOTEL[currentRole] || DSP_DEPT[currentRole]) || window._peekMode) { el.style.display='none'; el.innerHTML=''; return; }
+    if (!(['HR Officer','Ops HR Manager'].includes(currentRole) || DSP_HM_HOTEL[currentRole] || DSP_DEPT[currentRole])) { el.style.display='none'; el.innerHTML=''; return; }
     el.style.display='block'; arsMuat('ars-home');
   }
   async function arsMuat(elId){
@@ -27005,7 +27033,7 @@ function _arsTglLabel(t){ const d=new Date(t+'T00:00:00Z'); const h=['Minggu','S
   function dspBoleh(){ return ['COO','CEO','HR Officer','Ops HR Manager'].includes(currentRole) || !!DSP_HM_HOTEL[currentRole] || !!DSP_DEPT[currentRole]; }
   function dspMaybeShowHome(){
     const el = document.getElementById('dsp-home'); if (!el) return;
-    if (!(['HR Officer','Ops HR Manager'].includes(currentRole) || DSP_HM_HOTEL[currentRole] || DSP_DEPT[currentRole]) || window._peekMode) { el.style.display = 'none'; el.innerHTML = ''; return; }
+    if (!(['HR Officer','Ops HR Manager'].includes(currentRole) || DSP_HM_HOTEL[currentRole] || DSP_DEPT[currentRole])) { el.style.display = 'none'; el.innerHTML = ''; return; }
     el.style.display = 'block'; dspMuat('dsp-home');
   }
   async function dspMuat(elId){
@@ -28231,7 +28259,7 @@ function _arsTglLabel(t){ const d=new Date(t+'T00:00:00Z'); const h=['Minggu','S
     const list = document.getElementById('notif-list');
     if (!list) return;
     const _id = _notifIdentity();
-    const bisaBalas = !!_id && !window._peekMode && !['COO','CEO'].includes(_id.role);
+    const bisaBalas = !!_id && !['COO','CEO'].includes(_id.role);
     _nbMine = {};
     if (bisaBalas) {
       const ids = _notifCache.filter(n => n.source === 'broadcast').map(n => n.id);
@@ -31795,7 +31823,7 @@ function _arsTglLabel(t){ const d=new Date(t+'T00:00:00Z'); const h=['Minggu','S
     if (KDU.janji && KDU.kunci === kunci) return KDU.janji;
     KDU.kunci = kunci;
     KDU.janji = kduPanggil(m.unit).then(j => {
-      if (j && j.ok && Array.isArray(j.data)) { KDU.data = m.ce ? j.data.filter(k => k.eng) : j.data;   // CE: hanya kandidat Engineering (juga saat COO mengintip sebagai CE)
+      if (j && j.ok && Array.isArray(j.data)) { KDU.data = m.ce ? j.data.filter(k => k.eng) : m.hm ? j.data.filter(k => !k.corp) : j.data;   // HM: tanpa kandidat jabatan HM/corporate   // CE: hanya kandidat Engineering (juga saat COO mengintip sebagai CE)
       KDU.form = j.form || ''; KDU.nama = j.nama || ''; KDU.t = Date.now(); KDU.err = '';
       if (window._peekMode) {   // 4 Nov 2026: mode Intip → kolom form mengikuti jabatan yang diintip (hanya lihat)
         const r = currentRole || '';
@@ -32018,7 +32046,7 @@ function _arsTglLabel(t){ const d=new Date(t+'T00:00:00Z'); const h=['Minggu','S
   async function kduAksi(id, aksi, data) {
     const kirim = () => fetch(KDU_AKSI_URL, { method:'POST', headers:{ 'Content-Type':'application/json', 'apikey':KDU_KEY, 'Authorization':'Bearer ' + KDU_KEY },
       body: JSON.stringify({ p_sesi: SESI_VA || '', p_id: id, p_aksi: aksi, p_data: data || {} }) }).then(r => r.ok ? r.json() : { ok:false, error:'Gagal (' + r.status + ')' });
-    if (window._peekMode && aksi !== 'diskusi') return { ok:false, error:'Mode Intip — hanya lihat' };
+    if (window._peekMode && aksi !== 'diskusi') { kduToast('👁️ Mode Intip — contoh saja, tidak disimpan'); return { ok:true, contoh:true }; }
     try {
       if (!SESI_VA) { try { await _ambilSesiVA(window.fetch); } catch(e) {} }
       let j = await kirim();
@@ -32099,13 +32127,13 @@ function _arsTglLabel(t){ const d=new Date(t+'T00:00:00Z'); const h=['Minggu','S
     if (k.chat_akhir && k.chat_akhir.isi) h += `<div class="kdu-last">💬 <b>${escapeHtml(k.chat_akhir.oleh || '')}:</b> ${escapeHtml(String(k.chat_akhir.isi).replace(/\s+/g, ' ').slice(0, 110))}${k.chat_belum ? ` <span class="kdu-baru">${k.chat_belum} baru</span>` : ''}</div>`;
     const b = kduBolehIsi(k), nm = { hr:'HR', hm:'HM', corp:'CE Corp', coo:'COO/CEO' }[KDU.form] || '';
     const wajib = (KDU.form === 'hm' && k.tahap === 'hm' && k.hm_form_wajib && !kduForm(k, 'hm') && b.ok) || (KDU.form === 'corp' && k.eng && k.status === 'lanjut_ce' && !kduForm(k, 'corp') && b.ok);
-    const utama = b.ok && !b.ada && !window._peekMode;
+    const utama = b.ok && !b.ada;
     const fs = (Array.isArray(k.forms) ? k.forms : []);
     if (fs.length) {
       const ring = KDU_TF.map(([tt, l]) => { const f = fs.find(x => x.tahap === tt); return f ? (tt === 'corp' ? 'CE' : l) + ' ' + kduKoma(f.rata) : ''; }).filter(Boolean).join(' · ');
       h += `<button class="kdu-hasil" data-kdu-hasil>📊 Hasil Interview <span>${escapeHtml(ring)}</span></button>`;
     }
-    if (window._peekMode) h += `<div class="kdu-alasan">👁️ Mode Intip — hanya lihat${nm ? ' (sebagai ' + escapeHtml(currentRole) + ')' : ''}</div>`;
+    if (window._peekMode) h += `<div class="kdu-alasan">👁️ Mode Intip — boleh dicoba, tidak disimpan${nm ? ' (sebagai ' + escapeHtml(currentRole) + ')' : ''}</div>`;
     else if (b.ok) {
       const lbl = utama ? `📝 Isi Interview Form${nm ? ' ' + nm : ''}${wajib ? ' <small>· wajib</small>' : ''}` : `✏️ Ubah Interview Form${nm ? ' ' + nm : ''}`;
       h += `<button class="kdu-utama${utama ? ' on' : ''}${wajib ? ' wj' : ''}" data-kdu-form>${lbl}</button>`;
@@ -32170,13 +32198,13 @@ function _arsTglLabel(t){ const d=new Date(t+'T00:00:00Z'); const h=['Minggu','S
   // ----- Interview Form -----
   function kduBukaForm(id, opsi) {
     const k = kduCari(id); if (!k) return;
-    const lihat = !!(opsi && opsi.lihat) || !!window._peekMode;
+    const lihat = !!(opsi && opsi.lihat);
     const el = kduSub('kdu-fm'); el.className = 'kdu-lap';
     const b = kduBolehIsi(k), t = KDU.form;
     const kolom = KDU_TF;
     const nil = (f, a) => f && f.nilai ? f.nilai[a] : null;
     let h = `<div class="kdu-lt"><button data-x aria-label="Tutup">✕</button><div style="flex:1;min-width:0"><b>${lihat ? '📊 Hasil Interview' : '📝 Interview Form'}</b><p>${escapeHtml(k.nama)} · ${escapeHtml(k.posisi || '-')}</p></div><button data-cetak>🖨️ PDF</button></div><div class="kdu-lb">`;
-    if (window._peekMode) h += `<div class="kdu-note" style="margin-bottom:8px">👁️ Mode Intip — hanya lihat</div>`;
+    if (window._peekMode) h += `<div class="kdu-note" style="margin-bottom:8px">👁️ Mode Intip — boleh dicoba, tidak disimpan</div>`;
     h += `<table class="kdu-tb"><tr><th>Aspek</th>${kolom.map(([tt, l]) => `<th>${l}</th>`).join('')}</tr>`;
     KDU_ASPEK.forEach(([a, l]) => { h += `<tr><td>${l}</td>${kolom.map(([tt]) => `<td>${nil(kduForm(k, tt), a) ?? '–'}</td>`).join('')}</tr>`; });
     h += `<tr class="r"><td>Rata-rata</td>${kolom.map(([tt]) => { const f = kduForm(k, tt); return `<td>${f ? kduKoma(f.rata) : '–'}</td>`; }).join('')}</tr>`;
@@ -32778,7 +32806,7 @@ function _arsTglLabel(t){ const d=new Date(t+'T00:00:00Z'); const h=['Minggu','S
 
   // ---- ubah shift ----
   function jtOpenSheet(unit, row, idx) {
-    if (!jtData || !jtData.ubah || window._peekMode) { if (window._peekMode) showToast('👁️ Mode Intip — hanya lihat'); return; }
+    if (!jtData || !jtData.ubah) return;
     const b = (jtData.baris || []).filter(x => x.unit === unit && x.periode === jtPer && x.row === row)[0]; if (!b) return;
     const p = jtPerInfo();
     const base = ['M7', 'M-5', 'MD1', 'A15', 'N-23', 'BO', 'dayoff'];
@@ -34017,7 +34045,7 @@ function hodShowWaModal(msg, waGroupUrl) {
   modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:flex-end;';
   modal.innerHTML = `
     <div style="background:white;border-radius:20px 20px 0 0;padding:20px;width:100%;max-height:70vh;overflow-y:auto;">
-      <div style="font-size:15px;font-weight:800;color:#1a1a2e;margin-bottom:4px;">✅ Laporan Tersimpan!</div>
+      <div style="font-size:15px;font-weight:800;color:#1a1a2e;margin-bottom:4px;">${window._peekMode ? '👁️ Contoh laporan — Mode Intip, tidak tersimpan' : '✅ Laporan Tersimpan!'}</div>
       <div style="font-size:12px;color:#888;margin-bottom:12px;">Salin pesan di bawah lalu paste di WhatsApp Group HOD unit ini</div>
       <textarea id="hod-wa-msg-preview" readonly style="width:100%;height:160px;border:1.5px solid #e0e0e0;border-radius:10px;padding:10px;font-size:11px;font-family:inherit;resize:none;background:#f8f8f8;box-sizing:border-box;">${msg}</textarea>
       <div style="display:flex;gap:8px;margin-top:12px;">
