@@ -1676,6 +1676,12 @@
   .dfk-chips span.w{background:#fff;color:#c2410c}
   .dfk-chips span.y{background:#fde047;color:#422006}
   :is(.tb,.tbo) .dfk-card .rc-icon{background:#3a1d0b !important}
+  #inv-ov{position:fixed;inset:0;z-index:100500;background:#0f172a;display:flex;flex-direction:column}
+  #inv-ov .dfk-bar{display:flex;align-items:center;gap:10px;padding:calc(env(safe-area-inset-top,0px) + 8px) 12px 8px;background:linear-gradient(135deg,#0f172a,#1e293b);color:#fff}
+  #inv-ov .dfk-back{border:none;background:rgba(255,255,255,.14);color:#fff;font:inherit;font-size:13px;font-weight:800;border-radius:20px;padding:8px 13px;cursor:pointer;white-space:nowrap}
+  #inv-ov .dfk-bar b{font-size:14.5px}#inv-ov .dfk-bar small{display:block;font-size:11px;color:#94a3b8}
+  #inv-ov iframe{flex:1;width:100%;border:0;background:#fff}
+  #inv-ov .dfk-load{position:absolute;inset:60px 0 0;display:flex;align-items:center;justify-content:center;color:#cbd5e1;font-size:13px;pointer-events:none}
   :is(.tb,.tbo) .dfk-chips span{background:#2a3145;color:#e2e8f0} :is(.tb,.tbo) .dfk-chips span.w{background:#c2410c;color:#fff}
   #dfk-ov{position:fixed;inset:0;z-index:100500;background:#0f172a;display:flex;flex-direction:column}
   #dfk-ov .dfk-bar{display:flex;align-items:center;gap:10px;padding:calc(env(safe-area-inset-top,0px) + 8px) 12px 8px;background:linear-gradient(135deg,#0f172a,#1e293b);color:#fff}
@@ -3337,6 +3343,16 @@
         <div class="rc-arrow">›</div>
       </div>
 
+      <!-- Inventory Minibar & Keycard (23 Nov 2026) — HM, HOD FO, COO -->
+      <div class="rc-menu-card dfk-card" id="inv-home" style="display:none;background:linear-gradient(135deg,#4c1d95,#7c3aed);" onclick="invBuka()">
+        <div class="rc-icon">🧃</div>
+        <div class="rc-text">
+          <div class="rc-title">Inventory Minibar</div>
+          <div class="rc-sub" id="inv-home-sub">Stok, closing shift &amp; discrepancy</div>
+        </div>
+        <div class="rc-arrow">›</div>
+      </div>
+
       <!-- Kandidat Unit (HM: unitnya; HR: semua unit) -->
       <div id="kdu-home" style="display:none;"></div>
 
@@ -4302,6 +4318,15 @@
           <div class="rc-title">Defect Tracker</div>
           <div class="rc-sub" id="dfk-coo-sub">4 unit · buka tanpa login lagi</div>
           <div class="dfk-chips" id="dfk-coo-chips"></div>
+        </div>
+        <div class="rc-arrow">›</div>
+      </div>
+      <!-- Inventory Minibar & Keycard (23 Nov 2026) — HM, HOD FO, COO -->
+      <div class="rc-menu-card dfk-card" id="inv-coo" style="display:none;margin:0 16px 14px;background:linear-gradient(135deg,#4c1d95,#7c3aed);" onclick="invBuka()">
+        <div class="rc-icon">🧃</div>
+        <div class="rc-text">
+          <div class="rc-title">Inventory Minibar</div>
+          <div class="rc-sub" id="inv-coo-sub">Verse Luxe · unit lain menyusul</div>
         </div>
         <div class="rc-arrow">›</div>
       </div>
@@ -7700,6 +7725,7 @@
       // Show/hide Room Check menu card based on role
       if (typeof rcMaybeShowHomeMenu === 'function') rcMaybeShowHomeMenu();
       try { dfkMaybeShow(); } catch(e) { console.warn('dfk', e); }
+      try { invMaybeShow(); } catch(e) { console.warn('inv', e); }
       // Kandidat Unit (HM & HR)
       try { if (typeof kduMaybeShowHome === 'function') kduMaybeShowHome(); } catch(e) {}
 
@@ -27459,6 +27485,54 @@ function _arsTglLabel(t){ const d=new Date(t+'T00:00:00Z'); const h=['Minggu','S
   window.addEventListener('popstate', () => { if (document.getElementById('dfk-ov')) dfkTutup(); });
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && currentRole && !document.getElementById('dfk-ov')) { try { dfkMaybeShow(); } catch(e) {} } });
 
+  // =============================================================
+  // INVENTORY MINIBAR (Verse Stock, Apps Script) LEWAT TASKLIST (23 Nov 2026) — HM, HOD FO, COO
+  // Dibuka di dalam Tasklist. Login tetap PIN Verse Stock; perangkat perlu disetujui Admin sekali.
+  // =============================================================
+  const INV_URL = {
+    'Verse Luxe': 'https://script.google.com/macros/s/AKfycbw3mZADWNzzei0HUYhC8zZJ-M9eU3eU_7u7u4yy8LWZt7c-EtnY-bWWlWuGFY4MjoJZAA/exec'
+    // 'Verse Lite': '', 'Verse Cirebon': '', 'Oak Tree': ''  → isi saat unit live
+  };
+  function invUnit(r) {
+    r = r || currentRole || '';
+    if (/Luxe/.test(r)) return 'Verse Luxe';
+    if (/Lite/.test(r)) return 'Verse Lite';
+    if (/Cirebon/.test(r)) return 'Verse Cirebon';
+    if (/Oak Tree/.test(r)) return 'Oak Tree';
+    return '';
+  }
+  function invBoleh(r) {
+    r = r || currentRole || '';
+    if (r === 'COO') return true;
+    return /^(HM |Front Office Supervisor )/.test(r) && !!INV_URL[invUnit(r)];
+  }
+  function invMaybeShow() {
+    const coo = currentRole === 'COO';
+    ['inv-home','inv-coo'].forEach(x => { const e = document.getElementById(x); if (e) e.style.display = 'none'; });
+    if (!invBoleh()) return;
+    const el = document.getElementById(coo ? 'inv-coo' : 'inv-home'); if (!el) return;
+    el.style.display = 'flex';
+    if (!coo) { const sub = document.getElementById('inv-home-sub'); if (sub) sub.textContent = invUnit() + ' · stok, closing shift & discrepancy'; }
+  }
+  function invBuka(unit) {
+    if (!invBoleh()) { showToast('Role Anda tidak punya akses Inventory Minibar'); return; }
+    unit = unit || (currentRole === 'COO' ? 'Verse Luxe' : invUnit());
+    const url = INV_URL[unit];
+    if (!url) { showToast('Inventory ' + unit + ' belum tersedia'); return; }
+    document.getElementById('inv-ov')?.remove();
+    const ov = document.createElement('div'); ov.id = 'inv-ov';
+    ov.innerHTML = `<div class="dfk-bar"><button type="button" class="dfk-back" onclick="invTutup()">← Tasklist</button><div><b>🧃 Inventory Minibar</b><small>${_arsEsc(unit)} · masuk dengan PIN Verse Stock</small></div></div><div class="dfk-load">⏳ Membuka Inventory Minibar…</div>`;
+    document.body.appendChild(ov);
+    try { history.pushState({ inv: 1 }, ''); } catch(e) {}
+    const fr = document.createElement('iframe');
+    fr.src = url;
+    fr.setAttribute('allow', 'camera; clipboard-write; fullscreen');
+    fr.onload = () => { const l = ov.querySelector('.dfk-load'); if (l) l.remove(); };
+    ov.appendChild(fr);
+  }
+  function invTutup() { document.getElementById('inv-ov')?.remove(); }
+  window.addEventListener('popstate', () => { if (document.getElementById('inv-ov')) invTutup(); });
+
   // Buka Live Score dari notifikasi (+ langsung detail orangnya bila namanya ada di judul)
   function lskBuka(judul){
     const coo = currentRole === 'COO' || currentRole === 'CEO', id = coo ? 'lsk-coo' : 'lsk-home';
@@ -27688,7 +27762,7 @@ function _arsTglLabel(t){ const d=new Date(t+'T00:00:00Z'); const h=['Minggu','S
           ${submitted > 0 ? `<span style="font-size:12px;color:var(--gray-400);margin-left:8px;">${avgRolePct}%</span>` : ''}
         </div>`;
     });
-    try { if (currentRole === 'COO' || currentRole === 'CEO') { arsMuat('ars-coo'); dspMuat('dsp-coo'); lskMuat('lsk-coo'); try { dfkMaybeShow(); } catch(e) {} } } catch(e) {}
+    try { if (currentRole === 'COO' || currentRole === 'CEO') { arsMuat('ars-coo'); dspMuat('dsp-coo'); lskMuat('lsk-coo'); try { dfkMaybeShow(); } catch(e) {} try { invMaybeShow(); } catch(e) {} } } catch(e) {}
     try { tbCooRingkas(roles, submittedReports); } catch(e) { console.warn('tbCooRingkas', e); }
     document.getElementById('coo-role-summary').innerHTML = roleSummaryHtml ||
       '<div style="padding:16px;text-align:center;color:var(--gray-400);font-size:13px;">Belum ada laporan masuk</div>';
