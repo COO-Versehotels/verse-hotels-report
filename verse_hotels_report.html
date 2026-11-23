@@ -1578,6 +1578,10 @@
   .kdu-tg { font-size:11.5px; color:#334155; margin-top:5px; line-height:1.5; }
   .kdu-tg b { color:#0f172a; }
   .kdu-pill { display:inline-block; font-size:10.5px; font-weight:800; border-radius:999px; padding:2px 8px; margin-top:4px; }
+  .kdu-pill.kdu-unit { background:#e0f2fe; color:#075985; } .kdu-pill.kdu-unit.belum { background:#fef3c7; color:#92400e; }
+  .kdu-tg.kdu-pindah { color:#92400e; background:#fffbeb; border:1px solid #fde68a; border-radius:9px; padding:5px 8px; margin-top:5px; }
+  :is(.tb,.tbo) .kdu-pill.kdu-unit { background:#0c2433; color:#7dd3fc; } :is(.tb,.tbo) .kdu-pill.kdu-unit.belum { background:#3a2a0b; color:#fcd34d; }
+  :is(.tb,.tbo) .kdu-tg.kdu-pindah { color:#fcd34d; background:#2a1d08; border-color:#5c4210; }
   .kdu-note { margin-top:9px; background:#f8fafc; border:1px solid #e5e7eb; border-radius:9px; padding:7px 9px; font-size:12px; color:#334155; line-height:1.45; white-space:pre-line; }
   .kdu-note.al { background:#fff7ed; border-color:#fed7aa; color:#9a3412; }
   .kdu-jw { margin-top:9px; font-size:12px; color:#334155; }
@@ -31962,7 +31966,12 @@ function _arsTglLabel(t){ const d=new Date(t+'T00:00:00Z'); const h=['Minggu','S
     if (k.pengganti) h += `<span class="kdu-pill" style="background:#ede9fe;color:#6d28d9">🔁 Pengganti HM ${escapeHtml(KDU_UNIT[k.pengganti] || k.pengganti)}</span> `;
     if (k.tahap === 'batal') h += `<span class="kdu-pill" style="background:#fee2e2;color:#b91c1c">${escapeHtml(k.status_label || k.status)}</span> <span class="kdu-pill" style="background:#f1f5f9;color:#64748b">${kduSisa(k.hilang_at)}</span>`;
     else if (k.status_label) h += `<span class="kdu-pill" style="background:#eef2ff;color:#3730a3">${escapeHtml(k.status_label)}</span>`;
+    // 23 Nov 2026: unit penempatan (ditetapkan HR, wajib 1 unit) selalu tampil di kartu
+    if ('unit_final' in k) h += k.unit_final
+      ? ` <span class="kdu-pill kdu-unit">📍 Penempatan: ${escapeHtml(KDU_UNIT[k.unit_final] || k.unit_final)}</span>`
+      : ` <span class="kdu-pill kdu-unit belum">📍 Unit belum ditetapkan HR</span>`;
     const tg = kduTanggal(k); if (tg) h += `<div class="kdu-tg">${tg}</div>`;
+    if (k.unit_pindah && k.unit_pindah.dari) h += `<div class="kdu-tg kdu-pindah">🔁 Dipindah dari <b>${escapeHtml(KDU_UNIT[k.unit_pindah.dari] || k.unit_pindah.dari)}</b> ke <b>${escapeHtml(KDU_UNIT[k.unit_pindah.ke] || k.unit_pindah.ke)}</b>${k.unit_pindah.at ? ' · ' + kduTgl(k.unit_pindah.at) : ''}${k.unit_pindah.oleh ? ' oleh ' + escapeHtml(k.unit_pindah.oleh) : ''}${k.unit_pindah.alasan ? '<br>Alasan: ' + escapeHtml(k.unit_pindah.alasan) : ''}</div>`;
     if (k.chat_belum) h += `<div class="kdu-dkinfo baru">🔴 ${k.chat_belum} pesan diskusi baru</div>`;
     else if (k.chat_n) h += `<div class="kdu-dkinfo">💬 ${k.chat_n} pesan diskusi · sudah dibaca</div>`;
     h += `</div></div>`;
