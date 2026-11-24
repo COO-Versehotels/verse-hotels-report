@@ -4326,7 +4326,7 @@
         <div class="rc-icon">🧃</div>
         <div class="rc-text">
           <div class="rc-title">Inventory Minibar</div>
-          <div class="rc-sub" id="inv-coo-sub">Verse Luxe · unit lain menyusul</div>
+          <div class="rc-sub" id="inv-coo-sub">4 unit · stok, closing &amp; discrepancy</div>
         </div>
         <div class="rc-arrow">›</div>
       </div>
@@ -27490,8 +27490,10 @@ function _arsTglLabel(t){ const d=new Date(t+'T00:00:00Z'); const h=['Minggu','S
   // Dibuka di dalam Tasklist. Login tetap PIN Verse Stock; perangkat perlu disetujui Admin sekali.
   // =============================================================
   const INV_URL = {
-    'Verse Luxe': 'https://script.google.com/macros/s/AKfycbw3mZADWNzzei0HUYhC8zZJ-M9eU3eU_7u7u4yy8LWZt7c-EtnY-bWWlWuGFY4MjoJZAA/exec'
-    // 'Verse Lite': '', 'Verse Cirebon': '', 'Oak Tree': ''  → isi saat unit live
+    'Verse Lite': 'https://script.google.com/macros/s/AKfycbyEcNGNzTFaKDZtyd11h0BPTOc6ciSsO8k7ewA87QFD0iGi0QIAttNvp79McKuj3SSL/exec',
+    'Verse Luxe': 'https://script.google.com/macros/s/AKfycbw3mZADWNzzei0HUYhC8zZJ-M9eU3eU_7u7u4yy8LWZt7c-EtnY-bWWlWuGFY4MjoJZAA/exec',
+    'Verse Cirebon': 'https://script.google.com/macros/s/AKfycbzl7ejOtI952eo7GlVmc8jZ90tdktCEA-Tyqq7XGN_WbZDqLUOCDprzWjtsJSC1ub29UA/exec',
+    'Oak Tree': 'https://script.google.com/macros/s/AKfycbyScUZ-VacWd0LfCHUap55PYuQuZuo7-XihmTSq-4_sXrUg0XNlesytPJNyjHaK9vor/exec'
   };
   function invUnit(r) {
     r = r || currentRole || '';
@@ -27516,7 +27518,8 @@ function _arsTglLabel(t){ const d=new Date(t+'T00:00:00Z'); const h=['Minggu','S
   }
   function invBuka(unit) {
     if (!invBoleh()) { showToast('Role Anda tidak punya akses Inventory Minibar'); return; }
-    unit = unit || (currentRole === 'COO' ? 'Verse Luxe' : invUnit());
+    if (!unit && currentRole === 'COO') { invPilihUnit(); return; }
+    unit = unit || invUnit();
     const url = INV_URL[unit];
     if (!url) { showToast('Inventory ' + unit + ' belum tersedia'); return; }
     document.getElementById('inv-ov')?.remove();
@@ -27529,6 +27532,17 @@ function _arsTglLabel(t){ const d=new Date(t+'T00:00:00Z'); const h=['Minggu','S
     fr.setAttribute('allow', 'camera; clipboard-write; fullscreen');
     fr.onload = () => { const l = ov.querySelector('.dfk-load'); if (l) l.remove(); };
     ov.appendChild(fr);
+  }
+  function invPilihUnit() {
+    document.getElementById('inv-pick')?.remove();
+    const w = document.createElement('div'); w.id = 'inv-pick';
+    w.style.cssText = 'position:fixed;inset:0;z-index:100400;background:rgba(15,23,42,.55);display:flex;align-items:flex-end;justify-content:center';
+    w.onclick = e => { if (e.target === w) w.remove(); };
+    w.innerHTML = `<div style="background:#fff;width:100%;max-width:480px;border-radius:20px 20px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:10px">
+      <div style="font-weight:800;font-size:16px;color:#0f172a">🧃 Inventory Minibar — pilih unit</div>
+      ${Object.keys(INV_URL).map(u => `<button type="button" onclick="document.getElementById('inv-pick').remove();invBuka('${u}')" style="text-align:left;border:1px solid #e2e8f0;background:#f8fafc;border-radius:14px;padding:14px 16px;font:inherit;font-size:15px;font-weight:700;color:#0f172a;cursor:pointer">${_arsEsc(u)}</button>`).join('')}
+      <button type="button" onclick="document.getElementById('inv-pick').remove()" style="border:none;background:none;font:inherit;color:#64748b;padding:8px;cursor:pointer">Batal</button></div>`;
+    document.body.appendChild(w);
   }
   function invTutup() { document.getElementById('inv-ov')?.remove(); }
   window.addEventListener('popstate', () => { if (document.getElementById('inv-ov')) invTutup(); });
