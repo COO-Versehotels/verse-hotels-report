@@ -3974,6 +3974,20 @@
       .pl-seg.jeda { background: #f8fafc; border-style: dashed; cursor: default; }
       .pl-seg.jeda .jm, .pl-seg.jeda .ket { color: #94a3b8; font-weight: 600; }
       .pl-seg.kejadian { background: #fef2f2; border-color: #fecaca; cursor: default; }
+      .pl-seg.abu { background: #f8fafc; border-color: #e2e8f0; }
+      .pl-seg.abu .jm, .pl-seg.abu .ket { color: #94a3b8; font-weight: 600; }
+      .pl-tag { display:inline-block; font-size:9.5px; font-weight:800; letter-spacing:.3px; background:#e2e8f0; color:#64748b; border-radius:6px; padding:1px 6px; margin-left:3px; vertical-align:1px; }
+      .pl-ring { border-radius: 14px; padding: 11px 13px; margin-bottom: 8px; background: #ecfdf5; border: 1px solid #86efac; }
+      .pl-ring .t { font-size: 10.5px; font-weight: 800; letter-spacing: .5px; color: #15803d; }
+      .pl-ring .v { font-size: 16.5px; font-weight: 800; color: #14532d; margin-top: 2px; line-height: 1.3; }
+      .pl-ring .v small { font-size: 11.5px; font-weight: 600; color: #64748b; }
+      .pl-ring.luar { background: #fff7ed; border-color: #fdba74; } .pl-ring.luar .t, .pl-ring.luar .v { color: #9a3412; }
+      .pl-ring.abu { background: #f8fafc; border-color: #e2e8f0; } .pl-ring.abu .t, .pl-ring.abu .v { color: #475569; }
+      .pl-kpi { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-bottom: 6px; }
+      .pl-kpi > div { border: 1px solid #e5e7eb; border-radius: 12px; padding: 8px 6px; text-align: center; background: #fff; }
+      .pl-kpi b { display: block; font-size: 15.5px; color: #0f172a; } .pl-kpi small { display: block; font-size: 10px; font-weight: 700; color: #64748b; line-height: 1.3; margin-top: 1px; }
+      .pl-kpi .ok b { color: #15803d; } .pl-kpi .w b { color: #c2410c; }
+      .pl-kjam { font-size: 10.5px; color: #94a3b8; margin: 0 2px 8px; }
       .pl-unitbar { position: absolute; left: 8px; bottom: 22px; z-index: 500; display: flex; gap: 5px; flex-wrap: wrap; max-width: calc(100% - 16px); }
       .pl-unitbar button { border: none; background: rgba(255,255,255,.96); color: #0f172a; border-radius: 999px; padding: 7px 11px; font-weight: 700; font-size: 11.5px; font-family: inherit; box-shadow: 0 1px 5px rgba(0,0,0,.3); cursor: pointer; }
       .pl-unitbar button.utama { background: #0f4c3a; color: #fff; }
@@ -4019,6 +4033,13 @@
   :where(.tb,.tbo) .pl-seg.luar .ket, .pl-seg.luar .ket:where(.tb,.tbo) { color:#f4b09a; }
   :where(.tb,.tbo) .pl-seg.jeda, .pl-seg.jeda:where(.tb,.tbo) { background:#1c2438; }
   :where(.tb,.tbo) .pl-seg.kejadian, .pl-seg.kejadian:where(.tb,.tbo) { background:#0f1422; border-color:#33405e; }
+  :where(.tb,.tbo) .pl-seg.abu { background:#0f1422; border-color:#2a3145; }
+  :where(.tb,.tbo) .pl-tag { background:#1e2638; color:#9fb0cf; }
+  :where(.tb,.tbo) .pl-ring { background:#0f2a1a; border-color:#15803d; } :where(.tb,.tbo) .pl-ring .t, :where(.tb,.tbo) .pl-ring .v { color:#86efac; }
+  :where(.tb,.tbo) .pl-ring.luar { background:#2a1508; border-color:#c2410c; } :where(.tb,.tbo) .pl-ring.luar .t, :where(.tb,.tbo) .pl-ring.luar .v { color:#fdba74; }
+  :where(.tb,.tbo) .pl-ring.abu { background:#0f1422; border-color:#2a3145; } :where(.tb,.tbo) .pl-ring.abu .t, :where(.tb,.tbo) .pl-ring.abu .v { color:#cbd5e1; }
+  :where(.tb,.tbo) .pl-kpi > div { background:#141a2a; border-color:#2a3145; } :where(.tb,.tbo) .pl-kpi b { color:#f1f5f9; } :where(.tb,.tbo) .pl-kpi small { color:#9fb0cf; }
+  :where(.tb,.tbo) .pl-kpi .ok b { color:#4ade80; } :where(.tb,.tbo) .pl-kpi .w b { color:#fdba74; }
   :where(.tb,.tbo) .pl-unitbar button, .pl-unitbar button:where(.tb,.tbo) { background:#1c2438; color:#e2e8f0; }
   :where(.tb,.tbo) #pl-sisi, #pl-sisi:where(.tb,.tbo) { background:#1c2438; border-right-color:#33405e; }
   :where(.tb,.tbo) .pl-chip .pj small, .pl-chip .pj small:where(.tb,.tbo) { color:#e2e8f0; }
@@ -4968,7 +4989,7 @@
           const url = typeof input === 'string' ? input : ((input && input.url) || '');
           const method = String((init && init.method) || (input && input.method) || 'GET').toUpperCase();
           const ours = url.indexOf(SUPA_URL) === 0 || url.indexOf('/api/') === 0 || url.indexOf(location.origin + '/api/') === 0;
-          const readOnlyRpc = /\/rest\/v1\/rpc\/(device_check|admin_devices_list|admin_users_list|notif_list|notif_history|jadwal_baca|live_skor|hod_nilai_baca|coo_nilai_baca|defect_ringkas|defect_sso_buat|dc_tasklist_belum|hm_audit_baca|app_sesi_cek|disiplin_ringkas|disiplin_riwayat|laporan_publik|notif_balasan_saya|peta_live_data)$/.test(url.split('?')[0]);
+          const readOnlyRpc = /\/rest\/v1\/rpc\/(device_check|admin_devices_list|admin_users_list|notif_list|notif_history|jadwal_baca|live_skor|hod_nilai_baca|coo_nilai_baca|defect_ringkas|defect_sso_buat|dc_tasklist_belum|hm_audit_baca|app_sesi_cek|disiplin_ringkas|disiplin_riwayat|laporan_publik|notif_balasan_saya|peta_live_data|peta_kirim)$/.test(url.split('?')[0]);
           if (ours && method !== 'GET' && method !== 'HEAD' && !readOnlyRpc) {
             if (Date.now() - _lastPeekToast > 3000) {
               _lastPeekToast = Date.now();
@@ -8524,6 +8545,48 @@
     return { seg, kejadian };
   }
 
+  // 25 Nov 2026 — supaya peta mudah dibaca:
+  // (a) buang titik "basi": posisi cache lama yang terkirim saat HP baru bangun (sesudah jeda ≥10 mnt, lalu ≤3 mnt kemudian
+  //     ada titik lain berjarak > 1 km → titik pertama itu bukan posisi sebenarnya)
+  // (b) bila hari itu ada HP (GPS akurat), titik dari laptop (selalu foreground, akurasi kasar) tidak dicampur ke jejak
+  function plBersihkan_(rows) {
+    const pakai = rows.filter(r => r.latitude != null && r.longitude != null);
+    const perAlat = {};
+    pakai.forEach(r => { const k = r.perangkat || '-'; (perAlat[k] = perAlat[k] || []).push(r); });
+    const kasar = k => { const a = perAlat[k].map(r => r.accuracy_m == null ? 999 : r.accuracy_m).sort((x, y) => x - y); return a[Math.floor(a.length / 2)]; };
+    const alat = Object.keys(perAlat);
+    const hp = alat.filter(k => perAlat[k].some(r => r.status !== 'foreground') || kasar(k) <= 60);
+    let laptop = 0, hasil = pakai;
+    if (hp.length && alat.length > hp.length) {
+      const lap = new Set(alat.filter(k => !hp.includes(k)));
+      laptop = pakai.filter(r => lap.has(r.perangkat || '-')).length;
+      hasil = pakai.filter(r => !lap.has(r.perangkat || '-'));
+    }
+    const basi = new Set();
+    for (let i = 0; i < hasil.length - 1; i++) {
+      const a = hasil[i], b = hasil[i + 1], ta = new Date(a.recorded_at).getTime(), tb = new Date(b.recorded_at).getTime();
+      const tp = i > 0 ? new Date(hasil[i - 1].recorded_at).getTime() : -Infinity;
+      if ((ta - tp) >= 10 * 60000 && (tb - ta) <= 3 * 60000 && plJarak_(a.latitude, a.longitude, b.latitude, b.longitude) > 1000) basi.add(i);
+    }
+    const sisa = hasil.filter((r, i) => !basi.has(i));
+    return { rows: sisa.concat(rows.filter(r => r.latitude == null || r.longitude == null)).sort((x, y) => new Date(x.recorded_at) - new Date(y.recorded_at)), laptop, basi: basi.size };
+  }
+  // Jam kerja = sejak pertama tiba di hotel s/d laporan harian terkirim (belum kirim: s/d sekarang / titik terakhir).
+  // Di luar rentang itu, posisi di luar hotel ditulis abu-abu dan TIDAK dihitung sebagai keluar hotel.
+  function plTandaiJamKerja_(hasil, kirim, tgl) {
+    const seg = hasil.seg, titik = seg.filter(s => s.jenis === 'titik');
+    const tiba = titik.find(s => s.zona.indexOf('di:') === 0);
+    const unitKerja = tiba ? tiba.zona.slice(3) : '';
+    const uK = PL_UNIT.find(u => u.n === unitKerja);
+    const akhir = kirim || (tgl === plHariIni_() ? Date.now() : (titik.length ? titik[titik.length - 1].t1 : 0));
+    hasil.kerja = { tiba: tiba ? tiba.t0 : null, unit: unitKerja, kirim, akhir };
+    titik.forEach(s => {
+      if (s.zona.indexOf('di:') === 0) return;
+      s.diluarJam = !tiba || s.t1 < tiba.t0 || (kirim && s.t0 > kirim);
+      s.fase = !tiba || s.t1 < tiba.t0 ? 'sebelum' : (kirim && s.t0 > kirim ? 'sesudah' : '');
+      if (uK) { s.unitJauh = uK.n; s.maks = Math.max.apply(null, s.pts.map(p => plJarak_(p[0], p[1], uK.lat, uK.lng))); }
+    });
+  }
   async function plMuatJejak_(fokus) {
     const o = PL.orang.find(x => x.id === PL.pilih); if (!o || !petaLiveMap) return;
     const tgl = PL.tgl || plHariIni_();
@@ -8547,7 +8610,13 @@
       if (adaTanda) rows = rows.filter(r => plKunciBaris_(r, o.role) === (o.kunci || ''));
       else campur = rows.length > 0;      // data lama: belum dibedakan per orang
     }
+    const bersih = plBersihkan_(rows); rows = bersih.rows;
+    let kirim = null;
+    try { const k = await _rpc('peta_kirim', { p_role: o.role, p_tgl: tgl }); if (k && typeof k === 'string') kirim = new Date(k).getTime(); } catch (e) {}
+    if (req !== PL.req || PL.pilih !== o.id) return;
     const hasil = plSusunSegmen_(rows);
+    plTandaiJamKerja_(hasil, kirim, tgl);
+    hasil.laptop = bersih.laptop; hasil.basi = bersih.basi;
     PL.segmen = hasil.seg;
     plRenderRiwayat_(hasil, rows.length, campur, tgl, o);      // panel dulu (tinggi peta berubah), baru gambar & atur tampilan peta
     if (fokus) { try { petaLiveMap.invalidateSize({ pan: false }); } catch (e) {} }
@@ -8558,7 +8627,9 @@
     if (PL.jejakLayer) { petaLiveMap.removeLayer(PL.jejakLayer); PL.jejakLayer = null; }
     const grp = L.layerGroup(); const garis = []; const semua = [];
     const titikSeg = seg.filter(s => s.jenis === 'titik');
-    const nLuar = titikSeg.filter(s => s.zona.indexOf('di:') !== 0).reduce((n, s) => n + s.pts.length, 0);
+    const nLuar = titikSeg.filter(s => s.zona.indexOf('di:') !== 0 && !s.diluarJam).reduce((n, s) => n + s.pts.length, 0);
+    const potong = [];   // garis diputus di jeda tanpa data, supaya tidak ada garis lurus lintas kota
+    seg.forEach(s => { if (s.jenis === 'jeda') potong.push(garis.length); });
     titikSeg.forEach((s, idx) => {
       const jam = t => plJam_(new Date(t).toISOString());
       if (s.zona.indexOf('di:') === 0) {
@@ -8569,12 +8640,23 @@
       } else {
         s.pts.forEach(p => {
           garis.push([p[0], p[1]]); semua.push([p[0], p[1]]);
-          L.circleMarker([p[0], p[1]], { radius: 6, color: '#fff', weight: 2, fillColor: s.zona === 'luar' ? '#ea580c' : '#94a3b8', fillOpacity: 1 })
-            .bindTooltip(jam(p[2]), { permanent: nLuar <= 14, direction: 'top', className: 'pl-tip', offset: [0, -4] }).addTo(grp);
+          const abu = s.diluarJam || s.zona !== 'luar';
+          L.circleMarker([p[0], p[1]], { radius: s.diluarJam ? 5 : 6, color: '#fff', weight: 2, fillColor: abu ? '#94a3b8' : '#ea580c', fillOpacity: 1 })
+            .bindTooltip(jam(p[2]) + (s.diluarJam ? (s.fase === 'sesudah' ? ' · setelah laporan terkirim' : ' · sebelum tiba di hotel') : ''), { permanent: !s.diluarJam && nLuar <= 14, direction: 'top', className: 'pl-tip', offset: [0, -4] }).addTo(grp);
         });
       }
     });
-    if (garis.length > 1 && !campur) L.polyline(garis, { color: '#2563eb', weight: 4, opacity: 0.7, lineJoin: 'round' }).addTo(grp);
+    if (garis.length > 1 && !campur) {
+      // hitung ulang titik potong berdasarkan urutan segmen (jeda di antara segmen titik)
+      const bagian = []; let cur = [];
+      seg.forEach(s => {
+        if (s.jenis === 'jeda') { if (cur.length) bagian.push(cur); cur = []; return; }
+        if (s.jenis !== 'titik') return;
+        if (s.zona.indexOf('di:') === 0) cur.push(s.pusat); else s.pts.forEach(p => cur.push([p[0], p[1]]));
+      });
+      if (cur.length) bagian.push(cur);
+      bagian.filter(b => b.length > 1).forEach(b => L.polyline(b, { color: '#2563eb', weight: 4, opacity: 0.7, lineJoin: 'round' }).addTo(grp));
+    }
     grp.addTo(petaLiveMap); PL.jejakLayer = grp;
     if (fokus) {
       if (o.r && (PL.tgl || plHariIni_()) === plHariIni_()) semua.push([o.r.latitude, o.r.longitude]);
@@ -8593,12 +8675,12 @@
       return;
     }
     const titik = seg.filter(s => s.jenis === 'titik');
-    const luar = titik.filter(s => s.zona === 'luar');
+    const luar = titik.filter(s => s.zona === 'luar' && !s.diluarJam);
     const menitLuar = luar.reduce((a, s) => a + (s.t1 - s.t0) / 60000, 0);
     let html = '';
     if (campur) html += '<div class="pl-rk info">ℹ️ Data tanggal ini belum dibedakan per orang (jabatan ini dipegang lebih dari satu orang), jadi titik semua pemegang jabatan tampil bersama tanpa garis rute.</div>';
-    if (luar.length) html += '<div class="pl-rk keluar">🚶 Tercatat ' + luar.length + '× di luar hotel' + (menitLuar >= 1 ? ' · total ±' + plDurasi_(menitLuar) : '') + '</div>';
-    else html += '<div class="pl-rk aman">✅ Tidak tercatat keluar hotel pada ' + plTglTxt_(tgl) + '</div>';
+    html += plRingkasan_(hasil, seg, hariIni, o, luar, menitLuar);
+    if (hasil.laptop) html += '<div class="pl-rk info">💻 ' + hasil.laptop + ' titik dari laptop (lokasi perkiraan) tidak dimasukkan ke perjalanan.</div>';
     html += '<div style="font-size:10.5px;color:#94a3b8;margin:0 2px 6px;">' + nBaris + ' titik · ' + jam(titik[0].t0) + '–' + jam(titik[titik.length - 1].t1) + ' WIB · terbaru di atas · ketuk baris untuk lihat di peta</div>';
     const semua = seg.map((s, i) => ({ s, i })).concat(hasil.kejadian.map(k => ({ s: k, i: -1 })));
     semua.sort((a, b) => (b.s.t0 - a.s.t0) || (b.i - a.i));
@@ -8618,8 +8700,12 @@
       const lama = ((berjalan ? Date.now() : s.t1) - s.t0) / 60000;
       let ik, ket, kls = ''; const tambahan = [];
       if (s.zona.indexOf('di:') === 0) { ik = '🏨'; ket = 'Di ' + plEsc_(s.zona.slice(3)); }
+      else if (s.diluarJam) {
+        ik = s.fase === 'sesudah' ? '🌙' : '🌅'; kls = ' abu';
+        ket = 'Di luar hotel <span class="pl-tag">' + (s.fase === 'sesudah' ? 'SETELAH LAPORAN TERKIRIM' : 'SEBELUM TIBA DI HOTEL') + '</span><br>±' + plJarakTxt_(s.maks) + ' dari ' + plEsc_(s.unitJauh) + ' · tidak dihitung';
+      }
       else if (s.zona === 'luar') {
-        ik = '🚶'; kls = ' luar'; ket = 'DI LUAR HOTEL · terjauh ' + plJarakTxt_(s.maks) + ' dari ' + plEsc_(s.unitJauh);
+        ik = '🚶'; kls = ' luar'; ket = 'DI LUAR HOTEL saat jam kerja · terjauh ' + plJarakTxt_(s.maks) + ' dari ' + plEsc_(s.unitJauh);
         const sblm = seg[x.i - 1], ssdh = seg[x.i + 1];
         if (sblm && sblm.jenis === 'titik' && sblm.zona.indexOf('di:') === 0) tambahan.push('terakhir tercatat di hotel ' + jam(sblm.t1));
         if (ssdh && ssdh.jenis === 'titik' && ssdh.zona.indexOf('di:') === 0) tambahan.push('tercatat kembali ' + jam(ssdh.t0));
@@ -8631,6 +8717,44 @@
     const atas = document.getElementById('pl-detail') ? document.getElementById('pl-detail').scrollTop : 0;
     rw.innerHTML = html;
     if (document.getElementById('pl-detail')) document.getElementById('pl-detail').scrollTop = atas;
+  }
+  function plRingkasan_(hasil, seg, hariIni, o, luar, menitLuar) {
+    const jam = t => plJam_(new Date(t).toISOString());
+    const K = hasil.kerja || {};
+    const titik = seg.filter(s => s.jenis === 'titik');
+    const akhirSeg = titik[titik.length - 1];
+    // posisi terbaru perangkat lain (mis. laptop) di hotel yang SAMA ikut memperbarui "terakhir terlihat"
+    let tAkhir = akhirSeg ? akhirSeg.t1 : 0;
+    try { if (hariIni && o && o.r && o.lok && o.lok.zona === 'di' && akhirSeg && akhirSeg.zona === 'di:' + o.lok.unit) tAkhir = Math.max(tAkhir, new Date(o.r.recorded_at).getTime()); } catch (e) {}
+    let posisi = '', kelas = 'ok';
+    if (hariIni && akhirSeg) {
+      const lama = (Date.now() - tAkhir) / 60000;
+      if (akhirSeg.zona.indexOf('di:') === 0) posisi = 'Di ' + plEsc_(akhirSeg.zona.slice(3)) + ' sejak ' + jam(akhirSeg.t0);
+      else if (akhirSeg.diluarJam) { posisi = akhirSeg.fase === 'sesudah' ? 'Sudah pulang (laporan terkirim ' + jam(K.kirim) + ')' : 'Belum tiba di hotel'; kelas = 'abu'; }
+      else { posisi = 'Di luar hotel sejak ' + jam(akhirSeg.t0); kelas = 'luar'; }
+      if (lama > 30) posisi += ' <small>· data terakhir ' + jam(tAkhir) + '</small>';
+    } else if (K.tiba) posisi = 'Bekerja di ' + plEsc_(K.unit);
+    else { posisi = 'Tidak tercatat di hotel'; kelas = 'abu'; }
+    // Total di hotel: lama tiap segmen di hotel + jeda tanpa data yang DIAPIT dua segmen di hotel yang sama (dianggap tetap di sana);
+    // segmen terakhir hari ini diperpanjang sampai sekarang hanya bila datanya masih segar (< 30 mnt)
+    let menitHotel = 0;
+    seg.forEach((s, i) => {
+      if (s.jenis === 'titik' && s.zona.indexOf('di:') === 0) {
+        const t1 = s === akhirSeg ? tAkhir : s.t1;
+        const segar = hariIni && s === akhirSeg && (Date.now() - t1) < 30 * 60000;
+        menitHotel += Math.max(0, ((segar ? Date.now() : t1) - s.t0) / 60000);
+      } else if (s.jenis === 'jeda') {
+        const a = seg[i - 1], c = seg[i + 1];
+        if (a && c && a.jenis === 'titik' && c.jenis === 'titik' && a.zona === c.zona && a.zona.indexOf('di:') === 0) menitHotel += (s.t1 - s.t0) / 60000;
+      }
+    });
+    let h = '<div class="pl-ring ' + kelas + '"><div class="t">' + (hariIni ? 'POSISI SEKARANG' : 'RINGKASAN ' + plEsc_(plTglTxt_(PL.tgl)).toUpperCase()) + '</div><div class="v">' + posisi + '</div></div>';
+    h += '<div class="pl-kpi">'
+      + '<div class="' + (K.tiba ? 'ok' : '') + '"><b>' + (K.tiba ? jam(K.tiba) : '—') + '</b><small>Tiba di hotel</small></div>'
+      + '<div class="' + (luar.length ? 'w' : 'ok') + '"><b>' + luar.length + '×</b><small>Keluar hotel saat jam kerja' + (menitLuar >= 1 ? ' · ±' + plDurasi_(menitLuar) : '') + '</small></div>'
+      + '<div><b>' + (menitHotel >= 1 ? plDurasi_(menitHotel) : '—') + '</b><small>Total di hotel</small></div></div>';
+    h += '<div class="pl-kjam">Jam kerja dihitung ' + (K.tiba ? 'sejak tiba ' + jam(K.tiba) : 'sejak tiba di hotel') + ' s/d ' + (K.kirim ? 'laporan terkirim ' + jam(K.kirim) : 'laporan harian dikirim') + '.</div>';
+    return h;
   }
   function plKeSegmen(i) {
     const s = PL.segmen[i]; if (!s || !s.pts || !petaLiveMap) return;
@@ -28210,6 +28334,8 @@ function _arsTglLabel(t){ const d=new Date(t+'T00:00:00Z'); const h=['Minggu','S
           if (location) {
             if (window._gpsOffDicatat) { window._gpsOffDicatat = false; tutupGpsGate(); }
             const now = Date.now();
+            // 25 Nov 2026: saat HP baru bangun, plugin sering memberi posisi LAMA (cache semalam) → jangan dikirim dengan jam sekarang
+            if (location.time && now - location.time > 120000) return;
             // Berpindah > 150 m dari titik terakhir yang terkirim (mis. keluar hotel) → kirim segera, tidak menunggu jadwal
             const tk = window._lokTerkirim;
             const pindah = !!tk && (location.accuracy == null || location.accuracy < 100)
