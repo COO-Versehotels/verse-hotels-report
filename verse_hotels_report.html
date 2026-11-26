@@ -1698,6 +1698,21 @@
   }
   .rc-menu-card .rc-text { flex: 1; min-width: 0; }
   .rc-menu-card .rc-title { font-size: 15px; font-weight: 700; margin-bottom: 2px; }
+  /* Laporan Night Audit (26 Nov 2026) */
+  .na-card{margin:0 16px 14px;background:#fff;border-radius:16px;padding:14px;box-shadow:0 2px 8px rgba(15,37,64,.08);border:1.5px solid #e2e8f0}
+  .na-card.na-merah{border-color:#fca5a5}.na-card.na-ok{border-color:#86efac}
+  .na-h{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .na-ic{width:32px;height:32px;border-radius:9px;background:#eef2ff;display:flex;align-items:center;justify-content:center;font-size:16px;flex:none}
+  .na-t{font-size:13.5px;font-weight:800;color:#1a3a5c}.na-s{font-size:11px;color:#64748b}
+  .na-row{display:flex;align-items:center;gap:6px;padding:7px 0;border-top:1px solid #f1f5f9}
+  .na-u{width:74px;flex:none;font-size:12px;font-weight:800;color:#1f2937}
+  .na-chip{flex:1;min-width:0;border-radius:9px;padding:5px 6px;font-size:10.5px;font-weight:700;text-align:center;line-height:1.25}
+  .na-chip small{display:block;font-weight:600;font-size:10px;opacity:.85}
+  .na-g{background:#dcfce7;color:#166534}.na-y{background:#fef3c7;color:#92400e}.na-r{background:#fee2e2;color:#991b1b}.na-w{background:#f1f5f9;color:#475569}
+  .na-btn{display:block;margin-top:8px;background:#1a3a5c;color:#fff;border-radius:10px;padding:9px;text-align:center;font-size:12px;font-weight:800;text-decoration:none}
+  .na-note{font-size:11px;color:#64748b;margin-top:6px;line-height:1.4}
+  .na-ban{margin:12px 16px 4px;background:#fee2e2;border:1.5px solid #ef4444;border-radius:14px;padding:11px 12px;display:flex;gap:10px;align-items:flex-start}
+  .na-ban b{color:#991b1b;font-size:13.5px}.na-ban p{margin:3px 0 0;font-size:12px;color:#7f1d1d;line-height:1.4}
   .rc-menu-card .rc-sub { font-size: 12px; opacity: 0.8; }
   .rc-menu-card .rc-arrow { font-size: 22px; opacity: 0.6; }
 
@@ -3308,6 +3323,8 @@
         <div style="color:rgba(255,255,255,0.5);font-size:18px;">›</div>
       </div>
       </div>
+      <!-- Laporan Night Audit: banner merah bila belum lengkap (26 Nov 2026) -->
+      <div id="na-banner" style="display:none;"></div>
       <!-- KPI Utama card -->
       <div class="tb-sec" id="tb-sec-kpi" style="display:none">🎯 KPI UTAMA</div>
       <div id="kpi-home-card" class="tb-kpi" style="display:none;">
@@ -3322,6 +3339,8 @@
       <div id="lsk-home" style="display:none;margin:0 16px 14px;"></div>
 
       <div class="tb-sec" id="tb-sec-perhatian">⚠️ PERLU PERHATIAN</div>
+      <!-- Laporan Night Audit (In House, Rev Breakdown, Jurnal FO) — HM & FO Supervisor unit (26 Nov 2026) -->
+      <div id="na-home" style="display:none;"></div>
       <!-- Room Check Menu Card (visible only for HM/EHK/CE roles) -->
       <div class="rc-menu-card" id="rc-home-card" style="display:none;" onclick="rcEnter()">
         <div class="rc-icon">🏨</div>
@@ -4342,6 +4361,8 @@
         </div>
         <div class="rc-arrow">›</div>
       </div>
+      <!-- Laporan Night Audit 4 unit (26 Nov 2026) -->
+      <div id="na-coo" style="display:none;"></div>
       <!-- Inventory Minibar & Keycard (23 Nov 2026) — HM, HOD FO, COO -->
       <div class="rc-menu-card dfk-card" id="inv-coo" style="display:none;margin:0 16px 14px;background:linear-gradient(135deg,#4c1d95,#7c3aed);" onclick="invBuka()">
         <div class="rc-icon">🧃</div>
@@ -7747,6 +7768,7 @@
       if (typeof rcMaybeShowHomeMenu === 'function') rcMaybeShowHomeMenu();
       try { dfkMaybeShow(); } catch(e) { console.warn('dfk', e); }
       try { invMaybeShow(); } catch(e) { console.warn('inv', e); }
+      try { naMaybeShow(); } catch(e) { console.warn('na', e); }
       // Kandidat Unit (HM & HR)
       try { if (typeof kduMaybeShowHome === 'function') kduMaybeShowHome(); } catch(e) {}
 
@@ -27657,6 +27679,60 @@ function _arsTglLabel(t){ const d=new Date(t+'T00:00:00Z'); const h=['Minggu','S
     fr.onload = () => { const l = ov.querySelector('.dfk-load'); if (l) l.remove(); };
     ov.appendChild(fr);
   }
+  // =============================================================
+  // LAPORAN NIGHT AUDIT (26 Nov 2026) — status upload Guest In House, Rev Breakdown, Jurnal FO
+  // Data dari Apps Script Laporan Transaksi FO (tabel na_status). Patokan: sudah ada sebelum 06.30.
+  // =============================================================
+  const NA_UNITS = [['Verse Lite Gajah Mada','Verse Lite'],['Verse Luxe Wahid Hasyim','Verse Luxe'],['Verse Hotel Cirebon','Cirebon'],['Oak Tree Mahakam Blok M','Oak Tree']];
+  const NA_JNS = [['IH','In House','Guest In House'],['REV','Rev','Rev Breakdown'],['JRN','Jurnal','Jurnal FO']];
+  const NA_BLN = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+  function naHotelRole(r) {
+    r = r || currentRole || '';
+    if (!/^(HM |Front Office Supervisor )/.test(r)) return '';
+    return ({'Verse Lite':'Verse Lite Gajah Mada','Verse Luxe':'Verse Luxe Wahid Hasyim','Verse Cirebon':'Verse Hotel Cirebon','Oak Tree':'Oak Tree Mahakam Blok M'})[invUnit(r)] || '';
+  }
+  function naBiz() {   // tanggal bisnis = kemarin (WIB); merah baru dianggap lewat batas mulai 06.30
+    const n = new Date(), w = new Date(n.getTime() + (420 + n.getTimezoneOffset()) * 60000);
+    const lewat = w.getHours() * 60 + w.getMinutes() >= 390;
+    const d = new Date(w.getFullYear(), w.getMonth(), w.getDate() - 1);
+    const iso = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    return { iso, lewat, label: d.getDate() + ' ' + NA_BLN[d.getMonth()] };
+  }
+  function naJam(t) { const d = new Date(new Date(t).getTime() + (420 + new Date().getTimezoneOffset()) * 60000); return String(d.getHours()).padStart(2, '0') + '.' + String(d.getMinutes()).padStart(2, '0'); }
+  function naChip(r, nama, lewat) {
+    if (r) return `<div class="na-chip ${r.telat ? 'na-y' : 'na-g'}">${r.telat ? '⚠️' : '✅'} ${nama}<small>${naJam(r.jam_upload)}${r.telat ? ' telat' : ''}</small></div>`;
+    return lewat ? `<div class="na-chip na-r">🔴 ${nama}<small>belum</small></div>` : `<div class="na-chip na-w">⏳ ${nama}<small>menunggu</small></div>`;
+  }
+  async function naMaybeShow() {
+    const coo = currentRole === 'COO' || currentRole === 'CEO';
+    const hotel = coo ? '' : naHotelRole();
+    ['na-home','na-coo','na-banner'].forEach(x => { const e = document.getElementById(x); if (e) { e.style.display = 'none'; e.innerHTML = ''; } });
+    if (!coo && !hotel) return;
+    let rows = [];
+    try { rows = await _rpc('na_get', { p_hari: 3 }) || []; } catch(e) { return; }
+    if (!Array.isArray(rows)) return;
+    const b = naBiz(), by = {};
+    rows.forEach(r => { if (r.tanggal === b.iso) by[r.hotel + '|' + r.jenis] = r; });
+    const units = coo ? NA_UNITS : NA_UNITS.filter(u => u[0] === hotel);
+    let adaMerah = false, adaTelat = false;
+    const isi = units.map(u => {
+      const chips = NA_JNS.map(j => { const r = by[u[0] + '|' + j[0]]; if (!r && b.lewat) adaMerah = true; if (r && r.telat) adaTelat = true; return naChip(r, coo ? j[1] : j[2], b.lewat); }).join('');
+      const jr = by[u[0] + '|JRN'], link = jr && /^https:\/\//.test(jr.info || '') ? jr.info : '';
+      return `<div class="na-row">${coo ? `<div class="na-u">${_arsEsc(u[1])}</div>` : ''}${chips}</div>` +
+        (link ? `<a class="na-btn" href="${_arsEsc(link)}" target="_blank" rel="noopener">📲 Lihat hasil cek Jurnal FO ${_arsEsc(u[1])}</a>` : '');
+    }).join('');
+    const sub = coo ? 'Wajib di-upload Night Audit setelah running' : (units[0] ? units[0][1] : '') + (adaMerah ? ' · belum lengkap' : adaTelat ? ' · lengkap, ada yang terlambat' : b.lewat ? ' · lengkap' : '');
+    const card = `<div class="na-card ${adaMerah ? 'na-merah' : (!adaTelat && b.lewat ? 'na-ok' : '')}"><div class="na-h"><div class="na-ic">📋</div><div><div class="na-t">Laporan Night Audit · ${b.label}</div><div class="na-s">${_arsEsc(sub)}</div></div></div>${isi}` +
+      (coo ? '<div class="na-note">Hijau = masuk sebelum 06.30 · Kuning = terlambat · Merah = belum di-upload</div>' : '') + '</div>';
+    const el = document.getElementById(coo ? 'na-coo' : 'na-home');
+    if (el) { el.innerHTML = card; el.style.display = 'block'; }
+    if (!coo && adaMerah) {
+      const belum = NA_JNS.filter(j => !by[hotel + '|' + j[0]]).map(j => j[2]).join(', ');
+      const bn = document.getElementById('na-banner');
+      if (bn) { bn.innerHTML = `<div class="na-ban"><div style="font-size:20px">🔴</div><div><b>Laporan Night Audit ${b.label} belum lengkap</b><p>Belum di-upload: ${_arsEsc(belum)}. Wajib di-upload Night Audit setelah running — segera upload sekarang.</p></div></div>`; bn.style.display = 'block'; }
+    }
+  }
+
   function invPilihUnit() {
     document.getElementById('inv-pick')?.remove();
     const w = document.createElement('div'); w.id = 'inv-pick';
@@ -27900,7 +27976,7 @@ function _arsTglLabel(t){ const d=new Date(t+'T00:00:00Z'); const h=['Minggu','S
           ${submitted > 0 ? `<span style="font-size:12px;color:var(--gray-400);margin-left:8px;">${avgRolePct}%</span>` : ''}
         </div>`;
     });
-    try { if (currentRole === 'COO' || currentRole === 'CEO') { arsMuat('ars-coo'); dspMuat('dsp-coo'); lskMuat('lsk-coo'); try { dfkMaybeShow(); } catch(e) {} try { invMaybeShow(); } catch(e) {} } } catch(e) {}
+    try { if (currentRole === 'COO' || currentRole === 'CEO') { arsMuat('ars-coo'); dspMuat('dsp-coo'); lskMuat('lsk-coo'); try { dfkMaybeShow(); } catch(e) {} try { invMaybeShow(); } catch(e) {} try { naMaybeShow(); } catch(e) {} } } catch(e) {}
     try { tbCooRingkas(roles, submittedReports); } catch(e) { console.warn('tbCooRingkas', e); }
     document.getElementById('coo-role-summary').innerHTML = roleSummaryHtml ||
       '<div style="padding:16px;text-align:center;color:var(--gray-400);font-size:13px;">Belum ada laporan masuk</div>';
