@@ -157,6 +157,19 @@ export default async function handler(req, res) {
       tokens = (r && r.tokens) || [];
       title = (r && r.title) || '';
       body = (r && r.body) || '';
+    } else if (reqBody.type === 'laporan_na') {
+      // 26 Nov 2026: status laporan Night Audit (In House, Rev Breakdown, Jurnal FO) dari Apps Script Laporan Transaksi FO.
+      // Tujuan: 'coo' (COO) atau 'unit' (HM + FO Supervisor unit). Kunci khusus laporan_na.
+      try {
+        const r = await supaRpc('push_na_prepare', { p_auth: String(reqBody.auth || ''), p_target: String(reqBody.target || ''),
+          p_hotel: String(reqBody.hotel || ''), p_title: String(reqBody.title || ''), p_body: String(reqBody.body || '') });
+        tokens = (r && r.tokens) || [];
+        title = (r && r.title) || '';
+        body = (r && r.body) || '';
+      } catch (e) {
+        if (/NOT_AUTHORIZED/.test(e.message)) return res.status(401).json({ success: false, error: 'NOT_AUTHORIZED' });
+        throw e;
+      }
     } else if (reqBody.type === 'kandidat') {
       // Info kandidat dari Verse Recruitment -> HM unit (dipicu database recruitment, kunci khusus push_kandidat)
       try {
