@@ -28349,8 +28349,15 @@ function _arsTglLabel(t){ const d=new Date(t+'T00:00:00Z'); const h=['Minggu','S
     if (['screen-coo', 'screen-home', 'screen-peta-live', 'screen-location-tracking', 'screen-login-history'].indexOf(id) < 0) return false;
     const el = document.activeElement; if (el && /INPUT|TEXTAREA|SELECT/.test(el.tagName)) return false;
     if (document.querySelector('.modal-overlay.show')) return false;
-    if (document.querySelector('#lsk-ov, #dfk-ov, #notif-inbox, .rwy-ov')) return false;
+    if (document.querySelector('#lsk-ov, #dfk-ov, .rwy-ov')) return false;   // kotak Notifikasi boleh: dibuka lagi setelah dimuat ulang
     return true;
+  }
+  let _versiBaruVA = false;   // 26 Nov 2026: versi baru sudah terdeteksi -> dimuat begitu layar aman
+  function muatUlangVA_() {
+    try { const a = document.querySelector('.screen.active'); if (a && a.id === 'screen-peta-live') sessionStorage.setItem('va_buka_peta', '1'); } catch (e) {}
+    try { if (window._peekMode) sessionStorage.setItem('va_intip', window._peekMode.role); } catch (e) {}
+    try { if (document.getElementById('notif-inbox')) sessionStorage.setItem('va_buka_notif', '1'); } catch (e) {}
+    location.reload();
   }
   async function cekVersiBaruVA() {
     try {
@@ -28359,16 +28366,27 @@ function _arsTglLabel(t){ const d=new Date(t+'T00:00:00Z'); const h=['Minggu','S
       if (!r.ok) return;
       const v = r.headers.get('etag') || r.headers.get('last-modified'); if (!v) return;
       if (!_versiAwalVA) { _versiAwalVA = v; return; }
-      if (v !== _versiAwalVA && layarAmanVA_()) {
-        try { const a = document.querySelector('.screen.active'); if (a && a.id === 'screen-peta-live') sessionStorage.setItem('va_buka_peta', '1'); } catch (e) {}
-        try { if (window._peekMode) sessionStorage.setItem('va_intip', window._peekMode.role); } catch (e) {}
-        location.reload();
-      }
+      if (v !== _versiAwalVA) { _versiBaruVA = true; if (layarAmanVA_()) muatUlangVA_(); }
     } catch (e) {}
   }
   setTimeout(cekVersiBaruVA, 5000);
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') setTimeout(cekVersiBaruVA, 800); });
-  setInterval(cekVersiBaruVA, 5 * 60 * 1000);
+  setInterval(cekVersiBaruVA, 2 * 60 * 1000);
+  // Versi baru menunggu layar aman (mis. kembali ke Beranda) -> langsung dimuat tanpa tutup-buka aplikasi
+  setInterval(() => { if (_versiBaruVA && document.visibilityState === 'visible' && layarAmanVA_()) muatUlangVA_(); }, 10000);
+  // Setelah dimuat ulang saat kotak Notifikasi terbuka -> buka lagi kotak Notifikasi
+  (function () {
+    let mau = false;
+    try { mau = sessionStorage.getItem('va_buka_notif') === '1'; sessionStorage.removeItem('va_buka_notif'); } catch (e) {}
+    if (!mau) return;
+    let n = 0;
+    const t = setInterval(() => {
+      n++;
+      const a = document.querySelector('.screen.active');
+      if (currentRole && a && (a.id === 'screen-coo' || a.id === 'screen-home')) { clearInterval(t); try { openNotifInbox(); } catch (e) {} }
+      else if (n > 40) clearInterval(t);
+    }, 500);
+  })();
   // Setelah dimuat ulang saat Mode Intip → intip lagi role yang sama begitu Dashboard COO/CEO terbuka
   (function () {
     let role = null;
@@ -28546,6 +28564,7 @@ function _arsTglLabel(t){ const d=new Date(t+'T00:00:00Z'); const h=['Minggu','S
   }
 
   async function openNotifInbox() {
+    try { setTimeout(cekVersiBaruVA, 300); } catch (e) {}   // versi baru? -> dimuat ulang & kotak Notifikasi dibuka lagi
     document.getElementById('notif-inbox')?.remove();
     const ov = document.createElement('div');
     ov.id = 'notif-inbox';
