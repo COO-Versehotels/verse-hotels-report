@@ -1711,6 +1711,7 @@
   .na-g{background:#dcfce7;color:#166534}.na-y{background:#fef3c7;color:#92400e}.na-r{background:#fee2e2;color:#991b1b}.na-w{background:#f1f5f9;color:#475569}
   .na-btn{display:block;margin-top:8px;background:#1a3a5c;color:#fff;border-radius:10px;padding:9px;text-align:center;font-size:12px;font-weight:800;text-decoration:none}
   .na-note{font-size:11px;color:#64748b;margin-top:6px;line-height:1.4}
+  .na-lnk{display:block;margin-top:3px;font-size:10.5px;font-weight:800;color:#1d4ed8;text-decoration:none}
   .na-ban{margin:12px 16px 4px;background:#fee2e2;border:1.5px solid #ef4444;border-radius:14px;padding:11px 12px;display:flex;gap:10px;align-items:flex-start}
   .na-ban b{color:#991b1b;font-size:13.5px}.na-ban p{margin:3px 0 0;font-size:12px;color:#7f1d1d;line-height:1.4}
   .rc-menu-card .rc-sub { font-size: 12px; opacity: 0.8; }
@@ -27726,13 +27727,17 @@ function _arsTglLabel(t){ const d=new Date(t+'T00:00:00Z'); const h=['Minggu','S
     let adaMerah = false, adaTelat = false;
     const isi = units.map(u => {
       const chips = NA_JNS.map(j => { const r = by[u[0] + '|' + j[0]]; if (!r && b.lewat) adaMerah = true; if (r && r.telat) adaTelat = true; return naChip(r, coo ? j[1] : j[2], b.lewat); }).join('');
-      const jr = by[u[0] + '|JRN'], link = jr && /^https:\/\//.test(jr.info || '') ? jr.info : '';
-      return `<div class="na-row">${coo ? `<div class="na-u">${_arsEsc(u[1])}</div>` : ''}${chips}</div>` +
-        (link ? `<a class="na-btn" href="${_arsEsc(link)}" target="_blank" rel="noopener">📲 Lihat hasil cek Jurnal FO ${_arsEsc(u[1])}</a>` : '');
+      // Link halaman laporan lengkap (Laporan Transaksi FO) unit itu: baris LAP; cadangan: hasil cek jurnal susulan
+      const lp = by[u[0] + '|LAP'], jr = by[u[0] + '|JRN'];
+      const link = [lp && lp.info, jr && jr.info].find(x => /^https:\/\//.test(x || '')) || '';
+      const nama = coo ? `<div class="na-u">${_arsEsc(u[1])}${link ? `<a class="na-lnk" href="${_arsEsc(link)}" target="_blank" rel="noopener">📄 Laporan ›</a>` : ''}</div>` : '';
+      return `<div class="na-row">${nama}${chips}</div>` +
+        (!coo && link ? `<a class="na-btn" href="${_arsEsc(link)}" target="_blank" rel="noopener">📄 Lihat laporan lengkap ${_arsEsc(u[1])}</a>` : '');
     }).join('');
     const sub = coo ? 'Wajib di-upload Night Audit setelah running' : (units[0] ? units[0][1] : '') + (adaMerah ? ' · belum lengkap' : adaTelat ? ' · lengkap, ada yang terlambat' : b.lewat ? ' · lengkap' : '');
+    const ketLink = coo ? ' · Ketuk "📄 Laporan" untuk laporan lengkap unit' : '';
     const card = `<div class="na-card ${adaMerah ? 'na-merah' : (!adaTelat && b.lewat ? 'na-ok' : '')}"><div class="na-h"><div class="na-ic">📋</div><div><div class="na-t">Laporan Night Audit · ${b.label}</div><div class="na-s">${_arsEsc(sub)}</div></div></div>${isi}` +
-      (coo ? '<div class="na-note">Hijau = masuk sebelum 06.30 · Kuning = terlambat · Merah = belum di-upload</div>' : '') + '</div>';
+      (coo ? '<div class="na-note">Hijau = masuk sebelum 06.30 · Kuning = terlambat · Merah = belum di-upload' + ketLink + '</div>' : '') + '</div>';
     const el = document.getElementById(diCoo ? 'na-coo' : 'na-home');
     if (el) { el.innerHTML = card; el.style.display = 'block'; }
     if (!coo && adaMerah) {
