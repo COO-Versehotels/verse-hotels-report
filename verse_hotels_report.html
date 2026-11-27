@@ -5011,7 +5011,7 @@
           const url = typeof input === 'string' ? input : ((input && input.url) || '');
           const method = String((init && init.method) || (input && input.method) || 'GET').toUpperCase();
           const ours = url.indexOf(SUPA_URL) === 0 || url.indexOf('/api/') === 0 || url.indexOf(location.origin + '/api/') === 0;
-          const readOnlyRpc = /\/rest\/v1\/rpc\/(device_check|admin_devices_list|admin_users_list|notif_list|notif_history|jadwal_baca|live_skor|hod_nilai_baca|coo_nilai_baca|defect_ringkas|defect_sso_buat|dc_tasklist_belum|hm_audit_baca|app_sesi_cek|disiplin_ringkas|disiplin_riwayat|laporan_publik|notif_balasan_saya|peta_live_data|peta_kirim)$/.test(url.split('?')[0]);
+          const readOnlyRpc = /\/rest\/v1\/rpc\/(device_check|admin_devices_list|admin_users_list|notif_list|notif_history|jadwal_baca|live_skor|hod_nilai_baca|coo_nilai_baca|defect_ringkas|defect_sso_buat|dc_tasklist_belum|hm_audit_baca|app_sesi_cek|disiplin_ringkas|disiplin_riwayat|laporan_publik|notif_balasan_saya|peta_live_data|peta_kirim|admin_token_sesi)$/.test(url.split('?')[0]);
           if (ours && method !== 'GET' && method !== 'HEAD' && !readOnlyRpc) {
             if (Date.now() - _lastPeekToast > 3000) {
               _lastPeekToast = Date.now();
@@ -7446,15 +7446,13 @@
   async function _getAdminToken() {
     let token = localStorage.getItem(ADMIN_TOKEN_KEY);
     if (token) return token;
+    // 27 Nov 2026: tidak lagi minta PIN lewat dialog bawaan — pakai login COO/CEO yang sudah aktif di perangkat terdaftar ini
+    try {
+      const t = await _rpc('admin_token_sesi', {});
+      if (t && typeof t === 'string') { localStorage.setItem(ADMIN_TOKEN_KEY, t); return t; }
+    } catch (e) {}
     const s = loadSessionToday();
-    const role = (s && s.role === 'CEO') ? 'CEO' : 'COO';
-    const p = prompt('Masukkan PIN ' + role + ' untuk melanjutkan:');
-    if (!p) throw new Error('Dibatalkan');
-    const r = await _rpc('verify_pin', { p_role: role, p_pin: p.trim(), p_device_id: getOrCreateDeviceId() });
-    if (!r || !r.ok || !r.token) throw new Error(r && r.reason === 'device' ? 'HP ini belum di-approve' : 'PIN ' + role + ' salah');
-    localStorage.setItem(ADMIN_TOKEN_KEY, r.token);
-    if (r.sesi) setSesiVA(r.sesi);
-    return r.token;
+    throw new Error('Akses admin hanya untuk ' + ((s && s.role === 'CEO') ? 'CEO' : 'COO') + ' yang login di perangkat terdaftar — silakan Keluar lalu login ulang');
   }
 
   async function _adminRpc(fn, params) {
