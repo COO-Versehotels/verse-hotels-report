@@ -1382,6 +1382,16 @@
   .dva-sec{font-size:11.5px;font-weight:800;color:#1a3a5c;letter-spacing:.3px;margin:12px 2px 6px;text-transform:uppercase}
   .dva-sec.kuning{color:#b45309}
   .dva-it{border:1px solid #e5e7eb;border-radius:10px;margin-bottom:6px;background:#fff}
+  .dvk{border:2px solid #fdba74;background:#fffbf5;border-radius:14px;padding:12px;margin-bottom:8px}
+  .dvk-t{font-weight:800;font-size:14.5px;color:#0f172a}.dvk-m{font-size:11.5px;color:#64748b;margin-top:2px}
+  .dvk-g{display:grid;grid-template-columns:112px 1fr;gap:8px;margin-top:10px}
+  .dvk-k{background:#0f172a;color:#fff;border-radius:12px;padding:8px 6px;text-align:center;align-self:start}
+  .dvk-k small{display:block;font-size:9.5px;font-weight:800;letter-spacing:.5px;color:#94a3b8}.dvk-k b{display:block;font-size:26px;letter-spacing:5px;padding-left:5px;margin-top:2px}
+  .dvk-cek{display:flex;flex-direction:column;gap:5px;min-width:0}
+  .dvk-c{border-radius:9px;padding:6px 8px;font-size:11.5px;line-height:1.4;display:flex;gap:6px;align-items:flex-start}
+  .dvk-c.ok{background:#ecfdf5;color:#065f46}.dvk-c.w{background:#fef3c7;color:#92400e}.dvk-c.n{background:#f1f5f9;color:#334155}
+  .dvk-l{margin-top:9px;background:#eff6ff;border-radius:10px;padding:8px 10px;font-size:11.5px;color:#1e3a8a;line-height:1.45}
+  .dvk-b{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}.dvk-b .dva-b{flex:1;min-width:120px;padding:9px 8px}
   .dva-it.lama{background:#f8fafc;opacity:.75}
   .dva-row{display:flex;gap:8px;align-items:center;padding:9px 10px;cursor:pointer}
   .dva-tx{flex:1;min-width:0}.dva-tx b{display:block;font-size:12.5px;color:var(--navy);line-height:1.3}
@@ -2174,6 +2184,9 @@
   :where(.tb,.tbo) .dva-sec, .dva-sec:where(.tb,.tbo) { color:#9ac6f4; }
   :where(.tb,.tbo) .dva-sec.kuning, .dva-sec.kuning:where(.tb,.tbo) { color:#f4c19a; }
   :where(.tb,.tbo) .dva-it, .dva-it:where(.tb,.tbo) { background:#1c2438; border-color:#33405e; }
+  :where(.tb,.tbo) .dvk { background:#1c2438; border-color:#c2410c; } :where(.tb,.tbo) .dvk-t { color:#f1f5f9; } :where(.tb,.tbo) .dvk-m { color:#9fb0cf; }
+  :where(.tb,.tbo) .dvk-c.ok { background:#0f2a1a; color:#86efac; } :where(.tb,.tbo) .dvk-c.w { background:#3a2a0b; color:#fcd34d; } :where(.tb,.tbo) .dvk-c.n { background:#0f1422; color:#cbd5e1; }
+  :where(.tb,.tbo) .dvk-l { background:#0c2433; color:#bae6fd; }
   :where(.tb,.tbo) .dva-it.lama, .dva-it.lama:where(.tb,.tbo) { background:#1c2438; }
   :where(.tb,.tbo) .dva-tx small, .dva-tx small:where(.tb,.tbo) { color:#e2e8f0; }
   :where(.tb,.tbo) .dva-b.merah, .dva-b.merah:where(.tb,.tbo) { background:#341414; color:#f49a9a; }
@@ -5036,7 +5049,7 @@
   const SESI_VA_KEY = 'verse_sesi';
   let SESI_VA = ''; try { SESI_VA = localStorage.getItem(SESI_VA_KEY) || ''; } catch(e) {}
   function setSesiVA(t) { SESI_VA = t || ''; try { if (t) localStorage.setItem(SESI_VA_KEY, t); else localStorage.removeItem(SESI_VA_KEY); } catch(e) {} }
-  const _RPC_TANPA_SESI = /\/rest\/v1\/rpc\/(app_sesi_cek|verify_pin|device_check|device_migrate|device_label_by_pin|tasklist_sesi_device|laporan_publik)$/;
+  const _RPC_TANPA_SESI = /\/rest\/v1\/rpc\/(app_sesi_cek|verify_pin|device_check|device_migrate|device_label_by_pin|tasklist_sesi_device|laporan_publik|device_kode|device_minta_lokasi)$/;
   let _sesiJanji = null;
   function _roleSesiAktif() {
     try { if (typeof currentRole !== 'undefined' && currentRole) return currentRole; } catch(e) {}
@@ -5175,12 +5188,30 @@
       msg.textContent = '✅ Terkirim ke COO. Halaman ini otomatis masuk begitu disetujui.';
       btn.textContent = '✅ Terkirim';
       inp.disabled = true;
+      if (r.kode) _gateTampilKode(r.kode);
+      _gateKirimLokasi(deviceId);
     } catch(e) {
       msg.style.color = '#dc2626'; msg.textContent = /Terlalu banyak/.test(e.message) ? e.message : 'Gagal mengirim, periksa koneksi lalu coba lagi.';
       btn.disabled = false; btn.textContent = 'Kirim ke COO';
     }
   }
 
+  // 27 Nov 2026: kode verifikasi 4 angka — COO menelepon karyawan & mencocokkan kode ini sebelum menyetujui
+  function _gateTampilKode(kode) {
+    const el = document.getElementById('gate-kode'); if (!el || !kode) return;
+    el.style.display = 'block';
+    el.innerHTML = '<div style="font-size:11px;font-weight:800;letter-spacing:.6px;color:#64748b;">KODE VERIFIKASI HP INI</div>'
+      + '<div style="font-size:42px;font-weight:800;letter-spacing:12px;color:#0f172a;margin:2px 0 2px 12px;">' + String(kode).replace(/\D/g, '') + '</div>'
+      + '<div style="font-size:12px;color:#475569;line-height:1.45;">📞 Bila COO menghubungi, <b>sebutkan kode ini</b>.<br>Jangan berikan kode ini kepada orang lain.</div>';
+  }
+  function _gateKirimLokasi(deviceId) {
+    try {
+      if (!navigator.geolocation) return;
+      navigator.geolocation.getCurrentPosition(pos => {
+        _rpc('device_minta_lokasi', { p_device_id: deviceId, p_lat: pos.coords.latitude, p_lng: pos.coords.longitude, p_akurasi: Math.round(pos.coords.accuracy || 0) }).catch(() => {});
+      }, () => {}, { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 });
+    } catch (e) {}
+  }
   function _startGatePolling() {
     if (_gatePollTimer) return;
     _gatePollTimer = setInterval(async () => {
@@ -5324,6 +5355,7 @@
         <div style="font-size:44px;margin-bottom:10px;">${icon}</div>
         <div style="font-weight:800;font-size:17px;color:#1a3a5c;margin-bottom:8px;">${title}</div>
         <div style="font-size:13px;color:#64748b;line-height:1.5;margin-bottom:16px;">${desc}</div>
+        <div id="gate-kode" style="display:none;background:#fff7ed;border:2px solid #fdba74;border-radius:14px;padding:12px;margin-bottom:12px;"></div>
         ${status === 'pending' ? `
         <div style="text-align:left;background:#f1f5f9;border-radius:12px;padding:12px;margin-bottom:12px;">
           <div style="font-size:12px;font-weight:700;color:#1a3a5c;margin-bottom:6px;">Isi PIN jabatan Anda untuk meminta akses ke COO</div>
@@ -5339,6 +5371,9 @@
       </div>
     `;
     document.body.appendChild(overlay);
+    if (status === 'pending') {
+      _rpc('device_kode', { p_device_id: deviceId }).then(k => { if (k && typeof k === 'string') { _gateTampilKode(k); _gateKirimLokasi(deviceId); } }).catch(() => {});
+    }
     document.getElementById('device-gate-recheck').onclick = async () => {
       await checkDeviceApproval();
       if (!document.getElementById('device-gate-overlay')) _afterDeviceApproved();
@@ -9242,9 +9277,9 @@
       if (pendBaru.length) {
         const named = pendBaru.filter(r => r.label);
         html += `<div class="dva-sec kuning">⏳ Menunggu persetujuan (${pendBaru.length})</div>`;
-        if (named.length > 1) html += `<button onclick="devappApproveAllNamed()" class="dva-b hijau" style="width:100%;margin-bottom:8px;padding:9px;">✅ Setujui semua yang sudah bernama (${named.length})</button>`;
-        pendBaru.forEach(r => { html += baris(r, `<button onclick="devappSetStatus(${r.id},'approved')" class="dva-b hijau">Setujui</button><button onclick="devappSetStatus(${r.id},'revoked')" class="dva-b merah">Tolak</button>`); });
-        html += `<div class="dva-note">Nama & jabatan di atas berasal dari PIN yang diisi di HP tersebut. Setujui hanya bila HP-nya memang milik orang itu.</div>`;
+        // 27 Nov 2026: setujui satu per satu setelah kode dicocokkan (tombol "setujui semua" dihapus)
+        pendBaru.forEach(r => { html += _devappKartuMinta(r, aktif); });
+        html += `<div class="dva-note">Sebelum menyetujui, hubungi karyawannya dan minta ia menyebutkan <b>kode di layar HP-nya</b>. Cocok → setujui. Tidak tahu / beda → tolak.</div>`;
       }
       if (tab === 'aktif') {
         const grup = {};
@@ -9266,6 +9301,46 @@
     } catch (e) {
       listEl.innerHTML = `<div style="color:#ef4444;text-align:center;padding:20px;">❌ Gagal menampilkan: ${e.message}</div>`;
     }
+  }
+  function _devappKartuMinta(r, aktif) {
+    const roles = r.allowed_roles || [];
+    const lama = aktif.filter(a => (a.allowed_roles || []).some(x => roles.includes(x)) && a.id !== r.id);
+    const unitJab = _devUnit(r);
+    const cek = [];
+    if (r.minta_lat != null && r.minta_lng != null && typeof plLokasi_ === 'function') {
+      const lk = plLokasi_(r.minta_lat, r.minta_lng, r.minta_akurasi);
+      if (lk.zona === 'di') {
+        const sesuai = unitJab === 'Corporate' || unitJab === lk.unit;
+        cek.push(`<div class="dvk-c ${sesuai ? 'ok' : 'w'}">📍 <span>Diminta dari <b>${_umrEsc(lk.unit)}</b> (±${plJarakTxt_(lk.m)})${sesuai ? (unitJab === 'Corporate' ? '' : ' — sesuai unit jabatannya') : ' — <b>bukan unit jabatannya (' + _umrEsc(unitJab) + ')</b>'}</span></div>`);
+      } else cek.push(`<div class="dvk-c w">📍 <span>Diminta dari <b>luar hotel</b> · ${plJarakTxt_(lk.m)} dari ${_umrEsc(lk.unit)}${r.minta_akurasi > 300 ? ' (lokasi perkiraan)' : ''}</span></div>`);
+    } else cek.push(`<div class="dvk-c n">📍 <span>Lokasi tidak terkirim (izin lokasi HP belum aktif)</span></div>`);
+    if (lama.length) cek.push(`<div class="dvk-c w">⚠️ <span>Jabatan ini sudah punya <b>${lama.length} HP aktif</b>: ${lama.slice(0, 2).map(a => _umrEsc(String(a.label || '').split(' · ').pop()) + ' · dipakai ' + _devLalu(a.last_seen_at)).join('; ')}.<br>Ganti HP / HP kedua? Pastikan ke karyawannya.</span></div>`);
+    const ps = r.pin_salah || 0;
+    cek.push(`<div class="dvk-c ${ps >= 3 ? 'w' : 'n'}">🔑 <span>PIN benar · percobaan PIN salah sebelumnya (24 jam): <b>${ps}×</b></span></div>`);
+    const tombol = lama.length
+      ? `<button class="dva-b hijau" onclick="devappSetujuiMinta(${r.id}, true)">✓ Setujui · ganti HP (cabut ${lama.length === 1 ? 'HP lama' : lama.length + ' HP lama'})</button>
+         <button class="dva-b abu" onclick="devappSetujuiMinta(${r.id}, false)">✓ Setujui sebagai HP tambahan</button>`
+      : `<button class="dva-b hijau" onclick="devappSetujuiMinta(${r.id}, false)">✓ Setujui</button>`;
+    return `<div class="dvk">
+      <div class="dvk-t">${_umrEsc(r.label || '(tanpa nama)')}</div>
+      <div class="dvk-m">${_devJenis(r.user_agent)} · meminta ${_devLalu(r.requested_at)}</div>
+      <div class="dvk-g"><div class="dvk-k"><small>KODE DI HP-NYA</small><b>${r.kode_verif ? _umrEsc(r.kode_verif) : '—'}</b></div><div class="dvk-cek">${cek.join('')}</div></div>
+      ${r.kode_verif ? `<div class="dvk-l">Telepon / WA karyawannya → "Sebutkan kode di layar HP kamu" → <b>${_umrEsc(r.kode_verif)}</b> cocok? Setujui. Tidak tahu / beda? Tolak.</div>` : `<div class="dvk-l">HP ini meminta dengan versi aplikasi lama (belum ada kode). Minta karyawannya buka ulang aplikasi lalu isi PIN lagi agar kode muncul.</div>`}
+      <div class="dvk-b">${tombol}<button class="dva-b merah" onclick="devappSetStatus(${r.id},'revoked')">Tolak</button></div>
+    </div>`;
+  }
+  async function devappSetujuiMinta(id, gantiHp) {
+    const rows = window._devappRows || [], r = rows.find(x => x.id === id); if (!r) return;
+    try {
+      await _adminRpc('admin_device_update', { p_id: id, p_status: 'approved' });
+      if (gantiHp) {
+        const roles = r.allowed_roles || [];
+        const lama = rows.filter(a => a.status === 'approved' && a.id !== id && (a.allowed_roles || []).some(x => roles.includes(x)));
+        for (const a of lama) await _adminRpc('admin_device_update', { p_id: a.id, p_status: 'revoked' });
+        showToast('✅ Disetujui · ' + lama.length + ' HP lama dicabut');
+      } else showToast('✅ Disetujui');
+    } catch (e) { showToast('Gagal: ' + e.message); }
+    loadDeviceApprovalList();
   }
   function _devappToggleMenu(id) {
     window._devappMenu = window._devappMenu === id ? null : id;
