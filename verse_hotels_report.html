@@ -2882,7 +2882,7 @@
   .tb-hc-h span.ok { background:#0f2a1a; color:#86efac; }
   .tb-hc-c { display:grid; grid-template-columns:1fr 1fr; gap:5px; margin-top:10px; }
   .tb-rc { display:flex; align-items:center; gap:5px; font-size:11px; font-weight:700; background:var(--tb-dalam); border:1px solid var(--tb-garis); border-radius:9px; padding:5px 7px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; }
-  .tb-rc b { font-weight:900; } .tb-rc.ok { color:#86efac; } .tb-rc.no { color:#fca5a5; } .tb-rc.klik { cursor:pointer; }
+  .tb-rc b { font-weight:900; } .tb-rc.ok { color:#86efac; } .tb-rc.no { color:#fca5a5; } .tb-rc.off { color:#7c8aa5; opacity:.8; } .tb-rc.klik { cursor:pointer; }
   .tb-coo-corp { margin:0 12px; background:var(--tb-panel); border:1px solid var(--tb-garis); border-radius:16px; padding:12px; display:flex; flex-wrap:wrap; gap:6px; box-shadow:var(--shadow-card); }
   .tb-coo-corp .tb-rc { padding:6px 9px; font-size:11.5px; }
   :is(.tb,.tbo) .tb-rekap-role { display:none !important; }
@@ -3087,7 +3087,7 @@
   html.tema-terang .tb-coo-hotel .tb-hc, html.tema-terang .tb-coo-corp { background:#fff; border-color:#e2e8f0; box-shadow:var(--shadow-card); }
   html.tema-terang .tb-hc-h b { color:var(--navy); }
   html.tema-terang .tb-hc-h span { background:#fef3c7; color:#8a6408; } html.tema-terang .tb-hc-h span.ok { background:#dcfce7; color:#15803d; }
-  html.tema-terang .tb-rc { background:#f8fafc; border-color:#e2e8f0; } html.tema-terang .tb-rc.ok { color:#15803d; } html.tema-terang .tb-rc.no { color:#b91c1c; }
+  html.tema-terang .tb-rc { background:#f8fafc; border-color:#e2e8f0; } html.tema-terang .tb-rc.ok { color:#15803d; } html.tema-terang .tb-rc.no { color:#b91c1c; } html.tema-terang .tb-rc.off { color:#94a3b8; }
   html.tema-terang #screen-coo .tb-sec { color:#64748b; }
   html.tema-terang .tema-pilih { background:#fff; }
   @media (min-width:1024px) {
@@ -28048,6 +28048,19 @@ function _arsTglLabel(t){ const d=new Date(t+'T00:00:00Z'); const h=['Minggu','S
     if (window.matchMedia('(min-width:1024px)').matches) return;   // laptop: menu samping selalu tampil
     m.classList.toggle('buka', !!buka);
   }
+  // 28 Nov 2026: yang libur (Jadwal Tim day off / Sabtu-Minggu / libur nasional) atau posisi kosong TIDAK dihitung "belum submit"
+  function _cooLibur(role) {
+    const w = (window._cooWajib || {})[role];
+    if (!w || w.wajib) return null;
+    const sb = String(w.sebab || '');
+    if (/^(Sabtu|Minggu)$/.test(sb)) return '🌴 Libur · ' + sb;
+    if (/^Libur nasional/i.test(sb)) return '🌴 Libur · ' + sb.replace(/^Libur nasional:\s*/i, '');
+    if (/Day off/i.test(sb)) return '🌴 Libur · Day off (Jadwal Tim)';
+    if (sb === 'kosong') return 'Posisi kosong';
+    if (/Belum bergabung/i.test(sb)) return 'Belum bergabung';
+    if (/pengguna aktif/i.test(sb)) return 'Belum ada pengguna';
+    return '🌴 Tidak wajib hari ini';
+  }
   function tbCooRingkas(roles, reps) {
     const box = document.getElementById('tb-coo-hotel'), cb = document.getElementById('tb-coo-corp'); if (!box || !cb) return;
     const esc = t => String(t).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
@@ -28055,15 +28068,17 @@ function _arsTglLabel(t){ const d=new Date(t+'T00:00:00Z'); const h=['Minggu','S
                ['Verse Hotel Cirebon','Verse Cirebon','#2E86C1','HM Verse Cirebon'],['Oak Tree Mahakam Blok M','Oak Tree','#E91E8C','HM Oak Tree']];
     const chip = (lbl, role, hotel) => {
       const r = reps.find(x => x.role === role && (!hotel || x.hotel === hotel));
-      const st = r ? 'ok' : 'no', isi = r ? (r.pct >= 100 ? '✓' : (r.pct || 0) + '%') : 'belum';
+      const lib = !r && _cooLibur(role);
+      const st = r ? 'ok' : lib ? 'off' : 'no', isi = r ? (r.pct >= 100 ? '✓' : (r.pct || 0) + '%') : lib ? (/^🌴/.test(lib) ? 'libur' : 'kosong') : 'belum';
       const klik = r ? ` onclick="openDetailLaporan('${esc(role)}'${hotel ? `,'${esc(hotel)}'` : ''})"` : '';
       return `<span class="tb-rc ${st}${r ? ' klik' : ''}"${klik} title="${esc(role)}"><b>${esc(lbl)}</b> ${isi}</span>`;
     };
     box.innerHTML = H.map(([hotel, pendek, warna, hm]) => {
       const hod = Object.keys(HOD_HOTEL_MAP).filter(n => HOD_HOTEL_MAP[n] === hotel);
       const ch = [chip('HM', hm, hotel)].concat(hod.map(n => chip(n.startsWith('Housekeeping') ? 'HK' : n.startsWith('Engineering') ? 'ENG' : 'FO', n, hotel)));
-      const n = [hm].concat(hod).filter(role => reps.some(x => x.role === role && x.hotel === hotel)).length, t = 1 + hod.length;
-      return `<div class="tb-hc" style="border-top-color:${warna}"><div class="tb-hc-h"><b>🏨 ${pendek}</b><span class="${n === t ? 'ok' : ''}">${n}/${t} submit</span></div><div class="tb-hc-c">${ch.join('')}</div></div>`;
+      const semua = [hm].concat(hod), kirim = r => reps.some(x => x.role === r && x.hotel === hotel);
+      const n = semua.filter(kirim).length, lib = semua.filter(r => !kirim(r) && _cooLibur(r)).length, t = semua.length - lib;
+      return `<div class="tb-hc" style="border-top-color:${warna}"><div class="tb-hc-h"><b>🏨 ${pendek}</b><span class="${n === t ? 'ok' : ''}">${n}/${t} submit${lib ? ' · ' + lib + ' libur/kosong' : ''}</span></div><div class="tb-hc-c">${ch.join('')}</div></div>`;
     }).join('');
     const corp = roles.filter(r => !r.name.startsWith('HM ') && !HOD_HOTEL_MAP[r.name]);
     cb.innerHTML = corp.map(r => chip(r.icon + ' ' + r.name.replace(' Corporate', ''), r.name, '')).join('');
@@ -28078,6 +28093,7 @@ function _arsTglLabel(t){ const d=new Date(t+'T00:00:00Z'); const h=['Minggu','S
     // Load data dari Supabase — reset dulu agar tidak duplikat
     showToast('⏳ Memuat data...');
     const dbData = await loadFromSupabase();
+    try { const w = await _rpc('arsip_wajib', { p_tgl: new Date(Date.now() + 7*3600000).toISOString().slice(0,10) }); window._cooWajib = {}; (Array.isArray(w) ? w : []).forEach(x => window._cooWajib[x.role] = x); } catch(e) { window._cooWajib = {}; }
     // Clear dan isi ulang dari database
     submittedReports.length = 0;
     dbData.forEach(r => {
@@ -28215,12 +28231,13 @@ function _arsTglLabel(t){ const d=new Date(t+'T00:00:00Z'); const h=['Minggu','S
               <div style="font-size:11px;color:var(--navy);font-weight:700;margin-top:4px;">👁 Lihat Detail →</div>
             </div>`;
         } else {
+          const lib = _cooLibur(role.name);
           roleRowsHtml += `
             <div class="role-report-item">
               <div class="role-avatar" style="opacity:0.4;">${role.icon}</div>
               <div class="role-info">
                 <h4 style="color:var(--gray-400);">${role.name.replace(' Corporate','')}</h4>
-                <p style="color:var(--red);">⚠️ Belum submit</p>
+                ${lib ? `<p style="color:var(--gray-400);font-weight:600;">${lib}</p>` : `<p style="color:var(--red);">⚠️ Belum submit</p>`}
               </div>
               <div class="role-progress">
                 <div class="role-progress-pct" style="color:var(--gray-200);">—</div>
@@ -28232,7 +28249,9 @@ function _arsTglLabel(t){ const d=new Date(t+'T00:00:00Z'); const h=['Minggu','S
         <div class="hotel-report-card">
           <div class="hotel-report-header">
             <h3>🏨 ${hotel}</h3>
-            <span>${submittedReports.filter(r=>r.hotel===hotel && (r.role.startsWith('HM ') || HOD_HOTEL_MAP[r.role]===hotel)).length}/4 submit</span>
+            <span>${(() => { const rs = roles.filter(r => (r.name.startsWith('HM ') ? hmHotelMap[r.name] : HOD_HOTEL_MAP[r.name]) === hotel).map(r => r.name);
+              const k = rs.filter(n => submittedReports.some(x => x.hotel === hotel && x.role === n)).length, lb = rs.filter(n => !submittedReports.some(x => x.hotel === hotel && x.role === n) && _cooLibur(n)).length;
+              return k + '/' + (rs.length - lb) + ' submit' + (lb ? ' · ' + lb + ' libur/kosong' : ''); })()}</span>
           </div>
           ${roleRowsHtml}
         </div>`;
@@ -28242,7 +28261,8 @@ function _arsTglLabel(t){ const d=new Date(t+'T00:00:00Z'); const h=['Minggu','S
     let corpSectionHtml = `<div class="hotel-report-card" style="margin-top:12px;">
       <div class="hotel-report-header">
         <h3>🏢 Tim Corporate & F&B Department</h3>
-        <span>${submittedReports.filter(r=>r.hotel==='Corporate').length}/${corpRoleList.length} submit</span>
+        <span>${(() => { const k = corpRoleList.filter(r => submittedReports.some(x => x.hotel === 'Corporate' && x.role === r.name)).length, lb = corpRoleList.filter(r => !submittedReports.some(x => x.hotel === 'Corporate' && x.role === r.name) && _cooLibur(r.name)).length;
+          return k + '/' + (corpRoleList.length - lb) + ' submit' + (lb ? ' · ' + lb + ' libur/kosong' : ''); })()}</span>
       </div>`;
     corpRoleList.forEach(role => {
       const report = submittedReports.find(r => r.hotel === 'Corporate' && r.role === role.name);
@@ -28266,12 +28286,13 @@ function _arsTglLabel(t){ const d=new Date(t+'T00:00:00Z'); const h=['Minggu','S
             <div style="font-size:11px;color:var(--navy);font-weight:700;margin-top:4px;">👁 Lihat Detail →</div>
           </div>`;
       } else {
+        const lib = _cooLibur(role.name);
         corpSectionHtml += `
           <div class="role-report-item">
             <div class="role-avatar" style="opacity:0.4;">${role.icon}</div>
             <div class="role-info">
               <h4 style="color:var(--gray-400);">${role.name.replace(' Corporate','')}</h4>
-              <p style="color:var(--red);">⚠️ Belum submit</p>
+              ${lib ? `<p style="color:var(--gray-400);font-weight:600;">${lib}</p>` : `<p style="color:var(--red);">⚠️ Belum submit</p>`}
             </div>
             <div class="role-progress">
               <div class="role-progress-pct" style="color:var(--gray-200);">—</div>
