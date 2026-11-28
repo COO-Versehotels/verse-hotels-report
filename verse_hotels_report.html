@@ -1725,6 +1725,8 @@
   .na-g{background:#dcfce7;color:#166534}.na-y{background:#fef3c7;color:#92400e}.na-r{background:#fee2e2;color:#991b1b}.na-w{background:#f1f5f9;color:#475569}
   .na-btn{display:block;margin-top:8px;background:#1a3a5c;color:#fff;border-radius:10px;padding:9px;text-align:center;font-size:12px;font-weight:800;text-decoration:none}
   .na-note{font-size:11px;color:#64748b;margin-top:6px;line-height:1.4}
+  .na-err{margin:0 0 8px;background:#fff7ed;border:1px solid #fdba74;color:#9a3412;border-radius:10px;padding:6px 9px;font-size:11.5px;font-weight:700;line-height:1.4;word-break:break-word}
+  .na-err small{display:block;font-weight:600;color:#c2410c}
   .na-lnk{display:block;margin-top:3px;font-size:10.5px;font-weight:800;color:#1d4ed8;text-decoration:none}
   .na-ban{margin:12px 16px 4px;background:#fee2e2;border:1.5px solid #ef4444;border-radius:14px;padding:11px 12px;display:flex;gap:10px;align-items:flex-start}
   .na-ban b{color:#991b1b;font-size:13.5px}.na-ban p{margin:3px 0 0;font-size:12px;color:#7f1d1d;line-height:1.4}
@@ -28046,6 +28048,9 @@ function _arsTglLabel(t){ const d=new Date(t+'T00:00:00Z'); const h=['Minggu','S
     if (!Array.isArray(rows)) return;
     const b = naBiz(), by = {};
     rows.forEach(r => { if (r.tanggal === b.iso) by[r.hotel + '|' + r.jenis] = r; });
+    // 28 Nov 2026: file laporan bermasalah (kosong / terkunci password / rusak / isi tanggal lain) — dari robot pembaca laporan VHP
+    const errOf = h => { const e = by[h + '|ERR']; if (!e || !e.info) return []; try { const a = JSON.parse(e.info); return Array.isArray(a) ? a : []; } catch(x) { return []; } };
+    const errHtml = h => errOf(h).map(x => `<div class="na-err">⚠️ ${_arsEsc(x.n || 'File')}<small>${_arsEsc(x.k || x.m || '')}</small></div>`).join('');
     const units = coo ? NA_UNITS : NA_UNITS.filter(u => u[0] === hotel);
     let adaMerah = false, adaTelat = false, adaLink = false;
     const isi = units.map(u => {
@@ -28055,11 +28060,11 @@ function _arsTglLabel(t){ const d=new Date(t+'T00:00:00Z'); const h=['Minggu','S
       const link = [lp && lp.info, jr && jr.info].find(x => /^https:\/\//.test(x || '')) || '';
       if (link) adaLink = true;
       const nama = coo ? `<div class="na-u">${_arsEsc(u[1])}${link ? `<a class="na-lnk" href="${_arsEsc(link)}" target="_blank" rel="noopener">📄 Laporan ›</a>` : ''}</div>` : '';
-      return `<div class="na-row">${nama}${chips}</div>` +
+      return `<div class="na-row">${nama}${chips}</div>` + errHtml(u[0]) +
         (!coo && link ? `<a class="na-btn" href="${_arsEsc(link)}" target="_blank" rel="noopener">📄 Lihat laporan lengkap ${_arsEsc(u[1])}</a>` : '');
     }).join('');
     if (diCoo) { let ok = 0, tl = 0, bl = 0, tg = 0; NA_UNITS.forEach(u => NA_JNS.forEach(j => { const r = by[u[0] + '|' + j[0]]; if (r) { if (r.telat) tl++; else ok++; } else if (b.lewat) bl++; else tg++; }));
-      window._cooNa = { ok, telat: tl, belum: bl, tunggu: tg, label: b.label }; try { cooKartu(); } catch(e) {} }
+      window._cooNa = { ok, telat: tl, belum: bl, tunggu: tg, label: b.label, err: NA_UNITS.reduce((a, u) => a + errOf(u[0]).length, 0) }; try { cooKartu(); } catch(e) {} }
     const sub = coo ? 'Wajib di-upload Night Audit setelah running' : (units[0] ? units[0][1] : '') + (adaMerah ? ' · belum lengkap' : adaTelat ? ' · lengkap, ada yang terlambat' : b.lewat ? ' · lengkap' : '');
     const ketLink = !coo ? '' : adaLink ? ' · Ketuk "📄 Laporan" untuk laporan lengkap unit' : ' · Link "📄 Laporan" per unit muncul setelah email laporan 08.30 terkirim';
     const card = `<div class="na-card ${adaMerah ? 'na-merah' : (!adaTelat && b.lewat ? 'na-ok' : '')}"><div class="na-h"><div class="na-ic">📋</div><div><div class="na-t">Laporan Night Audit · ${b.label}</div><div class="na-s">${_arsEsc(sub)}</div></div></div>${isi}` +
@@ -28290,7 +28295,7 @@ function _arsTglLabel(t){ const d=new Date(t+'T00:00:00Z'); const h=['Minggu','S
         R ? num((R.total ? Math.round(100 * R.cek / R.total) : 0) + '%', R.cek + ' / ' + R.total) + `<div class="ck-bar"><i style="width:${R.total ? Math.max(2, Math.round(100 * R.cek / R.total)) : 0}%"></i></div>` : num('…'), "cooBuka('kamar')"),
       kartu('', 'ck-g7', 'peta', 'Peta Live', 'Posisi tim sekarang', '', 'openPetaLive()'),
       kartu('', 'ck-g8', 'minibar', 'Minibar &amp; Stok', 'Minibar · keycard · closing', '', 'invBuka()'),
-      kartu('lebar', 'ck-g10', 'na', 'Night Audit', N ? 'Upload In House · Rev · Jurnal FO · ' + N.label : 'Upload In House · Rev · Jurnal FO',
+      kartu('lebar', 'ck-g10', 'na', 'Night Audit', (N ? 'Upload In House · Rev · Jurnal FO · ' + N.label : 'Upload In House · Rev · Jurnal FO') + (N && N.err ? ' · ⚠️ ' + N.err + ' file bermasalah' : ''),
         N ? num(N.belum ? N.belum : '✓', N.belum ? 'belum upload' : (N.telat ? N.telat + ' terlambat' : 'lengkap')) : '', "cooBuka('na')"),
       kartu('lebar', 'ck-g9', 'lain', 'Lainnya', 'Jadwal Visit · Export PDF · Intip · Manage User · Device · Broadcast', '', "cooBuka('lainnya')")
     ].join('');
