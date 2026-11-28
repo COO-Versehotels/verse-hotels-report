@@ -3106,6 +3106,137 @@
   html.tema-terang #screen-coo p[style*="var(--red)"] { color:#c0392b !important; }
   html.tema-terang .badge-amber, html.tema-terang .task-number.inprogress, html.tema-terang .status-btn.selected-amber { color:#8a5a00; }
   html.tema-terang .badge-green, html.tema-terang .task-number.done, html.tema-terang .status-btn.selected-green { color:#13753b; }
+
+  /* ===== 28 Nov 2026: Dashboard COO kartu (bento) + panel ===== */
+  #screen-coo .scroll-area > #coo-home { background:none !important; margin:0 !important; padding:0 !important; border:0 !important; box-shadow:none !important; }
+  #screen-coo:not(.cp-buka) .cp { display:none; }
+  #screen-coo.cp-buka #coo-home { display:none; }
+  #screen-coo.cp-buka .cp:not(.on) { display:none; }
+  .ck-sapa { padding:14px 16px 4px; }
+  .ck-sapa small { display:block; font-size:12.5px; font-weight:600; color:var(--tb-redup); }
+  .ck-sapa b { display:block; font-size:22px; font-weight:800; letter-spacing:-.3px; color:var(--tb-teks); margin-top:1px; }
+  .ck-bento { display:grid; grid-template-columns:1fr 1fr; gap:12px; padding:10px 14px 24px; }
+  .ck { position:relative; overflow:hidden; border-radius:22px; padding:15px 15px 14px; color:#fff; min-height:128px; cursor:pointer; box-shadow:0 10px 22px rgba(15,23,42,.18); transition:transform .15s; -webkit-tap-highlight-color:transparent; text-align:left; border:0; font:inherit; display:block; width:100%; }
+  .ck:active { transform:scale(.98); }
+  @media (hover:hover){ .ck:hover { transform:translateY(-2px); } }
+  .ck::after { content:""; position:absolute; right:-42px; top:-42px; width:140px; height:140px; border-radius:50%; background:rgba(255,255,255,.13); pointer-events:none; }
+  .ck::before { content:""; position:absolute; right:26px; bottom:-62px; width:120px; height:120px; border-radius:50%; background:rgba(255,255,255,.07); pointer-events:none; }
+  .ck > * { position:relative; z-index:1; }
+  .ck-ic { width:38px; height:38px; border-radius:12px; background:rgba(255,255,255,.2); border:1px solid rgba(255,255,255,.3); display:flex; align-items:center; justify-content:center; }
+  .ck-ic svg { width:20px; height:20px; }
+  .ck h4 { font-size:15.5px; font-weight:800; margin:9px 0 0; line-height:1.2; color:#fff; }
+  .ck p { font-size:11.5px; font-weight:600; opacity:.88; margin:2px 0 0; line-height:1.35; color:#fff; padding-right:64px; }
+  .ck-num { position:absolute !important; right:15px; bottom:12px; text-align:right; font-size:28px; font-weight:800; letter-spacing:-.5px; line-height:1; }
+  .ck-num small { display:block; font-size:10.5px; font-weight:700; opacity:.9; letter-spacing:0; margin-top:3px; }
+  .ck-chips { display:flex; flex-wrap:wrap; gap:5px; margin-top:8px; }
+  .ck-chips span { font-size:11px; font-weight:800; border-radius:999px; padding:3px 9px; background:rgba(255,255,255,.22); white-space:nowrap; }
+  .ck-chips span.al { background:#fff; color:#b91c1c; }
+  .ck-bar { margin:12px 92px 0 0; height:7px; border-radius:9px; background:rgba(255,255,255,.25); }
+  .ck-bar i { display:block; height:100%; border-radius:9px; background:#fff; }
+  .ck > p:last-child { padding-right:0; }
+  .ck.lebar { grid-column:span 2; }
+  .ck.besar { grid-column:span 2; padding:18px; }
+  .ck.besar h4 { font-size:20px; margin-top:10px; }
+  .ck.besar p { padding-right:96px; }
+  .ck-ring { position:absolute !important; right:16px; top:16px; }
+  .ck-unit { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:6px; margin-top:14px; }
+  .ck-unit button { font:inherit; color:#fff; text-align:left; background:rgba(255,255,255,.16); border:1px solid rgba(255,255,255,.24); border-radius:13px; padding:7px 8px; cursor:pointer; min-width:0; }
+  .ck-unit b { display:block; font-size:11px; font-weight:700; opacity:.92; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .ck-unit span { font-size:16px; font-weight:800; white-space:nowrap; }
+  .ck-unit i { font-style:normal; font-size:10px; font-weight:800; display:inline-block; margin-left:3px; padding:0 5px; border-radius:999px; background:#fff; color:#b91c1c; vertical-align:2px; }
+  .ck-g1 { background:linear-gradient(135deg,#2563eb,#7c3aed 60%,#c026d3); }
+  .ck-g2 { background:linear-gradient(135deg,#f59e0b,#ea580c); }
+  .ck-g3 { background:linear-gradient(135deg,#8b5cf6,#6366f1); }
+  .ck-g4 { background:linear-gradient(135deg,#ef4444,#be123c); }
+  .ck-g5 { background:linear-gradient(135deg,#ec4899,#db2777); }
+  .ck-g6 { background:linear-gradient(135deg,#10b981,#047857); }
+  .ck-g7 { background:linear-gradient(135deg,#06b6d4,#0e7490); }
+  .ck-g8 { background:linear-gradient(135deg,#0ea5e9,#2563eb); }
+  .ck-g9 { background:linear-gradient(135deg,#475569,#1e293b); }
+  .ck-g10 { background:linear-gradient(135deg,#14b8a6,#0f766e); }
+  @media (min-width:900px) {
+    .ck-bento { grid-template-columns:repeat(4,minmax(0,1fr)); grid-auto-rows:minmax(142px,auto); gap:14px; padding:12px 16px 28px; }
+    .ck.besar { grid-row:span 2; padding:22px; }
+    .ck.besar h4 { font-size:23px; }
+    .ck-unit { position:absolute !important; left:22px; right:22px; bottom:20px; }
+    .ck-sapa { padding:10px 18px 2px; }
+    .ck-sapa b { font-size:26px; }
+  }
+  /* panel */
+  .cp-hero { position:relative; overflow:hidden; color:#fff; padding:14px 16px 18px; margin:0 0 4px; border-radius:0 0 26px 26px; }
+  .cp-hero::after { content:""; position:absolute; right:-56px; top:-56px; width:180px; height:180px; border-radius:50%; background:rgba(255,255,255,.12); pointer-events:none; }
+  .cp-hero::before { content:""; position:absolute; left:42%; bottom:-90px; width:160px; height:160px; border-radius:50%; background:rgba(255,255,255,.07); pointer-events:none; }
+  .cp-hero > * { position:relative; z-index:1; }
+  .cp-back { display:inline-flex; align-items:center; gap:7px; font:inherit; font-size:12.5px; font-weight:800; color:#fff; background:none; border:0; padding:0; cursor:pointer; }
+  .cp-back span { width:28px; height:28px; border-radius:10px; background:rgba(255,255,255,.22); display:inline-flex; align-items:center; justify-content:center; font-size:18px; line-height:1; }
+  .cp-hero h2 { font-size:23px; font-weight:800; margin:10px 0 0; color:#fff; letter-spacing:-.3px; }
+  .cp-hero p { font-size:12.5px; font-weight:600; opacity:.88; margin:1px 0 0; color:#fff; }
+  .cp-stats { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:7px; margin-top:13px; }
+  .cp-stats:empty { display:none; }
+  .cp-stats > * { font:inherit; color:#fff; background:rgba(255,255,255,.17); border:1px solid rgba(255,255,255,.26); border-radius:14px; padding:8px 4px; text-align:center; min-width:0; }
+  .cp-stats button { cursor:pointer; }
+  .cp-stats b { display:block; font-size:21px; font-weight:800; line-height:1.15; }
+  .cp-stats small { font-size:10.5px; font-weight:700; opacity:.92; white-space:nowrap; }
+  .cp-stats .on { background:#fff; color:#4c1d95; }
+  .cp-stats .on.merah { color:#b91c1c; }
+  .cp-bd { padding:12px 12px 24px; }
+  .cp-bd .ars-box, .cp-bd .rc-coo-section, .cp-bd .na-card { border-radius:20px !important; }
+  #cp-kamar .rc-coo-section { margin:0 !important; }
+  @media (min-width:1024px) {
+    .cp-hero { border-radius:24px; margin:8px 16px 4px; padding:18px 22px 20px; }
+    .cp-bd { padding:12px 16px 28px; }
+    .cp-stats { max-width:640px; }
+  }
+  /* Laporan Harian */
+  .lh-flt { display:flex; flex-direction:column; gap:7px; }
+  .lh-row { display:flex; gap:6px; overflow-x:auto; scrollbar-width:none; padding:1px 0; }
+  .lh-row::-webkit-scrollbar { display:none; }
+  .lh-c { flex:none; font:inherit; font-size:12.5px; font-weight:700; border-radius:999px; padding:7px 12px; background:var(--tb-panel); border:1px solid var(--tb-garis); color:var(--tb-teks); cursor:pointer; white-space:nowrap; position:relative; }
+  .lh-c.on { background:#7c3aed; border-color:#7c3aed; color:#fff; }
+  .lh-c input { position:absolute; inset:0; opacity:0; pointer-events:none; }
+  .lh-nav { display:flex; align-items:center; gap:8px; }
+  .lh-nav button.ar { flex:none; width:34px; height:34px; border-radius:11px; font:inherit; font-size:18px; font-weight:800; background:var(--tb-panel); border:1px solid var(--tb-garis); color:var(--tb-teks); cursor:pointer; }
+  .lh-nav button.ar:disabled { opacity:.35; cursor:default; }
+  .lh-u { margin-top:12px; background:var(--tb-panel); border:1px solid var(--tb-garis); border-radius:20px; overflow:hidden; box-shadow:var(--shadow-card); }
+  .lh-uh { display:flex; align-items:center; gap:10px; padding:12px 14px 9px; }
+  .lh-ub { flex:none; width:36px; height:36px; border-radius:12px; display:flex; align-items:center; justify-content:center; color:#fff; font-size:12px; font-weight:800; }
+  .lh-uh b { flex:1; font-size:15px; font-weight:800; color:var(--tb-teks); }
+  .lh-uh small { font-size:12px; font-weight:800; color:var(--tb-redup); text-align:right; }
+  .lh-pg { height:5px; margin:0 14px 8px; border-radius:9px; background:var(--tb-dalam); overflow:hidden; }
+  .lh-pg i { display:block; height:100%; border-radius:9px; background:linear-gradient(90deg,#22c55e,#16a34a); }
+  .lh-it { display:flex; align-items:center; gap:10px; padding:9px 14px; border-top:1px solid var(--tb-garis); cursor:pointer; }
+  .lh-it:hover { background:var(--tb-dalam); }
+  .lh-av { flex:none; width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:10.5px; font-weight:800; }
+  .lh-tx { flex:1; min-width:0; }
+  .lh-tx b { display:block; font-size:13.5px; font-weight:800; color:var(--tb-teks); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .lh-tx small { display:block; font-size:11.5px; font-weight:600; color:var(--tb-redup); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .lh-pl { flex:none; font-size:11px; font-weight:800; border-radius:999px; padding:4px 9px; white-space:nowrap; }
+  .lh-pl.ok { background:#16a34a2e; color:#4ade80; } .lh-pl.tl { background:#ea580c2e; color:#fb923c; } .lh-pl.no { background:#dc26262e; color:#f87171; }
+  .lh-pl.bl { background:#3b82f62e; color:#93c5fd; } .lh-pl.lb { background:#64748b2e; color:#94a3b8; }
+  html.tema-terang .lh-pl.ok { background:#dcfce7; color:#15803d; } html.tema-terang .lh-pl.tl { background:#ffedd5; color:#c2410c; } html.tema-terang .lh-pl.no { background:#fee2e2; color:#b91c1c; }
+  html.tema-terang .lh-pl.bl { background:#dbeafe; color:#1d4ed8; } html.tema-terang .lh-pl.lb { background:#f1f5f9; color:#64748b; }
+  .lh-kosong { margin-top:12px; text-align:center; padding:22px 12px; font-size:13px; font-weight:600; color:var(--tb-redup); background:var(--tb-panel); border:1px dashed var(--tb-garis); border-radius:18px; }
+  .lh-anh { margin-top:12px; background:#7f1d1d33; border:1px solid #ef444466; color:#fecaca; border-radius:16px; padding:10px 12px; font-size:12.5px; line-height:1.5; }
+  html.tema-terang .lh-anh { background:#fef2f2; border-color:#fecaca; color:#991b1b; }
+  .lh-akt { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:14px; }
+  .lh-akt button { font:inherit; font-size:13px; font-weight:800; border-radius:14px; padding:12px 8px; cursor:pointer; border:1px solid var(--tb-garis); background:var(--tb-panel); color:var(--tb-teks); }
+  .lh-akt button.wa { background:#16a34a; border-color:#16a34a; color:#fff; }
+  .lh-akt button.pn { grid-column:span 2; }
+  .lh-sec { display:flex; justify-content:space-between; align-items:center; margin:20px 4px 8px; font-size:11px; font-weight:900; letter-spacing:.8px; text-transform:uppercase; color:var(--tb-redup); }
+  #screen-coo #lh-live #coo-live-progress > div { margin-left:0 !important; margin-right:0 !important; }
+  @media (min-width:1024px) {
+    .lh-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:0 14px; align-items:start; }
+    .lh-akt { grid-template-columns:repeat(3,1fr); max-width:640px; }
+    .lh-akt button.pn { grid-column:auto; }
+  }
+  /* Lainnya */
+  .lnx-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+  .lnx { display:flex; align-items:center; gap:11px; font:inherit; text-align:left; background:var(--tb-panel); border:1px solid var(--tb-garis); border-radius:18px; padding:13px 12px; cursor:pointer; color:var(--tb-teks); box-shadow:var(--shadow-card); min-width:0; }
+  .lnx i { flex:none; width:38px; height:38px; border-radius:12px; display:flex; align-items:center; justify-content:center; color:#fff; }
+  .lnx i svg { width:19px; height:19px; }
+  .lnx b { font-size:13.5px; font-weight:800; line-height:1.25; }
+  .lnx.keluar b { color:#f87171; }
+  @media (min-width:900px) { .lnx-grid { grid-template-columns:repeat(4,minmax(0,1fr)); } }
 </style>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
@@ -4286,7 +4417,7 @@
         <div class="cm-head"><div class="tb-logo"><img class="tb-logo-src" alt="Verse"></div><div class="tb-tt"><b>Tasklist</b><span>Verse Hotels Group</span></div></div>
         <div class="tb-jam" data-tb-jam><div><span class="tb-jd"></span><span class="tb-jj"><b class="tb-hm"></b><b class="tb-s"></b><small>WIB</small></span></div><span class="tb-live"><i></i><b>LIVE</b></span></div>
         <div class="cm-lbl">Menu</div>
-        <span class="cm-it on" onclick="document.querySelector('#screen-coo .scroll-area').scrollTop=0"><i>📊</i><b>Dashboard</b></span>
+        <span class="cm-it on" onclick="cooTutup()"><i>📊</i><b>Dashboard</b></span>
         <span class="cm-it" onclick="jtOpen()"><i>🗓️</i><b>Jadwal Tim</b></span>
         <span class="cm-it" onclick="jvOpen()"><i>🧳</i><b>Jadwal Visit Corp</b></span>
         <span class="cm-it" onclick="openPetaLive()"><i>📡</i><b>Peta Live</b></span>
@@ -4304,7 +4435,53 @@
     </div>
 
     <div class="scroll-area">
+      <!-- 28 Nov 2026: Dashboard COO bentuk kartu menu (bento). Kartu dibuka → panel (cp-*) dengan header berwarna -->
+      <div id="coo-home">
+        <div class="ck-sapa"><small id="ck-tgl"></small><b id="ck-halo">Selamat datang</b></div>
+        <div class="ck-bento" id="ck-bento"></div>
+      </div>
 
+      <div class="cp" id="cp-laporan">
+      <div class="cp-hero ck-g1"><button type="button" class="cp-back" onclick="cooTutup()"><span>‹</span> Dashboard</button><h2>Laporan Harian</h2><p id="cp-laporan-sub"></p><div class="cp-stats" id="cp-laporan-stats"></div></div>
+        <div class="cp-bd">
+          <div id="lh-isi"></div>
+          <div id="lh-live">
+            <div class="lh-sec"><span>Sedang dikerjakan</span><span id="coo-live-timer">Refresh dalam 5:00</span></div>
+            <div id="coo-live-progress"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="cp" id="cp-skor">
+      <div class="cp-hero ck-g2"><button type="button" class="cp-back" onclick="cooTutup()"><span>‹</span> Dashboard</button><h2>Live Score</h2><p id="cp-skor-sub"></p><div class="cp-stats" id="cp-skor-stats"></div></div>
+        <div class="cp-bd"><div id="lsk-coo"></div></div>
+      </div>
+
+      <div class="cp" id="cp-kamar">
+      <div class="cp-hero ck-g6"><button type="button" class="cp-back" onclick="cooTutup()"><span>‹</span> Dashboard</button><h2>Pengecekan Kamar</h2><p id="cp-kamar-sub"></p><div class="cp-stats" id="cp-kamar-stats"></div></div>
+        <div class="cp-bd">
+      <div class="rc-coo-section" id="rc-coo-section">
+        <div class="rc-coo-title">📊 Coverage per Hotel</div>
+        <div id="rc-coo-section-body">
+          <div style="text-align:center;padding:14px;color:#9ca3af;font-size:12px;">Memuat...</div>
+        </div>
+        <button class="rc-btn-primary" onclick="rcOpenMonthlyReport()" style="margin-top:12px;background:#1a3a5c;">📤 Buat & Kirim Laporan Bulan Lalu</button>
+      </div>
+        </div>
+      </div>
+
+      <div class="cp" id="cp-na">
+      <div class="cp-hero ck-g10"><button type="button" class="cp-back" onclick="cooTutup()"><span>‹</span> Dashboard</button><h2>Night Audit</h2><p id="cp-na-sub"></p><div class="cp-stats" id="cp-na-stats"></div></div>
+        <div class="cp-bd"><div id="na-coo" style="display:none;"></div></div>
+      </div>
+
+      <div class="cp" id="cp-lainnya">
+      <div class="cp-hero ck-g9"><button type="button" class="cp-back" onclick="cooTutup()"><span>‹</span> Dashboard</button><h2>Lainnya</h2><p id="cp-lainnya-sub"></p><div class="cp-stats" id="cp-lainnya-stats"></div></div>
+        <div class="cp-bd"><div class="lnx-grid" id="lnx-grid"></div></div>
+      </div>
+
+      <!-- Bagian lama (tetap diisi JS, disembunyikan) -->
+      <div id="coo-lama" style="display:none;">
       <!-- 4 Stat Cards -->
       <div style="background:linear-gradient(135deg,var(--navy),#0e2340);padding:0 16px 20px;">
         <div class="coo-stats" style="grid-template-columns:repeat(2,1fr);gap:10px;">
@@ -4326,41 +4503,12 @@
           </div>
         </div>
       </div>
-
       <!-- 4 Nov 2026 (tema B): status per hotel & corporate (ringkas) -->
       <div class="tb-sec" id="tb-coo-hotel-t">🏨 Status per hotel hari ini</div>
       <div class="tb-coo-hotel" id="tb-coo-hotel"></div>
       <div class="tb-sec" id="tb-coo-corp-t">🏢 Corporate &amp; F&amp;B</div>
       <div class="tb-coo-corp" id="tb-coo-corp"></div>
-
-      <!-- Room Check Section — dipindah ke paling atas -->
-      <div style="padding:16px 16px 6px;font-size:11px;color:var(--gray-400);font-weight:700;text-transform:uppercase;letter-spacing:1px;">🏨 Pengecekan Kamar (Bulan Ini)</div>
-      <div class="rc-coo-section" id="rc-coo-section">
-        <div class="rc-coo-title">📊 Coverage per Hotel</div>
-        <div id="rc-coo-section-body">
-          <div style="text-align:center;padding:14px;color:#9ca3af;font-size:12px;">Memuat...</div>
-        </div>
-        <button class="rc-btn-primary" onclick="rcOpenMonthlyReport()" style="margin-top:12px;background:#1a3a5c;">📤 Buat & Kirim Laporan Bulan Lalu</button>
-      </div>
-
-      <div class="tb-2kol">
-      <div>
-      <!-- Live Progress Section -->
-      <div style="padding:16px 16px 6px;font-size:11px;color:var(--gray-400);font-weight:700;text-transform:uppercase;letter-spacing:1px;display:flex;align-items:center;justify-content:space-between;">
-        <span>🔴 Sedang Dikerjakan</span>
-        <span id="coo-live-timer" style="font-size:10px;font-weight:500;color:var(--gray-400);">Refresh dalam 5:00</span>
-      </div>
-      <div id="coo-live-progress">
-        <!-- Diisi JS -->
-      </div>
-      </div>
-      <div>
-      <!-- Kandidat per Unit (dari Verse Recruitment) -->
-      <div style="padding:16px 16px 6px;font-size:11px;color:var(--gray-400);font-weight:700;text-transform:uppercase;letter-spacing:1px;">👥 Kandidat dalam Proses HR</div>
       <div id="kdu-coo" style="display:none;"></div>
-      </div>
-      </div>
-
       <!-- Summary per Role -->
       <div class="tb-rekap-role" style="padding:12px 16px 6px;font-size:11px;color:var(--gray-400);font-weight:700;text-transform:uppercase;letter-spacing:1px;">Rekap per Role</div>
       <div class="tb-rekap-role" style="margin:0 16px 16px;background:var(--white);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow-card);">
@@ -4368,8 +4516,6 @@
           <!-- Diisi JS -->
         </div>
       </div>
-
-      <!-- Arsip Laporan (COO) -->
       <div class="rc-menu-card dfk-card" id="dfk-coo" style="display:none;margin:0 16px 14px;background:linear-gradient(135deg,#7c2d12,#c2410c);" onclick="dfkBuka()">
         <div class="rc-icon">🛠️</div>
         <div class="rc-text">
@@ -4379,9 +4525,6 @@
         </div>
         <div class="rc-arrow">›</div>
       </div>
-      <!-- Laporan Night Audit 4 unit (26 Nov 2026) -->
-      <div id="na-coo" style="display:none;"></div>
-      <!-- Inventory Minibar & Keycard (23 Nov 2026) — HM, HOD FO, COO -->
       <div class="rc-menu-card dfk-card" id="inv-coo" style="display:none;margin:0 16px 14px;background:linear-gradient(135deg,#4c1d95,#7c3aed);" onclick="invBuka()">
         <div class="rc-icon">🧃</div>
         <div class="rc-text">
@@ -4390,14 +4533,13 @@
         </div>
         <div class="rc-arrow">›</div>
       </div>
-      <div id="lsk-coo" style="margin:0 16px 16px;"></div>
-      <div id="dsp-coo" style="margin:0 16px 16px;"></div>
-      <div id="ars-coo" style="margin:0 16px 16px;"></div>
-
+      <div id="dsp-coo"></div>
+      <div id="ars-coo"></div>
       <!-- Detail per Hotel -->
       <div style="padding:0 16px 6px;font-size:11px;color:var(--gray-400);font-weight:700;text-transform:uppercase;letter-spacing:1px;">Detail per Hotel</div>
       <div id="coo-hotel-detail">
         <!-- Diisi JS -->
+      </div>
       </div>
 
       <div style="height:20px;"></div>
@@ -7612,6 +7754,7 @@
   }
 
   function cooBack() {
+    if (cooPanelTerbuka()) { cooTutup(); return; }
     stopLiveRefresh();
     if (cooOpenedFrom === 'home') {
       go('home');
@@ -26808,6 +26951,7 @@ function _arsTglLabel(t){ const d=new Date(t+'T00:00:00Z'); const h=['Minggu','S
     arsRender();
   }
   function arsRender(){
+    if (ARS.el === 'lh-isi') return lhRender();
     const el=document.getElementById(ARS.el); if(!el) return;
     const g=ARS.grup, cocok=r=>g==='semua' || _arsGrup(r)===g;
     const list=ARS.data.filter(r=>cocok(r.role));
@@ -26842,7 +26986,7 @@ function _arsTglLabel(t){ const d=new Date(t+'T00:00:00Z'); const h=['Minggu','S
   const _ARS_GRUP_NM = { semua:'Semua', corp:'Corporate', hm:'HM', hod:'HOD', fb:'F&B' };
   function _arsEksporData(){
     const E = ARS._ekspor || { list:[], belum:[], alasanB:{}, nCek:0, grup:'semua' };
-    return Object.assign({ tgl: _arsTglLabel(ARS.tgl), filter: _ARS_GRUP_NM[E.grup] || 'Semua' }, E);
+    return Object.assign({ tgl: _arsTglLabel(ARS.tgl), filter: E.filterNm || _ARS_GRUP_NM[E.grup] || 'Semua' }, E);
   }
   function arsTeksWA(){
     const E = _arsEksporData();
@@ -27565,6 +27709,7 @@ function _arsTglLabel(t){ const d=new Date(t+'T00:00:00Z'); const h=['Minggu','S
     if (!el.dataset.siap) { el.innerHTML = '<div class="ars-box"><div class="ars-h"><b>🎯 Live Score</b></div><div class="ars-kosong">⏳ Menghitung skor…</div></div>'; el.dataset.siap = '1'; }
     try { LSK.data = await _rpc('live_skor', { p_viewer: currentRole }); }
     catch(e) { console.warn('live_skor', e); LSK.data = { gagal: e.message || String(e) }; }
+    if (LSK.el === 'lsk-coo') { try { cooKartu(); } catch(e) {} }
     lskRender();
   }
   function _lskSel(h){
@@ -27776,6 +27921,7 @@ function _arsTglLabel(t){ const d=new Date(t+'T00:00:00Z'); const h=['Minggu','S
     try { [d, pesan] = await Promise.all([_rpc('defect_ringkas', window._peekMode ? { p_role: currentRole } : {}), _rpc('dc_tasklist_belum', window._peekMode ? { p_role: currentRole } : {}).catch(() => 0)]); } catch(e) { d = null; }
     const chips = document.getElementById(id + '-chips'), sub = document.getElementById(id + '-sub');
     if (!d || Array.isArray(d)) { if (chips) chips.innerHTML = ''; return; }
+    if (coo) { window._cooDfk = { d, pesan: +pesan || 0 }; try { cooKartu(); } catch(e) {} }
     if (sub) sub.textContent = (d.unit ? String(d.unit).replace(' Gajah Mada','').replace(' Wahid Hasyim','').replace(' Mahakam Blok M','') + ' · ' : '') + 'buka tanpa login lagi';
     const ikChat = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>';
     el.dataset.pesan = (+pesan > 0) ? '1' : '';
@@ -27912,6 +28058,8 @@ function _arsTglLabel(t){ const d=new Date(t+'T00:00:00Z'); const h=['Minggu','S
       return `<div class="na-row">${nama}${chips}</div>` +
         (!coo && link ? `<a class="na-btn" href="${_arsEsc(link)}" target="_blank" rel="noopener">📄 Lihat laporan lengkap ${_arsEsc(u[1])}</a>` : '');
     }).join('');
+    if (diCoo) { let ok = 0, tl = 0, bl = 0, tg = 0; NA_UNITS.forEach(u => NA_JNS.forEach(j => { const r = by[u[0] + '|' + j[0]]; if (r) { if (r.telat) tl++; else ok++; } else if (b.lewat) bl++; else tg++; }));
+      window._cooNa = { ok, telat: tl, belum: bl, tunggu: tg, label: b.label }; try { cooKartu(); } catch(e) {} }
     const sub = coo ? 'Wajib di-upload Night Audit setelah running' : (units[0] ? units[0][1] : '') + (adaMerah ? ' · belum lengkap' : adaTelat ? ' · lengkap, ada yang terlambat' : b.lewat ? ' · lengkap' : '');
     const ketLink = !coo ? '' : adaLink ? ' · Ketuk "📄 Laporan" untuk laporan lengkap unit' : ' · Link "📄 Laporan" per unit muncul setelah email laporan 08.30 terkirim';
     const card = `<div class="na-card ${adaMerah ? 'na-merah' : (!adaTelat && b.lewat ? 'na-ok' : '')}"><div class="na-h"><div class="na-ic">📋</div><div><div class="na-t">Laporan Night Audit · ${b.label}</div><div class="na-s">${_arsEsc(sub)}</div></div></div>${isi}` +
@@ -28035,6 +28183,238 @@ function _arsTglLabel(t){ const d=new Date(t+'T00:00:00Z'); const h=['Minggu','S
     const coo = currentRole === 'COO' || currentRole === 'CEO', id = coo ? 'ars-coo' : 'ars-home';
     go(coo ? 'coo' : 'home');
     setTimeout(() => { arsMuat(id); document.getElementById(id)?.scrollIntoView({ behavior:'smooth', block:'start' }); }, 350);
+  }
+
+  // =====================================================================
+  // DASHBOARD COO BENTUK KARTU (28 Nov 2026) — kartu menu berwarna; kartu dibuka → panel (cp-*) dengan header berwarna.
+  // Data kartu diambil dari pemuat yang sudah ada (window._cooWajib, LSK, _cooDfk, _cooKdu, _cooRc, _cooNa).
+  // =====================================================================
+  const CK_IKON = {
+    lap: '<path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"/>',
+    skor: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/>',
+    jadwal: '<rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/>',
+    defect: '<path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.6 2.6-2.4-.6-.6-2.4z"/>',
+    kand: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 4a3.5 3.5 0 0 1 0 7M21.5 20a6.5 6.5 0 0 0-4-6"/>',
+    kamar: '<path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-5h6v5"/>',
+    peta: '<path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/>',
+    minibar: '<rect x="5" y="2" width="14" height="20" rx="2"/><path d="M5 10h14M8 6h1M8 14v3"/>',
+    na: '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>',
+    lain: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
+    visit: '<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>',
+    lacak: '<path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2z"/><path d="M9 4v14M15 6v14"/>',
+    pdf: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 15h6M9 11h2"/>',
+    intip: '<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
+    user: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
+    log: '<path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/>',
+    hp: '<rect x="6" y="2" width="12" height="20" rx="2"/><path d="M11 18h2"/>',
+    siar: '<path d="M3 11v2a1 1 0 0 0 1 1h3l5 4V6L7 10H4a1 1 0 0 0-1 1z"/><path d="M16 9a3 3 0 0 1 0 6M19 6a7 7 0 0 1 0 12"/>',
+    tema: '<circle cx="12" cy="12" r="9"/><path d="M12 3v18a9 9 0 0 0 0-18z" fill="currentColor"/>',
+    keluar: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>'
+  };
+  function _ckSvg(k, w){ return `<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="${w||2.2}" stroke-linecap="round" stroke-linejoin="round">${CK_IKON[k]||''}</svg>`; }
+  const CK_UNIT = [['LITE','Lite','LT','#3b82f6,#1d4ed8'],['LUXE','Luxe','LX','#ec4899,#be185d'],['CIREBON','Cirebon','CB','#06b6d4,#0e7490'],['OAK','Oak','OK','#f59e0b,#c2410c'],['CORP','Corp','CO','#64748b,#334155']];
+  const CK_UNIT_PJG = { LITE:'Verse Lite', LUXE:'Verse Luxe', CIREBON:'Verse Cirebon', OAK:'Oak Tree', CORP:'Corporate & F&B' };
+  function _ckUnitDariHotel(h){ h = String(h || ''); return /Lite/.test(h) ? 'LITE' : /Luxe/.test(h) ? 'LUXE' : /Cirebon/.test(h) ? 'CIREBON' : /Oak/.test(h) ? 'OAK' : 'CORP'; }
+  function _ckBatas(grup, tgl){ return new Date(tgl + (['hm','corp','fb','lain'].includes(grup) ? 'T13:00:00Z' : 'T12:30:00Z')).getTime(); }
+
+  // Ringkasan laporan HARI INI untuk kartu utama
+  function _ckLapHariIni(){
+    const W = window._cooWajib || {}, hari = _arsHariIni(), now = Date.now();
+    const kirimR = role => (typeof submittedReports !== 'undefined' ? submittedReports : []).some(r => r.role === role);
+    const per = {}; CK_UNIT.forEach(u => per[u[0]] = { t:0, n:0, b:0 });
+    let t = 0, n = 0, lib = 0, telatB = 0;
+    Object.values(W).forEach(w => {
+      const u = w.unit || 'CORP', k = !!w.kirim || kirimR(w.role);
+      if (!w.wajib) { lib++; return; }
+      t++; per[u].t++;
+      if (k) { n++; per[u].n++; } else { per[u].b++; if (now > _ckBatas(w.grup, hari)) telatB++; }
+    });
+    return { t, n, lib, per, belum: t - n, lewat: telatB };
+  }
+  function _ckJam(){ const h = new Date(Date.now() + 7*3600000).getUTCHours(); return h < 11 ? 'Selamat pagi' : h < 15 ? 'Selamat siang' : h < 19 ? 'Selamat sore' : 'Selamat malam'; }
+
+  function cooKartu(){
+    const el = document.getElementById('ck-bento'); if (!el) return;
+    const esc = _arsEsc;
+    const tg = document.getElementById('ck-tgl'); if (tg) tg.textContent = _arsTglLabel(_arsHariIni());
+    const hl = document.getElementById('ck-halo'); if (hl) hl.textContent = _ckJam() + ', ' + (currentRole === 'CEO' ? 'CEO' : 'Pak Ian');
+    const L = _ckLapHariIni(), pct = L.t ? Math.round(100 * L.n / L.t) : 0, kel = 2 * Math.PI * 40;
+    const ring = `<svg class="ck-ring" width="96" height="96" viewBox="0 0 96 96"><circle cx="48" cy="48" r="40" fill="none" stroke="rgba(255,255,255,.22)" stroke-width="10"/><circle cx="48" cy="48" r="40" fill="none" stroke="#fff" stroke-width="10" stroke-linecap="round" stroke-dasharray="${(kel * pct / 100).toFixed(1)} ${kel.toFixed(1)}" transform="rotate(-90 48 48)"/><text x="48" y="54" text-anchor="middle" font-size="20" font-weight="800" fill="#fff" font-family="Plus Jakarta Sans, sans-serif">${pct}%</text></svg>`;
+    const unit = CK_UNIT.map(u => { const p = L.per[u[0]]; return `<button type="button" onclick="event.stopPropagation();lhBukaUnit('${u[0]}')"><b>${u[1]}</b><span>${p.t ? p.n + '/' + p.t : '—'}</span>${p.b ? `<i>${p.b}</i>` : ''}</button>`; }).join('');
+    const D = window._cooDfk && window._cooDfk.d, K = window._cooKdu, R = window._cooRc, N = window._cooNa;
+    let skor = null, skorSub = 'KPI bulan ini', perlu = 0;
+    if (LSK.data && !LSK.data.gagal) {
+      const v = [...(LSK.data.hod || []), ...(LSK.data.lain || [])].filter(x => x.aktif !== false).map(x => x.total).filter(x => x != null);
+      if (v.length) skor = Math.round(v.reduce((a, b) => a + (+b), 0) / v.length);
+      perlu = (LSK.data.belum_coo || []).length;
+      if (perlu) skorSub = perlu + ' perlu Bapak nilai';
+      else if ((LSK.data.belum_menilai || []).length) skorSub = LSK.data.belum_menilai.length + ' HM belum menilai HOD';
+    }
+    const off = Object.values(window._cooWajib || {}).filter(w => /Day off/i.test(w.sebab || '')).length;
+    const kartu = (cls, g, ik, judul, sub, isi, klik) => `<div role="button" tabindex="0" class="ck ${g} ${cls}" onclick="${klik}" onkeydown="if(event.key==='Enter')this.click()"><div class="ck-ic">${_ckSvg(ik)}</div><h4>${judul}</h4>${sub ? `<p>${sub}</p>` : ''}${isi || ''}</div>`;
+    const num = (v, s) => v == null ? '' : `<div class="ck-num">${v}${s ? `<small>${s}</small>` : ''}</div>`;
+    el.innerHTML = [
+      kartu('besar', 'ck-g1', 'lap', 'Laporan Harian', 'Hari ini · batas HOD 19.30 · HM, Corp &amp; FBM 20.00',
+        ring + `<div class="ck-chips"><span>${L.n}/${L.t} terkirim</span>${L.belum ? `<span class="${L.lewat ? 'al' : ''}">${L.belum} belum</span>` : ''}${L.lib ? `<span>${L.lib} libur/kosong</span>` : ''}</div><div class="ck-unit">${unit}</div>`, "lhBukaUnit('semua')"),
+      kartu('', 'ck-g2', 'skor', 'Live Score', esc(skorSub), num(skor == null ? '…' : skor, skor == null ? '' : 'rata-rata'), "cooBuka('skor')"),
+      kartu('', 'ck-g3', 'jadwal', 'Jadwal Tim', 'Off hari ini', num(off, 'orang off'), 'jtOpen()'),
+      kartu('', 'ck-g4', 'defect', 'Defect Tracker', D ? ((D.lama ? D.lama + ' lewat 3 hari' : '4 unit') + (window._cooDfk.pesan ? ' · ' + window._cooDfk.pesan + ' pesan' : '')) : '4 unit', num(D ? (D.open || 0) : '…', D ? 'open' : ''), 'dfkBuka()'),
+      kartu('', 'ck-g5', 'kand', 'Kandidat', K ? (K.hm ? K.hm + ' tunggu interview HM' : 'Dalam proses HR') + (K.pesan ? ' · ' + K.pesan + ' pesan' : '') : 'Dalam proses HR', num(K ? K.proses : '…', K ? 'proses' : ''), "kduBuka('')"),
+      kartu('lebar', 'ck-g6', 'kamar', 'Pengecekan Kamar', 'Room check HM bulan ini' + (R ? ' · ' + R.total + ' kamar' : '') + (R && R.fu ? ' · ' + R.fu + ' perlu follow up' : ''),
+        R ? num((R.total ? Math.round(100 * R.cek / R.total) : 0) + '%', R.cek + ' / ' + R.total) + `<div class="ck-bar"><i style="width:${R.total ? Math.max(2, Math.round(100 * R.cek / R.total)) : 0}%"></i></div>` : num('…'), "cooBuka('kamar')"),
+      kartu('', 'ck-g7', 'peta', 'Peta Live', 'Posisi tim sekarang', '', 'openPetaLive()'),
+      kartu('', 'ck-g8', 'minibar', 'Minibar &amp; Stok', 'Minibar · keycard · closing', '', 'invBuka()'),
+      kartu('lebar', 'ck-g10', 'na', 'Night Audit', N ? 'Upload In House · Rev · Jurnal FO · ' + N.label : 'Upload In House · Rev · Jurnal FO',
+        N ? num(N.belum ? N.belum : '✓', N.belum ? 'belum upload' : (N.telat ? N.telat + ' terlambat' : 'lengkap')) : '', "cooBuka('na')"),
+      kartu('lebar', 'ck-g9', 'lain', 'Lainnya', 'Jadwal Visit · Export PDF · Intip · Manage User · Device · Broadcast', '', "cooBuka('lainnya')")
+    ].join('');
+    _ckHeroPanel();
+  }
+  function _ckHeroPanel(){
+    const set = (p, sub, st) => { const a = document.getElementById('cp-' + p + '-sub'), b = document.getElementById('cp-' + p + '-stats'); if (a) a.textContent = sub; if (b) b.innerHTML = st; };
+    const kotak = (v, l) => `<div><b>${v}</b><small>${l}</small></div>`;
+    if (LSK.data && !LSK.data.gagal) {
+      const v = [...(LSK.data.hod || []), ...(LSK.data.lain || [])].filter(x => x.aktif !== false).map(x => x.total).filter(x => x != null).map(Number);
+      const bl = new Date((LSK.data.bulan || _arsHariIni()) + 'T00:00:00Z'), nm = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'][bl.getUTCMonth()] + ' ' + bl.getUTCFullYear();
+      set('skor', nm + ' · berjalan', kotak(v.length ? Math.round(v.reduce((a, b) => a + b, 0) / v.length) : '—', 'Rata-rata') + kotak(v.length ? Math.max(...v) : '—', 'Tertinggi') + kotak(v.length ? Math.min(...v) : '—', 'Terendah') + kotak((LSK.data.belum_coo || []).length, 'Perlu dinilai'));
+    } else set('skor', 'Skor KPI bulan ini', '');
+    const R = window._cooRc;
+    set('kamar', 'Room check HM bulan ini · 4 unit', R ? kotak(R.cek, 'Kamar dicek') + kotak(R.total, 'Total kamar') + kotak((R.total ? Math.round(100 * R.cek / R.total) : 0) + '%', 'Coverage') + kotak(R.fu || 0, 'Follow up') : '');
+    const N = window._cooNa;
+    set('na', N ? 'Tanggal bisnis ' + N.label + ' · batas 06.30' : 'Upload Night Audit', N ? kotak(N.ok, 'Tepat') + kotak(N.telat, 'Terlambat') + kotak(N.belum, 'Belum') + kotak(N.tunggu, 'Menunggu') : '');
+    set('lainnya', 'Menu & admin', '');
+  }
+  function _lnxRender(){
+    const g = document.getElementById('lnx-grid'); if (!g) return;
+    const tampil = id => { const e = document.getElementById(id); return !e || e.style.display !== 'none'; };
+    const it = [
+      ['visit','Jadwal Visit Corp','#f59e0b,#ea580c','jvOpen()'],
+      tampil('coo-loctrack-btn') && ['lacak','Location Tracking','#06b6d4,#0e7490','openLocationTracking()'],
+      ['pdf','Export PDF Konsolidasi','#ef4444,#be123c','exportDashboardPDF()'],
+      ['intip','Intip tampilan user','#8b5cf6,#6366f1','openPeekPicker()'],
+      tampil('coo-user-btn') && ['user','Manage User','#3b82f6,#1d4ed8','openUserMgmtReport()'],
+      tampil('coo-loglog-btn') && ['log','Login History','#10b981,#047857','openLoginHistory()'],
+      tampil('coo-devapproval-btn') && ['hp','Device Approval','#ec4899,#db2777','openDeviceApproval()'],
+      ['siar','Broadcast Message','#f97316,#c2410c','openBroadcast()'],
+      ['tema','Ganti tema','#475569,#1e293b','tbGantiTema()'],
+      ['keluar','Keluar','#dc2626,#991b1b','cooLogout()', 'keluar']
+    ].filter(Boolean);
+    g.innerHTML = it.map(x => `<button type="button" class="lnx ${x[4] || ''}" onclick="${x[3]}"><i style="background:linear-gradient(135deg,${x[2]})">${_ckSvg(x[0], 2)}</i><b>${x[1]}</b></button>`).join('');
+  }
+  function cooBuka(p){
+    const sc = document.getElementById('screen-coo'); if (!sc) return;
+    document.querySelectorAll('#screen-coo .cp').forEach(x => x.classList.toggle('on', x.id === 'cp-' + p));
+    const baru = !sc.classList.contains('cp-buka');
+    sc.classList.add('cp-buka');
+    if (p === 'lainnya') _lnxRender();
+    if (p === 'laporan') { const el = document.getElementById('lh-isi'); if (el && !el.innerHTML) arsMuat('lh-isi'); else lhRender(); }
+    if (p === 'skor' && !LSK.data) lskMuat('lsk-coo');
+    _ckHeroPanel();
+    const sa = sc.querySelector('.scroll-area'); if (sa) sa.scrollTop = 0;
+    if (baru) { try { history.pushState({ cooP: 1 }, ''); } catch(e) {} }
+  }
+  function cooTutup(dariPop){
+    const sc = document.getElementById('screen-coo'); if (!sc || !sc.classList.contains('cp-buka')) { const sa = sc && sc.querySelector('.scroll-area'); if (sa) sa.scrollTop = 0; return; }
+    if (!dariPop && history.state && history.state.cooP) { history.back(); return; }
+    sc.classList.remove('cp-buka');
+    document.querySelectorAll('#screen-coo .cp').forEach(x => x.classList.remove('on'));
+    cooKartu();
+    const sa = sc.querySelector('.scroll-area'); if (sa) sa.scrollTop = 0;
+  }
+  window.addEventListener('popstate', () => {
+    const sc = document.getElementById('screen-coo');
+    if (sc && sc.classList.contains('cp-buka') && !document.getElementById('dfk-ov') && !document.getElementById('inv-ov') && !document.getElementById('kdu-ov')) cooTutup(true);
+  });
+  function cooPanelTerbuka(){ const sc = document.getElementById('screen-coo'); return !!(sc && sc.classList.contains('cp-buka')); }
+
+  // ===== Laporan Harian (Kedisiplinan + Arsip digabung) =====
+  const LH = { unit: 'semua', pos: 'semua', st: null, kean: {} };
+  const LH_POS = [['semua','Semua posisi'],['HM','HM'],['HK','HK'],['ENG','ENG'],['FO','FO'],['FB','F&B'],['CORP','Corp']];
+  const LH_POS_W = { HM:'#a78bfa', HK:'#34d399', ENG:'#fb923c', FO:'#38bdf8', FB:'#fbbf24', CORP:'#94a3b8' };
+  const LH_POS_URUT = { HM:0, HK:1, ENG:2, FO:3, FB:4, CORP:5 };
+  function lhBukaUnit(u){ LH.unit = u || 'semua'; LH.st = null; ARS.tgl = _arsHariIni(); cooBuka('laporan'); arsMuat('lh-isi'); }
+  function _lhPos(role, grup){
+    if (grup === 'hm' || /^HM /.test(role)) return 'HM';
+    if (/^Housekeeping/.test(role)) return 'HK'; if (/^Engineering Supervisor/.test(role)) return 'ENG'; if (/^Front Office/.test(role)) return 'FO';
+    if (grup === 'fb' || /F&B|Kitchen/i.test(role)) return 'FB'; return 'CORP';
+  }
+  function _lhBaris(){
+    const tgl = ARS.tgl, hari = _arsHariIni(), now = Date.now();
+    const rep = {}; (ARS.data || []).forEach(r => { const k = _rwyKunci(r.role); if (!rep[k] || (r.submitted_at || '') > (rep[k].submitted_at || '')) rep[k] = r; });
+    const rows = [], ada = new Set();
+    const lbAl = { sakit:'Sakit', izin:'Izin', lupa:'Lupa / tidak sempat', lainnya:'Lainnya' };
+    (ARS.wajib || []).forEach(w => {
+      if (!_arsMilikHM(w.role)) return;
+      ada.add(_rwyKunci(w.role));
+      const r = rep[_rwyKunci(w.role)], kirim = r ? r.submitted_at : w.kirim, b = _ckBatas(w.grup, tgl);
+      let st, sub;
+      if (kirim) {
+        st = !w.wajib ? 'kirim' : new Date(kirim).getTime() <= b ? 'tepat' : 'telat';
+        sub = 'kirim ' + _arsJam(kirim) + (r ? ' · ' + (r.pct || 0) + '%' : '') + (ARS.cek[r ? r.role : w.role] ? ' · ✓ dicek HR' : '');
+      } else if (w.wajib) {
+        if (tgl === hari && now <= b) { st = 'belum'; sub = 'Batas ' + (['hm','corp','fb'].includes(w.grup) ? '20.00' : '19.30'); }
+        else { st = 'tidak'; sub = w.alasan ? (lbAl[w.alasan] || w.alasan) + (w.ket ? ': “' + w.ket + '”' : '') : 'Menunggu alasan'; }
+      } else {
+        const sb = String(w.sebab || '');
+        if (sb === 'kosong') { st = 'kosong'; sub = 'Posisi kosong'; }
+        else if (/pengguna aktif/i.test(sb)) { st = 'kosong'; sub = 'Belum ada pengguna'; }
+        else if (/Belum bergabung/i.test(sb)) { st = 'kosong'; sub = 'Belum bergabung'; }
+        else { st = 'libur'; sub = /Day off/i.test(sb) ? 'Day off (Jadwal Tim)' : sb.replace(/^Libur nasional:\s*/i, 'Libur nasional · ') || 'Libur'; }
+      }
+      rows.push({ role: w.role, unit: w.unit || 'CORP', pos: _lhPos(w.role, w.grup), st, sub, r, w });
+    });
+    (ARS.data || []).forEach(r => { if (ada.has(_rwyKunci(r.role))) return;
+      rows.push({ role: r.role, unit: _ckUnitDariHotel(/^HM |Supervisor/.test(r.role) ? r.hotel || r.role : ''), pos: _lhPos(r.role, _arsGrup(r.role)), st: 'kirim',
+        sub: 'kirim ' + _arsJam(r.submitted_at) + ' · ' + (r.pct || 0) + '%' + (ARS.cek[r.role] ? ' · ✓ dicek HR' : ''), r, w: null }); });
+    return rows;
+  }
+  function lhRender(){
+    const el = document.getElementById('lh-isi'); if (!el) return;
+    const esc = _arsEsc, hari = _arsHariIni(), kmr = _arsGeser(hari, -1), tgl = ARS.tgl || hari;
+    const semua = _lhBaris();
+    const f1 = semua.filter(x => (LH.unit === 'semua' || x.unit === LH.unit) && (LH.pos === 'semua' || x.pos === LH.pos));
+    const grp = { tepat:['tepat','kirim'], telat:['telat'], tidak:['tidak','belum'], libur:['libur','kosong'] };
+    const n = k => f1.filter(x => grp[k].includes(x.st)).length;
+    const f2 = LH.st ? f1.filter(x => grp[LH.st].includes(x.st)) : f1;
+    const adaBelum = f1.some(x => x.st === 'belum') && !f1.some(x => x.st === 'tidak');
+    // header
+    const sub = document.getElementById('cp-laporan-sub'); if (sub) sub.textContent = _arsTglLabel(tgl) + (tgl === hari ? ' · hari ini' : tgl === kmr ? ' · kemarin' : '');
+    const stb = document.getElementById('cp-laporan-stats');
+    if (stb) stb.innerHTML = [['tepat','Tepat'],['telat','Terlambat'],['tidak', adaBelum ? 'Belum kirim' : 'Tidak kirim'],['libur','Libur/kosong']]
+      .map(([k, l]) => `<button type="button" class="${LH.st === k ? 'on' + (k === 'tidak' ? ' merah' : '') : ''}" onclick="LH.st=LH.st==='${k}'?null:'${k}';lhRender()"><b>${n(k)}</b><small>${l}</small></button>`).join('');
+    const live = document.getElementById('lh-live'); if (live) live.style.display = tgl === hari ? '' : 'none';
+    // keanehan akses (Vacant dibuka) — dari disiplin_ringkas, hanya s/d kemarin
+    if (tgl <= kmr && LH.kean[tgl] === undefined) {
+      LH.kean[tgl] = null;
+      _rpc('disiplin_ringkas', { p_role: currentRole, p_tgl: tgl }).then(d => { LH.kean[tgl] = (d && d.keanehan) || []; if (ARS.tgl === tgl) lhRender(); }).catch(() => { LH.kean[tgl] = []; });
+    }
+    const kean = LH.kean[tgl] || [];
+    const chip = (on, txt, fn) => `<button type="button" class="lh-c${on ? ' on' : ''}" onclick="${fn}">${txt}</button>`;
+    const flt = `<div class="lh-flt">
+      <div class="lh-nav"><button type="button" class="ar" onclick="arsTgl(_arsGeser(ARS.tgl,-1))" aria-label="Hari sebelumnya">‹</button>
+        <div class="lh-row" style="flex:1">${chip(tgl === hari, 'Hari ini', `arsTgl('${hari}')`)}${chip(tgl === kmr, 'Kemarin', `arsTgl('${kmr}')`)}
+        <label class="lh-c${tgl !== hari && tgl !== kmr ? ' on' : ''}" onclick="arsBukaKalender(event,this)">${tgl !== hari && tgl !== kmr ? esc(_dspTglPendek(tgl)) : 'Pilih tanggal'}<input type="date" max="${hari}" value="${tgl}" onchange="if(this.value)arsTgl(this.value)"></label></div>
+        <button type="button" class="ar" onclick="arsTgl(_arsGeser(ARS.tgl,1))" ${tgl >= hari ? 'disabled' : ''} aria-label="Hari berikutnya">›</button></div>
+      <div class="lh-row">${[['semua','Semua unit'], ...CK_UNIT.map(u => [u[0], u[0] === 'CORP' ? 'Corporate' : u[1]])].map(([k, l]) => chip(LH.unit === k, l, `LH.unit='${k}';lhRender()`)).join('')}</div>
+      <div class="lh-row">${LH_POS.map(([k, l]) => chip(LH.pos === k, esc(l), `LH.pos='${k}';lhRender()`)).join('')}</div></div>`;
+    const anh = kean.length ? `<div class="lh-anh">⚠️ <b>Keanehan akses (${kean.length})</b>${kean.map(k => `<div>• ${esc(_arsPendek(k.role))} dibuka ${_dspTglPendek(k.tanggal)} — posisi Vacant / belum ada nama di Jadwal Tim</div>`).join('')}</div>` : '';
+    const pill = { tepat:['ok','Tepat'], kirim:['ok','Terkirim'], telat:['tl','Terlambat'], tidak:['no','Tidak kirim'], belum:['bl','Belum'], libur:['lb','Libur'], kosong:['lb','Kosong'] };
+    const units = CK_UNIT.map(u => {
+      const rs = f2.filter(x => x.unit === u[0]).sort((a, b) => (LH_POS_URUT[a.pos] - LH_POS_URUT[b.pos]) || a.role.localeCompare(b.role));
+      if (!rs.length) return '';
+      const sm = f1.filter(x => x.unit === u[0]), wj = sm.filter(x => x.w && x.w.wajib), kr = wj.filter(x => ['tepat','telat'].includes(x.st)).length, lb = sm.filter(x => ['libur','kosong'].includes(x.st)).length;
+      return `<div class="lh-u"><div class="lh-uh"><div class="lh-ub" style="background:linear-gradient(135deg,${u[3]})">${u[2]}</div><b>${esc(CK_UNIT_PJG[u[0]])}</b><small>${wj.length ? kr + '/' + wj.length + ' terkirim' : 'tidak ada yang wajib'}${lb ? ' · ' + lb + ' libur/kosong' : ''}</small></div>
+        <div class="lh-pg"><i style="width:${wj.length ? Math.round(100 * kr / wj.length) : 0}%"></i></div>
+        ${rs.map(x => { const p = pill[x.st], wr = LH_POS_W[x.pos], kl = x.r ? `arsBuka('${encodeURIComponent(x.r.role)}')` : `rwyBuka('${esc(x.role).replace(/'/g, "\\'")}')`;
+          return `<div class="lh-it" onclick="${kl}"><div class="lh-av" style="background:${wr}2e;color:${wr}">${x.pos === 'FB' ? 'FB' : x.pos === 'CORP' ? 'CO' : x.pos.slice(0, 2)}</div>
+            <div class="lh-tx"><b>${esc(_arsPendek(x.role))}</b><small>${esc(x.sub)}</small></div><span class="lh-pl ${p[0]}">${p[1]}</span></div>`; }).join('')}</div>`;
+    }).join('');
+    // data ekspor WA/JPG mengikuti filter
+    const alasanB = {}; f2.filter(x => x.st === 'tidak' && x.w && x.w.alasan).forEach(x => alasanB[x.role] = x.sub);
+    const nmF = [LH.unit !== 'semua' ? CK_UNIT_PJG[LH.unit] : '', LH.pos !== 'semua' ? (LH_POS.find(p => p[0] === LH.pos) || [])[1] : ''].filter(Boolean).join(' · ');
+    ARS._ekspor = { list: f2.filter(x => x.r).map(x => x.r), belum: f2.filter(x => ['tidak','belum'].includes(x.st)).map(x => x.role), alasanB, nCek: f2.filter(x => x.r && ARS.cek[x.r.role]).length, grup: 'semua', filterNm: nmF || 'Semua' };
+    el.innerHTML = flt + anh + (units ? `<div class="lh-grid">${units}</div>` : `<div class="lh-kosong">${ARS.wajib || (ARS.data || []).length ? 'Tidak ada data untuk filter ini.' : '⏳ Memuat…'}</div>`)
+      + `<div class="lh-akt"><button type="button" class="wa" onclick="arsEksporWA()">Kirim teks WA</button><button type="button" onclick="arsEksporJPG(this)">Simpan JPG</button><button type="button" class="pn" onclick="rwyBuka()">Riwayat per role</button></div>`;
   }
 
   // ===== COO DASHBOARD =====
@@ -28184,8 +28564,9 @@ function _arsTglLabel(t){ const d=new Date(t+'T00:00:00Z'); const h=['Minggu','S
           ${submitted > 0 ? `<span style="font-size:12px;color:var(--gray-400);margin-left:8px;">${avgRolePct}%</span>` : ''}
         </div>`;
     });
-    try { if (currentRole === 'COO' || currentRole === 'CEO') { arsMuat('ars-coo'); dspMuat('dsp-coo'); lskMuat('lsk-coo'); try { dfkMaybeShow(); } catch(e) {} try { invMaybeShow(); } catch(e) {} try { naMaybeShow(); } catch(e) {} } } catch(e) {}
+    try { if (currentRole === 'COO' || currentRole === 'CEO') { arsMuat('lh-isi'); lskMuat('lsk-coo'); try { dfkMaybeShow(); } catch(e) {} try { invMaybeShow(); } catch(e) {} try { naMaybeShow(); } catch(e) {} } } catch(e) {}
     try { tbCooRingkas(roles, submittedReports); } catch(e) { console.warn('tbCooRingkas', e); }
+    try { cooKartu(); } catch(e) { console.warn('cooKartu', e); }
     document.getElementById('coo-role-summary').innerHTML = roleSummaryHtml ||
       '<div style="padding:16px;text-align:center;color:var(--gray-400);font-size:13px;">Belum ada laporan masuk</div>';
 
@@ -32206,6 +32587,7 @@ function _arsTglLabel(t){ const d=new Date(t+'T00:00:00Z'); const h=['Minggu','S
       if (totalFollowup > 0) {
         html += '<div style="margin-top:6px;text-align:center;font-size:12px;color:#b91c1c;font-weight:800;">🚨 Total ' + totalFollowup + ' kamar di semua hotel masih perlu follow up</div>';
       }
+      window._cooRc = { cek: checkedAll, total: totalAll, fu: totalFollowup }; try { cooKartu(); } catch(e) {}
       document.getElementById('rc-coo-section-body').innerHTML = html;
     } catch (e) {
       console.error('rcLoadCOORoomCheckSummary:', e);
@@ -32396,6 +32778,7 @@ function _arsTglLabel(t){ const d=new Date(t+'T00:00:00Z'); const h=['Minggu','S
     const belumForm = m.hm ? data.filter(k => k.tahap === 'hm' && k.hm_form_wajib && !(k.forms || []).some(f => f.tahap === 'hm')).length : 0;
     if (belumForm) html += ` <div class="kdu-merah" style="background:#fff7ed;color:#9a3412;border-color:#fed7aa">📝 ${belumForm} Interview Form belum diisi</div>`;
     const pesanBaru = data.reduce((a, k) => a + (+k.chat_belum || 0), 0);
+    if (elId === 'kdu-coo') { window._cooKdu = { proses: s.proses, hm: s.hm, trial: s.trial, pesan: pesanBaru }; try { cooKartu(); } catch(e) {} }
     if (pesanBaru) html += ` <div class="kdu-merah" style="background:#eff6ff;color:#1d4ed8;border-color:#bfdbfe">💬 ${pesanBaru} pesan baru</div>`;
     if (!m.hm) {
       const chips = KDU_URUT_UNIT.map(u => { const r = kduRingkas(data, u); return (r.proses || r.batal) ? `<button class="kdu-uchip" data-kdu-buka="${u}">${KDU_UNIT[u]} ${r.proses}${r.hm ? `<i>● ${r.hm}</i>` : ''}</button>` : ''; }).join('');
