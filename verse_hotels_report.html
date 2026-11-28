@@ -28215,6 +28215,8 @@ function _arsTglLabel(t){ const d=new Date(t+'T00:00:00Z'); const h=['Minggu','S
   const CK_UNIT = [['LITE','Lite','LT','#3b82f6,#1d4ed8'],['LUXE','Luxe','LX','#ec4899,#be185d'],['CIREBON','Cirebon','CB','#06b6d4,#0e7490'],['OAK','Oak','OK','#f59e0b,#c2410c'],['CORP','Corp','CO','#64748b,#334155']];
   const CK_UNIT_PJG = { LITE:'Verse Lite', LUXE:'Verse Luxe', CIREBON:'Verse Cirebon', OAK:'Oak Tree', CORP:'Corporate & F&B' };
   function _ckUnitDariHotel(h){ h = String(h || ''); return /Lite/.test(h) ? 'LITE' : /Luxe/.test(h) ? 'LUXE' : /Cirebon/.test(h) ? 'CIREBON' : /Oak/.test(h) ? 'OAK' : 'CORP'; }
+  // arsip_wajib tidak mengirim 'unit' — ambil dari hotel; Corporate & F&B tanpa hotel
+  function _ckUnitW(w){ return w.unit || (w.hotel ? _ckUnitDariHotel(w.hotel) : 'CORP'); }
   function _ckBatas(grup, tgl){ return new Date(tgl + (['hm','corp','fb','lain'].includes(grup) ? 'T13:00:00Z' : 'T12:30:00Z')).getTime(); }
 
   // Ringkasan laporan HARI INI untuk kartu utama
@@ -28224,12 +28226,34 @@ function _arsTglLabel(t){ const d=new Date(t+'T00:00:00Z'); const h=['Minggu','S
     const per = {}; CK_UNIT.forEach(u => per[u[0]] = { t:0, n:0, b:0 });
     let t = 0, n = 0, lib = 0, telatB = 0;
     Object.values(W).forEach(w => {
-      const u = w.unit || 'CORP', k = !!w.kirim || kirimR(w.role);
+      const u = _ckUnitW(w), k = !!w.kirim || kirimR(w.role);
       if (!w.wajib) { lib++; return; }
       t++; per[u].t++;
       if (k) { n++; per[u].n++; } else { per[u].b++; if (now > _ckBatas(w.grup, hari)) telatB++; }
     });
     return { t, n, lib, per, belum: t - n, lewat: telatB };
+  }
+  // Jumlah karyawan day off hari ini dari Jadwal Tim (4 unit)
+  async function _ckMuatOff(){
+    try {
+      const j = await _rpc('jadwal_baca', {});
+      if (!j || !j.ok) { window._cooOff = { gagal: 1 }; }
+      else {
+        const t = _arsHariIni(), per = {}; let n = 0;
+        (j.periode || []).forEach(p => {
+          if (!(t >= p.mulai && t <= p.selesai)) return;
+          const i = Math.round((Date.parse(t + 'T00:00:00Z') - Date.parse(p.mulai + 'T00:00:00Z')) / 864e5);
+          (j.baris || []).forEach(b => {
+            if (b.unit !== p.unit || b.periode !== p.periode) return;
+            const nm = String(b.nama || '').trim();
+            if (!nm || /^vacant$/i.test(nm)) return;
+            if (String((b.kode || [])[i] || '').trim().toLowerCase() === 'dayoff') { n++; per[p.unit] = (per[p.unit] || 0) + 1; }
+          });
+        });
+        window._cooOff = { n, per };
+      }
+    } catch(e) { window._cooOff = { gagal: 1 }; }
+    try { cooKartu(); } catch(e) {}
   }
   function _ckJam(){ const h = new Date(Date.now() + 7*3600000).getUTCHours(); return h < 11 ? 'Selamat pagi' : h < 15 ? 'Selamat siang' : h < 19 ? 'Selamat sore' : 'Selamat malam'; }
 
@@ -28251,14 +28275,15 @@ function _arsTglLabel(t){ const d=new Date(t+'T00:00:00Z'); const h=['Minggu','S
       if (perlu) skorSub = perlu + ' perlu Bapak nilai';
       else if ((LSK.data.belum_menilai || []).length) skorSub = LSK.data.belum_menilai.length + ' HM belum menilai HOD';
     }
-    const off = Object.values(window._cooWajib || {}).filter(w => /Day off/i.test(w.sebab || '')).length;
+    const O = window._cooOff, off = O && !O.gagal ? O.n : (O ? '—' : '…');
+    const offSub = O && !O.gagal && O.n ? CK_UNIT.filter(u => O.per[u[0]]).map(u => u[1] + ' ' + O.per[u[0]]).join(' · ') : 'Off hari ini';
     const kartu = (cls, g, ik, judul, sub, isi, klik) => `<div role="button" tabindex="0" class="ck ${g} ${cls}" onclick="${klik}" onkeydown="if(event.key==='Enter')this.click()"><div class="ck-ic">${_ckSvg(ik)}</div><h4>${judul}</h4>${sub ? `<p>${sub}</p>` : ''}${isi || ''}</div>`;
     const num = (v, s) => v == null ? '' : `<div class="ck-num">${v}${s ? `<small>${s}</small>` : ''}</div>`;
     el.innerHTML = [
       kartu('besar', 'ck-g1', 'lap', 'Laporan Harian', 'Hari ini · batas HOD 19.30 · HM, Corp &amp; FBM 20.00',
         ring + `<div class="ck-chips">${adaW ? `<span>${L.n}/${L.t} terkirim</span>` : '<span>⏳ Memuat data…</span>'}${L.belum ? `<span class="${L.lewat ? 'al' : ''}">${L.belum} belum</span>` : ''}${L.lib ? `<span>${L.lib} libur/kosong</span>` : ''}</div><div class="ck-unit">${unit}</div>`, "lhBukaUnit('semua')"),
       kartu('', 'ck-g2', 'skor', 'Live Score', esc(skorSub), num(skor == null ? '…' : skor, skor == null ? '' : 'rata-rata'), "cooBuka('skor')"),
-      kartu('', 'ck-g3', 'jadwal', 'Jadwal Tim', 'Off hari ini', num(off, 'orang off'), 'jtOpen()'),
+      kartu('', 'ck-g3', 'jadwal', 'Jadwal Tim', esc(offSub), num(off, O && !O.gagal ? 'day off hari ini' : ''), 'jtOpen()'),
       kartu('', 'ck-g4', 'defect', 'Defect Tracker', D ? ((D.lama ? D.lama + ' lewat 3 hari' : '4 unit') + (window._cooDfk.pesan ? ' · ' + window._cooDfk.pesan + ' pesan' : '')) : '4 unit', num(D ? (D.open || 0) : dG ? '—' : '…', D ? 'open' : ''), 'dfkBuka()'),
       kartu('', 'ck-g5', 'kand', 'Kandidat', K ? (K.hm ? K.hm + ' tunggu interview HM' : 'Dalam proses HR') + (K.pesan ? ' · ' + K.pesan + ' pesan' : '') : 'Dalam proses HR', num(K ? K.proses : kG ? '—' : '…', K ? 'proses' : ''), "kduBuka('')"),
       kartu('lebar', 'ck-g6', 'kamar', 'Pengecekan Kamar', 'Room check HM bulan ini' + (R ? ' · ' + R.total + ' kamar' : '') + (R && R.fu ? ' · ' + R.fu + ' perlu follow up' : ''),
@@ -28362,7 +28387,7 @@ function _arsTglLabel(t){ const d=new Date(t+'T00:00:00Z'); const h=['Minggu','S
         else if (/Belum bergabung/i.test(sb)) { st = 'kosong'; sub = 'Belum bergabung'; }
         else { st = 'libur'; sub = /Day off/i.test(sb) ? 'Day off (Jadwal Tim)' : sb.replace(/^Libur nasional:\s*/i, 'Libur nasional · ') || 'Libur'; }
       }
-      rows.push({ role: w.role, unit: w.unit || 'CORP', pos: _lhPos(w.role, w.grup), st, sub, r, w });
+      rows.push({ role: w.role, unit: _ckUnitW(w), pos: _lhPos(w.role, w.grup), st, sub, r, w });
     });
     (ARS.data || []).forEach(r => { if (ada.has(_rwyKunci(r.role))) return;
       rows.push({ role: r.role, unit: _ckUnitDariHotel(/^HM |Supervisor/.test(r.role) ? r.hotel || r.role : ''), pos: _lhPos(r.role, _arsGrup(r.role)), st: 'kirim',
@@ -28567,7 +28592,7 @@ function _arsTglLabel(t){ const d=new Date(t+'T00:00:00Z'); const h=['Minggu','S
     });
     try { if (currentRole === 'COO' || currentRole === 'CEO') { arsMuat('lh-isi'); lskMuat('lsk-coo'); try { dfkMaybeShow(); } catch(e) {} try { invMaybeShow(); } catch(e) {} try { naMaybeShow(); } catch(e) {} } } catch(e) {}
     try { tbCooRingkas(roles, submittedReports); } catch(e) { console.warn('tbCooRingkas', e); }
-    try { cooKartu(); } catch(e) { console.warn('cooKartu', e); }
+    try { cooKartu(); _ckMuatOff(); } catch(e) { console.warn('cooKartu', e); }
     document.getElementById('coo-role-summary').innerHTML = roleSummaryHtml ||
       '<div style="padding:16px;text-align:center;color:var(--gray-400);font-size:13px;">Belum ada laporan masuk</div>';
 
