@@ -27920,7 +27920,7 @@ function _arsTglLabel(t){ const d=new Date(t+'T00:00:00Z'); const h=['Minggu','S
     let pesan = 0;
     try { [d, pesan] = await Promise.all([_rpc('defect_ringkas', window._peekMode ? { p_role: currentRole } : {}), _rpc('dc_tasklist_belum', window._peekMode ? { p_role: currentRole } : {}).catch(() => 0)]); } catch(e) { d = null; }
     const chips = document.getElementById(id + '-chips'), sub = document.getElementById(id + '-sub');
-    if (!d || Array.isArray(d)) { if (chips) chips.innerHTML = ''; return; }
+    if (!d || Array.isArray(d)) { if (chips) chips.innerHTML = ''; if (coo) { window._cooDfk = { gagal: 1 }; try { cooKartu(); } catch(e) {} } return; }
     if (coo) { window._cooDfk = { d, pesan: +pesan || 0 }; try { cooKartu(); } catch(e) {} }
     if (sub) sub.textContent = (d.unit ? String(d.unit).replace(' Gajah Mada','').replace(' Wahid Hasyim','').replace(' Mahakam Blok M','') + ' · ' : '') + 'buka tanpa login lagi';
     const ikChat = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>';
@@ -28241,7 +28241,8 @@ function _arsTglLabel(t){ const d=new Date(t+'T00:00:00Z'); const h=['Minggu','S
     const L = _ckLapHariIni(), pct = L.t ? Math.round(100 * L.n / L.t) : 0, kel = 2 * Math.PI * 40;
     const ring = `<svg class="ck-ring" width="96" height="96" viewBox="0 0 96 96"><circle cx="48" cy="48" r="40" fill="none" stroke="rgba(255,255,255,.22)" stroke-width="10"/><circle cx="48" cy="48" r="40" fill="none" stroke="#fff" stroke-width="10" stroke-linecap="round" stroke-dasharray="${(kel * pct / 100).toFixed(1)} ${kel.toFixed(1)}" transform="rotate(-90 48 48)"/><text x="48" y="54" text-anchor="middle" font-size="20" font-weight="800" fill="#fff" font-family="Plus Jakarta Sans, sans-serif">${pct}%</text></svg>`;
     const unit = CK_UNIT.map(u => { const p = L.per[u[0]]; return `<button type="button" onclick="event.stopPropagation();lhBukaUnit('${u[0]}')"><b>${u[1]}</b><span>${p.t ? p.n + '/' + p.t : '—'}</span>${p.b ? `<i>${p.b}</i>` : ''}</button>`; }).join('');
-    const D = window._cooDfk && window._cooDfk.d, K = window._cooKdu, R = window._cooRc, N = window._cooNa;
+    const D = window._cooDfk && window._cooDfk.d, K = window._cooKdu && !window._cooKdu.gagal ? window._cooKdu : null, R = window._cooRc, N = window._cooNa;
+    const dG = window._cooDfk && window._cooDfk.gagal, kG = window._cooKdu && window._cooKdu.gagal, adaW = Object.keys(window._cooWajib || {}).length > 0;
     let skor = null, skorSub = 'KPI bulan ini', perlu = 0;
     if (LSK.data && !LSK.data.gagal) {
       const v = [...(LSK.data.hod || []), ...(LSK.data.lain || [])].filter(x => x.aktif !== false).map(x => x.total).filter(x => x != null);
@@ -28255,11 +28256,11 @@ function _arsTglLabel(t){ const d=new Date(t+'T00:00:00Z'); const h=['Minggu','S
     const num = (v, s) => v == null ? '' : `<div class="ck-num">${v}${s ? `<small>${s}</small>` : ''}</div>`;
     el.innerHTML = [
       kartu('besar', 'ck-g1', 'lap', 'Laporan Harian', 'Hari ini · batas HOD 19.30 · HM, Corp &amp; FBM 20.00',
-        ring + `<div class="ck-chips"><span>${L.n}/${L.t} terkirim</span>${L.belum ? `<span class="${L.lewat ? 'al' : ''}">${L.belum} belum</span>` : ''}${L.lib ? `<span>${L.lib} libur/kosong</span>` : ''}</div><div class="ck-unit">${unit}</div>`, "lhBukaUnit('semua')"),
+        ring + `<div class="ck-chips">${adaW ? `<span>${L.n}/${L.t} terkirim</span>` : '<span>⏳ Memuat data…</span>'}${L.belum ? `<span class="${L.lewat ? 'al' : ''}">${L.belum} belum</span>` : ''}${L.lib ? `<span>${L.lib} libur/kosong</span>` : ''}</div><div class="ck-unit">${unit}</div>`, "lhBukaUnit('semua')"),
       kartu('', 'ck-g2', 'skor', 'Live Score', esc(skorSub), num(skor == null ? '…' : skor, skor == null ? '' : 'rata-rata'), "cooBuka('skor')"),
       kartu('', 'ck-g3', 'jadwal', 'Jadwal Tim', 'Off hari ini', num(off, 'orang off'), 'jtOpen()'),
-      kartu('', 'ck-g4', 'defect', 'Defect Tracker', D ? ((D.lama ? D.lama + ' lewat 3 hari' : '4 unit') + (window._cooDfk.pesan ? ' · ' + window._cooDfk.pesan + ' pesan' : '')) : '4 unit', num(D ? (D.open || 0) : '…', D ? 'open' : ''), 'dfkBuka()'),
-      kartu('', 'ck-g5', 'kand', 'Kandidat', K ? (K.hm ? K.hm + ' tunggu interview HM' : 'Dalam proses HR') + (K.pesan ? ' · ' + K.pesan + ' pesan' : '') : 'Dalam proses HR', num(K ? K.proses : '…', K ? 'proses' : ''), "kduBuka('')"),
+      kartu('', 'ck-g4', 'defect', 'Defect Tracker', D ? ((D.lama ? D.lama + ' lewat 3 hari' : '4 unit') + (window._cooDfk.pesan ? ' · ' + window._cooDfk.pesan + ' pesan' : '')) : '4 unit', num(D ? (D.open || 0) : dG ? '—' : '…', D ? 'open' : ''), 'dfkBuka()'),
+      kartu('', 'ck-g5', 'kand', 'Kandidat', K ? (K.hm ? K.hm + ' tunggu interview HM' : 'Dalam proses HR') + (K.pesan ? ' · ' + K.pesan + ' pesan' : '') : 'Dalam proses HR', num(K ? K.proses : kG ? '—' : '…', K ? 'proses' : ''), "kduBuka('')"),
       kartu('lebar', 'ck-g6', 'kamar', 'Pengecekan Kamar', 'Room check HM bulan ini' + (R ? ' · ' + R.total + ' kamar' : '') + (R && R.fu ? ' · ' + R.fu + ' perlu follow up' : ''),
         R ? num((R.total ? Math.round(100 * R.cek / R.total) : 0) + '%', R.cek + ' / ' + R.total) + `<div class="ck-bar"><i style="width:${R.total ? Math.max(2, Math.round(100 * R.cek / R.total)) : 0}%"></i></div>` : num('…'), "cooBuka('kamar')"),
       kartu('', 'ck-g7', 'peta', 'Peta Live', 'Posisi tim sekarang', '', 'openPetaLive()'),
@@ -32768,6 +32769,7 @@ function _arsTglLabel(t){ const d=new Date(t+'T00:00:00Z'); const h=['Minggu','S
     if (!data) {
       el.innerHTML = `<div class="kdu-card"><div class="kdu-h"><div class="kdu-ic">${ikon}</div><div class="kdu-t"><b>${judul}</b><span>⚠️ Gagal memuat — ketuk untuk coba lagi</span></div></div></div>`;
       el.firstElementChild.onclick = () => { KDU.t = 0; KDU.data = null; kduKartu(elId, beranda); };
+      if (elId === 'kdu-coo') { window._cooKdu = { gagal: 1 }; try { cooKartu(); } catch(e) {} }
       return;
     }
     const s = kduRingkas(data, '');
