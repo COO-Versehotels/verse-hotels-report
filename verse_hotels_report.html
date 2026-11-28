@@ -1365,6 +1365,10 @@
   .ars-pc{font-size:11px;font-weight:800;padding:3px 8px;border-radius:7px;flex:none}.ars-pc.g{background:#dcfce7;color:#15803d}.ars-pc.a{background:#fef3c7;color:#b45309}.ars-pc.r{background:#fee2e2;color:#b91c1c}
   .ars-more{display:block;width:100%;margin-top:6px;padding:8px;border:none;background:none;color:var(--navy);font:inherit;font-size:12.5px;font-weight:700;cursor:pointer}
   .ars-miss{background:#fff7ed;border:1px dashed #fdba74;border-radius:10px;padding:8px 10px;font-size:11.5px;color:#9a3412;margin-top:8px;line-height:1.5}
+  .ars-ekspor{display:flex;gap:8px;margin-top:10px}
+  .ars-ekspor button{flex:1;border:1px solid #bbf7d0;background:#f0fdf4;color:#166534;border-radius:12px;padding:10px 8px;font:inherit;font-size:13px;font-weight:800;cursor:pointer}
+  .ars-ekspor button:last-child{border-color:#bfdbfe;background:#eff6ff;color:#1e40af}
+  :where(.tb,.tbo) .ars-ekspor button{background:#0f2a1a;border-color:#15803d;color:#86efac} :where(.tb,.tbo) .ars-ekspor button:last-child{background:#0c2433;border-color:#1d4ed8;color:#93c5fd}
   .ars-kosong{text-align:center;color:var(--gray-400);font-size:12.5px;padding:14px 4px}
   .ars-ov{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100002;display:flex;align-items:flex-end;justify-content:center}
   .ars-sheet{background:#fff;width:100%;max-width:640px;max-height:92vh;overflow-y:auto;border-radius:20px 20px 0 0;padding:12px 16px calc(16px + env(safe-area-inset-bottom))}
@@ -5024,7 +5028,7 @@
           const url = typeof input === 'string' ? input : ((input && input.url) || '');
           const method = String((init && init.method) || (input && input.method) || 'GET').toUpperCase();
           const ours = url.indexOf(SUPA_URL) === 0 || url.indexOf('/api/') === 0 || url.indexOf(location.origin + '/api/') === 0;
-          const readOnlyRpc = /\/rest\/v1\/rpc\/(device_check|admin_devices_list|admin_users_list|notif_list|notif_history|jadwal_baca|live_skor|hod_nilai_baca|coo_nilai_baca|defect_ringkas|defect_sso_buat|dc_tasklist_belum|hm_audit_baca|app_sesi_cek|disiplin_ringkas|disiplin_riwayat|laporan_publik|notif_balasan_saya|peta_live_data|peta_kirim|admin_token_sesi)$/.test(url.split('?')[0]);
+          const readOnlyRpc = /\/rest\/v1\/rpc\/(device_check|admin_devices_list|admin_users_list|notif_list|notif_history|jadwal_baca|live_skor|hod_nilai_baca|coo_nilai_baca|defect_ringkas|defect_sso_buat|dc_tasklist_belum|hm_audit_baca|app_sesi_cek|disiplin_ringkas|disiplin_riwayat|laporan_publik|notif_balasan_saya|peta_live_data|peta_kirim|admin_token_sesi|arsip_wajib)$/.test(url.split('?')[0]);
           if (ours && method !== 'GET' && method !== 'HEAD' && !readOnlyRpc) {
             if (Date.now() - _lastPeekToast > 3000) {
               _lastPeekToast = Date.now();
@@ -26787,6 +26791,7 @@ function _arsTglLabel(t){ const d=new Date(t+'T00:00:00Z'); const h=['Minggu','S
     if (!el.dataset.siap) { el.innerHTML='<div class="ars-box"><div class="ars-h"><b>📁 Arsip Laporan</b></div><div class="ars-kosong">⏳ Memuat…</div></div>'; el.dataset.siap='1'; }
     const t=ARS.tgl, dari=_arsGeser(t,-14);
     try{
+      const wj = _rpc('arsip_wajib', { p_tgl: t }).catch(()=>null);
       const [a,l,c,akt1,akt2]=await Promise.all([
         supa.from('arsip').select('role,hotel,tanggal,pct,task_done,task_total,fu_count,submitted_at').eq('tanggal',t),
         supa.from('laporan').select('role,hotel,tanggal,pct,task_done,task_total,fu_count,submitted_at').eq('tanggal',t),
@@ -26798,6 +26803,7 @@ function _arsTglLabel(t){ const d=new Date(t+'T00:00:00Z'); const h=['Minggu','S
       ARS.data=Object.values(dd).filter(r=>_arsMilikHM(r.role)).sort((x,y)=>(y.submitted_at||'').localeCompare(x.submitted_at||''));
       ARS.cek={}; (c.data||[]).forEach(r=>ARS.cek[r.role]=r);
       ARS.aktif=[...new Set([...(akt1.data||[]),...(akt2.data||[])].map(r=>r.role).filter(Boolean))].filter(_arsMilikHM);
+      const w = await wj; ARS.wajib = Array.isArray(w) ? w : null;
     }catch(e){ console.warn('arsip laporan', e); }
     arsRender();
   }
@@ -26806,8 +26812,13 @@ function _arsTglLabel(t){ const d=new Date(t+'T00:00:00Z'); const h=['Minggu','S
     const g=ARS.grup, cocok=r=>g==='semua' || _arsGrup(r)===g;
     const list=ARS.data.filter(r=>cocok(r.role));
     const kirim=new Set(ARS.data.map(r=>r.role));
-    const belum=ARS.aktif.filter(r=>!kirim.has(r) && cocok(r)).sort();
+    // 28 Nov 2026: "Belum kirim" = wajib lapor resmi (Jadwal Tim / day off / akhir pekan / tanggal mulai) yang tidak kirim
+    const belumW = ARS.wajib ? ARS.wajib.filter(w=>w.wajib && !w.kirim && cocok(w.role) && _arsMilikHM(w.role)) : null;
+    const belum = belumW ? belumW.map(w=>w.role).sort() : ARS.aktif.filter(r=>!kirim.has(r) && cocok(r)).sort();
+    const _alNm = { sakit:'Sakit', izin:'Izin tidak masuk', lainnya:'' };
+    const alasanB = {}; (belumW||[]).forEach(w=>{ if (w.alasan) { const nm = _alNm[w.alasan] != null ? _alNm[w.alasan] : w.alasan; alasanB[w.role] = [nm, w.ket].filter(Boolean).join(' – ') || 'Alasan diisi'; } });
     const nCek=list.filter(r=>ARS.cek[r.role]).length;
+    ARS._ekspor = { list, belum, alasanB, nCek, grup: g };
     const hari=_arsHariIni(), kmrn=_arsGeser(hari,-1);
     const tampil=ARS.semua ? list : list.slice(0,5);
     const chip=(on,txt,fn)=>`<button type="button" class="${on?'on':''}" onclick="${fn}">${txt}</button>`;
@@ -26822,10 +26833,103 @@ function _arsTglLabel(t){ const d=new Date(t+'T00:00:00Z'); const h=['Minggu','S
           <div class="ars-tx"><b class="dsp-nm" onclick="event.stopPropagation();rwyBuka('${_arsEsc(r.role)}')">${_arsEsc(_arsPendek(r.role))}</b><small>${_arsEsc(_arsPendek(r.hotel||'-'))} · kirim ${_arsJam(r.submitted_at)}${ck?` · <span class="ars-ok">✓ dicek ${_arsEsc(ck.oleh)}</span>`:''}${ck&&ck.catatan?' 📝':''}</small></div>
           <span class="ars-pc ${p>=100?'g':p>=70?'a':'r'}">${p}%</span></div>`; }).join('') : '<div class="ars-kosong">Belum ada laporan terkirim untuk tanggal ini.</div>'}
       ${list.length>5?`<button type="button" class="ars-more" onclick="ARS.semua=!ARS.semua;arsRender()">${ARS.semua?'Ringkas ▴':'Tampilkan '+(list.length-5)+' laporan lainnya ▾'}</button>`:''}
-      ${belum.length?`<div class="ars-miss">⏳ <b>Belum kirim (${belum.length}):</b> ${belum.map(r=>_arsEsc(_arsPendek(r))).join(' · ')}</div>`:''}
+      ${belum.length?`<div class="ars-miss">⏳ <b>Belum kirim (${belum.length}):</b> ${belum.map(r=>_arsEsc(_arsPendek(r)) + (alasanB[r] ? ' <i>(' + _arsEsc(alasanB[r]) + ')</i>' : '')).join(' · ')}</div>`:''}
+      <div class="ars-ekspor"><button type="button" onclick="arsEksporWA()">💬 Kirim teks WA</button><button type="button" onclick="arsEksporJPG(this)">🖼️ Kirim JPG</button></div>
     </div>`;
   }
   function arsTgl(t){ ARS.tgl=t; ARS.semua=false; arsMuat(); }
+  // ===== Export Arsip Laporan → teks WA & JPG (28 Nov 2026) — mengikuti tanggal & filter yang sedang dipilih =====
+  const _ARS_GRUP_NM = { semua:'Semua', corp:'Corporate', hm:'HM', hod:'HOD', fb:'F&B' };
+  function _arsEksporData(){
+    const E = ARS._ekspor || { list:[], belum:[], alasanB:{}, nCek:0, grup:'semua' };
+    return Object.assign({ tgl: _arsTglLabel(ARS.tgl), filter: _ARS_GRUP_NM[E.grup] || 'Semua' }, E);
+  }
+  function arsTeksWA(){
+    const E = _arsEksporData();
+    let t = `📁 *ARSIP LAPORAN*\n📅 ${E.tgl}${E.filter !== 'Semua' ? ' · ' + E.filter : ''}\n`;
+    t += `✅ Terkirim: *${E.list.length}* · ⏳ Belum kirim: *${E.belum.length}* · ✔️ Dicek HR: *${E.nCek}*\n`;
+    if (E.list.length) {
+      t += `\n*TERKIRIM*\n`;
+      E.list.slice().sort((x,y)=>(x.submitted_at||'').localeCompare(y.submitted_at||'')).forEach((r,i)=>{
+        t += `${i+1}. ${_arsPendek(r.role)} — ${_arsJam(r.submitted_at)} · ${r.pct||0}%${ARS.cek[r.role] ? ' · ✔️ dicek HR' : ''}\n`;
+      });
+    }
+    if (E.belum.length) {
+      t += `\n*BELUM KIRIM*\n`;
+      E.belum.forEach((r,i)=>{ t += `${i+1}. ${_arsPendek(r)}${E.alasanB[r] ? ' — alasan: ' + E.alasanB[r] : ''}\n`; });
+    }
+    t += `\nMohon dicek & ditindaklanjuti 🙏`;
+    return t;
+  }
+  function arsEksporWA(){
+    const t = arsTeksWA();
+    try { navigator.clipboard && navigator.clipboard.writeText(t); } catch(e) {}
+    window.open('https://wa.me/?text=' + encodeURIComponent(t), '_blank');
+    showToast('Teks juga sudah disalin');
+  }
+  function _arsGambar(){
+    const E = _arsEksporData(), S = 2, W = 1080;
+    const terkirim = E.list.slice().sort((x,y)=>(x.submitted_at||'').localeCompare(y.submitted_at||''));
+    const rowH = 92, pad = 56;
+    const H = 330 + (terkirim.length ? 70 + terkirim.length * rowH : 0) + (E.belum.length ? 80 + E.belum.length * 78 : 0) + 90;
+    const c = document.createElement('canvas'); c.width = W * S; c.height = H * S;
+    const x = c.getContext('2d'); x.scale(S, S);
+    const F = (w, sz) => `${w} ${sz}px "Plus Jakarta Sans", "Segoe UI", Roboto, Arial, sans-serif`;
+    const kotak = (X, Y, w, h, r, f) => { x.beginPath(); x.moveTo(X+r,Y); x.arcTo(X+w,Y,X+w,Y+h,r); x.arcTo(X+w,Y+h,X,Y+h,r); x.arcTo(X,Y+h,X,Y,r); x.arcTo(X,Y,X+w,Y,r); x.closePath(); x.fillStyle = f; x.fill(); };
+    const potong = (t, maks) => { t = String(t); while (x.measureText(t).width > maks && t.length > 3) t = t.slice(0, -2); return t; };
+    x.fillStyle = '#f4f6fb'; x.fillRect(0, 0, W, H);
+    kotak(0, 0, W, 210, 0, '#1a3a5c');
+    x.fillStyle = '#fff'; x.font = F(800, 52); x.fillText('📁 Arsip Laporan', pad, 92);
+    x.font = F(600, 32); x.fillStyle = '#cbd5e1'; x.fillText(E.tgl + (E.filter !== 'Semua' ? '  ·  ' + E.filter : ''), pad, 150);
+    const kw = (W - pad*2 - 32) / 3;
+    [['Terkirim', E.list.length, '#15803d'], ['Belum kirim', E.belum.length, '#c2410c'], ['Dicek HR', E.nCek, '#1d4ed8']].forEach((k, i) => {
+      const X = pad + i * (kw + 16); kotak(X, 180, kw, 118, 20, '#ffffff');
+      x.textAlign = 'center'; x.fillStyle = k[2]; x.font = F(800, 52); x.fillText(String(k[1]), X + kw/2, 245);
+      x.fillStyle = '#475569'; x.font = F(700, 24); x.fillText(k[0], X + kw/2, 282); x.textAlign = 'left';
+    });
+    let y = 340;
+    if (terkirim.length) {
+      x.fillStyle = '#0f172a'; x.font = F(800, 30); x.fillText('TERKIRIM', pad, y + 20); y += 46;
+      terkirim.forEach(r => {
+        kotak(pad, y, W - pad*2, rowH - 12, 16, '#ffffff');
+        x.fillStyle = '#0f172a'; x.font = F(800, 30); x.fillText(potong(_arsPendek(r.role), 600), pad + 24, y + 38);
+        x.fillStyle = '#64748b'; x.font = F(600, 24); x.fillText('kirim ' + _arsJam(r.submitted_at) + (ARS.cek[r.role] ? '  ·  ✓ dicek HR' : ''), pad + 24, y + 68);
+        const p = r.pct || 0, warna = p >= 100 ? ['#dcfce7','#15803d'] : p >= 70 ? ['#fef3c7','#b45309'] : ['#fee2e2','#b91c1c'];
+        kotak(W - pad - 150, y + 20, 126, 44, 22, warna[0]); x.fillStyle = warna[1]; x.font = F(800, 26); x.textAlign = 'center'; x.fillText(p + '%', W - pad - 87, y + 51); x.textAlign = 'left';
+        y += rowH;
+      });
+    }
+    if (E.belum.length) {
+      y += 10; x.fillStyle = '#c2410c'; x.font = F(800, 30); x.fillText('BELUM KIRIM', pad, y + 20); y += 46;
+      E.belum.forEach(r => {
+        kotak(pad, y, W - pad*2, 66, 16, '#fff7ed');
+        x.fillStyle = '#9a3412'; x.font = F(800, 28); x.fillText('⏳ ' + potong(_arsPendek(r), 520), pad + 22, y + 43);
+        if (E.alasanB[r]) { x.fillStyle = '#b45309'; x.font = F(600, 22); x.textAlign = 'right'; x.fillText(potong(E.alasanB[r], 330), W - pad - 22, y + 42); x.textAlign = 'left'; }
+        y += 78;
+      });
+    }
+    x.fillStyle = '#94a3b8'; x.font = F(600, 22); x.fillText('Verse Hotels · Tasklist · dibuat ' + _arsJam(new Date().toISOString()) + ' WIB', pad, H - 36);
+    return c;
+  }
+  async function arsEksporJPG(btn){
+    const asli = btn ? btn.textContent : '';
+    if (btn) btn.textContent = '⏳ Menyiapkan…';
+    try {
+      try { await document.fonts.ready; } catch(e) {}
+      const c = _arsGambar();
+      const b64 = c.toDataURL('image/jpeg', 0.92);
+      const nama = 'arsip_laporan_' + ARS.tgl + '.jpg';
+      const plugin = _nativePhotoPlugin();
+      if (plugin) { await plugin.shareImage({ base64: b64, fileName: nama }); return; }
+      const blob = await (await fetch(b64)).blob();
+      const f = new File([blob], nama, { type: 'image/jpeg' });
+      if (navigator.canShare && navigator.canShare({ files: [f] })) { await navigator.share({ files: [f], text: 'Arsip Laporan ' + _arsTglLabel(ARS.tgl) }); return; }
+      const a = document.createElement('a'); a.href = b64; a.download = nama; document.body.appendChild(a); a.click(); a.remove();
+      showToast('JPG tersimpan — lampirkan ke WA');
+    } catch(e) {
+      if (!/abort|cancel/i.test(String(e && e.message))) showToast('Gagal membuat JPG');
+    } finally { if (btn) btn.textContent = asli; }
+  }
   async function arsBuka(roleEnc, rObj){
     const role=decodeURIComponent(roleEnc); const r=rObj||(ARS.data||[]).find(x=>x.role===role); if(!r) return;
     document.getElementById('ars-ov')?.remove();
